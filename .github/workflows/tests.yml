@@ -31,22 +31,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Prepare Laravel environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate --ansi
-
-      - name: Prepare database
-        run: php artisan migrate --force
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
+      - name: Setup Application
+        run: composer setup
 
       - name: Run CI Checks
         run: composer ci:check
