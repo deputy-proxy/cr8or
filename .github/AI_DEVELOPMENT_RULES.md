@@ -10,7 +10,7 @@ Before implementing an issue, inspect and reconcile:
 
 1. The issue and its implementation plan.
 2. This document.
-3. The applicable GitHub Actions workflow(s).
+3. The applicable GitHub Actions workflow(s), currently `.github/workflows/tests.yml`.
 4. `composer.json`, `package.json`, and relevant tool configuration.
 5. Existing implementation and tests around the affected functionality.
 6. Authoritative architecture/domain specifications and the README.
