@@ -1,20 +1,20 @@
 <?php
 
-namespace AppModels;
+namespace App\Models;
 
-use FilamentModelsContractsFilamentUser;
-use FilamentPanel;
-use IlluminateDatabaseEloquentAttributesFillable;
-use IlluminateDatabaseEloquentAttributesHidden;
-use IlluminateDatabaseEloquentFactoriesHasFactory;
-use IlluminateDatabaseEloquentRelationsBelongsToMany;
-use IlluminateDatabaseEloquentRelationsHasMany;
-use IlluminateFoundationAuthUser as Authenticatable;
-use IlluminateNotificationsNotifiable;
-use IlluminateSupportStr;
-use LaravelFortifyContractsPasskeyUser;
-use LaravelFortifyPasskeyAuthenticatable;
-use LaravelFortifyTwoFactorAuthenticatable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
+use Laravel\Fortify\Contracts\PasskeyUser;
+use Laravel\Fortify\PasskeyAuthenticatable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
