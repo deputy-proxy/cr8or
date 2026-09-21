@@ -33,7 +33,7 @@ class EnterpriseContextResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('enterprise.name')->searchable()->sortable(), TextColumn::make('status')->badge()])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
+        return $table->columns([TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('industry')->searchable()->sortable(), TextColumn::make('business_model')->label('Business Model')->searchable()->sortable(), TextColumn::make('target_market')->label('Target Market')->searchable(), TextColumn::make('geography')->searchable(), TextColumn::make('updated_at')->dateTime()->sortable()])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
     }
 
     public static function getEloquentQuery(): Builder
