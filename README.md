@@ -63,9 +63,9 @@ Maintains platform configuration, organizations, users, permissions, integration
 
 A connected system that performs specialized execution, such as n8n, CR8OR Media, R2, Canva, Postiz, GitHub, OpenAI or other approved providers.
 
-## Core Domain Model
+## Target Core Domain Model
 
-The application is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records.
+The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended CR8OR domain model; they are not all implemented in the current repository.
 
 ### Identity & Access
 
@@ -242,9 +242,9 @@ Sensitive actions must be traceable from request through decision, execution and
 
 Reports provide derived views of authoritative business data and must not silently replace the underlying records.
 
-## Core Operating Architecture
+## Target Operating Architecture
 
-CR8OR follows the following architectural model:
+CR8OR follows the following architectural model. This describes the target system architecture; implementation is being introduced incrementally by product phase.
 
 ```
                          HUMAN
@@ -483,6 +483,46 @@ Important state changes must be attributable to:
 - external execution reference;
 - resulting state.
 
+## Verified Current State
+
+The repository has completed its foundation phase and is now ready to begin the first business-domain implementation.
+
+### Implemented
+
+- Laravel 13 application foundation.
+- Filament 5 administration foundation.
+- Repository conventions and issue-driven development workflow.
+- GitHub Actions CI and configured PHP/frontend validation.
+- Core architecture, domain, governance, MCP, integration and security documentation.
+- Repository-level AI development rules in `.github/AI_DEVELOPMENT_RULES.md`.
+- The verified baseline currently contains the Laravel/authentication foundation and the `User` model.
+
+### Not Yet Implemented
+
+The following remain product-roadmap work rather than completed runtime functionality:
+
+- Organizations and memberships.
+- Business and business context.
+- Runtime agents and experts.
+- Agent capabilities, authority and governance runtime.
+- Strategy, knowledge and work domains.
+- MCP server implementation and tool/resource runtime.
+- Marketing, media and publishing domains.
+- Finance and business operations.
+- Multi-agent orchestration.
+
+This distinction is deliberate. The repository is a verified foundation plus architectural specification, not a partially implemented version of every future domain.
+
+### Foundation Integrity
+
+During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. The lesson is operational: required foundation files must be protected by automated integrity validation rather than relying on human memory or review alone.
+
+### Immediate Priority
+
+**Phase 1 — Identity, Organizations & Business Context**
+
+The next implementation work should establish organization isolation, memberships, authorization, business identity and persisted business context before runtime agents, MCP tools or multi-agent workflows are introduced.
+
 ## Development Roadmap
 
 The phases below represent the original **product development roadmap**.
@@ -503,12 +543,9 @@ Establish the fresh Laravel + Filament application and the architectural foundat
 - Filament administration foundation.
 - Repository and CI conventions.
 - Core architecture documentation.
-- Organization and identity foundation.
-- Initial domain structure.
-- Application/service boundaries.
-- Initial authorization model.
+- Target domain and application boundaries.
 - Development rules.
-- Initial MCP architecture specification.
+- Initial authorization and MCP architecture specifications.
 
 **Completion Criteria**
 
@@ -517,7 +554,7 @@ Establish the fresh Laravel + Filament application and the architectural foundat
 - Core architectural specifications exist.
 - Domain boundaries are documented.
 - Development workflow is documented.
-- Initial application structure follows the agreed architecture.
+- The repository baseline follows the agreed foundation conventions.
 
 ### Phase 1 — Identity, Organizations & Business Context
 
