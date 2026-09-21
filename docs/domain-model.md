@@ -18,17 +18,19 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Deferred:** Full role hierarchy, permission catalogue and broader tenancy infrastructure.
 
-## Business
+## Enterprise
 
-**Purpose:** Represent the business being operated.
+**Purpose:** Represent the enterprise being operated.
 
-**Core entities:** Business, Business Context, Vision, Mission, Goal, KPI, Product, Customer, Partner, Competitor, Business Decision.
+**Core entities:** Enterprise, Enterprise Context, Vision, Mission, Goal, KPI, Product, Customer, Partner, Competitor, Enterprise Decision.
 
-**Relationships:** A business has context, strategic direction, operational entities and recorded decisions.
+**Relationships:** An enterprise has structured context, strategic direction, operational entities and recorded decisions. Enterprise Context is a dedicated one-to-one contextual record rather than part of enterprise identity.
 
 **Ownership:** CR8OR.
 
-**Known invariants:** Business context remains attributable to the business it describes. Decisions retain historical meaning.
+**Known invariants:** Enterprise-owned records remain attributable to their enterprise and therefore to its organization. Enterprise decisions retain historical actor identity and decision time.
+
+**Phase 1 implementation:** Enterprise is organization-scoped through `organization_id`. Enterprise Context is a dedicated one-to-one model. Products, customers, partners, goals, KPIs and enterprise decisions belong to an enterprise and are authorized through the enterprise's organization membership.
 
 **Deferred:** Detailed CRM, product catalog and KPI calculation behavior.
 
@@ -189,7 +191,7 @@ This document defines the initial bounded domains and known conceptual entities.
 ## Cross-Domain Rules
 
 - Identity & Access establishes authority used by every other domain.
-- Business is the principal operational context for agents and work.
+- Enterprise is the principal operational context for agents and work.
 - Agents consume authorized knowledge and strategy but do not own those domains.
 - Governance constrains mutations in every domain.
 - Integrations record external execution without transferring business-state ownership.
