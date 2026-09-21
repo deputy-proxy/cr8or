@@ -11,22 +11,32 @@ class MembershipPolicy
 {
     public function view(User $user, Membership $membership): bool
     {
-        return $this->belongsToOrganization($user, $membership)
-            && $membership->organization_id === $this->organizationMembership($user, $membership)->organization_id;
+        return $this->hasRole(
+            $user,
+            $membership->organization_id,
+            MembershipRole::Owner,
+            MembershipRole::Admin,
+            MembershipRole::Member,
+        );
     }
 
     public function create(User $user, Organization $organization): bool
     {
-        return $this->hasRole($user, $organization, MembershipRole::Owner, MembershipRole::Admin);
+        return $this->hasRole(
+            $user,
+            $organization->getKey(),
+            MembershipRole::Owner,
+            MembershipRole::Admin,
+        );
     }
 
     public function update(User $user, Membership $membership): bool
     {
-        if (! $this->belongsToOrganization($user, $membership)) {
+        $actorRole = $this->membershipRole($user, $membership->organization_id);
+
+        if ($actorRole === null) {
             return false;
         }
-
-        $actorRole = $this->organizationMembership($user, $membership)->role;
 
         if ($actorRole === MembershipRole::Owner) {
             return true;
@@ -38,11 +48,11 @@ class MembershipPolicy
 
     public function delete(User $user, Membership $membership): bool
     {
-        if (! $this->belongsToOrganization($user, $membership)) {
+        $actorRole = $this->membershipRole($user, $membership->organization_id);
+
+        if ($actorRole === null) {
             return false;
         }
-
-        $actorRole = $this->organizationMembership($user, $membership)->role;
 
         if ($actorRole === MembershipRole::Owner) {
             return true;
@@ -52,26 +62,17 @@ class MembershipPolicy
             && $membership->role === MembershipRole::Member;
     }
 
-    private function belongsToOrganization(User $user, Membership $membership): bool
+    private function hasRole(User $user, int $organizationId, MembershipRole ...$roles): bool
     {
-        return $user->memberships()
-            ->where('organization_id', $membership->organization_id)
-            ->exists();
+        $role = $this->membershipRole($user, $organizationId);
+
+        return $role !== null && in_array($role, $roles, true);
     }
 
-    private function hasRole(User $user, Organization $organization, MembershipRole ...$roles): bool
-    {
-        $membership = $user->memberships()
-            ->where('organization_id', $organization->getKey())
-            ->first();
-
-        return $membership !== null && in_array($membership->role, $roles, true);
-    }
-
-    private function organizationMembership(User $user, Membership $membership): Membership
+    private function membershipRole(User $user, int $organizationId): ?MembershipRole
     {
         return $user->memberships()
-            ->where('organization_id', $membership->organization_id)
-            ->firstOrFail();
+            ->where('organization_id', $organizationId)
+            ->value('role');
     }
 }
