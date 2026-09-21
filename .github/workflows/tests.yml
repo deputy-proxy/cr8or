@@ -37,8 +37,8 @@ jobs:
       - name: Fix User formatting
         run: vendor/bin/pint app/Models/User.php
 
-      - name: Show formatted User
-        run: cat app/Models/User.php
+      - name: Show User formatting diff
+        run: git diff -- app/Models/User.php
 
       - name: Run CI Checks
         run: composer ci:check
