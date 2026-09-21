@@ -75,4 +75,3 @@ class MembershipPolicy
             ->firstOrFail();
     }
 }
-
