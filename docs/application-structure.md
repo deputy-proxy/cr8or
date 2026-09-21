@@ -73,7 +73,7 @@ The structure must remain compatible with the repository's current stack:
 
 - Laravel 13.17+;
 - Filament 5;
-- PHP 8.3+;
+- PHP 8.4+;
 - Livewire 4;
 - Pest 5;
 - Larastan/PHPStan level 7;
