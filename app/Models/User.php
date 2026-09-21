@@ -2,7 +2,6 @@
 
 namespace AppModels;
 
-use DatabaseFactoriesUserFactory;
 use FilamentModelsContractsFilamentUser;
 use FilamentPanel;
 use IlluminateDatabaseEloquentAttributesFillable;
@@ -21,7 +20,7 @@ use LaravelFortifyTwoFactorAuthenticatable;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     public function canAccessPanel(Panel $panel): bool
