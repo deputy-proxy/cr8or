@@ -65,7 +65,7 @@ A connected system that performs specialized execution, such as n8n, CR8OR Media
 
 ## Target Core Domain Model
 
-The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended CR8OR domain model; they are not all implemented in the current repository.
+The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended persistent CR8OR domain model; they are not all implemented in the current repository. Runtime components such as Agents and Experts are documented separately because they are executable classes rather than business-state entities.
 
 ### Identity & Access
 
@@ -97,11 +97,13 @@ Organizations provide the primary isolation boundary for business data and opera
 
 An Enterprise represents the operational entity an agent is helping to run. Enterprise Context provides the structured information agents need without requiring them to reconstruct the enterprise from unrelated records.
 
-### Agents
+### Agent Runtime & Governance
 
-- Agent
-- Expert
-- Agent Instruction
+Agents and Experts are **runtime components implemented as PHP classes**, not Eloquent models or persistent business entities.
+
+- Agent PHP classes
+- Expert PHP classes
+- Agent Instruction / configuration
 - Capability
 - Tool
 - Agent Permission
@@ -110,7 +112,11 @@ An Enterprise represents the operational entity an agent is helping to run. Ente
 - Agent Decision
 - Agent Memory / Context Reference
 
-Agents are defined by role, instructions, available capabilities, permissions, model configuration, knowledge access and approval requirements.
+The runtime classes define how CR8OR reasons and operates. Persistent records associated with those runtime components, such as permissions, assignments, executions, decisions, approvals and audit history, may be represented by Eloquent models where persistence is required.
+
+**Agents orchestrate. Experts specialize. Functions execute. Models persist business state.**
+
+Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, select appropriate Functions, apply their methodology, and produce structured results. Functions and application/domain services perform concrete operations against authoritative CR8OR state or approved external services.
 
 ### Knowledge
 
@@ -367,42 +373,101 @@ The MCP surface must remain capability-oriented rather than exposing internal da
 
 ## Agent Architecture
 
-Agents are persistent operational roles.
+Agents and Experts are executable CR8OR runtime components implemented as PHP classes.
+
+An **Agent** is an orchestration component. It represents a broad operational domain and is responsible for understanding the request at a high level, selecting the appropriate Experts, coordinating their work, and combining their results.
 
 Examples:
 
-- CEO Agent
-- Marketing Agent
-- Finance Agent
-- Product Agent
-- Operations Agent
+- MarketingAgent
+- FinanceAgent
+- ProductAgent
+- OperationsAgent
 
-Experts provide specialized capabilities to agents.
+An **Expert** is a domain-specialist component. It provides the methodology and reasoning required for a specific area of work, determines the context it needs, selects the Functions it requires, interprets their results, and produces a structured result.
 
 Examples:
 
-- Marketing Expert
-- Copywriting Expert
-- SEO Expert
-- Finance Expert
-- Accounting Expert
-- Product Expert
-- Laravel Expert
-- UX Expert
+- SocialMediaExpert
+- CopywritingExpert
+- SEOExpert
+- AccountingExpert
+- ProductExpert
+- LaravelExpert
+- UXExpert
 
-Agents and experts must have explicit:
+The runtime relationship is:
 
-- identity;
-- role;
-- instructions;
-- capabilities;
-- permissions;
-- model configuration;
-- knowledge access;
-- approval requirements;
-- execution history.
+    Agent
+      |
+      v
+    Expert
+      |
+      v
+    Function / Application Service
+      |
+      v
+    Eloquent Models / External Services
 
-An agent must never gain authority merely because an AI model can technically call a tool.
+For example:
+
+    MarketingAgent
+      |
+      v
+    SocialMediaExpert
+      |
+      +-- GetBusiness
+      +-- GetProducts
+      +-- GetTemplates
+      +-- CreateCampaign
+      +-- CreateSeries
+      +-- CreatePost
+      |
+      v
+    CR8OR state / approved external services
+
+### Runtime responsibilities
+
+**Agents**
+
+- understand and route the high-level request;
+- select and coordinate Experts;
+- coordinate multi-expert workflows;
+- enforce the Agent's available authority and capability boundaries;
+- combine Expert results into the requested outcome.
+
+**Experts**
+
+- apply domain-specific methodology;
+- determine required context;
+- invoke appropriate Functions or application services;
+- reason over authorized enterprise context;
+- produce structured domain results.
+
+**Functions / Application Services**
+
+- perform concrete operations;
+- enforce application/domain rules;
+- read or mutate authoritative business state;
+- invoke approved external execution services;
+- remain deterministic and independently testable where practical.
+
+### Persistence boundary
+
+Agents and Experts are not themselves Eloquent models by default.
+
+If CR8OR needs to persist information about an Agent or its operation, that persistence belongs to separate models such as:
+
+- Agent Execution
+- Agent Decision
+- Agent Assignment
+- Agent Permission
+- Approval
+- Audit Entry
+
+This keeps executable behavior separate from persistent business state.
+
+An Agent must never gain authority merely because an AI model can technically call a tool.
 
 ## Core Business Lifecycle
 
@@ -588,19 +653,29 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 
 **Objective**
 
-Create the persistent AI-agent operating model.
+Create the CR8OR Agent and Expert runtime architecture together with the persistent governance and execution records that surround it.
 
 **Scope**
 
-- Agents.
-- Experts.
-- Instructions.
-- Capabilities.
-- Agent permissions.
+- Agent PHP classes.
+- Expert PHP classes.
+- Agent instructions and runtime configuration.
+- Capabilities and tools.
+- Agent permissions and authority.
 - Knowledge access.
+- Agent assignments.
 - Agent execution records.
+- Agent decision records.
 - Approval requirements.
 - Audit records.
+
+**Architecture boundary**
+
+- Agents and Experts are executable PHP classes.
+- Functions and application/domain services provide concrete capabilities.
+- Eloquent models persist business state and governance/execution records.
+- MCP exposes authorized capabilities to AI clients without duplicating business logic.
+- Agents and Experts do not receive direct database access merely because they are AI runtime components.
 
 **Completion Criteria**
 
@@ -1113,6 +1188,9 @@ Important configuration must remain environment-specific and secrets must never 
 ```
 cr8or/
 ├── app/
+│   ├── Agents/
+│   ├── Experts/
+│   ├── Functions/
 │   ├── Actions/
 │   ├── Domain/
 │   ├── Filament/
@@ -1138,7 +1216,7 @@ cr8or/
 └── ...
 ```
 
-The exact internal directory structure may evolve as bounded contexts are implemented. Domain boundaries must remain explicit even if the underlying Laravel organization changes.
+The exact internal directory structure may evolve as bounded contexts are implemented. The Agents/, Experts/ and Functions/ directories represent the intended runtime separation and may be reorganized as implementation details evolve. Domain boundaries must remain explicit even if the underlying Laravel organization changes.
 
 ## Development Workflow
 
