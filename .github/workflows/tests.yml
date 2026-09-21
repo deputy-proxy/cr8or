@@ -34,11 +34,5 @@ jobs:
       - name: Setup Application
         run: composer setup
 
-      - name: Fix User formatting
-        run: vendor/bin/pint app/Models/User.php
-
-      - name: Show User formatting diff
-        run: git diff -- app/Models/User.php
-
       - name: Run CI Checks
         run: composer ci:check
