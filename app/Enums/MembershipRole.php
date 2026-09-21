@@ -8,4 +8,3 @@ enum MembershipRole: string
     case Admin = 'admin';
     case Member = 'member';
 }
-
