@@ -1,14 +1,16 @@
 # CR8OR Domain Model
 
-This document defines the initial bounded domains and known conceptual entities. It deliberately avoids database columns, migrations and APIs before relevant product work is implemented.
+This document defines the initial bounded domains and known conceptual entities. It distinguishes persistent business/governance records from executable runtime components and deliberately avoids database columns, migrations and APIs before relevant product work is implemented.
 
 ## Identity & Access
 
 **Purpose:** Establish identity, organization isolation and authority.
 
-**Core entities:** Organization, User, Membership, Role, Permission, Agent Identity, Agent Capability, Access Policy, Approval Authority.
+**Persistent entities:** Organization, User, Membership, Role, Permission, Access Policy, Approval Authority.
 
-**Relationships:** Users belong to organizations through memberships. Roles grant permissions. Agent identities operate within an organization and receive explicitly assigned capabilities.
+**Runtime concepts:** Agent identity and Agent capability are runtime/governance concepts and are represented through separate persistent assignment, descriptor, permission and capability records where implementation requires persistence.
+
+**Relationships:** Users belong to organizations through memberships. Roles grant permissions. Agent identities operate within an organization and receive explicitly assigned capabilities and permissions.
 
 **Ownership:** CR8OR.
 
@@ -22,7 +24,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Represent the enterprise being operated.
 
-**Core entities:** Enterprise, Enterprise Context, Vision, Mission, Goal, KPI, Product, Customer, Partner, Competitor, Enterprise Decision.
+**Persistent entities:** Enterprise, Enterprise Context, Vision, Mission, Goal, KPI, Product, Customer, Partner, Competitor, Enterprise Decision.
 
 **Relationships:** An enterprise has structured context, strategic direction, operational entities and recorded decisions. Enterprise Context is a dedicated one-to-one contextual record rather than part of enterprise identity.
 
@@ -34,19 +36,29 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Deferred:** Detailed CRM, product catalog and KPI calculation behavior.
 
-## Agents
+## Agent Runtime & Governance
 
-**Purpose:** Represent persistent AI operational roles and controlled execution.
+**Purpose:** Define executable Agents and Experts and the persistent records required to register, assign, authorize and audit them.
 
-**Core entities:** Agent, Expert, Agent Instruction, Capability, Tool, Agent Permission, Agent Assignment, Agent Execution, Agent Decision, Agent Memory / Context Reference.
+**Runtime components:** Agent PHP classes, Expert PHP classes, Functions / application services.
 
-**Relationships:** Agents receive instructions, capabilities, permissions and assignments. Experts provide specialized reasoning. Executions and decisions record agent activity.
+**Persistent entities:** AgentDescriptor, ExpertDescriptor, Agent Instruction, Agent Permission, Agent Assignment, Agent Execution, Agent Decision, Agent Memory / Context Reference.
+
+**Relationships:** An AgentDescriptor identifies an Agent runtime class. An ExpertDescriptor identifies an Expert runtime class. Agents coordinate Experts. Runtime components request capabilities through controlled application boundaries. Persistent execution, decision, assignment, permission and governance records capture the operational state around that runtime.
 
 **Ownership:** CR8OR.
 
-**Known invariants:** An agent cannot acquire authority merely because a model can invoke a tool.
+**Known invariants:**
+- Runtime Agents and Experts are not Eloquent models.
+- Descriptors identify runtime classes but do not replace them.
+- Runtime metadata and behavior are authoritative in PHP code.
+- Persistent descriptors must not become a duplicate editable source of runtime truth.
+- Agent or Expert invocation never grants authority by itself.
+- State-changing operations remain subject to server-side authorization and approval policy.
 
-**Deferred:** Model-provider abstraction and final execution schema.
+**Phase 2 boundary:** Agent/Expert runtime contracts, descriptor registration, governance records, capability boundaries, assignments, permissions, executions, decisions and approvals are introduced incrementally.
+
+**Deferred:** Final runtime interfaces, provider abstraction, memory implementation, delegation protocol and detailed execution schema.
 
 ## Knowledge
 
@@ -191,8 +203,9 @@ This document defines the initial bounded domains and known conceptual entities.
 ## Cross-Domain Rules
 
 - Identity & Access establishes authority used by every other domain.
-- Enterprise is the principal operational context for agents and work.
-- Agents consume authorized knowledge and strategy but do not own those domains.
+- Enterprise is the principal operational context for Agents and work.
+- Agents and Experts consume authorized knowledge and strategy but do not own those domains.
+- Runtime components invoke controlled capabilities rather than directly mutating business records.
 - Governance constrains mutations in every domain.
 - Integrations record external execution without transferring business-state ownership.
 - Reporting derives from domain state and does not become a source of truth.
@@ -200,4 +213,4 @@ This document defines the initial bounded domains and known conceptual entities.
 
 ## Deliberately Deferred
 
-No database columns, migrations, REST endpoints, MCP schemas, queue payloads or provider-specific APIs are defined here.
+No database columns, migrations, REST endpoints, MCP schemas, queue payloads or provider-specific APIs are defined here unless introduced by the relevant implementation phase.
