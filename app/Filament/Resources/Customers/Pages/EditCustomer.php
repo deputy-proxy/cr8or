@@ -8,8 +8,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 class EditCustomer extends EditRecord {
  protected static string $resource=CustomerResource::class;
  protected function mutateFormDataBeforeSave(array $data):array{
-  /** @var Customer $record */ $record=$this->record;
-  if((int)$data['${parent}_id']!==$record->${parent}_id){throw new AuthorizationException('Cannot reassign this record.');}
+  /** @var Customer $record */
+  $record=$this->record;
+  if((int)$data['enterprise_id']!==$record->enterprise_id){throw new AuthorizationException('Cannot reassign this record.');}
   return $data;
  }
  protected function getHeaderActions():array{return [DeleteAction::make()];}
