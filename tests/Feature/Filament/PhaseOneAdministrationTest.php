@@ -23,6 +23,7 @@ it('allows owners to create enterprise records and members to view them', functi
     $member = User::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $org]);
     Membership::factory()->create(['user_id' => $member, 'organization_id' => $org]);
+    Enterprise::factory()->create(['organization_id' => $org]);
     $this->actingAs($owner);
     expect(ProductResource::canCreate())->toBeTrue();
     $this->actingAs($member);
