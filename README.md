@@ -704,25 +704,32 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 
 **Objective**
 
-Create the CR8OR Agent and Expert runtime architecture together with the persistent governance and execution records that surround it.
+Establish the Agent and Expert runtime architecture, persistent descriptors, governance model, and administrative discovery interface.
 
 **Scope**
 
-- Agent PHP classes.
-- Expert PHP classes.
+- Agent runtime contracts and PHP classes.
+- Expert runtime contracts and PHP classes.
+- `AgentDescriptor` and `ExpertDescriptor` persistent registry records.
+- Runtime class registration and resolution.
+- Agent and Expert metadata contracts.
+- Read-only Filament Agent/Expert catalog and glossary.
 - Agent instructions and runtime configuration.
-- Capabilities and tools.
+- Capabilities and Functions.
 - Agent permissions and authority.
-- Knowledge access.
 - Agent assignments.
 - Agent execution records.
 - Agent decision records.
 - Approval requirements.
 - Audit records.
+- Runtime metadata remains authoritative in PHP classes and is not duplicated as editable descriptor fields.
 
 **Architecture boundary**
 
-- Agents and Experts are executable PHP classes.
+- Agents and Experts are executable PHP classes, not Eloquent models.
+- AgentDescriptor and ExpertDescriptor records register runtime classes and support discovery, glossary presentation, and persistent governance.
+- Runtime PHP classes are authoritative for identity, description, responsibilities, capabilities, required context, methodology, and executable behavior.
+- Filament displays runtime metadata read-only rather than maintaining a second editable copy.
 - Functions and application/domain services provide concrete capabilities.
 - Eloquent models persist business state and governance/execution records.
 - MCP exposes authorized capabilities to AI clients without duplicating business logic.
@@ -730,11 +737,16 @@ Create the CR8OR Agent and Expert runtime architecture together with the persist
 
 **Completion Criteria**
 
-- Agents have explicit identities and roles.
-- Capabilities are permission-controlled.
-- Agent actions are auditable.
-- Sensitive operations can require approval.
-- Agent execution history is persisted.
+- Agents and Experts have explicit runtime contracts.
+- Runtime implementations are PHP classes, not Eloquent models.
+- Descriptors can register and resolve runtime classes.
+- Runtime classes expose authoritative metadata.
+- Filament can display runtime metadata read-only.
+- Descriptor records do not become a second source of truth for runtime behavior.
+- Agent authority is explicitly governed.
+- Agent and Expert executions and decisions are auditable.
+- Relevant authorization and regression tests pass.
+- CI is green.
 
 ### Phase 3 — Strategy, Knowledge & Work
 
