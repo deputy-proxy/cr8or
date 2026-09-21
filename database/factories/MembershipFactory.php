@@ -41,3 +41,4 @@ class MembershipFactory extends Factory
         ]);
     }
 }
+

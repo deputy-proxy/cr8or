@@ -49,3 +49,4 @@ class Membership extends Model
         ];
     }
 }
+

@@ -40,3 +40,4 @@ class Organization extends Model
             ->withTimestamps();
     }
 }
+
