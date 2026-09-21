@@ -31,6 +31,14 @@ class Organization extends Model
     }
 
     /**
+     * @return HasMany<Enterprise, $this>
+     */
+    public function enterprises(): HasMany
+    {
+        return $this->hasMany(Enterprise::class);
+    }
+
+    /**
      * @return BelongsToMany<User, $this>
      */
     public function members(): BelongsToMany
