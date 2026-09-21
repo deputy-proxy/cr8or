@@ -491,7 +491,7 @@ The roadmap is product-oriented. Technical implementation issues, tickets and te
 
 ### Phase 0 — Foundation & Architecture
 
-**Status: In progress**
+**Status: Complete**
 
 **Objective**
 
@@ -723,7 +723,7 @@ The repository is currently a **fresh CR8OR Laravel + Filament installation** an
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
-| Phase 0 — Foundation & Architecture | **In progress** | Fresh application and repository foundation. Architecture is being established before domain implementation. |
+| Phase 0 — Foundation & Architecture | **Complete** | Fresh application, CI, architecture specifications, development rules, and application-layer boundaries are verified. Phase 1 remains unimplemented. |
 | Phase 1 — Identity, Organizations & Business Context | **Not started** | No product capability should be considered complete yet. |
 | Phase 2 — Agents, Experts & Governance | **Not started** | Architecture defined, implementation pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
@@ -1185,11 +1185,11 @@ The current product direction is to establish **CR8OR Core as the authoritative 
 
 The immediate priority is:
 
-**Phase 0 — Foundation & Architecture**
+**Phase 1 — Identity, Organizations & Business Context**
 
 ### Immediate Objective
 
-Establish the clean Laravel + Filament foundation, repository rules, CI, documentation structure and domain architecture before implementing business functionality.
+Begin implementation of the first product domain while preserving the verified Phase 0 foundation.
 
 ### Current Dependencies
 
@@ -1213,7 +1213,7 @@ Establish the clean Laravel + Filament foundation, repository rules, CI, documen
 
 ### Next Product Milestone
 
-A verified CR8OR foundation in which organization, business, authorization, application-service, event/job and documentation boundaries are established and ready for the first product domain.
+Phase 1 — Identity, Organizations & Business Context, implemented on top of the verified Phase 0 foundation.
 
 ## License
 
