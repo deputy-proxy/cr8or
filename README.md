@@ -1,6 +1,6 @@
 # CR8OR
 
-CR8OR is an AI-native business operating platform that provides a persistent system of record for businesses, together with a controlled MCP interface through which AI agents can understand business context, make decisions, request actions, and execute approved workflows.
+CR8OR is an AI-native business operating platform that provides a persistent system of record for enterprises, together with a controlled MCP interface through which AI agents can understand enterprise context, make decisions, request actions, and execute approved workflows.
 
 CR8OR is designed to separate **business state**, **AI reasoning**, **workflow orchestration**, and **external execution**. Laravel owns the authoritative business state and application rules; AI agents own reasoning and decisions; MCP exposes controlled capabilities to AI clients; n8n orchestrates asynchronous integrations; specialized external services perform media, publishing, development, and other execution tasks.
 
@@ -9,7 +9,7 @@ CR8OR is designed to separate **business state**, **AI reasoning**, **workflow o
 CR8OR is:
 
 - A business operating system built around explicit domain boundaries.
-- A persistent system of record for business context, strategy, work, content, media, finance, integrations, and operational history.
+- A persistent system of record for enterprise context, strategy, work, content, media, finance, integrations, and operational history.
 - An AI-native platform in which agents operate through controlled capabilities rather than direct database access.
 - An MCP server and application interface for AI agents and AI clients.
 - A workflow and governance layer connecting human decisions, AI decisions, application actions, background jobs, and external services.
@@ -45,11 +45,11 @@ The project is governed by the following principles:
 
 **Human User**
 
-Owns business decisions, approvals, permissions, and organizational authority. Humans can inspect, approve, reject, correct, and override appropriate AI-generated work.
+Owns enterprise decisions, approvals, permissions, and organizational authority. Humans can inspect, approve, reject, correct, and override appropriate AI-generated work.
 
 **AI Agent**
 
-Performs a defined operational role such as CEO, Marketing, Finance, Product, Operations, or a specialized expert. Agents reason over authorized business context and invoke controlled CR8OR capabilities.
+Performs a defined operational role such as CEO, Marketing, Finance, Product, Operations, or a specialized expert. Agents reason over authorized enterprise context and invoke controlled CR8OR capabilities.
 
 **AI Expert**
 
@@ -81,10 +81,10 @@ The product is organized around explicit domain boundaries rather than an uncont
 
 Organizations provide the primary isolation boundary for business data and operational authority.
 
-### Business
+### Enterprise
 
-- Business
-- Business Context
+- Enterprise
+- Enterprise Context
 - Vision
 - Mission
 - Goal
@@ -93,9 +93,9 @@ Organizations provide the primary isolation boundary for business data and opera
 - Customer
 - Partner
 - Competitor
-- Business Decision
+- Enterprise Decision
 
-A Business represents the operational entity an agent is helping to run. Business Context provides the structured information agents need without requiring them to reconstruct the business from unrelated records.
+An Enterprise represents the operational entity an agent is helping to run. Enterprise Context provides the structured information agents need without requiring them to reconstruct the enterprise from unrelated records.
 
 ### Agents
 
@@ -123,7 +123,7 @@ Agents are defined by role, instructions, available capabilities, permissions, m
 - Reference
 - Knowledge Version
 
-Knowledge provides durable business context. The AI model is not the authoritative storage location for business knowledge.
+Knowledge provides durable enterprise context. The AI model is not the authoritative storage location for business knowledge.
 
 ### Strategy
 
@@ -325,13 +325,13 @@ Resources provide authorized context to AI clients.
 
 Examples:
 
-- `business://{business}`
-- `business://{business}/context`
-- `business://{business}/strategy`
-- `business://{business}/marketing`
-- `business://{business}/finance`
-- `business://{business}/kpis`
-- `business://{business}/projects`
+- `enterprise://{enterprise}`
+- `enterprise://{enterprise}/context`
+- `enterprise://{enterprise}/strategy`
+- `enterprise://{enterprise}/marketing`
+- `enterprise://{enterprise}/finance`
+- `enterprise://{enterprise}/kpis`
+- `enterprise://{enterprise}/projects`
 
 ### MCP Tools
 
@@ -339,7 +339,7 @@ Tools expose explicit capabilities.
 
 Examples:
 
-- `get_business_context`
+- `get_enterprise_context`
 - `create_campaign`
 - `create_content_item`
 - `request_asset`
@@ -408,7 +408,7 @@ An agent must never gain authority merely because an AI model can technically ca
 
 The operational lifecycle of an AI-assisted business action is:
 
-**Business Context**
+**Enterprise Context**
 ↓
 **Agent Intent**
 ↓
@@ -448,7 +448,7 @@ CR8OR separates four responsibilities:
 
 **Reason**
 
-AI agents interpret business context and determine what should happen.
+AI agents interpret enterprise context and determine what should happen.
 
 **Control**
 
@@ -502,7 +502,7 @@ The repository has completed its foundation phase and is now ready to begin the 
 The following remain product-roadmap work rather than completed runtime functionality:
 
 - Organizations and memberships.
-- Business and business context.
+- Enterprise and enterprise context.
 - Runtime agents and experts.
 - Agent capabilities, authority and governance runtime.
 - Strategy, knowledge and work domains.
@@ -519,9 +519,9 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Immediate Priority
 
-**Phase 1 — Identity, Organizations & Business Context**
+**Phase 1 — Identity, Organizations & Enterprise Context**
 
-The next implementation work should establish organization isolation, memberships, authorization, business identity and persisted business context before runtime agents, MCP tools or multi-agent workflows are introduced.
+The next implementation work should establish organization isolation, memberships, authorization, enterprise identity and persisted enterprise context before runtime agents, MCP tools or multi-agent workflows are introduced.
 
 ## Development Roadmap
 
@@ -556,7 +556,7 @@ Establish the fresh Laravel + Filament application and the architectural foundat
 - Development workflow is documented.
 - The repository baseline follows the agreed foundation conventions.
 
-### Phase 1 — Identity, Organizations & Business Context
+### Phase 1 — Identity, Organizations & Enterprise Context
 
 **Status: Not started**
 
@@ -568,11 +568,11 @@ Create the authoritative organization, user, business and business-context found
 
 - Organizations and memberships.
 - Users, roles and permissions.
-- Businesses.
-- Business context.
+- Enterprises.
+- Enterprise context.
 - Products, customers and partners.
 - Goals and KPIs.
-- Business decisions.
+- Enterprise decisions.
 
 **Completion Criteria**
 
@@ -660,7 +660,7 @@ Expose CR8OR as a controlled AI operating interface.
 
 **Completion Criteria**
 
-- MCP clients can retrieve authorized business context.
+- MCP clients can retrieve authorized enterprise context.
 - MCP tools invoke application services.
 - MCP cannot bypass authorization.
 - Tool execution is auditable.
@@ -761,7 +761,7 @@ The repository is currently a **fresh CR8OR Laravel + Filament installation** an
 | Original phase | Current status | Reconciliation |
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Fresh application, CI, architecture specifications, development rules, and application-layer boundaries are verified. Phase 1 remains unimplemented. |
-| Phase 1 — Identity, Organizations & Business Context | **Not started** | No product capability should be considered complete yet. |
+| Phase 1 — Identity, Organizations & Enterprise Context | **Not started** | No product capability should be considered complete yet. |
 | Phase 2 — Agents, Experts & Governance | **Not started** | Architecture defined, implementation pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
@@ -960,7 +960,7 @@ Candidates for immutable or append-only treatment include:
 
 Candidates for versioning include:
 
-- business context;
+- enterprise context;
 - strategies;
 - agent instructions;
 - policies;
@@ -1044,7 +1044,7 @@ External operations must consider idempotency, retries, timeouts and partial fai
 
 CR8OR Core is initially focused on business operations rather than its own commerce layer.
 
-If commercial functionality is introduced later, it must remain separate from the authority model and must not allow commercial relationships to corrupt business decisions, recommendations or governance.
+If commercial functionality is introduced later, it must remain separate from the authority model and must not allow commercial relationships to corrupt enterprise decisions, recommendations or governance.
 
 ## API & Integrations
 
@@ -1222,7 +1222,7 @@ The current product direction is to establish **CR8OR Core as the authoritative 
 
 The immediate priority is:
 
-**Phase 1 — Identity, Organizations & Business Context**
+**Phase 1 — Identity, Organizations & Enterprise Context**
 
 ### Immediate Objective
 
@@ -1250,7 +1250,7 @@ Begin implementation of the first product domain while preserving the verified P
 
 ### Next Product Milestone
 
-Phase 1 — Identity, Organizations & Business Context, implemented on top of the verified Phase 0 foundation.
+Phase 1 — Identity, Organizations & Enterprise Context, implemented on top of the verified Phase 0 foundation.
 
 ## License
 
