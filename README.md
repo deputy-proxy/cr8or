@@ -600,44 +600,61 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed its foundation phase and is now ready to begin the first business-domain implementation.
+The repository has completed **Phase 0 — Foundation & Architecture** and **Phase 1 — Identity, Organizations & Enterprise Context**. The current codebase is a working Phase 1 foundation and is preparing to begin Phase 2.
 
 ### Implemented
 
 - Laravel 13 application foundation.
 - Filament 5 administration foundation.
 - Repository conventions and issue-driven development workflow.
-- GitHub Actions CI and configured PHP/frontend validation.
-- Core architecture, domain, governance, MCP, integration and security documentation.
+- GitHub Actions CI with PHP 8.4, Node 22, lint, PHPStan and automated tests.
+- Core architecture, domain, governance, MCP and integration specifications.
 - Repository-level AI development rules in `.github/AI_DEVELOPMENT_RULES.md`.
-- The verified baseline currently contains the Laravel/authentication foundation and the `User` model.
+- Organization and membership identity.
+- Server-side organization and enterprise authorization.
+- Enterprise ownership and one-to-one enterprise context.
+- Phase 1 enterprise records: products, customers, partners, goals, KPIs and enterprise decisions.
+- Filament administration for the implemented Phase 1 domain.
+- Historical enterprise decision actor identity and decision timestamps.
 
-### Not Yet Implemented
+### Intentionally Not Yet Implemented
 
 The following remain product-roadmap work rather than completed runtime functionality:
 
-- Organizations and memberships.
-- Enterprise and enterprise context.
-- Runtime agents and experts.
-- Agent and Expert descriptors.
+- Runtime Agents and Experts.
+- AgentDescriptor and ExpertDescriptor registry/runtime resolution.
 - Agent capabilities, authority and governance runtime.
 - Strategy, knowledge and work domains.
 - MCP server implementation and tool/resource runtime.
-- Marketing, media and publishing domains.
+- Marketing, media and publishing domains inside CR8OR Core.
 - Finance and business operations.
 - Multi-agent orchestration.
 
-This distinction is deliberate. The repository is a verified foundation plus architectural specification, not a partially implemented version of every future domain.
+Existing external CR8OR services such as media, n8n, Canva or publishing infrastructure do not constitute completion of the corresponding CR8OR Core product phases.
+
+### Phase 1 Audit Reconciliation
+
+The Phase 1 audit confirmed that the domain foundation, organization isolation, authorization and Filament administration are substantially implemented. The audit also identified documentation and boundary work that should be resolved before Phase 2 grows the Agent/MCP surface.
+
+Current follow-up items are:
+
+- reconcile the Enterprise Context Filament table with the actual model fields;
+- explicitly define whether enterprise decisions are mutable, append-only or versioned;
+- establish reusable application/domain capability boundaries before Agents and MCP can invoke business mutations;
+- keep authorization independent from UI visibility;
+- align all authoritative documentation and CI instructions with the repository's actual commands and files.
+
+These are not evidence that Phase 1 is absent. They are hardening items identified during the Phase 1 audit and should be tracked as implementation work before or alongside the relevant Phase 2 boundary work.
 
 ### Foundation Integrity
 
-During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. The lesson is operational: required foundation files must be protected by automated integrity validation rather than relying on human memory or review alone.
+During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. Required foundation files should therefore be protected by automated integrity validation rather than relying on human memory or review alone.
 
 ### Immediate Priority
 
-**Phase 1 — Identity, Organizations & Enterprise Context**
+**Phase 2 — Agents, Experts & Governance**
 
-The next implementation work should establish organization isolation, memberships, authorization, enterprise identity and persisted enterprise context before runtime agents, MCP tools or multi-agent workflows are introduced.
+The next implementation work should establish the Agent and Expert runtime and governance layer on top of the completed Phase 1 foundation, while preserving the Phase 1 authorization and historical-integrity boundaries.
 
 ## Development Roadmap
 
@@ -895,13 +912,13 @@ Allow multiple specialized agents to collaborate through a shared business opera
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit. The Phase 1 domain foundation is implemented with server-side authorization, organization isolation, historical enterprise decisions, and Filament administration.
+The repository has completed the Phase 1 implementation and audit. Phase 0 and Phase 1 are complete at the product-roadmap level; the audit identified a small set of hardening and documentation tasks that should be resolved as the project moves into Phase 2.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
-| Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications, development rules, and application-layer boundaries remain verified. |
-| Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions, and Filament administration are implemented and validated. |
-| Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert architecture, descriptors, registry/glossary, and governance model defined; implementation pending. |
+| Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
+| Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
+| Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert components, descriptors, registry/glossary and governance implementation are pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
@@ -917,10 +934,11 @@ The repository has completed the Phase 1 implementation and audit. The Phase 1 d
 - Existing CR8OR services do not automatically constitute completed CR8OR Core functionality.
 - A capability is not complete merely because supporting infrastructure exists.
 - The README must describe the actual repository state.
+- Audit findings must be resolved or explicitly accepted as technical debt before they become hidden architectural assumptions.
 
 ## Existing Implementation Milestones
 
-The initial repository is intentionally being treated as a greenfield foundation.
+The repository is no longer a foundation-only greenfield baseline. Phase 0 and Phase 1 have been implemented and audited.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
@@ -932,16 +950,21 @@ They must not be interpreted as a new phase numbering system unless the product 
 
 ## Authoritative Specifications
 
-The following documents will become authoritative as they are introduced:
+The following documents are authoritative where they exist and are applicable to the current implementation:
 
 - `docs/domain-model.md` — core entities and domain boundaries.
 - `docs/architecture.md` — application and integration architecture.
 - `docs/mcp.md` — MCP resources, tools, authentication and contracts.
 - `docs/agents.md` — agent and expert runtime architecture, descriptors and governance.
 - `docs/governance.md` — permissions, approvals and auditability.
+
+The following documentation areas are planned or may require creation/reconciliation as their implementation becomes authoritative:
+
 - `docs/integrations.md` — external service boundaries and contracts.
 - `docs/implementation-decisions.md` — important architectural decisions.
 - `docs/security.md` — security and authorization requirements.
+
+The README remains the product roadmap and current-state reconciliation document. More specific technical specifications take precedence for their own subject areas, provided they do not silently contradict approved product decisions.
 
 ### Specification Authority
 
@@ -980,27 +1003,56 @@ No important architectural or product decision should exist only in an issue com
 
 ## Quality Gates
 
-The exact commands will be aligned with the repository's GitHub Actions configuration once CI is established.
+The repository's current CI contract is defined by `.github/workflows/tests.yml` and the Composer scripts in `composer.json`.
 
-**Lint**
+### Setup
 
-`vendor/bin/pint --test`
+`composer setup`
 
-**Static Analysis**
+This installs PHP dependencies, prepares the environment, migrates the database, installs frontend dependencies and builds the frontend.
 
-PHPStan configuration and command will be defined as part of the repository CI foundation.
+### Lint
 
-**Tests**
+`composer lint:check`
+
+Equivalent to the configured Laravel Pint test command.
+
+### Static Analysis
+
+`composer types:check`
+
+Runs PHPStan/Larastan using the repository's `phpstan.neon` configuration.
+
+### Tests
 
 `php artisan test`
 
-**Frontend / Build**
+The test suite is also included in `composer test` after lint and static analysis.
 
-The repository must validate its configured frontend build through CI where applicable.
+### Full Local Validation
 
-**Full Validation**
+`composer test`
 
-The GitHub Actions workflow is the authoritative validation environment.
+This runs:
+
+1. configuration clearing;
+2. lint;
+3. static analysis;
+4. the full Laravel test suite.
+
+### CI Validation
+
+GitHub Actions runs:
+
+`composer setup`
+
+followed by:
+
+`composer ci:check`
+
+The `ci:check` script invokes the repository's complete test sequence. GitHub Actions is the authoritative validation environment.
+
+> **Dependency-install note:** the current `composer setup` script uses `npm install`, while the repository development rules recommend reproducible dependency installation with `npm ci`. This should be reconciled deliberately rather than documented as if the two were already identical.
 
 ### Completion Requirement
 
@@ -1107,6 +1159,12 @@ Candidates for versioning include:
 - prompts;
 - media assets;
 - specifications.
+
+### Phase 1 Enterprise Decisions
+
+Phase 1 enterprise decisions currently preserve the actor identity and decision timestamp at creation time. The substantive decision content remains mutable in the current implementation.
+
+Before Agent and MCP workflows depend on enterprise decisions as durable historical evidence, CR8OR must explicitly choose and implement the required historical model for those records: mutable, append-only, versioned, or a combination with immutable decision events.
 
 ### Snapshot Rules
 
@@ -1242,28 +1300,28 @@ Important configuration must remain environment-specific and secrets must never 
 | `.env` | Local/runtime environment configuration |
 | `config/` | Application configuration |
 | `.github/workflows/` | CI and automated validation |
-| `composer.json` | PHP dependencies and scripts |
+| `composer.json` | PHP dependencies and project validation scripts |
 | `package.json` | Frontend dependencies and scripts |
-| `phpstan.neon*` | Static-analysis configuration, when introduced |
-| `pint.json` | Formatting/lint configuration, when introduced |
+| `phpstan.neon` | PHPStan/Larastan static-analysis configuration |
+| `pint.json` | Laravel Pint formatting/lint configuration |
 
 ## Repository Structure
+
+The repository currently contains the implemented Phase 0/Phase 1 Laravel structure. The following directories represent the current and planned organization of the codebase:
 
 ```
 cr8or/
 ├── app/
-│   ├── Agents/
-│   ├── Experts/
-│   ├── Functions/
-│   ├── Actions/
-│   ├── Domain/
-│   ├── Filament/
-│   ├── Jobs/
-│   ├── Models/
-│   │   ├── AgentDescriptor.php
-│   │   └── ExpertDescriptor.php
-│   ├── Policies/
-│   ├── Services/
+│   ├── Actions/          # implemented application actions, where applicable
+│   ├── Filament/         # implemented administrative UI
+│   ├── Models/           # implemented Eloquent domain models
+│   ├── Policies/         # implemented authorization policies
+│   ├── Agents/           # planned Phase 2 runtime components
+│   ├── Experts/          # planned Phase 2 runtime components
+│   ├── Functions/        # planned capability/runtime boundary
+│   ├── Domain/           # planned/expanding domain-layer organization
+│   ├── Jobs/             # planned/expanding asynchronous application work
+│   ├── Services/         # planned/expanding application services
 │   └── ...
 ├── bootstrap/
 ├── config/
@@ -1282,7 +1340,7 @@ cr8or/
 └── ...
 ```
 
-The exact internal directory structure may evolve as bounded contexts are implemented. The Agents/, Experts/ and Functions/ directories represent the intended runtime separation and may be reorganized as implementation details evolve. Domain boundaries must remain explicit even if the underlying Laravel organization changes.
+The exact internal directory structure may evolve as bounded contexts are implemented. Planned Agent, Expert and Function directories represent the intended runtime separation and must not be interpreted as evidence that Phase 2 is already implemented. Domain boundaries must remain explicit even if the underlying Laravel organization changes.
 
 ## Development Workflow
 
