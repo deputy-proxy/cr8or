@@ -674,7 +674,7 @@ Establish the fresh Laravel + Filament application and the architectural foundat
 
 ### Phase 1 — Identity, Organizations & Enterprise Context
 
-**Status: Not started**
+**Status: Complete**
 
 **Objective**
 
@@ -697,6 +697,7 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 - Authorization is server-side.
 - Core domain invariants are tested.
 - Administrative interfaces are operational.
+- Historical enterprise decisions preserve actor identity and decision time.
 
 ### Phase 2 — Agents, Experts & Governance
 
@@ -894,12 +895,12 @@ Allow multiple specialized agents to collaborate through a shared business opera
 
 ## Current Reconciliation
 
-The repository is currently a **fresh CR8OR Laravel + Filament installation** and the implementation roadmap has not yet begun beyond the initial foundation.
+The repository has completed the Phase 1 implementation and audit. The Phase 1 domain foundation is implemented with server-side authorization, organization isolation, historical enterprise decisions, and Filament administration.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
-| Phase 0 — Foundation & Architecture | **Complete** | Fresh application, CI, architecture specifications, development rules, and application-layer boundaries are verified. Phase 1 remains unimplemented. |
-| Phase 1 — Identity, Organizations & Enterprise Context | **Not started** | No product capability should be considered complete yet. |
+| Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications, development rules, and application-layer boundaries remain verified. |
+| Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions, and Filament administration are implemented and validated. |
 | Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert architecture, descriptors, registry/glossary, and governance model defined; implementation pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
@@ -1365,11 +1366,11 @@ The current product direction is to establish **CR8OR Core as the authoritative 
 
 The immediate priority is:
 
-**Phase 1 — Identity, Organizations & Enterprise Context**
+**Phase 2 — Agents, Experts & Governance**
 
 ### Immediate Objective
 
-Begin implementation of the first product domain while preserving the verified Phase 0 foundation.
+Begin implementation of the Agent and Expert runtime and governance layer on top of the completed Phase 1 foundation.
 
 ### Current Dependencies
 
@@ -1393,7 +1394,7 @@ Begin implementation of the first product domain while preserving the verified P
 
 ### Next Product Milestone
 
-Phase 1 — Identity, Organizations & Enterprise Context, implemented on top of the verified Phase 0 foundation.
+Phase 2 — Agents, Experts & Governance, implemented on top of the completed Phase 1 foundation.
 
 ## License
 
