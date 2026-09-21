@@ -54,4 +54,22 @@ class Enterprise extends Model
     {
         return $this->hasMany(Partner::class);
     }
+
+    /** @return HasMany<Goal, $this> */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    /** @return HasMany<Kpi, $this> */
+    public function kpis(): HasMany
+    {
+        return $this->hasMany(Kpi::class);
+    }
+
+    /** @return HasMany<EnterpriseDecision, $this> */
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(EnterpriseDecision::class);
+    }
 }
