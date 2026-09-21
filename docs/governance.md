@@ -12,7 +12,7 @@ Agents operate only within explicit assignments, capabilities and permissions. R
 
 ## Roles and Permissions
 
-Roles group permissions for an organization. Permissions define capabilities an actor may perform within an applicable scope. The final role hierarchy and permission catalogue are deferred until Identity & Access is implemented.
+Membership is the authoritative user-to-organization authority record. Phase 1 defines the membership roles `owner`, `admin`, and `member`. Owners may manage memberships; admins may manage member-level memberships but cannot manage privileged memberships; members cannot manage memberships. Membership access is organization-scoped and enforced server-side by a native Laravel policy. The broader permission catalogue and role hierarchy remain deferred.
 
 ## Approval Requirements
 

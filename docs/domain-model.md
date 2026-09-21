@@ -14,7 +14,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Organization isolation is mandatory. Authorization is enforced server-side.
 
-**Deferred:** Final role hierarchy, permission catalogue and tenancy details.
+**Phase 1 implementation:** Membership is the authoritative user-to-organization link. Membership roles are `owner`, `admin`, and `member`, with role checks enforced server-side through native Laravel authorization. The membership record is updated for normal role administration rather than deleted and recreated.
+
+**Deferred:** Full role hierarchy, permission catalogue and broader tenancy infrastructure.
 
 ## Business
 
