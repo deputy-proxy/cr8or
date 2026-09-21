@@ -138,4 +138,3 @@ it('denies membership management across organizations', function () {
 
     expect(Gate::forUser($owner)->allows('update', $foreignMembership))->toBeFalse();
 });
-
