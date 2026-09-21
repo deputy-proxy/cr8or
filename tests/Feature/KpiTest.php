@@ -70,3 +70,4 @@ it('keeps the KPI schema limited to phase 1 definition and recorded value fields
         'id', 'enterprise_id', 'name', 'definition', 'unit', 'target_value', 'current_value', 'status', 'created_at', 'updated_at',
     ]);
 }
+});
