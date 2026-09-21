@@ -99,10 +99,14 @@ An Enterprise represents the operational entity an agent is helping to run. Ente
 
 ### Agent Runtime & Governance
 
-Agents and Experts are **runtime components implemented as PHP classes**, not Eloquent models or persistent business entities.
+Agents and Experts are **runtime components implemented as PHP classes**. They are not themselves Eloquent models or persistent business entities.
+
+CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as a registry and in-app glossary for those runtime components. Descriptors identify the runtime class and expose persistent registry/governance information, while the PHP runtime classes remain authoritative for their identity, description, responsibilities, capabilities, methodology and executable behavior.
 
 - Agent PHP classes
 - Expert PHP classes
+- AgentDescriptor
+- ExpertDescriptor
 - Agent Instruction / configuration
 - Capability
 - Tool
@@ -112,9 +116,9 @@ Agents and Experts are **runtime components implemented as PHP classes**, not El
 - Agent Decision
 - Agent Memory / Context Reference
 
-The runtime classes define how CR8OR reasons and operates. Persistent records associated with those runtime components, such as permissions, assignments, executions, decisions, approvals and audit history, may be represented by Eloquent models where persistence is required.
+The descriptor layer must not duplicate authoritative runtime metadata. Filament can resolve the registered PHP class and display its metadata read-only, providing a living technical glossary derived from the actual implementation.
 
-**Agents orchestrate. Experts specialize. Functions execute. Models persist business state.**
+**Agents orchestrate. Experts specialize. Functions execute. Descriptors register and describe. Models persist business state.**
 
 Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, select appropriate Functions, apply their methodology, and produce structured results. Functions and application/domain services perform concrete operations against authoritative CR8OR state or approved external services.
 
@@ -373,7 +377,53 @@ The MCP surface must remain capability-oriented rather than exposing internal da
 
 ## Agent Architecture
 
-Agents and Experts are executable CR8OR runtime components implemented as PHP classes.
+Agents and Experts are executable CR8OR runtime components implemented as PHP classes. Their persistent counterparts are **AgentDescriptor** and **ExpertDescriptor** records used for registration, discovery, glossary presentation and persistent governance.
+
+### Descriptors
+
+An **AgentDescriptor** identifies an Agent runtime class without becoming the Agent itself.
+
+An **ExpertDescriptor** identifies an Expert runtime class without becoming the Expert itself.
+
+Descriptors should remain deliberately small. They may persist information such as:
+
+- slug;
+- runtime class;
+- enabled/disabled status;
+- registry or governance configuration that genuinely belongs in persistence.
+
+The runtime PHP class is authoritative for:
+
+- name and identity;
+- description and purpose;
+- responsibilities;
+- capabilities;
+- required context;
+- available Functions;
+- methodology;
+- executable behavior.
+
+Filament should resolve the runtime class from the descriptor and display this information **read-only**. This creates an in-app glossary that is generated from the actual implementation rather than maintained as duplicated database content.
+
+The architectural relationship is:
+
+    AgentDescriptor
+      |
+      | runtime_class
+      v
+    Agent PHP class
+      |
+      v
+    ExpertDescriptor
+      |
+      | runtime_class
+      v
+    Expert PHP class
+      |
+      v
+    Functions / Application Services
+
+The descriptor must never become a second source of truth for runtime behavior. Changing the implementation's authoritative metadata or behavior belongs in PHP code, tests and CI, not in an arbitrary editable glossary field.
 
 An **Agent** is an orchestration component. It represents a broad operational domain and is responsible for understanding the request at a high level, selecting the appropriate Experts, coordinating their work, and combining their results.
 
@@ -454,7 +504,7 @@ For example:
 
 ### Persistence boundary
 
-Agents and Experts are not themselves Eloquent models by default.
+Agents and Experts are not themselves Eloquent models. Their descriptors are persistent registry/catalog records, while execution and governance records remain separate persistent entities.
 
 If CR8OR needs to persist information about an Agent or its operation, that persistence belongs to separate models such as:
 
@@ -569,6 +619,7 @@ The following remain product-roadmap work rather than completed runtime function
 - Organizations and memberships.
 - Enterprise and enterprise context.
 - Runtime agents and experts.
+- Agent and Expert descriptors.
 - Agent capabilities, authority and governance runtime.
 - Strategy, knowledge and work domains.
 - MCP server implementation and tool/resource runtime.
@@ -837,7 +888,7 @@ The repository is currently a **fresh CR8OR Laravel + Filament installation** an
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Fresh application, CI, architecture specifications, development rules, and application-layer boundaries are verified. Phase 1 remains unimplemented. |
 | Phase 1 — Identity, Organizations & Enterprise Context | **Not started** | No product capability should be considered complete yet. |
-| Phase 2 — Agents, Experts & Governance | **Not started** | Architecture defined, implementation pending. |
+| Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert architecture, descriptors, registry/glossary, and governance model defined; implementation pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
@@ -873,7 +924,7 @@ The following documents will become authoritative as they are introduced:
 - `docs/domain-model.md` — core entities and domain boundaries.
 - `docs/architecture.md` — application and integration architecture.
 - `docs/mcp.md` — MCP resources, tools, authentication and contracts.
-- `docs/agents.md` — agent and expert model.
+- `docs/agents.md` — agent and expert runtime architecture, descriptors and governance.
 - `docs/governance.md` — permissions, approvals and auditability.
 - `docs/integrations.md` — external service boundaries and contracts.
 - `docs/implementation-decisions.md` — important architectural decisions.
@@ -1196,6 +1247,8 @@ cr8or/
 │   ├── Filament/
 │   ├── Jobs/
 │   ├── Models/
+│   │   ├── AgentDescriptor.php
+│   │   └── ExpertDescriptor.php
 │   ├── Policies/
 │   ├── Services/
 │   └── ...
