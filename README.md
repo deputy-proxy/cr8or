@@ -562,7 +562,7 @@ Establish the fresh Laravel + Filament application and the architectural foundat
 
 **Objective**
 
-Create the authoritative organization, user, business and business-context foundation.
+Create the authoritative organization, user, enterprise and enterprise-context foundation.
 
 **Scope**
 
@@ -577,7 +577,7 @@ Create the authoritative organization, user, business and business-context found
 **Completion Criteria**
 
 - Organization isolation is enforced.
-- Business context can be created and maintained.
+- Enterprise context can be created and maintained.
 - Authorization is server-side.
 - Core domain invariants are tested.
 - Administrative interfaces are operational.
