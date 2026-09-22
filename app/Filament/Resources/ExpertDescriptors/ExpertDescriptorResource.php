@@ -1,23 +1,23 @@
 <?php
 
-namespace AppFilamentResourcesExpertDescriptors;
+namespace App\Filament\Resources\ExpertDescriptors;
 
-use AppExpertsExpert;
-use AppFilamentResourcesConcernsScopesPhaseOneRecords;
-use AppFilamentResourcesExpertDescriptorsPagesEditExpertDescriptor;
-use AppFilamentResourcesExpertDescriptorsPagesListExpertDescriptors;
-use AppModelsExpertDescriptor;
+use App\Experts\Expert;
+use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\ExpertDescriptors\Pages\EditExpertDescriptor;
+use App\Filament\Resources\ExpertDescriptors\Pages\ListExpertDescriptors;
+use App\Models\ExpertDescriptor;
 use BackedEnum;
-use FilamentFormsComponentsPlaceholder;
-use FilamentFormsComponentsTextInput;
-use FilamentFormsComponentsToggle;
-use FilamentResourcesResource;
-use FilamentSchemasSchema;
-use FilamentSupportIconsHeroicon;
-use FilamentTablesColumnsIconColumn;
-use FilamentTablesColumnsTextColumn;
-use FilamentTablesTable;
-use IlluminateDatabaseEloquentBuilder;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use ReflectionClass;
 
 class ExpertDescriptorResource extends Resource
