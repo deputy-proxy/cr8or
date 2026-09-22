@@ -15,4 +15,3 @@ class ListPlans extends ListRecords
         return [CreateAction::make()];
     }
 }
-
