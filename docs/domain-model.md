@@ -56,9 +56,9 @@ This document defines the initial bounded domains and known conceptual entities.
 - Agent or Expert invocation never grants authority by itself.
 - State-changing operations remain subject to server-side authorization and approval policy.
 
-**Phase 2 boundary:** Agent/Expert runtime contracts, descriptor registration, governance records, capability boundaries, assignments, permissions, executions, decisions and approvals are introduced incrementally.
+**Verified Phase 2 implementation:** Agent/Expert runtime contracts, descriptor registration, organization/enterprise-scoped assignments, capability permissions, execution and decision records, approval enforcement and Filament governance administration are implemented. Runtime classes remain authoritative for behavior and metadata.
 
-**Deferred:** Final runtime interfaces, provider abstraction, memory implementation, delegation protocol and detailed execution schema.
+**Deferred:** Provider abstraction and production execution, memory implementation, agent-to-agent collaboration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 
