@@ -28,3 +28,4 @@ class ObjectivePolicy
         return (new EnterprisePolicy)->delete($user, $objective->enterprise);
     }
 }
+
