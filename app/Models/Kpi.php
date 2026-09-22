@@ -36,3 +36,4 @@ class Kpi extends Model
         ];
     }
 }
+
