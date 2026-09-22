@@ -20,3 +20,4 @@ class CreateInitiative extends CreateRecord
         return $data;
     }
 }
+
