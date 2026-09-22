@@ -190,16 +190,16 @@ Persistent information about them belongs in separate records such as:
 
 The exact schema, lifecycle and provider abstraction are implementation concerns for Phase 2 and later phases.
 
+## Verified Phase 2 Implementation Boundary
+
+The current repository implements and tests the Agent/Expert runtime contracts, descriptor registry, organization/enterprise-scoped assignments, capability permissions, execution and decision records, approval enforcement, and Filament governance administration. The runtime PHP classes remain authoritative for behavior and metadata.
+
 ## Deferred
 
-The following remain intentionally deferred until their relevant implementation phase:
-- final Agent and Expert PHP contracts;
-- model-provider abstraction;
-- execution context schema;
+The following remain intentionally deferred:
+- model-provider abstraction and production Agent execution;
+- execution context schema beyond the current execution/approval records;
 - Agent memory implementation;
-- delegation protocol;
-- agent-to-agent collaboration;
-- detailed capability catalogue;
-- final permission matrix;
-- detailed approval policy;
+- agent-to-agent collaboration and workflow orchestration;
+- a broader capability catalogue and general policy language;
 - MCP runtime registry and transport implementation.
