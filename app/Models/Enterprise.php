@@ -111,4 +111,10 @@ class Enterprise extends Model
     {
         return $this->hasMany(KnowledgeSpecification::class);
     }
+
+    /** @return HasMany<Objective, $this> */
+    public function objectives(): HasMany
+    {
+        return $this->hasMany(Objective::class);
+    }
 }
