@@ -18,3 +18,4 @@ class PlanFactory extends Factory
         ];
     }
 }
+
