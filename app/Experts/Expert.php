@@ -25,7 +25,7 @@ abstract class Expert
      * Provider integration and concrete application capabilities are intentionally
      * outside this runtime contract.
      *
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     abstract public function analyze(array $context): array;
 }
