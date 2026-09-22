@@ -1,1 +1,11 @@
-{"stdout":"<?php\n\nnamespace App\\Filament\\Resources\\AgentDescriptors\\Pages;\n\nuse App\\Filament\\Resources\\AgentDescriptors\\AgentDescriptorResource;\nuse Filament\\Resources\\Pages\\ListRecords;\n\nclass ListAgentDescriptors extends ListRecords\n{\n    protected static string $resource = AgentDescriptorResource::class;\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Filament\Resources\AgentDescriptors\Pages;
+
+use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
+use Filament\Resources\Pages\ListRecords;
+
+class ListAgentDescriptors extends ListRecords
+{
+    protected static string $resource = AgentDescriptorResource::class;
+}
