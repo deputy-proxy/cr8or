@@ -29,3 +29,4 @@ class EditPlan extends EditRecord
         return [DeleteAction::make()];
     }
 }
+
