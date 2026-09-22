@@ -74,4 +74,3 @@ class ObjectiveResource extends Resource
         ];
     }
 }
-
