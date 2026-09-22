@@ -15,3 +15,4 @@ class ListStrategies extends ListRecords
         return [CreateAction::make()];
     }
 }
+
