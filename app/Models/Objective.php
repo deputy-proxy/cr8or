@@ -39,3 +39,4 @@ class Objective extends Model
         return $this->hasMany(Strategy::class);
     }
 }
+
