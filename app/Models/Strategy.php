@@ -27,4 +27,3 @@ class Strategy extends Model
         return $this->hasMany(Plan::class);
     }
 }
-
