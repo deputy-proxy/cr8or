@@ -86,6 +86,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Strategy remains connected to business and operational context.
 
+**Phase 3.2 implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Plan belongs to Strategy; Initiative belongs to Plan. These relationships are explicit foreign keys and are authorized through the Objective Enterprise organization boundary.
+
 **Deferred:** Planning methodology and metric calculation details.
 
 ## Work
