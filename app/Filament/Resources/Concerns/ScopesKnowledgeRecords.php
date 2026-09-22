@@ -10,17 +10,29 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait ScopesKnowledgeRecords
 {
-    public static function authorizedOrganizationIds(): Builder
+    protected static function currentUser(): ?User
     {
         $user = auth()->user();
-        $userId = $user instanceof User ? $user->getKey() : 0;
 
-        return Membership::query()->select('organization_id')->where('user_id', $userId);
+        return $user instanceof User ? $user : null;
     }
 
+    /** @return Builder<Membership> */
+    public static function authorizedOrganizationIds(): Builder
+    {
+        return Membership::query()->select('organization_id')->where('user_id', static::currentUser()?->getKey() ?? 0);
+    }
+
+    /** @return Builder<Enterprise> */
     public static function manageableEnterpriseIds(): Builder
     {
-        return Enterprise::query()->select('id')->whereIn('organization_id', static::authorizedOrganizationIds()->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value]));
+        return Enterprise::query()->select('enterprises.id')
+            ->whereIn('organization_id', static::authorizedOrganizationIds()->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value]));
+    }
+
+    protected static function canManageAnyEnterprise(): bool
+    {
+        return static::manageableEnterpriseIds()->exists();
     }
 
     public static function canViewAny(): bool
@@ -30,11 +42,12 @@ trait ScopesKnowledgeRecords
 
     public static function canCreate(): bool
     {
-        return auth()->check() && static::manageableEnterpriseIds()->exists();
+        return auth()->check() && static::canManageAnyEnterprise();
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereIn('enterprise_id', Enterprise::query()->select('id')->whereIn('organization_id', static::authorizedOrganizationIds()));
+        return parent::getEloquentQuery()->whereIn('enterprise_id', Enterprise::query()
+            ->select('id')->whereIn('organization_id', static::authorizedOrganizationIds()));
     }
 }
