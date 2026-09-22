@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Enterprise;
+use App\Models\KnowledgeContext;
+use App\Models\User;
+
+class KnowledgeContextPolicy
+{
+    public function view(User $user, KnowledgeContext $record): bool
+    {
+        return (new EnterprisePolicy)->view($user, $record->enterprise);
+    }
+
+    public function create(User $user, Enterprise $enterprise): bool
+    {
+        return (new EnterprisePolicy)->create($user, $enterprise->organization);
+    }
+
+    public function update(User $user, KnowledgeContext $record): bool
+    {
+        return (new EnterprisePolicy)->update($user, $record->enterprise);
+    }
+
+    public function delete(User $user, KnowledgeContext $record): bool
+    {
+        return (new EnterprisePolicy)->delete($user, $record->enterprise);
+    }
+}
