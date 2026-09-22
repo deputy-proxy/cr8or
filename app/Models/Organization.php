@@ -38,6 +38,12 @@ class Organization extends Model
         return $this->hasMany(Enterprise::class);
     }
 
+    /** @return HasMany<AgentAssignment, $this> */
+    public function agentAssignments(): HasMany
+    {
+        return $this->hasMany(AgentAssignment::class);
+    }
+
     /**
      * @return BelongsToMany<User, $this>
      */
