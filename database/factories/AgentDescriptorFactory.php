@@ -13,7 +13,7 @@ class AgentDescriptorFactory extends Factory
     public function definition(): array
     {
         return [
-            'slug' => Str::slug(fake()->unique()->words(2, true)),
+            'slug' => Str::slug(implode(' ', fake()->unique()->words(2))),
             'runtime_class' => Agent::class,
             'enabled' => true,
         ];
