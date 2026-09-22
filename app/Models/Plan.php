@@ -27,3 +27,4 @@ class Plan extends Model
         return $this->hasMany(Initiative::class);
     }
 }
+
