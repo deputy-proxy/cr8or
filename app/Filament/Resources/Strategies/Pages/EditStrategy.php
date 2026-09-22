@@ -29,3 +29,4 @@ class EditStrategy extends EditRecord
         return [DeleteAction::make()];
     }
 }
+
