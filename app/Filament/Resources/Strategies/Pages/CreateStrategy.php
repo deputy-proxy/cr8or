@@ -20,4 +20,3 @@ class CreateStrategy extends CreateRecord
         return $data;
     }
 }
-
