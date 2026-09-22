@@ -20,3 +20,4 @@ class Initiative extends Model
         return $this->belongsTo(Plan::class);
     }
 }
+
