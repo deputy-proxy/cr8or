@@ -118,3 +118,4 @@ class Enterprise extends Model
         return $this->hasMany(Objective::class);
     }
 }
+
