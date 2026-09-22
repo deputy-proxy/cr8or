@@ -718,7 +718,7 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 
 ### Phase 2 — Agents, Experts & Governance
 
-**Status: Not started**
+**Status: In progress**
 
 **Objective**
 
@@ -918,7 +918,7 @@ The repository has completed the Phase 1 implementation and audit. Phase 0 and P
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
 | Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
-| Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert components, descriptors, registry/glossary and governance implementation are pending. |
+| Phase 2 — Agents, Experts | Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert components, descriptors, registry/glossary and governance implementation are pending. | Governance | **In progress** | Agent/Expert runtime contracts and descriptors are implemented; Agent assignments and capability permissions are now implemented, with the remaining Phase 2 governance work pending. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
