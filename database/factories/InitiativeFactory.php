@@ -18,4 +18,3 @@ class InitiativeFactory extends Factory
         ];
     }
 }
-
