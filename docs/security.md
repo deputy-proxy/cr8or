@@ -201,17 +201,16 @@ Logs and audit records should distinguish:
 
 Sensitive credentials, tokens and unnecessary model context must not be written to ordinary logs.
 
-## Phase 2 Security Requirements
+## Phase 2 Verified Security Boundary
 
-Before production Agent execution is enabled, the implementation should establish:
+The current Phase 2 implementation establishes and tests:
 - explicit Agent/Expert runtime contracts;
 - descriptor registration without authority leakage;
-- organization-scoped assignments;
+- organization/enterprise-scoped assignments;
 - capability and permission enforcement;
-- execution and decision audit records;
-- approval enforcement;
-- MCP authentication and authorization;
-- secure integration boundaries;
-- automated authorization and isolation tests.
+- execution and decision historical records;
+- approval enforcement tied to actor, assignment, capability, execution and target context;
+- Filament administration backed by server-side policies and scoped queries;
+- automated authorization, isolation and negative-path tests.
 
-The detailed permission catalogue, approval matrix, authentication mechanism and provider-specific security controls remain implementation decisions for their respective phases.
+MCP authentication/authorization, provider-specific execution security and production Agent execution remain deferred to their respective implementation phases. The broader permission catalogue and policy language also remain intentionally limited to the explicit Phase 2 capability boundary.
