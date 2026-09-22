@@ -70,3 +70,4 @@ class PlanResource extends Resource
         ];
     }
 }
+
