@@ -25,8 +25,8 @@ abstract class Agent
      * The Agent only orchestrates runtime components. It does not persist state,
      * access Eloquent models, or grant authority to Experts.
      *
-     * @param array<string, mixed> $context
-     * @param iterable<Expert> $experts
+     * @param  array<string, mixed>  $context
+     * @param  iterable<Expert>      $experts
      * @return array{agent: string, results: list<array{expert: string, result: array<string, mixed>}>}
      */
     public function coordinate(array $context, iterable $experts): array
