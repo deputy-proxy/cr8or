@@ -18,4 +18,3 @@ class StrategyFactory extends Factory
         ];
     }
 }
-
