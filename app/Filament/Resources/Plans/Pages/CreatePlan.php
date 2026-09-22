@@ -20,4 +20,3 @@ class CreatePlan extends CreateRecord
         return $data;
     }
 }
-
