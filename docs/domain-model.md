@@ -216,3 +216,4 @@ This document defines the initial bounded domains and known conceptual entities.
 ## Deliberately Deferred
 
 No database columns, migrations, REST endpoints, MCP schemas, queue payloads or provider-specific APIs are defined here unless introduced by the relevant implementation phase.
+
