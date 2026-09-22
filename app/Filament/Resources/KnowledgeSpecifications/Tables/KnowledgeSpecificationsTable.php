@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Filament\Resources\KnowledgeSpecifications\Tables;
+
+use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+
+class KnowledgeSpecificationsTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')->searchable()->sortable(),
+                TextColumn::make('version')->searchable()->sortable(),
+            ])
+            ->recordActions([
+                EditAction::make(),
+            ]);
+    }
+}

@@ -10,15 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-/**
- * @property int $id
- * @property int $organization_id
- * @property string $name
- * @property string $slug
- * @property string $status
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- */
 #[Fillable(['organization_id', 'name', 'slug', 'status'])]
 class Enterprise extends Model
 {
@@ -77,5 +68,47 @@ class Enterprise extends Model
     public function agentAssignments(): HasMany
     {
         return $this->hasMany(AgentAssignment::class);
+    }
+
+    /** @return HasMany<KnowledgeSource, $this> */
+    public function knowledgeSources(): HasMany
+    {
+        return $this->hasMany(KnowledgeSource::class);
+    }
+
+    /** @return HasMany<KnowledgeDocument, $this> */
+    public function knowledgeDocuments(): HasMany
+    {
+        return $this->hasMany(KnowledgeDocument::class);
+    }
+
+    /** @return HasMany<KnowledgeItem, $this> */
+    public function knowledgeItems(): HasMany
+    {
+        return $this->hasMany(KnowledgeItem::class);
+    }
+
+    /** @return HasMany<KnowledgeContext, $this> */
+    public function knowledgeContexts(): HasMany
+    {
+        return $this->hasMany(KnowledgeContext::class);
+    }
+
+    /** @return HasMany<KnowledgeVersion, $this> */
+    public function knowledgeVersions(): HasMany
+    {
+        return $this->hasMany(KnowledgeVersion::class);
+    }
+
+    /** @return HasMany<KnowledgeReference, $this> */
+    public function knowledgeReferences(): HasMany
+    {
+        return $this->hasMany(KnowledgeReference::class);
+    }
+
+    /** @return HasMany<KnowledgeSpecification, $this> */
+    public function knowledgeSpecifications(): HasMany
+    {
+        return $this->hasMany(KnowledgeSpecification::class);
     }
 }
