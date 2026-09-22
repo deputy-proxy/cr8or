@@ -43,6 +43,12 @@ class User extends Authenticatable implements FilamentUser, PasskeyUser
             ->withTimestamps();
     }
 
+    /** @return HasMany<Assignment, $this> */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
     public function initials(): string
     {
         $initials = Str::initials($this->name, true);
