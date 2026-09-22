@@ -70,3 +70,4 @@ class StrategyResource extends Resource
         ];
     }
 }
+
