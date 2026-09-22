@@ -123,3 +123,4 @@ it('keeps the strategy domain schema explicit and non-polymorphic', function () 
         'id', 'plan_id', 'name', 'description', 'created_at', 'updated_at',
     ]);
 });
+
