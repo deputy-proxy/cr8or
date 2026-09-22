@@ -1,11 +1,1 @@
-<?php
-
-namespace App\Filament\Resources\AgentDescriptors\Pages;
-
-use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
-use Filament\Resources\Pages\EditRecord;
-
-class EditAgentDescriptor extends EditRecord
-{
-    protected static string $resource = AgentDescriptorResource::class;
-}
+{"stdout":"<?php\n\nnamespace App\\Filament\\Resources\\AgentDescriptors\\Pages;\n\nuse App\\Filament\\Resources\\AgentDescriptors\\AgentDescriptorResource;\nuse Filament\\Resources\\Pages\\EditRecord;\n\nclass EditAgentDescriptor extends EditRecord\n{\n    protected static string $resource = AgentDescriptorResource::class;\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
