@@ -27,3 +27,4 @@ class Goal extends Model
         return $this->hasMany(Objective::class);
     }
 }
+
