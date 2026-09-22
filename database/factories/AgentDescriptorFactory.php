@@ -12,8 +12,10 @@ class AgentDescriptorFactory extends Factory
 {
     public function definition(): array
     {
+        $words = fake()->unique()->words(2);
+
         return [
-            'slug' => Str::slug(implode(' ', fake()->unique()->words(2))),
+            'slug' => Str::slug(is_array($words) ? implode(' ', $words) : $words),
             'runtime_class' => Agent::class,
             'enabled' => true,
         ];
