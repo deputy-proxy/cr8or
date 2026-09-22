@@ -67,4 +67,3 @@ it('only allows enterprise managers to create strategy records in Filament', fun
 
     expect($plan->strategy->objective->enterprise->is($enterprise))->toBeTrue();
 });
-
