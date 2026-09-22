@@ -600,7 +600,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phase 0 — Foundation & Architecture** and **Phase 1 — Identity, Organizations & Enterprise Context**. The current codebase is a working Phase 1 foundation and is preparing to begin Phase 2.
+The repository has completed **Phase 0 — Foundation & Architecture** and **Phase 1 — Identity, Organizations & Enterprise Context**. The implemented **Phase 2 Agent/Expert governance slice (2.1–2.7)** is also complete and has been audited against the repository rules, runtime boundaries, authorization model, tests and CI. The broader product roadmap still contains deferred Phase 2 capabilities such as agent-to-agent workflows and production execution.
 
 ### Implemented
 
@@ -621,9 +621,9 @@ The repository has completed **Phase 0 — Foundation & Architecture** and **Pha
 
 The following remain product-roadmap work rather than completed runtime functionality:
 
-- Runtime Agents and Experts.
-- AgentDescriptor and ExpertDescriptor registry/runtime resolution.
-- Agent capabilities, authority and governance runtime.
+- Production Agent/Expert execution and model-provider integration.
+- Agent-to-agent collaboration and workflow orchestration.
+- Broader capability catalogues, policy language and reporting.
 - Strategy, knowledge and work domains.
 - MCP server implementation and tool/resource runtime.
 - Marketing, media and publishing domains inside CR8OR Core.
@@ -652,9 +652,9 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Immediate Priority
 
-**Phase 2 — Agents, Experts & Governance**
+**Post-Phase-2 governance work**
 
-The next implementation work should establish the Agent and Expert runtime and governance layer on top of the completed Phase 1 foundation, while preserving the Phase 1 authorization and historical-integrity boundaries.
+The Agent/Expert runtime contracts, descriptors, assignments, permissions, execution/decision records, approval controls and Filament governance administration are implemented and audited. The next work should address the remaining product capabilities explicitly deferred from this implementation slice, without weakening the established authority and historical-integrity boundaries.
 
 ## Development Roadmap
 
@@ -718,7 +718,7 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 
 ### Phase 2 — Agents, Experts & Governance
 
-**Status: In progress**
+**Status: Partially implemented**
 
 **Objective**
 
@@ -912,13 +912,13 @@ Allow multiple specialized agents to collaborate through a shared business opera
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit. Phase 0 and Phase 1 are complete at the product-roadmap level; the audit identified a small set of hardening and documentation tasks that should be resolved as the project moves into Phase 2.
+The repository has completed the Phase 1 implementation and audit. The Phase 2 implementation slice through Agent governance administration has also been implemented and audited. The original Phase 2 roadmap remains broader than that slice, so deferred capabilities are explicitly retained as future work rather than being represented as complete.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
 | Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
-| Phase 2 — Agents, Experts | Phase 2 — Agents, Experts & Governance | **Not started** | Runtime Agent/Expert components, descriptors, registry/glossary and governance implementation are pending. | Governance | **In progress** | Agent/Expert runtime contracts and descriptors are implemented; Agent assignments and capability permissions are now implemented, with the remaining Phase 2 governance work pending. |
+| Phase 2 — Agents, Experts & Governance | **Partially implemented** | The 2.1–2.7 implementation slice is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Production execution, agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
 | Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
@@ -1422,13 +1422,11 @@ Documentation is part of the implementation, not decorative paperwork added afte
 
 The current product direction is to establish **CR8OR Core as the authoritative business operating layer for AI-assisted businesses**.
 
-The immediate priority is:
-
-**Phase 2 — Agents, Experts & Governance**
+The immediate priority is to extend the verified Phase 2 governance foundation without bypassing its authorization and historical-integrity boundaries.
 
 ### Immediate Objective
 
-Begin implementation of the Agent and Expert runtime and governance layer on top of the completed Phase 1 foundation.
+Build the remaining deferred capabilities around the implemented Agent/Expert runtime and governance layer, including production execution and later orchestration surfaces, as their own implementation issues.
 
 ### Current Dependencies
 
@@ -1452,7 +1450,7 @@ Begin implementation of the Agent and Expert runtime and governance layer on top
 
 ### Next Product Milestone
 
-Phase 2 — Agents, Experts & Governance, implemented on top of the completed Phase 1 foundation.
+The next milestone is the remaining Phase 2 roadmap work beyond the audited 2.1–2.7 governance slice.
 
 ## License
 
