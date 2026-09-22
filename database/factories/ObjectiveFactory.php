@@ -38,3 +38,4 @@ class ObjectiveFactory extends Factory
         ]);
     }
 }
+
