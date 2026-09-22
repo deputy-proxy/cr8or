@@ -28,6 +28,8 @@ abstract class Agent
      * @param  array<string, mixed>  $context
      *
      * @phpstan-param iterable<Expert> $experts
+     *
+     * @return array<string, mixed>
      */
     public function coordinate(array $context, iterable $experts): array
     {
