@@ -70,4 +70,3 @@ class InitiativeResource extends Resource
         ];
     }
 }
-
