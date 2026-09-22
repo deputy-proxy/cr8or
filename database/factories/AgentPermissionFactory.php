@@ -14,6 +14,12 @@ class AgentPermissionFactory extends Factory
         return [
             'agent_assignment_id' => AgentAssignment::factory(),
             'capability' => fake()->unique()->slug(2, '.'),
+            'requires_approval' => false,
         ];
+    }
+
+    public function requiresApproval(): static
+    {
+        return $this->state(['requires_approval' => true]);
     }
 }

@@ -176,15 +176,15 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Control authority, approvals, exceptions and auditability.
 
-**Core entities:** Approval, Approval Request, Policy, Audit Entry, Decision, Exception, Change Record.
+**Core entities:** Approval Request, Policy, Audit Entry, Decision, Exception, Change Record. Approval state is persisted on the request for the current Agent capability approval boundary.
 
 **Relationships:** Requests may require approvals; actions produce audit records and decisions.
 
 **Ownership:** CR8OR.
 
-**Known invariants:** Sensitive operations are attributable and auditable.
+**Known invariants:** Sensitive operations are attributable and auditable. Agent capability permissions may require approval; approval requests are scoped to organization, enterprise, Agent assignment, actor, capability and execution/target context; only authorized organization approvers may decide them; approved requests expire and cannot be reused outside their recorded context.
 
-**Deferred:** Final policy language and approval matrix.
+**Deferred:** The broader policy language and approval matrix remain deferred; the Phase 2 Agent capability boundary uses an explicit per-permission approval requirement.
 
 ## Reporting
 
