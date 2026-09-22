@@ -33,6 +33,12 @@ class AgentAssignment extends Model
         return $this->belongsTo(Enterprise::class);
     }
 
+    /** @return HasMany<Assignment, $this> */
+    public function workAssignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
     /** @return HasMany<AgentPermission, $this> */
     public function permissions(): HasMany
     {

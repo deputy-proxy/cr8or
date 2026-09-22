@@ -94,15 +94,17 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Represent operational activity.
 
-**Core entities:** Project, Task, Assignment, Workflow, Work Item, Milestone, Dependency, Job, Execution.
+**Core entities:** Project, Task, Work Item, Assignment, Milestone, Dependency, Workflow, Job, Execution.
 
-**Relationships:** Projects contain work; tasks may be assigned; workflows and jobs coordinate execution.
+**Verified Phase 3.3 implementation:** Projects belong to an Enterprise and may reference Strategy, Plan and Initiative records from that same Enterprise. Tasks and Work Items belong to an Enterprise and may belong to a Project within that Enterprise. Tasks may form a parent/child hierarchy. Milestones belong to a Project and Enterprise. Dependencies belong to an Enterprise and relate predecessor/successor work records through explicit polymorphic references. Assignments belong to an Enterprise and identify either a User or an existing Agent Assignment as the assignee.
+
+**Authorization:** Work records inherit the Enterprise organization boundary. Server-side policies prevent cross-organization access and management. Assignments represent an assignee only and do not grant authority beyond the assignee's existing permissions.
 
 **Ownership:** CR8OR for CR8OR-owned work.
 
-**Known invariants:** Important work execution is traceable.
+**Known invariants:** Parent ownership is preserved when unrelated work fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
 
-**Deferred:** Full workflow engine semantics.
+**Deferred:** Workflow engine semantics, queued execution and external task-management integration.
 
 ## Marketing
 
