@@ -15,4 +15,3 @@ class ListInitiatives extends ListRecords
         return [CreateAction::make()];
     }
 }
-
