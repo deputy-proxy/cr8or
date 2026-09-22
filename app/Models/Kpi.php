@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['enterprise_id', 'name', 'definition', 'unit', 'target_value', 'current_value', 'status'])]
 class Kpi extends Model
@@ -18,6 +19,12 @@ class Kpi extends Model
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return HasMany<Objective, $this> */
+    public function objectives(): HasMany
+    {
+        return $this->hasMany(Objective::class);
     }
 
     /** @return array<string, string> */
