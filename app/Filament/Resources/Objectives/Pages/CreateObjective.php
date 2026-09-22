@@ -37,3 +37,4 @@ class CreateObjective extends CreateRecord
         }
     }
 }
+
