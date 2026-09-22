@@ -26,6 +26,8 @@ abstract class Expert
      * outside this runtime contract.
      *
      * @param  array<string, mixed>  $context
+     *
+     * @return array<string, mixed>
      */
     abstract public function analyze(array $context): array;
 }
