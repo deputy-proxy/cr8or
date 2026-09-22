@@ -29,4 +29,3 @@ class EditInitiative extends EditRecord
         return [DeleteAction::make()];
     }
 }
-
