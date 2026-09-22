@@ -28,4 +28,3 @@ class InitiativePolicy
         return (new EnterprisePolicy)->delete($user, $initiative->plan->strategy->objective->enterprise);
     }
 }
-
