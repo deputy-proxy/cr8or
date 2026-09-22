@@ -96,9 +96,9 @@ High-impact operations may require explicit human approval. Examples include:
 - credential use;
 - other operations designated sensitive by policy.
 
-Approval must be evaluated server-side and tied to the relevant operation, actor, target and policy context.
+Approval must be evaluated server-side and tied to the relevant operation, actor, target and policy context. CR8OR now represents an approval requirement on an Agent permission and persists an Approval Request with a pending, approved or rejected lifecycle, immutable request context, an approver attribution and an expiration boundary. Only organization owners and administrators may approve or reject requests.
 
-Delegating an operation to another Agent, Expert, tool or workflow must not remove an approval requirement.
+Delegating an operation to another Agent, Expert, tool or workflow must not remove an approval requirement. The capability authorizer requires an approved, unexpired request matching the actor, assignment, capability, execution and target context before allowing a capability marked as requiring approval.
 
 ## Data Protection
 
