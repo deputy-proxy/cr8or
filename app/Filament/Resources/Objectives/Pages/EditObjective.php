@@ -42,3 +42,4 @@ class EditObjective extends EditRecord
         return [DeleteAction::make()];
     }
 }
+
