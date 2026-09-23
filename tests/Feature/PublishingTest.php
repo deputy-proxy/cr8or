@@ -132,6 +132,15 @@ it('retries a failed publication idempotently', function () {
         ->and($p->publishingJobs()->first()->attempts)->toBe(2);
 });
 
+it('does not allow direct publication status mutation to bypass the lifecycle service', function () {
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
+    $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
+
+    $publication->status = Publication::STATUS_SUCCEEDED;
+
+    expect(fn () => $publication->save())->toThrow(LogicException::class);
+});
+
 it('keeps publication results immutable and organization scoped', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());

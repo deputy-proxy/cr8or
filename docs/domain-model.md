@@ -126,9 +126,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Content lifecycle transitions are enforced server-side. Content moves through draft → in-review → approved → publication-ready, with archival as a terminal path. Publication readiness requires an explicit matching approval and cannot be set by a raw status update. Approved/publication-ready content cannot be silently rewritten. AI-generated content enters as derived draft state until accepted through the normal review/approval workflow. Agent execution is constrained by organization, enterprise, assignment, capability and approval context.
 
-**Verified Phase 5.2 implementation:** Content lifecycle/application services, AI-assisted generation/revision through the existing AgentExecutionService and ModelProvider boundary, AgentExecution/AgentDecision provenance, governed MCP content capabilities and server-side publication-readiness approval are implemented. No media renderer or publishing provider logic belongs in this domain.
-
-**Deferred:** Channel-specific APIs, media generation/rendering and publishing integrations.
+**Verified Phase 5 implementation:** Content lifecycle/application services, AI-assisted generation/revision through the existing AgentExecutionService and ModelProvider boundary, AgentExecution/AgentDecision provenance, governed MCP content capabilities, server-side publication-readiness approval, and the CR8OR-owned publishing lifecycle are implemented. Postiz and other external services remain execution boundaries.
 
 ## Media
 
@@ -140,9 +138,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Ownership:** CR8OR owns lifecycle state and references; specialized services execute generation/rendering.
 
-**Known invariants:** Outputs remain associated with their originating request and source content where applicable.
+**Known invariants:** Outputs remain associated with their originating request and source content where applicable; asset versions preserve prior outputs; generation/render failures cannot become successful lifecycle state.
 
-**Deferred:** Provider-specific media schemas.
+**Verified Phase 5.3 implementation:** Asset/version history, generation and render requests/jobs, execution correlation, deterministic failure/retry handling and the provider-neutral media storage boundary are implemented. Specialized generators/renderers and storage providers remain execution boundaries.
 
 ## Publishing
 
@@ -154,9 +152,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Ownership:** CR8OR owns publication state; providers execute delivery.
 
-**Known invariants:** Publication results are correlated to their originating publication.
+**Known invariants:** Publication results are correlated to their originating publication; publication history is immutable; publication readiness and required approval are enforced before execution.
 
-**Deferred:** Provider-specific publishing behavior.
+**Verified Phase 5.4 implementation:** CR8OR-owned scheduling/submission/reconciliation, Postiz provider isolation, idempotency, normalized failures and historical publication results are implemented. Postiz remains an execution boundary.
 
 ## Finance
 

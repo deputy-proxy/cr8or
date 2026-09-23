@@ -37,7 +37,6 @@ class ContentItemResource extends Resource
             Select::make('channel_id')->relationship('channel', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
             Select::make('audience_id')->relationship('audience', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
             TextInput::make('title')->required()->maxLength(255), Textarea::make('body')->rows(10),
-            Select::make('status')->options(['draft' => 'Draft', 'in_review' => 'In review', 'approved' => 'Approved', 'publication_ready' => 'Publication ready', 'archived' => 'Archived'])->default('draft')->required(),
         ]);
     }
 

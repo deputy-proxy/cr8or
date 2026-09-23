@@ -15,6 +15,8 @@ use LogicException;
 #[Fillable(['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'approval_request_id', 'status', 'idempotency_key', 'correlation_id', 'external_id', 'external_url', 'scheduled_at', 'submitted_at', 'published_at', 'failure_code', 'failure_reason'])]
 class Publication extends Model
 {
+    private bool $lifecycleTransitionAuthorized = false;
+
     /** @use HasFactory<\Database\Factories\PublicationFactory> */
     use HasFactory;
 
@@ -56,6 +58,10 @@ class Publication extends Model
                     if ($p->isDirty($f)) {
                         throw new LogicException("Publication {$f} is historical and cannot be changed.");
                     }
+                }
+
+                if ($p->isDirty('status') && ! $p->lifecycleTransitionAuthorized) {
+                    throw new LogicException('Publication lifecycle status can only be changed through its application transition methods.');
                 }
             }
         });
@@ -115,6 +121,7 @@ class Publication extends Model
             throw new LogicException('Publication cannot be submitted from its current state.');
         }
 
+        $this->lifecycleTransitionAuthorized = true;
         $this->status = self::STATUS_SUBMITTED;
         $this->external_id = $id;
         $this->external_url = $url;
@@ -129,6 +136,7 @@ class Publication extends Model
             throw new LogicException('Publication can only succeed from submitted state.');
         }
 
+        $this->lifecycleTransitionAuthorized = true;
         $this->status = self::STATUS_SUCCEEDED;
         $this->published_at ??= CarbonImmutable::now();
 
@@ -137,6 +145,7 @@ class Publication extends Model
 
     public function fail(?string $code, ?string $reason): static
     {
+        $this->lifecycleTransitionAuthorized = true;
         $this->status = self::STATUS_FAILED;
         $this->failure_code = $code;
         $this->failure_reason = $reason;

@@ -3,15 +3,9 @@
 namespace App\Filament\Resources\Publications;
 
 use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
-use App\Filament\Resources\Publications\Pages\CreatePublication;
-use App\Filament\Resources\Publications\Pages\EditPublication;
 use App\Filament\Resources\Publications\Pages\ListPublications;
 use App\Models\Publication;
 use BackedEnum;
-use Filament\Actions\EditAction;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -29,21 +23,7 @@ class PublicationResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('content_item_id')->relationship('contentItem', 'title', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('channel_id')->relationship('channel', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('social_account_id')->relationship('socialAccount', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('approval_request_id')->relationship('approvalRequest', 'id')->searchable()->preload(),
-            Select::make('status')->options(['scheduled' => 'Scheduled', 'submitted' => 'Submitted', 'succeeded' => 'Succeeded', 'failed' => 'Failed'])->required(),
-            TextInput::make('external_id')->disabled()->maxLength(255),
-            TextInput::make('external_url')->disabled()->url()->maxLength(2048),
-            TextInput::make('scheduled_at')->disabled(),
-            TextInput::make('submitted_at')->disabled()->disabled(),
-            TextInput::make('published_at')->disabled()->disabled(),
-            TextInput::make('failure_code')->maxLength(255),
-            Textarea::make('failure_reason')->rows(4),
-        ]);
+        return $schema->components([]);
     }
 
     public static function table(Table $table): Table
@@ -57,9 +37,7 @@ class PublicationResource extends Resource
             TextColumn::make('status')->badge()->searchable()->sortable(),
             TextColumn::make('external_id')->searchable()->sortable(),
             TextColumn::make('external_url')->searchable()->sortable(),
-        ])->recordActions([
-            EditAction::make(),
-        ]);
+        ])->recordActions([]);
     }
 
     public static function getEloquentQuery(): Builder
@@ -80,11 +58,11 @@ class PublicationResource extends Resource
 
     public static function canCreate(): bool
     {
-        return auth()->check() && static::canManageAnyEnterprise();
+        return false;
     }
 
     public static function getPages(): array
     {
-        return ['index' => ListPublications::route('/'), 'create' => CreatePublication::route('/create'), 'edit' => EditPublication::route('/{record}/edit')];
+        return ['index' => ListPublications::route('/')];
     }
 }
