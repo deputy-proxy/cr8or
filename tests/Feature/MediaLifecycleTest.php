@@ -113,5 +113,5 @@ it('does not create output on render failure', function () {
         }
     };
     expect(fn () => app(MediaLifecycleService::class)->completeRender($r, $renderer))->toThrow(RuntimeException::class);
-    expect($r->refresh()->status)->toBe(RenderRequest::STATUS_FAILED)->and(RenderOutput::query()->where('render_request_id',$r->id)->exists())->toBeFalse();
+    expect($r->refresh()->status)->toBe(RenderRequest::STATUS_FAILED)->and(RenderOutput::query()->where('render_request_id', $r->id)->exists())->toBeFalse();
 });
