@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Enterprise;
 use App\Models\Expense;
 use App\Models\FinancialAccount;
+use App\Models\FinancialPeriod;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,6 +20,7 @@ class ExpenseFactory extends Factory
             'financial_account_id' => null,
             'transaction_id' => null,
             'transaction_category_id' => null,
+            'financial_period_id' => null,
             'amount' => fake()->randomFloat(4, 1, 100000),
             'currency' => 'EUR',
             'expense_date' => fake()->date(),
@@ -35,21 +37,31 @@ class ExpenseFactory extends Factory
         ]);
     }
 
+    public function forPeriod(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'financial_period_id' => FinancialPeriod::factory()->create(['enterprise_id' => $attributes['enterprise_id']])->getKey(),
+        ]);
+    }
+
     public function forTransaction(): static
     {
         return $this->state(function (array $attributes): array {
             $account = FinancialAccount::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);
             $category = TransactionCategory::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);
+            $period = FinancialPeriod::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);
             $transaction = Transaction::factory()->create([
                 'enterprise_id' => $attributes['enterprise_id'],
                 'financial_account_id' => $account,
                 'transaction_category_id' => $category,
+                'financial_period_id' => $period,
             ]);
 
             return [
                 'financial_account_id' => $account->getKey(),
                 'transaction_id' => $transaction->getKey(),
                 'transaction_category_id' => $category->getKey(),
+                'financial_period_id' => $period->getKey(),
             ];
         });
     }

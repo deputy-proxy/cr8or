@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'financial_account_id', 'transaction_category_id', 'amount', 'transaction_date', 'description', 'reference'])]
+#[Fillable(['enterprise_id', 'financial_account_id', 'transaction_category_id', 'financial_period_id', 'amount', 'transaction_date', 'description', 'reference'])]
 class Transaction extends Model
 {
     /** @use HasFactory<TransactionFactory> */
@@ -20,9 +20,16 @@ class Transaction extends Model
         static::saving(function (Transaction $transaction): void {
             $account = FinancialAccount::query()->find($transaction->financial_account_id);
             $category = TransactionCategory::query()->find($transaction->transaction_category_id);
+            $period = $transaction->financial_period_id === null
+                ? null
+                : FinancialPeriod::query()->find($transaction->financial_period_id);
 
             if ($account === null || $category === null) {
                 throw new LogicException('Transaction account and category must exist.');
+            }
+
+            if ($period === null) {
+                throw new LogicException('Transaction financial period must exist.');
             }
 
             if ((int) $account->enterprise_id !== (int) $transaction->enterprise_id) {
@@ -33,8 +40,12 @@ class Transaction extends Model
                 throw new LogicException('Transaction category must belong to its enterprise.');
             }
 
+            if ((int) $period->enterprise_id !== (int) $transaction->enterprise_id) {
+                throw new LogicException('Transaction financial period must belong to its enterprise.');
+            }
+
             if ($transaction->exists) {
-                foreach (['enterprise_id', 'financial_account_id', 'transaction_category_id'] as $field) {
+                foreach (['enterprise_id', 'financial_account_id', 'transaction_category_id', 'financial_period_id'] as $field) {
                     if ($transaction->isDirty($field)) {
                         throw new LogicException("Transaction {$field} cannot be changed after creation.");
                     }
@@ -59,6 +70,12 @@ class Transaction extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(TransactionCategory::class, 'transaction_category_id');
+    }
+
+    /** @return BelongsTo<FinancialPeriod, $this> */
+    public function financialPeriod(): BelongsTo
+    {
+        return $this->belongsTo(FinancialPeriod::class);
     }
 
     /** @return array<string, string> */

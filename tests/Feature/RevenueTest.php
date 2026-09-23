@@ -2,6 +2,7 @@
 
 use App\Models\Enterprise;
 use App\Models\FinancialAccount;
+use App\Models\FinancialPeriod;
 use App\Models\Revenue;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
@@ -57,6 +58,37 @@ it('keeps exact decimal revenue amounts', function () {
 it('keeps the revenue schema focused on current requirements', function () {
     expect(Schema::getColumnListing('revenues'))->toBe([
         'id', 'enterprise_id', 'financial_account_id', 'transaction_id', 'amount', 'currency', 'revenue_date',
-        'source', 'reference', 'description', 'created_at', 'updated_at',
+        'source', 'reference', 'description', 'created_at', 'updated_at', 'financial_period_id',
     ]);
+});
+
+it('rejects a revenue period from another enterprise', function () {
+    $enterprise = Enterprise::factory()->create();
+    $foreignPeriod = FinancialPeriod::factory()->create();
+
+    expect(fn () => Revenue::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_period_id' => $foreignPeriod,
+    ]))->toThrow(LogicException::class);
+});
+
+it('requires a revenue period to match its transaction when both are set', function () {
+    $enterprise = Enterprise::factory()->create();
+    $account = FinancialAccount::factory()->create(['enterprise_id' => $enterprise]);
+    $category = TransactionCategory::factory()->create(['enterprise_id' => $enterprise]);
+    $period = FinancialPeriod::factory()->create(['enterprise_id' => $enterprise]);
+    $otherPeriod = FinancialPeriod::factory()->create(['enterprise_id' => $enterprise]);
+    $transaction = Transaction::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_account_id' => $account,
+        'transaction_category_id' => $category,
+        'financial_period_id' => $period,
+    ]);
+
+    expect(fn () => Revenue::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_account_id' => $account,
+        'transaction_id' => $transaction,
+        'financial_period_id' => $otherPeriod,
+    ]))->toThrow(LogicException::class);
 });

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Enterprise;
 use App\Models\FinancialAccount;
+use App\Models\FinancialPeriod;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,6 +20,9 @@ class TransactionFactory extends Factory
                 ->create(['enterprise_id' => $attributes['enterprise_id']])
                 ->getKey(),
             'transaction_category_id' => fn (array $attributes): int => TransactionCategory::factory()
+                ->create(['enterprise_id' => $attributes['enterprise_id']])
+                ->getKey(),
+            'financial_period_id' => fn (array $attributes): int => FinancialPeriod::factory()
                 ->create(['enterprise_id' => $attributes['enterprise_id']])
                 ->getKey(),
             'amount' => fake()->randomFloat(4, -100000, 100000),

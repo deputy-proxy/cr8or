@@ -172,6 +172,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 6.3 implementation:** Invoices, Revenue and Expense are CR8OR-owned financial records with Enterprise-safe relationships, fixed-precision monetary values, invoice counterparty snapshots and lifecycle status that does not imply payment. Revenue and Expense may reference authoritative Financial Accounts and Transactions without duplicating ledger state; cross-Enterprise relationships are rejected and organization authorization is enforced through Enterprise policies.
 
+**Verified Phase 6.4 implementation:** Financial Periods provide explicit Enterprise-owned reporting boundaries with preserved historical identity, while Budgets remain planning records scoped to a period and optional account/category. Transactions, Revenue and Expense can be associated with periods through Enterprise-safe relationships; budget changes do not mutate authoritative ledger records.
+
 **Deferred:** Accounting rules, automated reconciliation and provider integrations.
 
 ## Integrations
