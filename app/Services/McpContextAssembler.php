@@ -8,6 +8,38 @@ use Illuminate\Support\Facades\Gate;
 
 class McpContextAssembler
 {
+    /**
+     * Assemble only the context categories explicitly required by the Agent.
+     *
+     * @param  list<string>  $requiredContext
+     * @return array<string, mixed>
+     */
+    public function forAgent(User $user, Enterprise $enterprise, array $requiredContext): array
+    {
+        Gate::forUser($user)->authorize('view', $enterprise);
+
+        $context = [
+            'enterprise' => $this->enterprise($user, $enterprise->getKey()),
+        ];
+
+        foreach ($requiredContext as $requirement) {
+            if ($requirement === 'enterprise' || array_key_exists($requirement, $context)) {
+                continue;
+            }
+
+            $context[$requirement] = match ($requirement) {
+                'knowledge' => $this->knowledge($user, $enterprise->getKey()),
+                'strategy' => $this->strategy($user, $enterprise->getKey()),
+                'work' => $this->work($user, $enterprise->getKey()),
+                default => throw new \InvalidArgumentException(
+                    "Agent requires unsupported context category [{$requirement}].",
+                ),
+            };
+        }
+
+        return $context;
+    }
+
     /** @return array<string, mixed> */
     public function enterprise(User $user, int $enterpriseId): array
     {
