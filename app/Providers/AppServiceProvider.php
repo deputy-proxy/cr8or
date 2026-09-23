@@ -26,7 +26,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ModelProvider::class, LaravelAiProvider::class);
         $this->app->bind(MediaStorage::class, FilesystemMediaStorage::class);
         $this->app->singleton(PublishingProvider::class, function ($app): PublishingProvider {
-            return $app->environment('testing') ? new FakePublishingProvider : new PostizPublishingProvider;
+            return $app->environment('testing')
+                ? new FakePublishingProvider
+                : new PostizPublishingProvider;
         });
         $this->app->bind(MediaGenerator::class, function (): MediaGenerator {
             return new class implements MediaGenerator
