@@ -24,11 +24,11 @@ final class FakePublishingProvider implements PublishingProvider
             throw new PublishingProviderException('Fake provider rejected the publication.', 'provider_rejected', false);
         }
 
-        $id = 'fake-' . Str::uuid();
+        $id = 'fake-'.Str::uuid();
 
         return new PublishingProviderResult(
             $id,
-            'https://fake.postiz.local/posts/' . $id,
+            'https://fake.postiz.local/posts/'.$id,
             'submitted',
             [
                 'provider' => 'fake',
