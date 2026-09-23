@@ -142,6 +142,12 @@ class ContentItem extends Model
         return $this->hasMany(Script::class);
     }
 
+    /** @return HasMany<Publication, $this> */
+    public function publications(): HasMany
+    {
+        return $this->hasMany(Publication::class);
+    }
+
     public function transitionTo(string $status): static
     {
         if ($status === self::STATUS_PUBLICATION_READY) {
