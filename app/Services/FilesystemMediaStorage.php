@@ -9,8 +9,7 @@ final class FilesystemMediaStorage implements MediaStorage
 {
     public function store(string $path, string $contents, array $metadata = []): string
     {
-        $disk = (string) ($metadata['disk'] ?? config('filesystems.default'));
-        Storage::disk($disk)->put($path, $contents);
+        Storage::disk('r2')->put($path, $contents);
 
         return $path;
     }
