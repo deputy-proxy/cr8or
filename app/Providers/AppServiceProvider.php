@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\LaravelAiProvider;
+use App\Contracts\MediaGenerator;
+use App\Contracts\MediaRenderer;
+use App\Contracts\MediaStorage;
+use App\Services\FilesystemMediaStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +23,25 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ModelProvider::class, LaravelAiProvider::class);
+        $this->app->bind(MediaStorage::class, FilesystemMediaStorage::class);
+        $this->app->bind(MediaGenerator::class, function (): MediaGenerator {
+            return new class implements MediaGenerator
+            {
+                public function generate(\App\Models\GenerationRequest $request): array
+                {
+                    throw new \LogicException('No media generator is configured. External generation must be supplied by an execution worker.');
+                }
+            };
+        });
+        $this->app->bind(MediaRenderer::class, function (): MediaRenderer {
+            return new class implements MediaRenderer
+            {
+                public function render(\App\Models\RenderRequest $request): array
+                {
+                    throw new \LogicException('No media renderer is configured. External rendering must be supplied by an execution worker.');
+                }
+            };
+        });
     }
 
     /**
