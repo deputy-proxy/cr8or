@@ -18,6 +18,20 @@ it('registers the protected MCP endpoint and OAuth discovery routes', function (
     expect($mcpRoute)->not->toBeNull();
 });
 
+it('preserves a supplied correlation id on the protected MCP boundary', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'server/discover',
+    ], [
+        'MCP-Protocol-Version' => '2026-07-28',
+        'Mcp-Method' => 'server/discover',
+        'X-Correlation-ID' => 'mcp-test-123',
+    ]);
+
+    $response->assertUnauthorized()->assertHeader('X-Correlation-ID', 'mcp-test-123');
+});
+
 it('requires authentication before the MCP endpoint is reachable', function () {
     $response = $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
