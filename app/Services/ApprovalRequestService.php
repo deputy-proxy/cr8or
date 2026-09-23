@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 class ApprovalRequestService
 {
     /** @param array<string, mixed> $targetContext */
-    public function request(User $actor, string $capability, AgentAssignment $assignment, ?AgentExecution $execution = null, array $targetContext = []): ApprovalRequest
+    public function request(User $actor, string $capability, AgentAssignment $assignment, ?AgentExecution $execution = null, array $targetContext = [], ?string $correlationId = null): ApprovalRequest
     {
         $requestedAt = now();
 
@@ -21,6 +21,7 @@ class ApprovalRequestService
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $execution?->getKey(),
             'actor_id' => $actor->getKey(),
+            'correlation_id' => $correlationId ?? $execution?->correlation_id,
             'capability' => $capability,
             'target_context' => $targetContext,
             'organization_name' => $assignment->organization->name,

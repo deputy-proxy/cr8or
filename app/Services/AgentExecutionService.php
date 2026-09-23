@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Agents\Agent;
+use App\AI\Contracts\ExecutionError;
 use App\AI\Contracts\ModelProvider;
 use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
@@ -25,6 +26,7 @@ final class AgentExecutionService
         private readonly ModelProvider $provider,
         private readonly McpContextAssembler $contextAssembler,
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
+        private readonly ?ExecutionCorrelationService $correlation = null,
     ) {}
 
     /**
@@ -40,6 +42,9 @@ final class AgentExecutionService
         array $expertSlugs = [],
         array $modelOptions = [],
     ): AgentExecutionResult {
+        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
+        $correlationId = $correlation->resolve(isset($modelOptions['correlation_id']) ? (string) $modelOptions['correlation_id'] : null);
+
         $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);
 
         Gate::forUser($actor)->authorize('view', $assignment);
@@ -83,6 +88,7 @@ final class AgentExecutionService
             'agent_slug' => $descriptor->slug,
             'agent_runtime_class' => $descriptor->runtime_class,
             'actor_name' => $actor->name,
+            'correlation_id' => $correlationId,
             'status' => AgentExecution::STATUS_REQUESTED,
             'requested_at' => now(),
         ]);
@@ -114,10 +120,13 @@ final class AgentExecutionService
                 model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,
                 timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,
                 structuredOutputSchema: $this->outputSchema(),
-                correlationId: isset($modelOptions['correlation_id']) ? (string) $modelOptions['correlation_id'] : null,
+                correlationId: $correlationId,
             );
 
             $modelResult = $this->provider->generate($request);
+            $execution->provider = $modelResult->provider;
+            $execution->external_execution_id = $modelResult->invocationId;
+            $execution->save();
             $capabilityRequests = $this->authorizeCapabilityRequests(
                 $actor,
                 $assignment,
@@ -142,7 +151,17 @@ final class AgentExecutionService
             );
         } catch (Throwable $exception) {
             if ($execution->status === AgentExecution::STATUS_EXECUTING) {
-                $execution->fail($this->failureReason($exception))->save();
+                $error = ExecutionError::from($exception);
+                $execution->failure_code = $error->code;
+                $execution->fail($error->message)->save();
+                $correlation->logFailure('agent.execute', $execution->correlation_id ?? $correlationId, $error, [
+                    'actor_id' => $execution->actor_id,
+                    'organization_id' => $execution->organization_id,
+                    'enterprise_id' => $execution->enterprise_id,
+                    'agent_assignment_id' => $execution->agent_assignment_id,
+                    'execution_id' => $execution->getKey(),
+                    'provider' => $execution->provider,
+                ]);
             }
 
             throw $exception;
@@ -331,10 +350,5 @@ final class AgentExecutionService
                 : null,
             'decided_at' => now(),
         ]);
-    }
-
-    private function failureReason(Throwable $exception): string
-    {
-        return $exception::class.': '.$exception->getMessage();
     }
 }

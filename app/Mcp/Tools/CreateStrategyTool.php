@@ -8,6 +8,7 @@ use App\Models\Strategy;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
 use App\Services\StrategyService;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -33,47 +34,49 @@ class CreateStrategyTool extends AuthorizedTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, StrategyService $strategies): Response|ResponseFactory
     {
-        $validated = $request->validate([
-            'objective_id' => ['required', 'integer', 'min:1', 'exists:objectives,id'],
-            'name' => ['required', 'string', 'min:1', 'max:255'],
-            'description' => ['nullable', 'string', 'max:10000'],
-            'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
-            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
-            'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
-        ]);
+        return $this->executeWithErrors($request, 'mcp.strategy.create', function (string $correlationId) use ($request, $authorization, $strategies) {
+            $validated = $request->validate([
+                'objective_id' => ['required', 'integer', 'min:1', 'exists:objectives,id'],
+                'name' => ['required', 'string', 'min:1', 'max:255'],
+                'description' => ['nullable', 'string', 'max:10000'],
+                'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+                'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+            ]);
 
-        $actor = $request->user();
+            $actor = $request->user();
 
-        if (! $actor instanceof User) {
-            return Response::error('Authentication is required.');
-        }
+            if (! $actor instanceof User) {
+                throw new AuthenticationException;
+            }
 
-        /** @var Objective $objective */
-        $objective = Objective::query()->with('enterprise')->findOrFail($validated['objective_id']);
-        /** @var Enterprise $enterprise */
-        $enterprise = $objective->enterprise;
+            /** @var Objective $objective */
+            $objective = Objective::query()->with('enterprise')->findOrFail($validated['objective_id']);
+            /** @var Enterprise $enterprise */
+            $enterprise = $objective->enterprise;
 
-        $authorization->authorizeMutation(
-            $actor,
-            'strategy.create',
-            $enterprise,
-            $validated['agent_assignment_id'] ?? null,
-            $validated['agent_execution_id'] ?? null,
-            $validated['approval_request_id'] ?? null,
-            ['objective_id' => $objective->getKey()],
-            ['create', [Strategy::class, $objective]],
-        );
+            $authorization->authorizeMutation(
+                $actor,
+                'strategy.create',
+                $enterprise,
+                $validated['agent_assignment_id'] ?? null,
+                $validated['agent_execution_id'] ?? null,
+                $validated['approval_request_id'] ?? null,
+                ['objective_id' => $objective->getKey()],
+                ['create', [Strategy::class, $objective]],
+            );
 
-        $strategy = $strategies->create($actor, $objective, $validated);
+            $strategy = $strategies->create($actor, $objective, $validated);
 
-        return Response::structured([
-            'success' => true,
-            'result' => [
-                'id' => $strategy->getKey(),
-                'objective_id' => $strategy->objective_id,
-                'name' => $strategy->name,
-                'description' => $strategy->description,
-            ],
-        ]);
+            return Response::structured([
+                'success' => true,
+                'result' => [
+                    'id' => $strategy->getKey(),
+                    'objective_id' => $strategy->objective_id,
+                    'name' => $strategy->name,
+                    'description' => $strategy->description,
+                ],
+            ]);
+        });
     }
 }

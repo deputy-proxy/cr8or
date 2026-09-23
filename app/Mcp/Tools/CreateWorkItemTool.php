@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\WorkItem;
 use App\Services\McpCapabilityAuthorizer;
 use App\Services\WorkItemService;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -34,52 +35,54 @@ class CreateWorkItemTool extends AuthorizedTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, WorkItemService $workItems): Response|ResponseFactory
     {
-        $validated = $request->validate([
-            'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
-            'name' => ['required', 'string', 'min:1', 'max:255'],
-            'description' => ['nullable', 'string', 'max:10000'],
-            'status' => ['nullable', 'string', 'max:100'],
-            'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],
-            'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
-            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
-            'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
-        ]);
+        return $this->executeWithErrors($request, 'mcp.work.create', function (string $correlationId) use ($request, $authorization, $workItems) {
+            $validated = $request->validate([
+                'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+                'name' => ['required', 'string', 'min:1', 'max:255'],
+                'description' => ['nullable', 'string', 'max:10000'],
+                'status' => ['nullable', 'string', 'max:100'],
+                'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],
+                'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+                'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+            ]);
 
-        $actor = $request->user();
+            $actor = $request->user();
 
-        if (! $actor instanceof User) {
-            return Response::error('Authentication is required.');
-        }
+            if (! $actor instanceof User) {
+                throw new AuthenticationException;
+            }
 
-        /** @var Enterprise $enterprise */
-        $enterprise = Enterprise::query()->findOrFail($validated['enterprise_id']);
+            /** @var Enterprise $enterprise */
+            $enterprise = Enterprise::query()->findOrFail($validated['enterprise_id']);
 
-        $authorization->authorizeMutation(
-            $actor,
-            'work.create',
-            $enterprise,
-            $validated['agent_assignment_id'] ?? null,
-            $validated['agent_execution_id'] ?? null,
-            $validated['approval_request_id'] ?? null,
-            [
-                'enterprise_id' => $enterprise->getKey(),
-                'project_id' => $validated['project_id'] ?? null,
-            ],
-            ['create', [WorkItem::class, $enterprise]],
-        );
+            $authorization->authorizeMutation(
+                $actor,
+                'work.create',
+                $enterprise,
+                $validated['agent_assignment_id'] ?? null,
+                $validated['agent_execution_id'] ?? null,
+                $validated['approval_request_id'] ?? null,
+                [
+                    'enterprise_id' => $enterprise->getKey(),
+                    'project_id' => $validated['project_id'] ?? null,
+                ],
+                ['create', [WorkItem::class, $enterprise]],
+            );
 
-        $workItem = $workItems->create($actor, $enterprise, $validated);
+            $workItem = $workItems->create($actor, $enterprise, $validated);
 
-        return Response::structured([
-            'success' => true,
-            'result' => [
-                'id' => $workItem->getKey(),
-                'enterprise_id' => $workItem->enterprise_id,
-                'project_id' => $workItem->project_id,
-                'name' => $workItem->name,
-                'description' => $workItem->description,
-                'status' => $workItem->status,
-            ],
-        ]);
+            return Response::structured([
+                'success' => true,
+                'result' => [
+                    'id' => $workItem->getKey(),
+                    'enterprise_id' => $workItem->enterprise_id,
+                    'project_id' => $workItem->project_id,
+                    'name' => $workItem->name,
+                    'description' => $workItem->description,
+                    'status' => $workItem->status,
+                ],
+            ]);
+        });
     }
 }

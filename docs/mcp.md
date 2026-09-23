@@ -55,3 +55,13 @@ MCP must not directly mutate Eloquent models, perform arbitrary database writes,
 Future resources and tools should use stable, capability-oriented business names rather than internal table names. No additional naming catalogue is established until concrete MCP implementation begins.
 
 The Phase 4.1 foundation implements the protected MCP transport and authentication boundary. Phase 4.2 adds authorized contextual resources. Phase 4.3 adds the initial governed capability tools. Later Phase 4 issues add provider integration, Agent/Expert execution and operational audit contracts.
+
+## Error and correlation contract
+
+Every MCP tool execution receives a correlation identifier from `X-Correlation-ID` when supplied, or a generated UUID otherwise. MCP clients may also provide `cr8or.correlation_id` in request metadata. The identifier is returned in MCP error payloads and the HTTP response header and is propagated to AgentExecution and ApprovalRequest records where those records are created.
+
+Tool failures are returned as MCP `isError` responses with a machine-readable error object containing `type`, `code`, `message`, `retryable`, `correlation_id` and, for validation failures, field-level details. Failure classes are authentication, authorization, validation, unavailable-resource, business-rule, provider, external-execution and internal.
+
+Server-side logs contain correlation, actor, organization/execution and failure metadata only. Secrets, credentials, tokens and model prompt/context are not logged.
+
+An AgentExecution records its correlation identifier, provider and external provider invocation identifier when available. Provider failure records the normalized failure code and transitions the execution to `failed`; a provider failure cannot produce a successful AgentDecision.

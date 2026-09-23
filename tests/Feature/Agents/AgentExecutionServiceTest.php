@@ -1,6 +1,8 @@
 <?php
 
 use App\Agents\Agent;
+use App\AI\Exceptions\ModelProviderException;
+use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\Providers\FakeModelProvider;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
@@ -140,12 +142,15 @@ it('executes an authorized Agent with only the requested enterprise domain conte
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Create a plan.');
+    ))->execute($actor, $assignment, 'Create a plan.', modelOptions: ['correlation_id' => 'agent-test-123']);
 
     expect($result->succeeded())->toBeTrue()
         ->and($result->execution->status)->toBe(AgentExecution::STATUS_SUCCEEDED)
         ->and($result->decision)->toBeInstanceOf(AgentDecision::class)
-        ->and($result->decision->execution_id)->toBe($result->execution->getKey());
+        ->and($result->decision->execution_id)->toBe($result->execution->getKey())
+        ->and($result->execution->correlation_id)->toBe('agent-test-123')
+        ->and($result->execution->provider)->toBe('fake')
+        ->and($result->execution->external_execution_id)->toBe('fake-1');
 });
 
 it('denies disabled Agents and does not invoke the provider', function () {
@@ -283,7 +288,7 @@ it('fails the execution when the provider fails', function () {
     $actor = User::factory()->create();
     $assignment = governedAssignment($actor);
 
-    $provider = new FakeModelProvider(fn () => throw new RuntimeException('provider unavailable'));
+    $provider = new FakeModelProvider(fn () => throw new ModelProviderException(ModelProviderFailureType::Unavailable, 'fake', 'provider unavailable'));
 
     expect(fn () => (new AgentExecutionService(
         $provider,
@@ -296,7 +301,8 @@ it('fails the execution when the provider fails', function () {
 
     expect($execution)->not->toBeNull()
         ->and($execution->status)->toBe(AgentExecution::STATUS_FAILED)
-        ->and($execution->failure_reason)->toContain('provider unavailable')
+        ->and($execution->failure_code)->toBe('provider.unavailable')
+        ->and($execution->failure_reason)->toBe('The model provider could not complete the execution.')
         ->and($execution->completed_at)->not->toBeNull();
 });
 
