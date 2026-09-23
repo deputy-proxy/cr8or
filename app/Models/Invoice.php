@@ -1,1 +1,137 @@
-{"stdout":"<?php\n\nnamespace App\\Models;\n\nuse Database\\Factories\\InvoiceFactory;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;\nuse Illuminate\\Support\\Carbon;\nuse LogicException;\n\n#[Fillable([\n    'enterprise_id', 'customer_id', 'partner_id', 'invoice_number', 'issue_date',\n    'due_date', 'total', 'currency', 'status', 'counterparty_name_snapshot',\n    'counterparty_email_snapshot',\n])]\nclass Invoice extends Model\n{\n    /** @use HasFactory<InvoiceFactory> */\n    use HasFactory;\n\n    public const STATUS_DRAFT = 'draft';\n\n    public const STATUS_ISSUED = 'issued';\n\n    public const STATUS_OVERDUE = 'overdue';\n\n    public const STATUS_CANCELLED = 'cancelled';\n\n    /** @var list<string> */\n    private const HISTORICAL_FIELDS = [\n        'enterprise_id', 'customer_id', 'partner_id', 'invoice_number', 'issue_date',\n        'due_date', 'total', 'currency', 'counterparty_name_snapshot',\n        'counterparty_email_snapshot',\n    ];\n\n    protected static function booted(): void\n    {\n        static::saving(function (Invoice $invoice): void {\n            if (! in_array($invoice->status, [\n                self::STATUS_DRAFT, self::STATUS_ISSUED, self::STATUS_OVERDUE, self::STATUS_CANCELLED,\n            ], true)) {\n                throw new LogicException(\"Invalid invoice status [{$invoice->status}].\");\n            }\n\n            if (! preg_match('/^[A-Z]{3}$/', $invoice->currency)) {\n                throw new LogicException('Invoice currency must be a three-letter uppercase code.');\n            }\n\n            if ($invoice->total < 0) {\n                throw new LogicException('Invoice total cannot be negative.');\n            }\n\n            $dueDate = $invoice->getAttribute('due_date');\n            $issueDate = $invoice->getAttribute('issue_date');\n\n            if ($dueDate !== null && $issueDate !== null && Carbon::parse($dueDate)->lt(Carbon::parse($issueDate))) {\n                throw new LogicException('Invoice due date cannot precede its issue date.');\n            }\n\n            $invoice->validateScope();\n\n            if (! $invoice->exists) {\n                $invoice->snapshotCounterparty();\n\n                return;\n            }\n\n            foreach (self::HISTORICAL_FIELDS as $field) {\n                $invoice->{$field} = $invoice->getRawOriginal($field);\n            }\n        });\n    }\n\n    /** @return BelongsTo<Enterprise, $this> */\n    public function enterprise(): BelongsTo\n    {\n        return $this->belongsTo(Enterprise::class);\n    }\n\n    /** @return BelongsTo<Customer, $this> */\n    public function customer(): BelongsTo\n    {\n        return $this->belongsTo(Customer::class);\n    }\n\n    /** @return BelongsTo<Partner, $this> */\n    public function partner(): BelongsTo\n    {\n        return $this->belongsTo(Partner::class);\n    }\n\n    /** @return array<string, string> */\n    protected function casts(): array\n    {\n        return ['issue_date' => 'date', 'due_date' => 'date', 'total' => 'decimal:4'];\n    }\n\n    private function snapshotCounterparty(): void\n    {\n        if ($this->customer_id !== null) {\n            $customer = Customer::query()->find($this->customer_id);\n            if ($customer === null || (int) $customer->enterprise_id !== (int) $this->enterprise_id) {\n                throw new LogicException('Invoice customer must belong to its enterprise.');\n            }\n            $this->counterparty_name_snapshot = $customer->name;\n            $this->counterparty_email_snapshot = $customer->email;\n        } elseif ($this->partner_id !== null) {\n            $partner = Partner::query()->find($this->partner_id);\n            if ($partner === null || (int) $partner->enterprise_id !== (int) $this->enterprise_id) {\n                throw new LogicException('Invoice partner must belong to its enterprise.');\n            }\n            $this->counterparty_name_snapshot = $partner->name;\n            $this->counterparty_email_snapshot = $partner->email;\n        }\n    }\n\n    private function validateScope(): void\n    {\n        if (! Enterprise::query()->whereKey($this->enterprise_id)->exists()) {\n            return;\n        }\n\n        if ($this->customer_id !== null && Customer::query()->whereKey($this->customer_id)->value('enterprise_id') !== $this->enterprise_id) {\n            throw new LogicException('Invoice customer must belong to its enterprise.');\n        }\n\n        if ($this->partner_id !== null && Partner::query()->whereKey($this->partner_id)->value('enterprise_id') !== $this->enterprise_id) {\n            throw new LogicException('Invoice partner must belong to its enterprise.');\n        }\n\n        if ($this->customer_id !== null && $this->partner_id !== null) {\n            throw new LogicException('Invoice cannot reference both a customer and a partner.');\n        }\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Models;
+
+use Database\Factories\InvoiceFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use LogicException;
+
+#[Fillable([
+    'enterprise_id', 'customer_id', 'partner_id', 'invoice_number', 'issue_date',
+    'due_date', 'total', 'currency', 'status', 'counterparty_name_snapshot',
+    'counterparty_email_snapshot',
+])]
+class Invoice extends Model
+{
+    /** @use HasFactory<InvoiceFactory> */
+    use HasFactory;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_ISSUED = 'issued';
+
+    public const STATUS_OVERDUE = 'overdue';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** @var list<string> */
+    private const HISTORICAL_FIELDS = [
+        'enterprise_id', 'customer_id', 'partner_id', 'invoice_number', 'issue_date',
+        'due_date', 'total', 'currency', 'counterparty_name_snapshot',
+        'counterparty_email_snapshot',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Invoice $invoice): void {
+            if (! in_array($invoice->status, [
+                self::STATUS_DRAFT, self::STATUS_ISSUED, self::STATUS_OVERDUE, self::STATUS_CANCELLED,
+            ], true)) {
+                throw new LogicException("Invalid invoice status [{$invoice->status}].");
+            }
+
+            if (! preg_match('/^[A-Z]{3}$/', $invoice->currency)) {
+                throw new LogicException('Invoice currency must be a three-letter uppercase code.');
+            }
+
+            if ($invoice->total < 0) {
+                throw new LogicException('Invoice total cannot be negative.');
+            }
+
+            $dueDate = $invoice->getAttribute('due_date');
+            $issueDate = $invoice->getAttribute('issue_date');
+
+            if ($dueDate !== null && $issueDate !== null && Carbon::parse($dueDate)->lt(Carbon::parse($issueDate))) {
+                throw new LogicException('Invoice due date cannot precede its issue date.');
+            }
+
+            $invoice->validateScope();
+
+            if (! $invoice->exists) {
+                $invoice->snapshotCounterparty();
+
+                return;
+            }
+
+            foreach (self::HISTORICAL_FIELDS as $field) {
+                $invoice->{$field} = $invoice->getRawOriginal($field);
+            }
+        });
+    }
+
+    /** @return BelongsTo<Enterprise, $this> */
+    public function enterprise(): BelongsTo
+    {
+        return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<Customer, $this> */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /** @return BelongsTo<Partner, $this> */
+    public function partner(): BelongsTo
+    {
+        return $this->belongsTo(Partner::class);
+    }
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['issue_date' => 'date', 'due_date' => 'date', 'total' => 'decimal:4'];
+    }
+
+    private function snapshotCounterparty(): void
+    {
+        if ($this->customer_id !== null) {
+            $customer = Customer::query()->find($this->customer_id);
+            if ($customer === null || (int) $customer->enterprise_id !== (int) $this->enterprise_id) {
+                throw new LogicException('Invoice customer must belong to its enterprise.');
+            }
+            $this->counterparty_name_snapshot = $customer->name;
+            $this->counterparty_email_snapshot = $customer->email;
+        } elseif ($this->partner_id !== null) {
+            $partner = Partner::query()->find($this->partner_id);
+            if ($partner === null || (int) $partner->enterprise_id !== (int) $this->enterprise_id) {
+                throw new LogicException('Invoice partner must belong to its enterprise.');
+            }
+            $this->counterparty_name_snapshot = $partner->name;
+            $this->counterparty_email_snapshot = $partner->email;
+        }
+    }
+
+    private function validateScope(): void
+    {
+        if (! Enterprise::query()->whereKey($this->enterprise_id)->exists()) {
+            return;
+        }
+
+        if ($this->customer_id !== null && Customer::query()->whereKey($this->customer_id)->value('enterprise_id') !== $this->enterprise_id) {
+            throw new LogicException('Invoice customer must belong to its enterprise.');
+        }
+
+        if ($this->partner_id !== null && Partner::query()->whereKey($this->partner_id)->value('enterprise_id') !== $this->enterprise_id) {
+            throw new LogicException('Invoice partner must belong to its enterprise.');
+        }
+
+        if ($this->customer_id !== null && $this->partner_id !== null) {
+            throw new LogicException('Invoice cannot reference both a customer and a partner.');
+        }
+    }
+}
