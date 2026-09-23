@@ -42,7 +42,7 @@ function publishingContext(): array
 }
 
 it('requires publication-ready content and same-enterprise active accounts', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     expect($publication->status)->toBe(Publication::STATUS_SCHEDULED)->and($publication->schedule)->not->toBeNull();
 
@@ -56,39 +56,60 @@ it('requires publication-ready content and same-enterprise active accounts', fun
 });
 
 it('requires matching approval for an Agent publication capability', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $user->id, 'actor_name' => $user->name]);
     AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment->id, 'capability' => 'publication.publish']);
 
-    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->addHour(), null, $assignment, $execution))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    expect(fn () => app(PublishingService::class)->schedule(
+        $user,
+        $content,
+        $account,
+        now()->addHour(),
+        null,
+        $assignment,
+        $execution,
+    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
 
     $approval = app(ApprovalRequestService::class)->request($user, 'publication.publish', $assignment, $execution, ['content_item_id' => $content->id]);
     $approver = User::factory()->create();
     Membership::factory()->admin()->create(['user_id' => $approver->id, 'organization_id' => $org->id]);
     app(ApprovalRequestService::class)->approve($approval, $approver);
 
-    $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour(), $approval, $assignment, $execution);
+    $p = app(PublishingService::class)->schedule(
+        $user,
+        $content,
+        $account,
+        now()->addHour(),
+        $approval,
+        $assignment,
+        $execution,
+    );
     expect($p->approval_request_id)->toBe($approval->id);
 });
 
 it('submits through Postiz boundary and correlates result', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     $p = app(PublishingService::class)->submit($user, $p);
     expect($p->status)->toBe(Publication::STATUS_SUBMITTED)->and($p->external_id)->not->toBeNull()->and($p->results()->count())->toBe(1);
 });
 
 it('reconciles a submitted publication and preserves result history', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     $p = app(PublishingService::class)->submit($user, $p);
-    $p = app(PublishingService::class)->reconcile($p, new PublishingProviderResult($p->external_id, $p->external_url, 'succeeded', ['source' => 'reconciliation']));
+    $p = app(PublishingService::class)->reconcile($p, new PublishingProviderResult(
+        $p->external_id,
+        $p->external_url,
+        'succeeded',
+        ['source' => 'reconciliation'],
+    ));
     expect($p->status)->toBe(Publication::STATUS_SUCCEEDED)->and($p->results()->count())->toBe(2);
 });
 
 it('records provider timeouts explicitly', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $provider = app(PublishingProvider::class);
     expect($provider)->toBeInstanceOf(FakePublishingProvider::class);
     $provider->shouldTimeout = true;
@@ -98,7 +119,7 @@ it('records provider timeouts explicitly', function () {
 });
 
 it('retries a failed publication idempotently', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $provider = app(PublishingProvider::class);
     expect($provider)->toBeInstanceOf(FakePublishingProvider::class);
     $provider->shouldFail = true;
@@ -106,11 +127,13 @@ it('retries a failed publication idempotently', function () {
     expect(fn () => app(PublishingService::class)->submit($user, $p))->toThrow(PublishingProviderException::class);
     $provider->shouldFail = false;
     $p = app(PublishingService::class)->submit($user, $p->refresh());
-    expect($p->id)->toBeGreaterThan(0)->and(Publication::query()->count())->toBe(1)->and($p->publishingJobs()->first()->attempts)->toBe(2);
+    expect($p->id)->toBeGreaterThan(0)
+        ->and(Publication::query()->count())->toBe(1)
+        ->and($p->publishingJobs()->first()->attempts)->toBe(2);
 });
 
 it('keeps publication results immutable and organization scoped', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     app(PublishingService::class)->submit($user, $p);
     $r = $p->refresh()->results()->firstOrFail();
@@ -120,10 +143,10 @@ it('keeps publication results immutable and organization scoped', function () {
 });
 
 it('uses the same server-side capability boundary for MCP publication authorization', function () {
-    [$org,$user,$enterprise,$content,$channel,$account] = publishingContext();
+    [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $user->id]);
     AgentPermission::factory()->create(['agent_assignment_id' => $assignment->id, 'capability' => 'publication.publish']);
 
-    expect(app(McpCapabilityAuthorizer::class)->authorizeMutation($user,'publication.publish',$enterprise,$assignment->id,$execution->id,null,['content_item_id' => $content->id],['update', $content]))->toBeNull();
+    expect(app(McpCapabilityAuthorizer::class)->authorizeMutation($user, 'publication.publish', $enterprise,$assignment->id,$execution->id,null,['content_item_id' => $content->id],['update', $content]))->toBeNull();
 });
