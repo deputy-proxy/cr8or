@@ -213,4 +213,4 @@ The current Phase 2 implementation establishes and tests:
 - Filament administration backed by server-side policies and scoped queries;
 - automated authorization, isolation and negative-path tests.
 
-MCP authentication/authorization, provider-specific execution security and production Agent execution remain deferred to their respective implementation phases. The broader permission catalogue and policy language also remain intentionally limited to the explicit Phase 2 capability boundary.
+MCP authentication/authorization, provider-specific execution security and broader Agent orchestration remain deferred to later implementation phases. The broader permission catalogue and policy language also remain intentionally limited to the explicit Phase 2 capability boundary.

@@ -6,7 +6,7 @@ This document defines the implementation-facing architecture of CR8OR Core. It e
 
 ## Architectural Model
 
-**Agents decide → CR8OR owns state and rules → MCP exposes capabilities → n8n orchestrates → external services execute.**
+**Agents reason and request governed capabilities → CR8OR owns state, rules and authorization → MCP exposes capabilities → n8n orchestrates → external services execute.**
 
 | Boundary | Owns | Must not own |
 |---|---|---|
