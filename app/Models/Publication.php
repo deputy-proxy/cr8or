@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'approval_request_id', 'status', 'idempotency_key', 'correlation_id', 'external_id', 'external_url', 'scheduled_at', 'submitted_at', 'published_at', 'failure_code', 'failure_reason'])]
 /** @property-read Enterprise $enterprise */
+#[Fillable(['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'approval_request_id', 'status', 'idempotency_key', 'correlation_id', 'external_id', 'external_url', 'scheduled_at', 'submitted_at', 'published_at', 'failure_code', 'failure_reason'])]
 class Publication extends Model
 {
     /** @use HasFactory<\Database\Factories\PublicationFactory> */
@@ -34,18 +34,23 @@ class Publication extends Model
             if (! in_array($p->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
                 throw new LogicException("Invalid publication status [{$p->status}].");
             }
+
             $c = ContentItem::query()->find($p->content_item_id);
             $ch = Channel::query()->find($p->channel_id);
             $a = SocialAccount::query()->find($p->social_account_id);
+
             if ($c === null || (int) $c->enterprise_id !== (int) $p->enterprise_id) {
                 throw new LogicException('Publication content must belong to its enterprise.');
             }
+
             if ($ch === null || (int) $ch->enterprise_id !== (int) $p->enterprise_id) {
                 throw new LogicException('Publication channel must belong to its enterprise.');
             }
+
             if ($a === null || (int) $a->enterprise_id !== (int) $p->enterprise_id || (int) $a->channel_id !== (int) $p->channel_id) {
                 throw new LogicException('Publication social account must belong to its enterprise and channel.');
             }
+
             if ($p->exists) {
                 foreach (['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'idempotency_key'] as $f) {
                     if ($p->isDirty($f)) {
@@ -56,7 +61,6 @@ class Publication extends Model
         });
     }
 
-    /** @return BelongsTo<ContentItem, $this> */
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {
@@ -110,6 +114,7 @@ class Publication extends Model
         if (! in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED], true)) {
             throw new LogicException('Publication cannot be submitted from its current state.');
         }
+
         $this->status = self::STATUS_SUBMITTED;
         $this->external_id = $id;
         $this->external_url = $url;
@@ -123,6 +128,7 @@ class Publication extends Model
         if ($this->status !== self::STATUS_SUBMITTED) {
             throw new LogicException('Publication can only succeed from submitted state.');
         }
+
         $this->status = self::STATUS_SUCCEEDED;
         $this->published_at ??= CarbonImmutable::now();
 
