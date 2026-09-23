@@ -7,6 +7,7 @@ use App\Models\AgentExecution;
 use App\Models\User;
 use App\Services\ApprovalRequestService;
 use App\Services\McpCapabilityAuthorizer;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -30,57 +31,61 @@ class RequestApprovalTool extends AuthorizedTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, ApprovalRequestService $approvals): Response|ResponseFactory
     {
-        $validated = $request->validate([
-            'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
-            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
-            'capability' => ['required', 'string', 'min:1', 'max:255'],
-            'target_context' => ['nullable', 'array'],
-        ]);
+        return $this->executeWithErrors($request, 'mcp.approval.request', function (string $correlationId) use ($request, $authorization, $approvals) {
+            $validated = $request->validate([
+                'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+                'capability' => ['required', 'string', 'min:1', 'max:255'],
+                'target_context' => ['nullable', 'array'],
+            ]);
 
-        $actor = $request->user();
+            $actor = $request->user();
 
-        if (! $actor instanceof User) {
-            return Response::error('Authentication is required.');
-        }
+            if (! $actor instanceof User) {
+                throw new AuthenticationException;
+            }
 
-        /** @var AgentAssignment $assignment */
-        $assignment = AgentAssignment::query()->with('agentDescriptor')->findOrFail($validated['agent_assignment_id']);
-        /** @var AgentExecution|null $execution */
-        $execution = isset($validated['agent_execution_id'])
-            ? AgentExecution::query()->findOrFail($validated['agent_execution_id'])
-            : null;
+            /** @var AgentAssignment $assignment */
+            $assignment = AgentAssignment::query()->with('agentDescriptor')->findOrFail($validated['agent_assignment_id']);
+            /** @var AgentExecution|null $execution */
+            $execution = isset($validated['agent_execution_id'])
+                ? AgentExecution::query()->findOrFail($validated['agent_execution_id'])
+                : null;
 
-        $targetContext = $validated['target_context'] ?? [];
+            $targetContext = $validated['target_context'] ?? [];
 
-        $authorization->authorizeApprovalRequest(
-            $actor,
-            $assignment,
-            $execution,
-            $validated['capability'],
-        );
+            $authorization->authorizeApprovalRequest(
+                $actor,
+                $assignment,
+                $execution,
+                $validated['capability'],
+            );
 
-        $approval = $approvals->request(
-            $actor,
-            $validated['capability'],
-            $assignment,
-            $execution,
-            $targetContext,
-        );
+            $approval = $approvals->request(
+                $actor,
+                $validated['capability'],
+                $assignment,
+                $execution,
+                $targetContext,
+                $correlationId,
+            );
 
-        return Response::structured([
-            'success' => true,
-            'result' => [
-                'id' => $approval->getKey(),
-                'status' => $approval->status,
-                'capability' => $approval->capability,
-                'organization_id' => $approval->organization_id,
-                'enterprise_id' => $approval->enterprise_id,
-                'agent_assignment_id' => $approval->agent_assignment_id,
-                'agent_execution_id' => $approval->agent_execution_id,
-                'target_context' => $approval->target_context,
-                'requested_at' => $approval->requested_at->toIso8601String(),
-                'expires_at' => $approval->expires_at->toIso8601String(),
-            ],
-        ]);
+            return Response::structured([
+                'success' => true,
+                'result' => [
+                    'id' => $approval->getKey(),
+                    'status' => $approval->status,
+                    'capability' => $approval->capability,
+                    'organization_id' => $approval->organization_id,
+                    'enterprise_id' => $approval->enterprise_id,
+                    'agent_assignment_id' => $approval->agent_assignment_id,
+                    'agent_execution_id' => $approval->agent_execution_id,
+                    'correlation_id' => $approval->correlation_id,
+                    'target_context' => $approval->target_context,
+                    'requested_at' => $approval->requested_at->toIso8601String(),
+                    'expires_at' => $approval->expires_at->toIso8601String(),
+                ],
+            ]);
+        });
     }
 }
