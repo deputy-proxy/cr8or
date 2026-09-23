@@ -7,6 +7,7 @@ use App\AI\Providers\LaravelAiProvider;
 use App\Contracts\MediaGenerator;
 use App\Contracts\MediaRenderer;
 use App\Contracts\MediaStorage;
+use App\Contracts\PublishingProvider;
 use App\Services\FilesystemMediaStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -24,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ModelProvider::class, LaravelAiProvider::class);
         $this->app->bind(MediaStorage::class, FilesystemMediaStorage::class);
+        $this->app->singleton(PublishingProvider::class, function ($app): PublishingProvider {
+            return $app->environment('testing') ? new FakePublishingProvider : new PostizPublishingProvider;
+        });
         $this->app->bind(MediaGenerator::class, function (): MediaGenerator {
             return new class implements MediaGenerator
             {
