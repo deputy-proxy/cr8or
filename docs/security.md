@@ -218,7 +218,7 @@ The current repository establishes and tests:
 - correlation and audit metadata across MCP, AgentExecution and ApprovalRequest records;
 - log redaction that excludes secrets and model prompt/context.
 
-Agent-to-agent collaboration, broader policy language, Finance and other later-phase capabilities remain deferred. Marketing, Media and Publishing are implemented Phase 5 capabilities.
+Agent-to-agent collaboration and broader policy language remain deferred. Marketing, Media and Publishing are implemented Phase 5 capabilities, while Finance & Business Operations are implemented Phase 6 capabilities. Finance uses the existing Enterprise authorization boundary and does not introduce a second authorization system.
 
 ## Error Classification, Correlation & Observability
 
