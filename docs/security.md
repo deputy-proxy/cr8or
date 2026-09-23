@@ -1,6 +1,6 @@
 # CR8OR Security & Authorization
 
-This document defines the security boundaries that must remain true as CR8OR moves from the completed Phase 1 foundation into Agent, Expert and MCP implementation.
+This document defines the security boundaries that must remain true across the current CR8OR implementation, including Agent/Expert runtime governance, MCP, Marketing, Media, Publishing and external integrations.
 
 ## Security Principles
 
@@ -133,7 +133,7 @@ MCP tools must not directly mutate Eloquent models or encode duplicated business
 
 ## External Integrations
 
-n8n, media workers, publishing services, GitHub, Canva, storage providers and AI model providers are execution boundaries.
+Media workers, publishing services, GitHub, Canva, Cloudflare R2 and AI model providers are external execution/storage boundaries. n8n is an optional future MCP-connected automation capability and is not CR8OR's primary orchestration layer.
 
 External services must not silently become authoritative sources of CR8OR business state.
 
@@ -218,7 +218,7 @@ The current repository establishes and tests:
 - correlation and audit metadata across MCP, AgentExecution and ApprovalRequest records;
 - log redaction that excludes secrets and model prompt/context.
 
-Agent-to-agent collaboration, broader policy language, Marketing/Media/Publishing, Finance and other later-phase capabilities remain deferred.
+Agent-to-agent collaboration, broader policy language, Finance and other later-phase capabilities remain deferred. Marketing, Media and Publishing are implemented Phase 5 capabilities.
 
 ## Error Classification, Correlation & Observability
 
