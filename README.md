@@ -971,6 +971,8 @@ Extend CR8OR into broader business operations and financial intelligence.
 - Operational metrics.
 - Business health reporting.
 
+**Verified Phase 6.3 implementation:** Invoices, Revenue and Expense are authoritative CR8OR records with Enterprise-safe relationships, historical invoice counterparty snapshots, fixed-precision monetary values and server-side organization authorization. Revenue and Expense reference authoritative accounts/transactions rather than duplicating ledger state; payment is not inferred from invoice lifecycle status.
+
 **Completion Criteria**
 
 - Financial records are auditable.
