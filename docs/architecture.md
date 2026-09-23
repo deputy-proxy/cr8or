@@ -6,7 +6,9 @@ This document defines the implementation-facing architecture of CR8OR Core. It e
 
 ## Architectural Model
 
-**Agents reason and request governed capabilities → CR8OR owns state, rules and authorization → MCP exposes capabilities → n8n orchestrates → external services execute.**
+**Agents reason and request governed capabilities → CR8OR owns state, rules and authorization → MCP exposes capabilities → external services execute.**
+
+Automation platforms such as n8n are optional future MCP-connected capabilities that an Automatiser Expert may use; n8n is not CR8OR's primary orchestration layer.
 
 | Boundary | Owns | Must not own |
 |---|---|---|
@@ -18,7 +20,7 @@ This document defines the implementation-facing architecture of CR8OR Core. It e
 | Events | Meaningful state-change notifications | Ownership of business state |
 | Jobs | Asynchronous CR8OR-owned work | Becoming an alternative business-state store |
 | MCP | Controlled AI-facing capability interface | Direct model/database mutation or duplicated business logic |
-| n8n | Cross-service workflow orchestration | Authoritative CR8OR business state |
+| n8n | Optional future MCP-connected automation capability | Authoritative CR8OR business state or primary orchestration authority |
 | External workers/services | Specialized execution | Authoritative CR8OR business state |
 | R2 / storage | Canonical files and generated media | Business authorization or domain rules |
 
@@ -42,7 +44,7 @@ MCP translates AI-facing requests into controlled CR8OR capabilities. MCP must a
 
 ## Orchestration and Execution Boundaries
 
-n8n coordinates workflows that cross service boundaries or require external orchestration. It may receive execution instructions and return results, but CR8OR remains the source of truth for resulting business state.
+n8n is an optional future automation capability that may be exposed through MCP and used by an Automatiser Expert. If connected, it may coordinate external steps, but CR8OR remains the source of truth for resulting business state.
 
 Specialized services such as media renderers, publishing systems, Canva, GitHub, and AI providers perform bounded execution. Their responses are external execution results that CR8OR may persist or reconcile where they affect business state.
 
@@ -56,7 +58,7 @@ Specialized services such as media renderers, publishing systems, Canva, GitHub,
 6. An application/domain service validates and executes the business operation.
 7. CR8OR persists the authoritative state transition.
 8. Events and jobs communicate the resulting state change.
-9. n8n and/or an external service performs specialized execution when required.
+9. An external service performs specialized execution when required; an optional MCP-connected automation capability such as n8n may coordinate external steps.
 10. The external result is correlated with the originating CR8OR operation.
 11. CR8OR records relevant result, status and audit information.
 12. Reporting and subsequent agent context derive from authoritative CR8OR state.
