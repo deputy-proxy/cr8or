@@ -58,7 +58,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 2 implementation:** Agent/Expert runtime contracts, descriptor registration, organization/enterprise-scoped assignments, capability permissions, execution and decision records, approval enforcement and Filament governance administration are implemented. Runtime classes remain authoritative for behavior and metadata.
 
-**Deferred:** Provider abstraction and production execution, memory implementation, agent-to-agent collaboration, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 4 implementation:** Provider abstraction, governed production execution, authorized Enterprise/Knowledge/Strategy/Work context assembly, Expert coordination, MCP capability invocation boundaries, provider failure handling, correlation and execution audit contracts are implemented.
+
+**Deferred:** Agent memory implementation, agent-to-agent collaboration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 

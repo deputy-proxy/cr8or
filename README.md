@@ -600,7 +600,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phase 0 — Foundation & Architecture** and **Phase 1 — Identity, Organizations & Enterprise Context**. The implemented **Phase 2 Agent/Expert governance slice (2.1–2.7)** is also complete and has been audited against the repository rules, runtime boundaries, authorization model, tests and CI. The remaining capabilities described by the target architecture are intentionally deferred to later product phases. Phase 2 establishes the Agent/Expert governance foundation; later phases introduce production execution, orchestration, MCP runtime and the business domains those capabilities operate on.
+The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 1 — Identity, Organizations & Enterprise Context**, **Phase 2 — Agents, Experts & Governance**, and **Phase 3 — Strategy, Knowledge & Work**. **Phase 4 — MCP Core** is now also implemented and audited. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution, Agent/Expert execution, and execution observability. Later product capabilities remain intentionally deferred to their roadmap phases.
 
 ### Implemented
 
@@ -616,48 +616,49 @@ The repository has completed **Phase 0 — Foundation & Architecture** and **Pha
 - Phase 1 enterprise records: products, customers, partners, goals, KPIs and enterprise decisions.
 - Filament administration for the implemented Phase 1 domain.
 - Historical enterprise decision actor identity and decision timestamps.
+- Protected `/mcp` MCP transport with Passport-backed authentication and OAuth discovery.
+- Organization/enterprise-scoped MCP Enterprise, Strategy, Knowledge and Work resources.
+- Governed MCP Work/Strategy mutation and approval-request tools backed by application services.
+- Provider-neutral AI model execution through `App\AI\Contracts\ModelProvider`, including a real Laravel AI adapter and deterministic fake provider.
+- Governed Agent/Expert execution against authorized Enterprise, Knowledge, Strategy and Work context with execution-time capability re-authorization.
+- Correlated AgentExecution/AgentDecision/ApprovalRequest history with normalized failures, provider references and redacted observability.
 
 ### Intentionally Not Yet Implemented
 
 The following remain product-roadmap work rather than completed runtime functionality:
 
-- Production Agent/Expert execution and model-provider integration.
 - Agent-to-agent collaboration and workflow orchestration.
 - Broader capability catalogues, policy language and reporting.
 - Knowledge retrieval, indexing and vector infrastructure.
 - AI planning and metric-calculation engines.
 - Full workflow-engine semantics.
-- MCP server implementation and tool/resource runtime.
-- Governed Agent/Expert AI execution and model-provider integration.
 - Marketing, media and publishing domains inside CR8OR Core.
 - Finance and business operations.
-- Multi-agent orchestration.
+- Agent-to-agent collaboration and multi-agent orchestration.
 
 Existing external CR8OR services such as media, n8n, Canva or publishing infrastructure do not constitute completion of the corresponding CR8OR Core product phases.
 
-### Phase 1 Audit Reconciliation
+### Audit Reconciliation
 
-The Phase 1 audit confirmed that the domain foundation, organization isolation, authorization and Filament administration are substantially implemented. The audit also identified documentation and boundary work that should be resolved before Phase 2 grows the Agent/MCP surface.
+The Phase 1 audit confirmed the domain foundation, organization isolation, authorization and Filament administration. Phase 2 and Phase 3 audits subsequently verified the Agent/Expert governance and structured operating context. Phase 4.7 verified the MCP and governed AI execution boundary.
 
 Current follow-up items are:
 
-- reconcile the Enterprise Context Filament table with the actual model fields;
-- explicitly define whether enterprise decisions are mutable, append-only or versioned;
-- establish reusable application/domain capability boundaries before Agents and MCP can invoke business mutations;
 - keep authorization independent from UI visibility;
-- align all authoritative documentation and CI instructions with the repository's actual commands and files.
+- continue tracking any non-Phase-4 hardening separately from phase-completion audits;
+- align authoritative documentation and CI instructions with the repository's actual commands and files.
 
-These are not evidence that Phase 1 is absent. They are hardening items identified during the Phase 1 audit and should be tracked as implementation work before or alongside the relevant Phase 2 boundary work.
+These are ongoing hardening/documentation items, not evidence that the completed phases are absent. They should be tracked separately from the phase-completion status.
 
 ### Foundation Integrity
 
 During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. Required foundation files should therefore be protected by automated integrity validation rather than relying on human memory or review alone.
 
-### Immediate Priority
+### Next Priority
 
-**Phase 4 — MCP Core**
+**Phase 5 — Marketing, Media & Publishing**
 
-Phase 0, Phase 1, Phase 2 governance, and Phase 3 Strategy, Knowledge & Work are complete for their defined scopes. The next product work should establish the controlled MCP interface and the governed Agent/Expert AI execution runtime, while preserving the authority, authorization and historical-integrity boundaries already established.
+Phase 0, Phase 1, Phase 2 governance, Phase 3 Strategy, Knowledge & Work, and Phase 4 MCP Core are complete for their defined scopes. The next product work should build the deferred Phase 5+ business capabilities on top of the verified MCP and governed AI runtime, while preserving the authority, authorization and historical-integrity boundaries already established.
 
 ## Development Roadmap
 
@@ -725,7 +726,7 @@ Create the authoritative organization, user, enterprise and enterprise-context f
 
 **Objective**
 
-Establish the Agent and Expert runtime architecture, persistent descriptors, governance model, and administrative discovery interface. Phase 2 is the governance/control-plane phase. Production Agent execution, model-provider integration, broader orchestration and MCP runtime are deliberately implemented in later product phases.
+Establish the Agent and Expert runtime architecture, persistent descriptors, governance model, and administrative discovery interface. Phase 2 is the governance/control-plane phase; production execution and MCP integration were intentionally completed in Phase 4.
 
 **Scope**
 
@@ -808,7 +809,7 @@ Give agents and humans a structured operating model for planning and execution.
 
 ### Phase 4 — MCP Core
 
-**Status: Not started**
+**Status: Complete**
 
 **Objective**
 
@@ -832,7 +833,7 @@ Expose CR8OR as a controlled AI operating interface and introduce the governed A
 
 **Architecture boundary**
 
-Phase 4 is the first phase in which CR8OR actually invokes AI models as part of its Agent/Expert runtime.
+Phase 4 is the verified implementation phase in which CR8OR first invokes AI models as part of its Agent/Expert runtime.
 
 - Phase 2 defines and governs Agent/Expert runtime components, descriptors, assignments, permissions and historical execution/decision records.
 - Phase 3 provides the structured enterprise context, strategy, knowledge and work state that execution can reason over.
@@ -946,17 +947,29 @@ Allow multiple specialized agents to collaborate through a shared business opera
 - Agent collaboration does not bypass domain boundaries.
 - Business state remains centralized in CR8OR.
 
+**Verified Phase 4 implementation**
+
+- Phase 4.1 protects the `/mcp` transport with Passport-backed authentication and establishes the MCP server boundary.
+- Phase 4.2 exposes organization/enterprise-scoped Enterprise, Strategy, Knowledge and Work resources.
+- Phase 4.3 exposes governed Work/Strategy mutation and approval-request tools through application services.
+- Phase 4.4 isolates model-provider access behind `App\AI\Contracts\ModelProvider` with a real Laravel AI adapter and deterministic fake provider.
+- Phase 4.5 executes authorized Agents against assembled Enterprise/Knowledge/Strategy/Work context, coordinates Experts, invokes the provider contract, re-authorizes capability requests and records execution/decision history.
+- Phase 4.6 adds normalized errors, correlation, provider/external references, retry/idempotency coverage and redacted observability.
+- All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs, and the complete current repository validation passes locally.
+
+Phase 4 does not introduce agent-to-agent collaboration, Marketing/Media/Publishing, Finance, or a generalized workflow/policy engine. Those remain later-phase capabilities.
+
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, and the Phase 3 Strategy, Knowledge & Work implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete.
+The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
 | Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
-| Phase 2 — Agents, Experts & Governance | **Complete** | The 2.1–2.7 governance/control-plane implementation is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Actual AI model execution, provider integration, agent-to-agent workflows and broader policy/reporting capabilities remain deferred to later phases. |
+| Phase 2 — Agents, Experts & Governance | **Complete** | The 2.1–2.7 governance/control-plane implementation is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Phase 4 supplies the later production execution/provider integration; agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
 | Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
-| Phase 4 — MCP Core | **Not started** | MCP architecture is defined, but the MCP runtime and governed Agent/Expert AI execution layer are pending. |
+| Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
 | Phase 6 — Finance & Business Operations | **Not started** | Architecture defined, implementation pending. |
 | Phase 7 — Multi-Agent Business Operations | **Not started** | Future capability. |

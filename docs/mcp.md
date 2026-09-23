@@ -52,9 +52,9 @@ MCP must not directly mutate Eloquent models, perform arbitrary database writes,
 
 ## Naming and Scope
 
-Future resources and tools should use stable, capability-oriented business names rather than internal table names. No additional naming catalogue is established until concrete MCP implementation begins.
+Future resources and tools should use stable, capability-oriented business names rather than internal table names. The current Phase 4 catalogue is intentionally limited to verified Phase 1-3 capabilities; later product phases may add capabilities without weakening the same authorization boundary.
 
-The Phase 4.1 foundation implements the protected MCP transport and authentication boundary. Phase 4.2 adds authorized contextual resources. Phase 4.3 adds the initial governed capability tools. Later Phase 4 issues add provider integration, Agent/Expert execution and operational audit contracts.
+Phase 4.1 implements the protected MCP transport and authentication boundary. Phase 4.2 adds authorized contextual resources. Phase 4.3 adds the initial governed capability tools. Phase 4.4 adds the provider-neutral model adapter. Phase 4.5 adds governed Agent/Expert execution. Phase 4.6 adds operational audit, error and correlation contracts. Phase 4.7 verifies the complete Phase 4 implementation and reconciles documentation.
 
 ## Error and correlation contract
 
