@@ -2,7 +2,7 @@
 
 CR8OR is an AI-native business operating platform that provides a persistent system of record for enterprises, together with a controlled MCP interface through which AI agents can understand enterprise context, make decisions, request actions, and execute approved workflows.
 
-CR8OR is designed to separate **business state**, **AI reasoning**, **workflow orchestration**, and **external execution**. Laravel owns the authoritative business state and application rules; AI agents own reasoning and decisions; MCP exposes controlled capabilities to AI clients; n8n orchestrates asynchronous integrations; specialized external services perform media, publishing, development, and other execution tasks.
+CR8OR is designed to separate **business state**, **AI reasoning**, **capability exposure**, and **external execution**. Laravel owns the authoritative business state and application rules; AI agents own reasoning and decisions; MCP exposes controlled capabilities to AI clients; specialized external services perform media, publishing, development, and other execution tasks. n8n is an optional future MCP-integrated automation capability, not CR8OR's primary orchestrator.
 
 ## Product Definition
 
@@ -24,7 +24,9 @@ CR8OR is not:
 
 The core architectural boundary is:
 
-**Agents reason and decide → CR8OR authorizes and owns state/rules → MCP exposes governed capabilities → n8n orchestrates external workflows → specialized services execute.**
+**Agents reason and decide → CR8OR authorizes and owns state/rules → MCP exposes governed capabilities → specialized services execute.**
+
+Automation systems such as n8n may be connected later through MCP by an Automatiser Expert when a business workflow requires them.
 
 Agent execution is intentionally split into reasoning and capability execution. The Agent runtime produces a governed capability request; CR8OR validates authority and approval requirements; the application capability boundary performs the operation; the resulting state and audit record remain authoritative in CR8OR.
 
@@ -37,7 +39,7 @@ The project is governed by the following principles:
 3. **Domain behavior is explicit** — important business operations are represented by controlled application/domain workflows rather than arbitrary model mutation.
 4. **MCP is an interface, not a second application layer** — MCP translates AI requests into application services and must not contain duplicated business logic.
 5. **Human authority remains explicit** — sensitive actions can require approval and must be auditable.
-6. **External systems are execution boundaries** — n8n, media workers, publishers, GitHub and other services perform specialized work without becoming the source of truth.
+6. **External systems are execution boundaries** — media workers, publishers, GitHub and other services perform specialized work without becoming the source of truth. Automation platforms such as n8n are optional MCP-connected capabilities rather than the core orchestration layer.
 7. **Historical truth is preserved** — important decisions, state changes, approvals, transactions and outputs remain interpretable after rules change.
 8. **CI is part of development** — an implementation is not complete until the repository's required quality gates pass and the resulting state is verified.
 9. **Documentation is part of the product** — important architectural, domain, security and operational decisions must be documented.
@@ -120,9 +122,9 @@ CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as the
 
 The descriptor layer must not duplicate authoritative runtime metadata. Filament can resolve the registered PHP class and display its metadata read-only, providing a living technical glossary derived from the actual implementation.
 
-**Agents orchestrate. Experts specialize. Functions execute. Descriptors register and describe. Models persist business state.**
+**Agents orchestrate. Experts specialize. Application services execute. Descriptors register and describe. Models persist business state.**
 
-Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, select appropriate Functions, apply their methodology, and produce structured results. Functions and application/domain services perform concrete operations against authoritative CR8OR state or approved external services.
+Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, select appropriate application capabilities, apply their methodology, and produce structured results. Application services perform concrete operations against authoritative CR8OR state or approved external services.
 
 ### Knowledge
 
@@ -291,7 +293,7 @@ CR8OR follows the following architectural model. This describes the target syste
             Events        Jobs
                             |
                             v
-                           n8n
+                 External execution
                             |
           +-----------------+------------------+
           |                 |                  |
@@ -314,9 +316,9 @@ CR8OR follows the following architectural model. This describes the target syste
 | Policies / Authorization | Enforce authority and data boundaries |
 | Events | Communicate meaningful state changes |
 | Jobs | Perform asynchronous application work |
-| n8n | Orchestrate external workflows and integrations |
+| n8n | Optional future MCP-connected automation capability |
 | External Workers | Perform specialized execution |
-| R2 / Storage | Store canonical generated media and files |
+| Cloudflare R2 | Canonical generated-media and file storage |
 | Filament | Administrative and operational application interface |
 
 ### Core Interaction Pattern
@@ -932,10 +934,10 @@ Implement the AI-assisted content operating system.
 - Asset requests.
 - Generation jobs.
 - Media rendering.
-- Provider-neutral media storage, with S3/R2-compatible deployment through the storage boundary.
+- Cloudflare R2 as the canonical media and file storage system.
 - Publishing.
 - Postiz publishing adapter/integration boundary.
-- Canva-assisted workflows.
+- Canva design creation through a governed integration boundary with authorization, idempotency, correlation and external-resource tracking.
 
 **Verified implementation:** Issues 65-70 implement and audit the Marketing, controlled content, media, publishing/Postiz, Canva integration boundary and Filament administration slices. CR8OR remains authoritative for business state, lifecycle, authorization, approval and historical records; external providers remain execution boundaries.
 
@@ -1014,7 +1016,7 @@ Phase 4 delivers the governed AI/MCP execution infrastructure and capability bou
 - Phase 4.4 isolates model-provider access behind `App\AI\Contracts\ModelProvider` with a real Laravel AI adapter and deterministic fake provider.
 - Phase 4.5 executes authorized Agents against assembled Enterprise/Knowledge/Strategy/Work context, coordinates Experts, invokes the provider contract, re-authorizes capability requests and records execution/decision history.
 - Phase 4.6 adds normalized errors, correlation, provider/external references, retry/idempotency coverage and redacted observability.
-- All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs, and the complete current repository validation passes locally.
+- All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs.
 
 Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are now implemented in Phase 5; agent-to-agent collaboration, Finance and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
 
@@ -1024,7 +1026,7 @@ The current Workflow, Job and Execution models provide CR8OR-owned lifecycle, id
 
 ### Events and Jobs
 
-Events and Jobs remain CR8OR application mechanisms for meaningful state-change communication and asynchronous application work. The current repository contains execution/lifecycle contracts and tracking infrastructure, while substantial concrete asynchronous workflows are introduced only where the corresponding domain capability requires them. n8n remains the external orchestration boundary where appropriate.
+Events and Jobs remain CR8OR application mechanisms for meaningful state-change communication and asynchronous application work. The current repository contains execution/lifecycle contracts and tracking infrastructure, while substantial concrete asynchronous workflows are introduced only where the corresponding domain capability requires them. n8n is not the primary CR8OR orchestration layer. It may be connected later through MCP by an Automatiser Expert when appropriate.
 
 ## MCP Surface: Current Implementation
 
@@ -1112,7 +1114,7 @@ The following documents are authoritative where they exist and are applicable to
 - `docs/agents.md` — agent and expert runtime architecture, descriptors and governance.
 - `docs/governance.md` — permissions, approvals and auditability.
 
-The following documentation areas are planned or may require creation/reconciliation as their implementation becomes authoritative:
+The following documents are also maintained as implementation-facing specifications and must remain reconciled with the codebase:
 
 - `docs/integrations.md` — external service boundaries and contracts.
 - `docs/implementation-decisions.md` — important architectural decisions.
