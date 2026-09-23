@@ -10,6 +10,7 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
+use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
@@ -35,6 +36,7 @@ class Cr8orServer extends Server
         UpdateContentItemTool::class,
         SubmitContentForReviewTool::class,
         MarkContentPublicationReadyTool::class,
+        PublishContentTool::class,
         RequestApprovalTool::class,
     ];
 
