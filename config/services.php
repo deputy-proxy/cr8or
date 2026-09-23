@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'canva' => [
+        'url' => env('CANVA_API_URL', 'https://api.canva.com/rest/v1'),
+        'timeout' => (int) env('CANVA_TIMEOUT', 15),
+        'credentials' => [
+            'default' => env('CANVA_ACCESS_TOKEN'),
+        ],
+    ],
+
 ];
