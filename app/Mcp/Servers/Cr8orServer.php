@@ -6,6 +6,11 @@ use App\Mcp\Resources\EnterpriseContextResource;
 use App\Mcp\Resources\KnowledgeContextResource;
 use App\Mcp\Resources\StrategyContextResource;
 use App\Mcp\Resources\WorkContextResource;
+use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\RequestApprovalTool;
+use App\Mcp\Tools\UpdateStrategyTool;
+use App\Mcp\Tools\UpdateWorkItemTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -16,7 +21,14 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Instructions('Provides controlled access to CR8OR capabilities through authorized enterprise resources.')]
 class Cr8orServer extends Server
 {
-    protected array $tools = [];
+    /** @var array<int, class-string<\Laravel\Mcp\Server\Tool>> */
+    protected array $tools = [
+        CreateWorkItemTool::class,
+        UpdateWorkItemTool::class,
+        CreateStrategyTool::class,
+        UpdateStrategyTool::class,
+        RequestApprovalTool::class,
+    ];
 
     protected array $resources = [
         EnterpriseContextResource::class,
