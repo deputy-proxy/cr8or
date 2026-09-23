@@ -24,14 +24,14 @@ class WorkContextResource extends Resource implements HasUriTemplate
     {
         $user = $request->user();
 
-        if (! $user instanceof User) {
-            throw new AuthorizationException('Authentication is required to read MCP resources.');
+        if ($user instanceof User) {
+            return Response::json(app(McpContextAssembler::class)->work(
+                $user,
+                $this->enterpriseId($request->get('enterprise')),
+            ));
         }
 
-        return Response::json(app(McpContextAssembler::class)->work(
-            $user,
-            $this->enterpriseId($request->get('enterprise')),
-        ));
+        throw new AuthorizationException('Authentication is required to read MCP resources.');
     }
 
     private function enterpriseId(mixed $value): int
