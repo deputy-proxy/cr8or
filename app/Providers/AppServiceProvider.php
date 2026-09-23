@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\LaravelAiProvider;
+use App\Contracts\CanvaClient as CanvaClientContract;
+use App\Contracts\CredentialResolver;
 use App\Contracts\MediaGenerator;
 use App\Contracts\MediaRenderer;
 use App\Contracts\MediaStorage;
@@ -29,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
             return $app->environment('testing')
                 ? new FakePublishingProvider
                 : new PostizPublishingProvider;
+        });
+        $this->app->singleton(CredentialResolver::class, CanvaCredentialResolver::class);
+        $this->app->singleton(CanvaClientContract::class, function ($app): CanvaClientContract {
+            return $app->environment('testing')
+                ? new FakeCanvaClient
+                : new CanvaClient($app->make(CredentialResolver::class));
         });
         $this->app->bind(MediaGenerator::class, function (): MediaGenerator {
             return new class implements MediaGenerator
