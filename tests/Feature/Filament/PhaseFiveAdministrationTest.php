@@ -85,8 +85,8 @@ it('limits mutable phase 5 administration to enterprise managers', function () {
 
     expect(AssetResource::canCreate())->toBeTrue()
         ->and(SocialAccountResource::canCreate())->toBeTrue()
-        ->and(PublicationResource::canCreate())->toBeTrue()
-        ->and(PublicationScheduleResource::canCreate())->toBeTrue()
+        ->and(PublicationResource::canCreate())->toBeFalse()
+        ->and(PublicationScheduleResource::canCreate())->toBeFalse()
         ->and(IntegrationConnectionResource::canCreate())->toBeTrue();
 
     $this->actingAs($member);
@@ -121,4 +121,13 @@ it('uses existing policies for mutable phase 5 records', function () {
     expect(Gate::forUser($user)->allows('view', $asset))->toBeTrue()
         ->and(Gate::forUser($user)->allows('update', $asset))->toBeTrue()
         ->and(Gate::forUser($user)->allows('delete', $asset))->toBeTrue();
+});
+
+it('keeps publication and scheduling lifecycle mutations behind application services', function () {
+    expect(PublicationResource::getPages())->not->toHaveKey('create')
+        ->and(PublicationResource::getPages())->not->toHaveKey('edit')
+        ->and(PublicationScheduleResource::getPages())->not->toHaveKey('create')
+        ->and(PublicationScheduleResource::getPages())->not->toHaveKey('edit')
+        ->and(PublicationResource::canCreate())->toBeFalse()
+        ->and(PublicationScheduleResource::canCreate())->toBeFalse();
 });

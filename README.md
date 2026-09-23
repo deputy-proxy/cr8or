@@ -642,7 +642,7 @@ The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 
 
 ### Intentionally Deferred
 
-The following capabilities are deliberately deferred from the completed Phase 4 scope and belong to later roadmap work:
+The following capabilities were deliberately deferred from the completed Phase 4 scope and belonged to later roadmap work:
 
 - Concrete production business Agent catalogues.
 - Concrete production business Expert catalogues.
@@ -679,9 +679,9 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Next Priority
 
-**Phase 5 — Marketing, Media & Publishing**
+**Phase 6 — Finance & Business Operations**
 
-Phase 0, Phase 1, Phase 2 governance, Phase 3 Strategy, Knowledge & Work, and Phase 4 MCP Core are complete for their defined scopes. The next product work should build the deferred Phase 5+ business capabilities on top of the verified MCP and governed AI runtime, while preserving the authority, authorization and historical-integrity boundaries already established.
+Phase 5 has now been implemented and audited across issues 65-70. The next product work should build Phase 6 on top of the verified domain, MCP, governance and integration boundaries, while preserving the authority, authorization and historical-integrity rules established in earlier phases.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure is a separate deferred platform capability. It should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 completion gap.
 
@@ -916,7 +916,7 @@ The status above distinguishes completed Phase 4 infrastructure from intentional
 
 ### Phase 5 — Marketing, Media & Publishing
 
-**Status: In progress**
+**Status: Complete**
 
 **Objective**
 
@@ -937,7 +937,7 @@ Implement the AI-assisted content operating system.
 - Postiz integration.
 - Canva-assisted workflows.
 
-**Current implementation:** Phase 5.1 Marketing foundation and Phase 5.2 controlled content lifecycle / AI-assisted content operations are implemented. Media, publishing, Canva workflows, administration UI and the final Phase 5 audit remain pending.
+**Verified implementation:** Issues 65-70 implement and audit the Marketing, controlled content, media, publishing/Postiz, Canva integration boundary and Filament administration slices. CR8OR remains authoritative for business state, lifecycle, authorization, approval and historical records; external providers remain execution boundaries.
 
 **Completion Criteria**
 
@@ -1062,7 +1062,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 2 — Agents, Experts & Governance | **Complete** | The 2.1–2.7 governance/control-plane implementation is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Phase 4 supplies the later production execution/provider integration; agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
 | Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
-| Phase 5 — Marketing, Media & Publishing | **In progress** | Marketing foundation and controlled content/AI-assisted operations are implemented; media, publishing, Canva, administration UI and final audit remain pending. Existing external media/integration projects are not treated as completed CR8OR Core capabilities. |
+| Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Not started** | Architecture defined, implementation pending. |
 | Phase 7 — Multi-Agent Business Operations | **Not started** | Future capability. |
 
