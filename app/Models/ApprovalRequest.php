@@ -15,7 +15,7 @@ use LogicException;
  * @property Carbon|null $expires_at
  * @property Carbon|null $decided_at
  */
-#[Fillable(['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'approver_id', 'capability', 'target_context', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'approver_name', 'status', 'requested_at', 'expires_at', 'decided_at', 'decision_reason'])]
+#[Fillable(['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'approver_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'approver_name', 'status', 'requested_at', 'expires_at', 'decided_at', 'decision_reason'])]
 class ApprovalRequest extends Model
 {
     /** @use HasFactory<ApprovalRequestFactory> */
@@ -31,7 +31,7 @@ class ApprovalRequest extends Model
     private const STATUSES = [self::STATUS_PENDING, self::STATUS_APPROVED, self::STATUS_REJECTED];
 
     /** @var list<string> */
-    private const HISTORICAL_FIELDS = ['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'capability', 'target_context', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'requested_at', 'expires_at'];
+    private const HISTORICAL_FIELDS = ['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'requested_at', 'expires_at'];
 
     protected static function booted(): void
     {
