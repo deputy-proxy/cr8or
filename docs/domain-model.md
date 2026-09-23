@@ -80,6 +80,10 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Core entities:** Objective, Strategy, Plan, Initiative, KPI, Metric, Strategic Decision.
 
+**Verified Phase 3.5 implementation:** Decision records persist operational or strategic decisions independently of AgentDecision and EnterpriseDecision. Each decision belongs to an Enterprise, may reference explicit Objective/Strategy/Plan/Initiative and Project/Task/Work Item context, and snapshots actor identity and decision-time context. Historical actor, context, type and decision timestamp cannot be rewritten after creation. Server-side authorization follows the Enterprise organization boundary.
+
+**Deferred:** Generalized policy engines, broader decision automation and polymorphic decision context.
+
 **Relationships:** Objectives are pursued through strategies, plans and initiatives and measured through metrics.
 
 **Ownership:** CR8OR.
@@ -189,6 +193,8 @@ This document defines the initial bounded domains and known conceptual entities.
 **Ownership:** CR8OR.
 
 **Known invariants:** Sensitive operations are attributable and auditable. Agent capability permissions may require approval; approval requests are scoped to organization, enterprise, Agent assignment, actor, capability and execution/target context; only authorized organization approvers may decide them; approved requests expire and cannot be reused outside their recorded context.
+
+**Verified Phase 3.5 implementation:** Decision records are an explicit governance record distinct from AgentDecision and EnterpriseDecision. They preserve actor identity, decision-time context and timestamp as historical fields and remain scoped to the Enterprise organization.
 
 **Deferred:** The broader policy language and approval matrix remain deferred; the Phase 2 Agent capability boundary uses an explicit per-permission approval requirement.
 
