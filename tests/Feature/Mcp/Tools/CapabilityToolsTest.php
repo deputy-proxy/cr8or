@@ -83,8 +83,15 @@ it('allows an authorized human to create and update a work item', function () {
         'status' => 'active',
     ])->assertOk();
 
+    $server->tool(UpdateWorkItemTool::class, [
+        'work_item_id' => $workItem->getKey(),
+        'name' => 'Updated work',
+        'status' => 'active',
+    ])->assertOk();
+
     expect($workItem->refresh()->name)->toBe('Updated work')
-        ->and($workItem->status)->toBe('active');
+        ->and($workItem->status)->toBe('active')
+        ->and(WorkItem::query()->where('id', $workItem->getKey())->count())->toBe(1);
 });
 
 it('allows an authorized human to create and update a strategy', function () {
