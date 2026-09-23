@@ -208,6 +208,42 @@ class Enterprise extends Model
         return $this->hasMany(FinancialAccount::class);
     }
 
+    /** @return HasMany<FinancialReport, $this> */
+    public function financialReports(): HasMany
+    {
+        return $this->hasMany(FinancialReport::class);
+    }
+
+    /** @return HasMany<BusinessHealthResult, $this> */
+    public function businessHealthResults(): HasMany
+    {
+        return $this->hasMany(BusinessHealthResult::class);
+    }
+
+    /** @return HasMany<FinancialPeriod, $this> */
+    public function financialPeriods(): HasMany
+    {
+        return $this->hasMany(FinancialPeriod::class);
+    }
+
+    /** @return HasMany<Budget, $this> */
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    /** @return HasMany<Revenue, $this> */
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(Revenue::class);
+    }
+
+    /** @return HasMany<Expense, $this> */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
     /** @return HasMany<TransactionCategory, $this> */
     public function transactionCategories(): HasMany
     {
