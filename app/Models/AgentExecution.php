@@ -27,6 +27,10 @@ use LogicException;
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
  * @property string|null $failure_reason
+ * @property string|null $correlation_id
+ * @property string|null $provider
+ * @property string|null $external_execution_id
+ * @property string|null $failure_code
  */
 #[Fillable([
     'organization_id',
@@ -44,6 +48,10 @@ use LogicException;
     'started_at',
     'completed_at',
     'failure_reason',
+    'correlation_id',
+    'provider',
+    'external_execution_id',
+    'failure_code',
 ])]
 class AgentExecution extends Model
 {
