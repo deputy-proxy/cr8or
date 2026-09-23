@@ -10,7 +10,11 @@ MCP is the controlled AI-facing interface to CR8OR capabilities. It exposes auth
 
 ## Authentication Boundary
 
-The MCP entry point must establish client identity before protected resources or tools are accessible. Authentication identifies the caller; it does not itself grant business permission.
+The remote MCP entry point is registered at `/mcp` through Laravel MCP and protected by Laravel Passport's `auth:api` guard. Laravel MCP's OAuth discovery and dynamic client-registration routes are registered through `Mcp::oauthRoutes()`. Passport provides the OAuth identity layer; CR8OR authorization remains a separate application concern.
+
+The current Laravel MCP 1.x integration speaks MCP protocol `2026-07-28` by default. Modern requests carry protocol metadata in `params._meta`; `server/discover` provides the server capability/identity discovery operation. Legacy `initialize` clients remain supported by the installed package.
+
+Authentication identifies the caller; it does not itself grant organization, enterprise, Agent, Expert, resource or capability authority. Passport encryption keys are deployment state and are never committed to source control.
 
 ## Authorization Boundary
 
@@ -38,4 +42,4 @@ MCP must not directly mutate Eloquent models, perform arbitrary database writes,
 
 Future resources and tools should use stable, capability-oriented business names rather than internal table names. No additional naming catalogue is established until concrete MCP implementation begins.
 
-This issue does not implement an MCP server, authentication mechanism, resource registry or tool registry.
+The Phase 4.1 foundation implements the protected MCP transport and authentication boundary only. The server currently exposes no business resources or tools. Later Phase 4 issues add authorized resources, tools and AI execution capabilities.
