@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Gate;
 class McpCapabilityAuthorizer
 {
     /**
-     * @param array<string, mixed> $targetContext
-     * @param array{0: string, 1: mixed} $humanAbility
+     * @param  array<string, mixed>  $targetContext
+     * @param  array{0: string, 1: mixed}  $humanAbility
      */
     public function authorizeMutation(
         User $actor,
