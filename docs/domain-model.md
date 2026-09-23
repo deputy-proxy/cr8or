@@ -104,7 +104,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Parent ownership is preserved when unrelated work fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
 
-**Deferred:** Workflow engine semantics, queued execution and external task-management integration.
+**Verified Phase 3.4 implementation:** Workflows, Jobs and Executions persist CR8OR-owned execution intent and traceability. Workflows retain Enterprise and optional Project/Task/Work Item origin; Jobs carry a unique idempotency key and retry-safe lifecycle; Executions snapshot the originating organization, enterprise and optional Project/Task/Work Item context and record the lifecycle of a Job attempt. Pending, running, succeeded and failed transitions are explicit, terminal states cannot be silently rewritten, and operational records remain organization-scoped.
+
+**Deferred:** Full workflow-engine semantics, concrete provider execution and external task-management integration.
 
 ## Marketing
 
