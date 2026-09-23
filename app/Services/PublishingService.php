@@ -48,7 +48,7 @@ final class PublishingService
                 'social_account_id' => $account->id,
                 'approval_request_id' => $approval?->id,
                 'status' => Publication::STATUS_SCHEDULED,
-                'idempotency_key' => 'publication-' . Str::uuid(),
+                'idempotency_key' => 'publication-'.Str::uuid(),
                 'correlation_id' => app(ExecutionCorrelationService::class)->resolve(),
                 'scheduled_at' => $at,
             ]);
@@ -85,7 +85,7 @@ final class PublishingService
         }
 
         $job = PublishingJob::query()->firstOrCreate(
-            ['idempotency_key' => 'publish-' . $p->idempotency_key],
+            ['idempotency_key' => 'publish-'.$p->idempotency_key],
             [
                 'enterprise_id' => $p->enterprise_id,
                 'publication_id' => $p->id,
