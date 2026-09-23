@@ -174,6 +174,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 6.4 implementation:** Financial Periods provide explicit Enterprise-owned reporting boundaries with preserved historical identity, while Budgets remain planning records scoped to a period and optional account/category. Transactions, Revenue and Expense can be associated with periods through Enterprise-safe relationships; budget changes do not mutate authoritative ledger records.
 
+**Verified Phase 6.5 implementation:** Financial Reports and Business Health Results are derived records generated from authoritative financial accounts, transactions, revenue, expense, budget and period data. Reports require an Enterprise-owned period and support optional account/category scopes. Monetary calculations use fixed four-decimal string arithmetic, preserve a minimal source snapshot, and never mutate source records. Agent financial context is assembled through the existing authorization-aware context service and exposes Enterprise-scoped account/period metadata plus latest-period derived metrics only when a single currency makes the result unambiguous. Calculation failures do not persist successful report/results.
+
 **Deferred:** Accounting rules, automated reconciliation and provider integrations.
 
 ## Integrations
