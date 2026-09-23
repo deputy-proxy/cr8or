@@ -214,3 +214,11 @@ The current Phase 2 implementation establishes and tests:
 - automated authorization, isolation and negative-path tests.
 
 MCP authentication/authorization, provider-specific execution security and broader Agent orchestration remain deferred to later implementation phases. The broader permission catalogue and policy language also remain intentionally limited to the explicit Phase 2 capability boundary.
+
+## Error Classification, Correlation & Observability
+
+Operational failures are classified as authentication, authorization, validation, unavailable-resource, business-rule, provider, external-execution or internal failures. MCP error responses expose only the normalized class/code/message and correlation identifier; server logs retain diagnostic classification and bounded actor/organization/execution metadata without secrets or model prompt/context.
+
+Correlation identifiers are propagated from the MCP HTTP/request boundary into AgentExecution and ApprovalRequest records where applicable. AgentExecution also records the provider and external invocation identifier when returned by the provider.
+
+Provider failures are persisted as failed AgentExecution states and do not create successful AgentDecision records.
