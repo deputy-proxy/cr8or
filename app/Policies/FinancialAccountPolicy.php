@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Enterprise;
+use App\Models\FinancialAccount;
+use App\Models\User;
+
+class FinancialAccountPolicy
+{
+    public function view(User $user, FinancialAccount $account): bool
+    {
+        return $this->enterprisePolicy()->view($user, $account->enterprise);
+    }
+
+    public function create(User $user, Enterprise $enterprise): bool
+    {
+        return $this->enterprisePolicy()->create($user, $enterprise->organization);
+    }
+
+    public function update(User $user, FinancialAccount $account): bool
+    {
+        return $this->enterprisePolicy()->update($user, $account->enterprise);
+    }
+
+    public function delete(User $user, FinancialAccount $account): bool
+    {
+        return $this->enterprisePolicy()->delete($user, $account->enterprise);
+    }
+
+    private function enterprisePolicy(): EnterprisePolicy
+    {
+        return new EnterprisePolicy;
+    }
+}
