@@ -1,6 +1,6 @@
 # CR8OR Agents & Experts
 
-This document defines the Phase 2 runtime architecture for Agents and Experts and separates executable behavior from persistent business and governance state.
+This document defines the Agent/Expert runtime architecture established in Phase 2 and completed for governed AI execution in Phase 4. It separates executable behavior from persistent business and governance state.
 
 ## Core Concepts
 
@@ -190,9 +190,9 @@ Persistent information about them belongs in separate records such as:
 
 The runtime execution context is assembled from authorized Enterprise, Knowledge, Strategy and Work context by the governed Agent execution service. Model-provider access is now isolated behind the internal `App\AI\Contracts\ModelProvider` contract. The Laravel AI SDK is an infrastructure adapter only; Agent and Expert runtime classes must not depend on its provider-specific API. Provider credentials remain configuration-only and are never persisted as Agent or Expert business state.
 
-## Verified Phase 2 Implementation Boundary
+## Verified Agent/Expert Runtime Boundary
 
-The current repository implements and tests the Agent/Expert runtime contracts, descriptor registry, organization/enterprise-scoped assignments, capability permissions, governed Agent execution, execution and decision records, approval enforcement, and Filament governance administration. The governed execution service resolves enabled assignments, assembles authorized context, coordinates selected Experts, invokes the provider-neutral model contract, re-authorizes capability requests, and records execution outcomes. The runtime PHP classes remain authoritative for behavior and metadata.
+The current repository implements and tests the Agent/Expert runtime contracts, descriptor registry, organization/enterprise-scoped assignments, capability permissions, governed Agent execution, execution and decision records, approval enforcement, MCP capability boundaries, and Filament governance administration. The governed execution service resolves enabled assignments, assembles authorized context, coordinates selected Experts, invokes the provider-neutral model contract, re-authorizes capability requests, and records execution outcomes. The runtime PHP classes remain authoritative for behavior and metadata.
 
 ## Deferred
 
@@ -200,6 +200,5 @@ The following remain intentionally deferred:
 - generalized Agent governance/orchestration beyond the current execution service;
 - a broader execution context catalogue beyond Enterprise, Knowledge, Strategy and Work;
 - Agent memory implementation;
-- agent-to-agent collaboration and workflow orchestration;
-- a broader capability catalogue and general policy language;
-- MCP runtime registry and transport implementation.
+- agent-to-agent collaboration and generalized workflow orchestration;
+- broader capability catalogue and general policy language;

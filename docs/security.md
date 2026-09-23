@@ -201,9 +201,9 @@ Logs and audit records should distinguish:
 
 Sensitive credentials, tokens and unnecessary model context must not be written to ordinary logs.
 
-## Phase 2 Verified Security Boundary
+## Verified Phase 4 Security Boundary
 
-The current Phase 2 implementation establishes and tests:
+The current repository establishes and tests:
 - explicit Agent/Expert runtime contracts;
 - descriptor registration without authority leakage;
 - organization/enterprise-scoped assignments;
@@ -211,9 +211,14 @@ The current Phase 2 implementation establishes and tests:
 - execution and decision historical records;
 - approval enforcement tied to actor, assignment, capability, execution and target context;
 - Filament administration backed by server-side policies and scoped queries;
-- automated authorization, isolation and negative-path tests.
+- automated authorization, isolation and negative-path tests;
+- MCP authentication and server-side resource/tool authorization;
+- provider-neutral model execution with explicit provider failure handling;
+- execution-time capability re-authorization and approval matching;
+- correlation and audit metadata across MCP, AgentExecution and ApprovalRequest records;
+- log redaction that excludes secrets and model prompt/context.
 
-MCP authentication/authorization, provider-specific execution security and broader Agent orchestration remain deferred to later implementation phases. The broader permission catalogue and policy language also remain intentionally limited to the explicit Phase 2 capability boundary.
+Agent-to-agent collaboration, broader policy language, Marketing/Media/Publishing, Finance and other later-phase capabilities remain deferred.
 
 ## Error Classification, Correlation & Observability
 
