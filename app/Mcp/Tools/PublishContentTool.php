@@ -18,18 +18,36 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('publish-content'), Description('Schedule publication-ready content through the governed CR8OR publishing boundary.')] class PublishContentTool extends AuthorizedTool
+#[Name('publish-content')]
+#[Description('Schedule publication-ready content through the governed CR8OR publishing boundary.')]
+class PublishContentTool extends AuthorizedTool
 {
     public function schema(JsonSchema $s): array
     {
-        return ['content_item_id' => $s->integer()->min(1)->required(), 'social_account_id' => $s->integer()->min(1)->required(), 'scheduled_at' => $s->string()->required(), 'agent_assignment_id' => $s->integer()->min(1), 'agent_execution_id' => $s->integer()->min(1), 'approval_request_id' => $s->integer()->min(1)];
+        return [
+            'content_item_id' => $s->integer()->min(1)->required(),
+            'social_account_id' => $s->integer()->min(1)->required(),
+            'scheduled_at' => $s->string()->required(),
+            'agent_assignment_id' => $s->integer()->min(1),
+            'agent_execution_id' => $s->integer()->min(1),
+            'approval_request_id' => $s->integer()->min(1),
+        ];
     }
 
     public function handle(Request $r, McpCapabilityAuthorizer $a, PublishingService $p): Response|ResponseFactory
     {
         return $this->executeWithErrors($r, 'mcp.publication.publish', function () use ($r, $a, $p) {
-            $v = $r->validate(['content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'], 'social_account_id' => ['required', 'integer', 'min:1', 'exists:social_accounts,id'], 'scheduled_at' => ['required', 'date'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']]);
+            $v = $r->validate([
+                'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
+                'social_account_id' => ['required', 'integer', 'min:1', 'exists:social_accounts,id'],
+                'scheduled_at' => ['required', 'date'],
+                'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+                'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+            ]);
+
             $u = $r->user();
+
             if (! $u instanceof User) {
                 throw new AuthenticationException;
             }
@@ -59,11 +77,37 @@ use Laravel\Mcp\Server\Attributes\Name;
                 /** @var ApprovalRequest $ap */
                 $ap = ApprovalRequest::query()->findOrFail($v['approval_request_id']);
             }
-            $a->authorizeMutation($u, 'publication.publish', $c->enterprise, $as?->id, $ex?->id, $ap?->id, ['content_item_id' => $c->id], ['update', $c]);
-            $pub = $p->schedule($u, $c, $sa, new \DateTimeImmutable($v['scheduled_at']), $ap, $as, $ex);
+
+            $a->authorizeMutation(
+                $u,
+                'publication.publish',
+                $c->enterprise,
+                $as?->id,
+                $ex?->id,
+                $ap?->id,
+                ['content_item_id' => $c->id],
+                ['update', $c],
+            );
+
+            $pub = $p->schedule(
+                $u,
+                $c,
+                $sa,
+                new \DateTimeImmutable($v['scheduled_at']),
+                $ap,
+                $as,
+                $ex,
+            );
             $pub = $p->submit($u, $pub, $as, $ex, $ap);
 
-            return Response::structured(['success' => true, 'result' => ['id' => $pub->id, 'status' => $pub->status, 'external_id' => $pub->external_id]]);
+            return Response::structured([
+                'success' => true,
+                'result' => [
+                    'id' => $pub->id,
+                    'status' => $pub->status,
+                    'external_id' => $pub->external_id,
+                ],
+            ]);
         });
     }
 }
