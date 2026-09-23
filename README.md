@@ -640,18 +640,24 @@ The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 
 - Governed Agent/Expert execution against authorized Enterprise, Knowledge, Strategy and Work context with execution-time capability re-authorization.
 - Correlated AgentExecution/AgentDecision/ApprovalRequest history with normalized failures, provider references and redacted observability.
 
-### Intentionally Not Yet Implemented
+### Intentionally Deferred
 
-The following remain product-roadmap work rather than completed runtime functionality:
+The following capabilities are deliberately deferred from the completed Phase 4 scope and belong to later roadmap work:
 
-- Agent-to-agent collaboration and workflow orchestration.
+- Concrete production business Agent catalogues.
+- Concrete production business Expert catalogues.
+- Agent-to-agent collaboration and multi-agent workflow orchestration.
 - Broader capability catalogues, policy language and reporting.
-- Knowledge retrieval, indexing and vector infrastructure.
+- Generalized knowledge retrieval, indexing and vector infrastructure.
 - AI planning and metric-calculation engines.
 - Full workflow-engine semantics.
 - Marketing, media and publishing domains inside CR8OR Core.
 - Finance and business operations.
-- Agent-to-agent collaboration and multi-agent orchestration.
+- Cross-service business integrations.
+
+These items are not missing Phase 4 implementation. Phase 4 provides the reusable runtime, governance, authorization, context and capability infrastructure on which later domain capabilities can be built.
+
+Concrete Agents and Experts are introduced with the domains that require them rather than being treated as a generic Core catalog. Enterprise-specific runtime components likewise belong in the relevant enterprise/domain layer.
 
 Existing external CR8OR services such as media, n8n, Canva or publishing infrastructure do not constitute completion of the corresponding CR8OR Core product phases.
 
@@ -676,6 +682,8 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 **Phase 5 — Marketing, Media & Publishing**
 
 Phase 0, Phase 1, Phase 2 governance, Phase 3 Strategy, Knowledge & Work, and Phase 4 MCP Core are complete for their defined scopes. The next product work should build the deferred Phase 5+ business capabilities on top of the verified MCP and governed AI runtime, while preserving the authority, authorization and historical-integrity boundaries already established.
+
+Generalized Knowledge Retrieval / AI Context Infrastructure is a separate deferred platform capability. It should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 completion gap.
 
 ## Development Roadmap
 
@@ -898,13 +906,13 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 | MCP contextual resources | Implemented |
 | Governed MCP capability tools | Implemented |
 | Workflow / Job / Execution tracking | Implemented |
-| Concrete business Agent catalog | Not yet implemented |
-| Concrete business Expert catalog | Not yet implemented |
-| Generalized knowledge retrieval | Not yet implemented |
-| Full workflow engine | Not yet implemented |
-| Cross-service business integrations | Future phase |
+| Concrete business Agent catalog | Deferred to domain/product phases |
+| Concrete business Expert catalog | Deferred to domain/product phases |
+| Generalized knowledge retrieval | Deferred platform capability |
+| Full workflow engine | Deferred |
+| Cross-service business integrations | Future domain phases |
 
-The status above distinguishes reusable infrastructure from concrete business capabilities. Supporting infrastructure does not, by itself, make a business capability complete.
+The status above distinguishes completed Phase 4 infrastructure from intentionally deferred product capabilities. “Deferred” does not indicate an incomplete Phase 4 implementation. Supporting infrastructure does not, by itself, make a business capability complete.
 
 ### Phase 5 — Marketing, Media & Publishing
 
@@ -994,9 +1002,9 @@ Allow multiple specialized agents to collaborate through a shared business opera
 - Agent collaboration does not bypass domain boundaries.
 - Business state remains centralized in CR8OR.
 
-**Verified Phase 4 implementation**
+**Phase 4 Completion Boundary**
 
-Phase 4 delivers governed AI/MCP execution infrastructure and capability boundaries. Concrete business Agents and Experts remain domain capabilities introduced as their responsibilities are implemented.
+Phase 4 delivers the governed AI/MCP execution infrastructure and capability boundaries. It is complete for that defined scope. Concrete business Agents and Experts remain domain capabilities introduced as their responsibilities are implemented, and generalized retrieval, full workflow-engine semantics and broader integrations remain later roadmap capabilities.
 
 - Phase 4.1 protects the `/mcp` transport with Passport-backed authentication and establishes the MCP server boundary.
 - Phase 4.2 exposes organization/enterprise-scoped Enterprise, Strategy, Knowledge and Work resources.
@@ -1043,7 +1051,7 @@ Current context assembly is enterprise-scoped and authorization-aware, but it do
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete.
+The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phase 4 should therefore be treated as closed, not as a backlog of missing MCP or AI-runtime implementation work.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
