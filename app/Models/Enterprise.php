@@ -1,1 +1,270 @@
-{"stdout":"<?php\n\nnamespace App\\Models;\n\nuse Database\\Factories\\EnterpriseFactory;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;\nuse Illuminate\\Database\\Eloquent\\Relations\\HasMany;\nuse Illuminate\\Database\\Eloquent\\Relations\\HasOne;\n\n#[Fillable(['organization_id', 'name', 'slug', 'status'])]\nclass Enterprise extends Model\n{\n    /** @use HasFactory<EnterpriseFactory> */\n    use HasFactory;\n\n    /** @return BelongsTo<Organization, $this> */\n    public function organization(): BelongsTo\n    {\n        return $this->belongsTo(Organization::class);\n    }\n\n    /** @return HasOne<EnterpriseContext, $this> */\n    public function context(): HasOne\n    {\n        return $this->hasOne(EnterpriseContext::class);\n    }\n\n    /** @return HasMany<MarketingStrategy, $this> */\n    public function marketingStrategies(): HasMany\n    {\n        return $this->hasMany(MarketingStrategy::class);\n    }\n\n    /** @return HasMany<Campaign, $this> */\n    public function campaigns(): HasMany\n    {\n        return $this->hasMany(Campaign::class);\n    }\n\n    /** @return HasMany<ContentItem, $this> */\n    public function contentItems(): HasMany\n    {\n        return $this->hasMany(ContentItem::class);\n    }\n\n    /** @return HasMany<Channel, $this> */\n    public function channels(): HasMany\n    {\n        return $this->hasMany(Channel::class);\n    }\n\n    /** @return HasMany<Audience, $this> */\n    public function audiences(): HasMany\n    {\n        return $this->hasMany(Audience::class);\n    }\n\n    /** @return HasMany<Product, $this> */\n    public function products(): HasMany\n    {\n        return $this->hasMany(Product::class);\n    }\n\n    /** @return HasMany<Customer, $this> */\n    public function customers(): HasMany\n    {\n        return $this->hasMany(Customer::class);\n    }\n\n    /** @return HasMany<Partner, $this> */\n    public function partners(): HasMany\n    {\n        return $this->hasMany(Partner::class);\n    }\n\n    /** @return HasMany<Goal, $this> */\n    public function goals(): HasMany\n    {\n        return $this->hasMany(Goal::class);\n    }\n\n    /** @return HasMany<Kpi, $this> */\n    public function kpis(): HasMany\n    {\n        return $this->hasMany(Kpi::class);\n    }\n\n    /** @return HasMany<EnterpriseDecision, $this> */\n    public function decisions(): HasMany\n    {\n        return $this->hasMany(EnterpriseDecision::class);\n    }\n\n    /** @return HasMany<AgentAssignment, $this> */\n    public function agentAssignments(): HasMany\n    {\n        return $this->hasMany(AgentAssignment::class);\n    }\n\n    /** @return HasMany<KnowledgeSource, $this> */\n    public function knowledgeSources(): HasMany\n    {\n        return $this->hasMany(KnowledgeSource::class);\n    }\n\n    /** @return HasMany<KnowledgeDocument, $this> */\n    public function knowledgeDocuments(): HasMany\n    {\n        return $this->hasMany(KnowledgeDocument::class);\n    }\n\n    /** @return HasMany<KnowledgeItem, $this> */\n    public function knowledgeItems(): HasMany\n    {\n        return $this->hasMany(KnowledgeItem::class);\n    }\n\n    /** @return HasMany<KnowledgeContext, $this> */\n    public function knowledgeContexts(): HasMany\n    {\n        return $this->hasMany(KnowledgeContext::class);\n    }\n\n    /** @return HasMany<KnowledgeVersion, $this> */\n    public function knowledgeVersions(): HasMany\n    {\n        return $this->hasMany(KnowledgeVersion::class);\n    }\n\n    /** @return HasMany<KnowledgeReference, $this> */\n    public function knowledgeReferences(): HasMany\n    {\n        return $this->hasMany(KnowledgeReference::class);\n    }\n\n    /** @return HasMany<KnowledgeSpecification, $this> */\n    public function knowledgeSpecifications(): HasMany\n    {\n        return $this->hasMany(KnowledgeSpecification::class);\n    }\n\n    /** @return HasMany<Objective, $this> */\n    public function objectives(): HasMany\n    {\n        return $this->hasMany(Objective::class);\n    }\n\n    /** @return HasMany<Project, $this> */\n    public function projects(): HasMany\n    {\n        return $this->hasMany(Project::class);\n    }\n\n    /** @return HasMany<Task, $this> */\n    public function tasks(): HasMany\n    {\n        return $this->hasMany(Task::class);\n    }\n\n    /** @return HasMany<WorkItem, $this> */\n    public function workItems(): HasMany\n    {\n        return $this->hasMany(WorkItem::class);\n    }\n\n    /** @return HasMany<Milestone, $this> */\n    public function milestones(): HasMany\n    {\n        return $this->hasMany(Milestone::class);\n    }\n\n    /** @return HasMany<Dependency, $this> */\n    public function dependencies(): HasMany\n    {\n        return $this->hasMany(Dependency::class);\n    }\n\n    /** @return HasMany<Asset, $this> */\n    public function assets(): HasMany\n    {\n        return $this->hasMany(Asset::class);\n    }\n\n    /** @return HasMany<GenerationRequest, $this> */\n    public function generationRequests(): HasMany\n    {\n        return $this->hasMany(GenerationRequest::class);\n    }\n\n    /** @return HasMany<RenderRequest, $this> */\n    public function renderRequests(): HasMany\n    {\n        return $this->hasMany(RenderRequest::class);\n    }\n\n    /** @return HasMany<Assignment, $this> */\n    public function assignments(): HasMany\n    {\n        return $this->hasMany(Assignment::class);\n    }\n\n    /** @return HasMany<FinancialAccount, $this> */\n    public function financialAccounts(): HasMany\n    {\n        return $this->hasMany(FinancialAccount::class);\n    }\n\n    /** @return HasMany<FinancialReport, $this> */\n    public function financialReports(): HasMany\n    {\n        return $this->hasMany(FinancialReport::class);\n    }\n\n    /** @return HasMany<BusinessHealthResult, $this> */\n    public function businessHealthResults(): HasMany\n    {\n        return $this->hasMany(BusinessHealthResult::class);\n    }\n\n    /** @return HasMany<FinancialPeriod, $this> */\n    public function financialPeriods(): HasMany\n    {\n        return $this->hasMany(FinancialPeriod::class);\n    }\n\n    /** @return HasMany<Budget, $this> */\n    public function budgets(): HasMany\n    {\n        return $this->hasMany(Budget::class);\n    }\n\n    /** @return HasMany<Revenue, $this> */\n    public function revenues(): HasMany\n    {\n        return $this->hasMany(Revenue::class);\n    }\n\n    /** @return HasMany<Expense, $this> */\n    public function expenses(): HasMany\n    {\n        return $this->hasMany(Expense::class);\n    }\n\n    /** @return HasMany<TransactionCategory, $this> */\n    public function transactionCategories(): HasMany\n    {\n        return $this->hasMany(TransactionCategory::class);\n    }\n\n    /** @return HasMany<Transaction, $this> */\n    public function transactions(): HasMany\n    {\n        return $this->hasMany(Transaction::class);\n    }\n\n    /** @return HasMany<Statement, $this> */\n    public function statements(): HasMany\n    {\n        return $this->hasMany(Statement::class);\n    }\n\n    /** @return HasMany<StatementEntry, $this> */\n    public function statementEntries(): HasMany\n    {\n        return $this->hasMany(StatementEntry::class);\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Models;
+
+use Database\Factories\EnterpriseFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+#[Fillable(['organization_id', 'name', 'slug', 'status'])]
+class Enterprise extends Model
+{
+    /** @use HasFactory<EnterpriseFactory> */
+    use HasFactory;
+
+    /** @return BelongsTo<Organization, $this> */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /** @return HasOne<EnterpriseContext, $this> */
+    public function context(): HasOne
+    {
+        return $this->hasOne(EnterpriseContext::class);
+    }
+
+    /** @return HasMany<MarketingStrategy, $this> */
+    public function marketingStrategies(): HasMany
+    {
+        return $this->hasMany(MarketingStrategy::class);
+    }
+
+    /** @return HasMany<Campaign, $this> */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    /** @return HasMany<ContentItem, $this> */
+    public function contentItems(): HasMany
+    {
+        return $this->hasMany(ContentItem::class);
+    }
+
+    /** @return HasMany<Channel, $this> */
+    public function channels(): HasMany
+    {
+        return $this->hasMany(Channel::class);
+    }
+
+    /** @return HasMany<Audience, $this> */
+    public function audiences(): HasMany
+    {
+        return $this->hasMany(Audience::class);
+    }
+
+    /** @return HasMany<Product, $this> */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    /** @return HasMany<Customer, $this> */
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    /** @return HasMany<Partner, $this> */
+    public function partners(): HasMany
+    {
+        return $this->hasMany(Partner::class);
+    }
+
+    /** @return HasMany<Goal, $this> */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    /** @return HasMany<Kpi, $this> */
+    public function kpis(): HasMany
+    {
+        return $this->hasMany(Kpi::class);
+    }
+
+    /** @return HasMany<EnterpriseDecision, $this> */
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(EnterpriseDecision::class);
+    }
+
+    /** @return HasMany<AgentAssignment, $this> */
+    public function agentAssignments(): HasMany
+    {
+        return $this->hasMany(AgentAssignment::class);
+    }
+
+    /** @return HasMany<KnowledgeSource, $this> */
+    public function knowledgeSources(): HasMany
+    {
+        return $this->hasMany(KnowledgeSource::class);
+    }
+
+    /** @return HasMany<KnowledgeDocument, $this> */
+    public function knowledgeDocuments(): HasMany
+    {
+        return $this->hasMany(KnowledgeDocument::class);
+    }
+
+    /** @return HasMany<KnowledgeItem, $this> */
+    public function knowledgeItems(): HasMany
+    {
+        return $this->hasMany(KnowledgeItem::class);
+    }
+
+    /** @return HasMany<KnowledgeContext, $this> */
+    public function knowledgeContexts(): HasMany
+    {
+        return $this->hasMany(KnowledgeContext::class);
+    }
+
+    /** @return HasMany<KnowledgeVersion, $this> */
+    public function knowledgeVersions(): HasMany
+    {
+        return $this->hasMany(KnowledgeVersion::class);
+    }
+
+    /** @return HasMany<KnowledgeReference, $this> */
+    public function knowledgeReferences(): HasMany
+    {
+        return $this->hasMany(KnowledgeReference::class);
+    }
+
+    /** @return HasMany<KnowledgeSpecification, $this> */
+    public function knowledgeSpecifications(): HasMany
+    {
+        return $this->hasMany(KnowledgeSpecification::class);
+    }
+
+    /** @return HasMany<Objective, $this> */
+    public function objectives(): HasMany
+    {
+        return $this->hasMany(Objective::class);
+    }
+
+    /** @return HasMany<Project, $this> */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    /** @return HasMany<Task, $this> */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    /** @return HasMany<WorkItem, $this> */
+    public function workItems(): HasMany
+    {
+        return $this->hasMany(WorkItem::class);
+    }
+
+    /** @return HasMany<Milestone, $this> */
+    public function milestones(): HasMany
+    {
+        return $this->hasMany(Milestone::class);
+    }
+
+    /** @return HasMany<Dependency, $this> */
+    public function dependencies(): HasMany
+    {
+        return $this->hasMany(Dependency::class);
+    }
+
+    /** @return HasMany<Asset, $this> */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
+    }
+
+    /** @return HasMany<GenerationRequest, $this> */
+    public function generationRequests(): HasMany
+    {
+        return $this->hasMany(GenerationRequest::class);
+    }
+
+    /** @return HasMany<RenderRequest, $this> */
+    public function renderRequests(): HasMany
+    {
+        return $this->hasMany(RenderRequest::class);
+    }
+
+    /** @return HasMany<Assignment, $this> */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    /** @return HasMany<FinancialAccount, $this> */
+    public function financialAccounts(): HasMany
+    {
+        return $this->hasMany(FinancialAccount::class);
+    }
+
+    /** @return HasMany<FinancialReport, $this> */
+    public function financialReports(): HasMany
+    {
+        return $this->hasMany(FinancialReport::class);
+    }
+
+    /** @return HasMany<BusinessHealthResult, $this> */
+    public function businessHealthResults(): HasMany
+    {
+        return $this->hasMany(BusinessHealthResult::class);
+    }
+
+    /** @return HasMany<FinancialPeriod, $this> */
+    public function financialPeriods(): HasMany
+    {
+        return $this->hasMany(FinancialPeriod::class);
+    }
+
+    /** @return HasMany<Budget, $this> */
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    /** @return HasMany<Revenue, $this> */
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(Revenue::class);
+    }
+
+    /** @return HasMany<Expense, $this> */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    /** @return HasMany<TransactionCategory, $this> */
+    public function transactionCategories(): HasMany
+    {
+        return $this->hasMany(TransactionCategory::class);
+    }
+
+    /** @return HasMany<Transaction, $this> */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /** @return HasMany<Statement, $this> */
+    public function statements(): HasMany
+    {
+        return $this->hasMany(Statement::class);
+    }
+
+    /** @return HasMany<StatementEntry, $this> */
+    public function statementEntries(): HasMany
+    {
+        return $this->hasMany(StatementEntry::class);
+    }
+}
