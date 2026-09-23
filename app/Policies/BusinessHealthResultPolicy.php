@@ -1,1 +1,25 @@
-{"stdout":"<?php\n\nnamespace App\\Policies;\n\nuse App\\Models\\BusinessHealthResult;\nuse App\\Models\\Enterprise;\nuse App\\Models\\User;\n\nclass BusinessHealthResultPolicy\n{\n    public function view(User $user, BusinessHealthResult $result): bool\n    {\n        return $this->enterprisePolicy()->view($user, $result->enterprise);\n    }\n\n    public function create(User $user, Enterprise $enterprise): bool\n    {\n        return $this->enterprisePolicy()->create($user, $enterprise->organization);\n    }\n\n    private function enterprisePolicy(): EnterprisePolicy\n    {\n        return new EnterprisePolicy;\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Policies;
+
+use App\Models\BusinessHealthResult;
+use App\Models\Enterprise;
+use App\Models\User;
+
+class BusinessHealthResultPolicy
+{
+    public function view(User $user, BusinessHealthResult $result): bool
+    {
+        return $this->enterprisePolicy()->view($user, $result->enterprise);
+    }
+
+    public function create(User $user, Enterprise $enterprise): bool
+    {
+        return $this->enterprisePolicy()->create($user, $enterprise->organization);
+    }
+
+    private function enterprisePolicy(): EnterprisePolicy
+    {
+        return new EnterprisePolicy;
+    }
+}
