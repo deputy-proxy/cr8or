@@ -1,1 +1,45 @@
-{"stdout":"<?php\n\nnamespace App\\Models;\n\nuse Database\\Factories\\BusinessHealthResultFactory;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;\n\n#[Fillable([\n    'enterprise_id',\n    'financial_report_id',\n    'health_status',\n    'metrics',\n    'source_snapshot',\n    'evaluated_at',\n])]\nclass BusinessHealthResult extends Model\n{\n    /** @use HasFactory<BusinessHealthResultFactory> */\n    use HasFactory;\n\n    /** @return BelongsTo<Enterprise, $this> */\n    public function enterprise(): BelongsTo\n    {\n        return $this->belongsTo(Enterprise::class);\n    }\n\n    /** @return BelongsTo<FinancialReport, $this> */\n    public function financialReport(): BelongsTo\n    {\n        return $this->belongsTo(FinancialReport::class);\n    }\n\n    /** @return array<string, string> */\n    protected function casts(): array\n    {\n        return [\n            'metrics' => 'array',\n            'source_snapshot' => 'array',\n            'evaluated_at' => 'datetime',\n        ];\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Models;
+
+use Database\Factories\BusinessHealthResultFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable([
+    'enterprise_id',
+    'financial_report_id',
+    'health_status',
+    'metrics',
+    'source_snapshot',
+    'evaluated_at',
+])]
+class BusinessHealthResult extends Model
+{
+    /** @use HasFactory<BusinessHealthResultFactory> */
+    use HasFactory;
+
+    /** @return BelongsTo<Enterprise, $this> */
+    public function enterprise(): BelongsTo
+    {
+        return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<FinancialReport, $this> */
+    public function financialReport(): BelongsTo
+    {
+        return $this->belongsTo(FinancialReport::class);
+    }
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'metrics' => 'array',
+            'source_snapshot' => 'array',
+            'evaluated_at' => 'datetime',
+        ];
+    }
+}
