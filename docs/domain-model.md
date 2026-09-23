@@ -166,9 +166,11 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Ownership:** CR8OR.
 
-**Known invariants:** Financial history is auditable and remains interpretable.
+**Known invariants:** Financial history is auditable and remains interpretable. Statements preserve source/import records, remain attributable to their organization, Enterprise and Financial Account, and may reference authoritative Transactions without replacing or rewriting transaction history. Source/provider identifiers are attribution and idempotency metadata, not business-state authority.
 
-**Deferred:** Accounting rules, reconciliation and provider integrations.
+**Verified Phase 6.2 implementation:** Financial Accounts, Transactions and Transaction Categories provide the authoritative ledger foundation. Statements and Statement Entries preserve imported/source records, enforce Enterprise/organization/account scope, prevent duplicate source identifiers, and optionally link entries to authoritative Transactions.
+
+**Deferred:** Accounting rules, automated reconciliation and provider integrations.
 
 ## Integrations
 

@@ -48,4 +48,16 @@ class FinancialAccount extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /** @return HasMany<Statement, $this> */
+    public function statements(): HasMany
+    {
+        return $this->hasMany(Statement::class);
+    }
+
+    /** @return HasMany<StatementEntry, $this> */
+    public function statementEntries(): HasMany
+    {
+        return $this->hasMany(StatementEntry::class);
+    }
 }
