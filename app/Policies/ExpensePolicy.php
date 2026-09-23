@@ -1,1 +1,35 @@
-{"stdout":"<?php\n\nnamespace App\\Policies;\n\nuse App\\Models\\Enterprise;\nuse App\\Models\\Expense;\nuse App\\Models\\User;\n\nclass ExpensePolicy\n{\n    public function view(User $user, Expense $expense): bool\n    {\n        return $this->enterprisePolicy()->view($user, $expense->enterprise);\n    }\n\n    public function create(User $user, Enterprise $enterprise): bool\n    {\n        return $this->enterprisePolicy()->create($user, $enterprise->organization);\n    }\n\n    public function update(User $user, Expense $expense): bool\n    {\n        return $this->enterprisePolicy()->update($user, $expense->enterprise);\n    }\n\n    public function delete(User $user, Expense $expense): bool\n    {\n        return $this->enterprisePolicy()->delete($user, $expense->enterprise);\n    }\n\n    private function enterprisePolicy(): EnterprisePolicy\n    {\n        return new EnterprisePolicy;\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Policies;
+
+use App\Models\Enterprise;
+use App\Models\Expense;
+use App\Models\User;
+
+class ExpensePolicy
+{
+    public function view(User $user, Expense $expense): bool
+    {
+        return $this->enterprisePolicy()->view($user, $expense->enterprise);
+    }
+
+    public function create(User $user, Enterprise $enterprise): bool
+    {
+        return $this->enterprisePolicy()->create($user, $enterprise->organization);
+    }
+
+    public function update(User $user, Expense $expense): bool
+    {
+        return $this->enterprisePolicy()->update($user, $expense->enterprise);
+    }
+
+    public function delete(User $user, Expense $expense): bool
+    {
+        return $this->enterprisePolicy()->delete($user, $expense->enterprise);
+    }
+
+    private function enterprisePolicy(): EnterprisePolicy
+    {
+        return new EnterprisePolicy;
+    }
+}
