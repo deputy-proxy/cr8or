@@ -1,1 +1,75 @@
-{"stdout":"<?php\n\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    public function up(): void\n    {\n        Schema::create('invoices', function (Blueprint $table) {\n            $table->id();\n            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();\n            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();\n            $table->foreignId('partner_id')->nullable()->constrained()->nullOnDelete();\n            $table->string('invoice_number');\n            $table->date('issue_date');\n            $table->date('due_date')->nullable();\n            $table->decimal('total', 20, 4);\n            $table->char('currency', 3);\n            $table->string('status', 32)->default('draft');\n            $table->string('counterparty_name_snapshot')->nullable();\n            $table->string('counterparty_email_snapshot')->nullable();\n            $table->timestamps();\n            $table->unique(['enterprise_id', 'invoice_number']);\n            $table->index(['enterprise_id', 'issue_date']);\n            $table->index(['enterprise_id', 'status']);\n            $table->index(['customer_id']);\n            $table->index(['partner_id']);\n        });\n\n        Schema::create('revenues', function (Blueprint $table) {\n            $table->id();\n            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();\n            $table->foreignId('financial_account_id')->nullable()->constrained()->nullOnDelete();\n            $table->foreignId('transaction_id')->nullable()->constrained()->nullOnDelete();\n            $table->decimal('amount', 20, 4);\n            $table->char('currency', 3);\n            $table->date('revenue_date');\n            $table->string('source', 64)->nullable();\n            $table->string('reference')->nullable();\n            $table->text('description')->nullable();\n            $table->timestamps();\n            $table->index(['enterprise_id', 'revenue_date']);\n            $table->index(['financial_account_id', 'revenue_date']);\n            $table->index(['transaction_id']);\n        });\n\n        Schema::create('expenses', function (Blueprint $table) {\n            $table->id();\n            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();\n            $table->foreignId('financial_account_id')->nullable()->constrained()->nullOnDelete();\n            $table->foreignId('transaction_id')->nullable()->constrained()->nullOnDelete();\n            $table->foreignId('transaction_category_id')->nullable()->constrained()->nullOnDelete();\n            $table->decimal('amount', 20, 4);\n            $table->char('currency', 3);\n            $table->date('expense_date');\n            $table->string('source', 64)->nullable();\n            $table->string('reference')->nullable();\n            $table->text('description')->nullable();\n            $table->timestamps();\n            $table->index(['enterprise_id', 'expense_date']);\n            $table->index(['financial_account_id', 'expense_date']);\n            $table->index(['transaction_id']);\n            $table->index(['transaction_category_id']);\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::dropIfExists('expenses');\n        Schema::dropIfExists('revenues');\n        Schema::dropIfExists('invoices');\n    }\n};\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('invoices', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('partner_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('invoice_number');
+            $table->date('issue_date');
+            $table->date('due_date')->nullable();
+            $table->decimal('total', 20, 4);
+            $table->char('currency', 3);
+            $table->string('status', 32)->default('draft');
+            $table->string('counterparty_name_snapshot')->nullable();
+            $table->string('counterparty_email_snapshot')->nullable();
+            $table->timestamps();
+            $table->unique(['enterprise_id', 'invoice_number']);
+            $table->index(['enterprise_id', 'issue_date']);
+            $table->index(['enterprise_id', 'status']);
+            $table->index(['customer_id']);
+            $table->index(['partner_id']);
+        });
+
+        Schema::create('revenues', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('financial_account_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('transaction_id')->nullable()->constrained()->nullOnDelete();
+            $table->decimal('amount', 20, 4);
+            $table->char('currency', 3);
+            $table->date('revenue_date');
+            $table->string('source', 64)->nullable();
+            $table->string('reference')->nullable();
+            $table->text('description')->nullable();
+            $table->timestamps();
+            $table->index(['enterprise_id', 'revenue_date']);
+            $table->index(['financial_account_id', 'revenue_date']);
+            $table->index(['transaction_id']);
+        });
+
+        Schema::create('expenses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('financial_account_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('transaction_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('transaction_category_id')->nullable()->constrained()->nullOnDelete();
+            $table->decimal('amount', 20, 4);
+            $table->char('currency', 3);
+            $table->date('expense_date');
+            $table->string('source', 64)->nullable();
+            $table->string('reference')->nullable();
+            $table->text('description')->nullable();
+            $table->timestamps();
+            $table->index(['enterprise_id', 'expense_date']);
+            $table->index(['financial_account_id', 'expense_date']);
+            $table->index(['transaction_id']);
+            $table->index(['transaction_category_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('expenses');
+        Schema::dropIfExists('revenues');
+        Schema::dropIfExists('invoices');
+    }
+};
