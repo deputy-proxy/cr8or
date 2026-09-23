@@ -619,7 +619,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 1 — Identity, Organizations & Enterprise Context**, **Phase 2 — Agents, Experts & Governance**, and **Phase 3 — Strategy, Knowledge & Work**. **Phase 4 — MCP Core** is now also implemented and audited. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. It does not claim a complete catalog of business-specific Agents or Experts. Later product capabilities remain intentionally deferred to their roadmap phases.
+The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 1 — Identity, Organizations & Enterprise Context**, **Phase 2 — Agents, Experts & Governance**, **Phase 3 — Strategy, Knowledge & Work**, **Phase 4 — MCP Core**, **Phase 5 — Marketing, Media & Publishing**, and **Phase 6 — Finance & Business Operations**. Phases 0-6 have been implemented and audited within their defined boundaries. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. It does not claim a complete catalog of business-specific Agents or Experts. Later product capabilities remain intentionally deferred to their roadmap phases.
 
 ### Implemented
 
@@ -654,7 +654,7 @@ The following capabilities were deliberately deferred from the completed Phase 4
 - AI planning and metric-calculation engines.
 - Full workflow-engine semantics.
 - Marketing, media and publishing domains inside CR8OR Core.
-- Finance and business operations.
+- Generalized forecasting and reporting-engine semantics.
 - Cross-service business integrations.
 
 These items are not missing Phase 4 implementation. Phase 4 provides the reusable runtime, governance, authorization, context and capability infrastructure on which later domain capabilities can be built.
@@ -665,7 +665,7 @@ Existing external CR8OR services such as media, n8n, Canva or publishing infrast
 
 ### Audit Reconciliation
 
-The Phase 1 audit confirmed the domain foundation, organization isolation, authorization and Filament administration. Phase 2 and Phase 3 audits subsequently verified the Agent/Expert governance and structured operating context. Phase 4.7 verified the MCP and governed AI execution boundary.
+The Phase 1 audit confirmed the domain foundation, organization isolation, authorization and Filament administration. Phase 2 and Phase 3 audits subsequently verified the Agent/Expert governance and structured operating context. Phase 4.7 verified the MCP and governed AI execution boundary. Phase 6.7 verifies the Finance & Business Operations domain, administration, authorization and historical/reporting boundaries.
 
 Current follow-up items are:
 
@@ -681,9 +681,9 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Next Priority
 
-**Phase 6 — Finance & Business Operations**
+**Phase 7 — Multi-Agent Business Operations**
 
-Phase 5 has now been implemented and audited across issues 65-70. The next product work should build Phase 6 on top of the verified domain, MCP, governance and integration boundaries, while preserving the authority, authorization and historical-integrity rules established in earlier phases.
+Phase 6 has now been implemented and audited across issues 78-85. The next product work can build multi-agent business operations on the verified domain, MCP, governance, finance and integration boundaries, while preserving the authority, authorization and historical-integrity rules established in earlier phases.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure is a separate deferred platform capability. It should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 completion gap.
 
@@ -951,7 +951,7 @@ Implement the AI-assisted content operating system.
 
 ### Phase 6 — Finance & Business Operations
 
-**Status: In progress**
+**Status: Complete**
 
 **Objective**
 
@@ -971,6 +971,8 @@ Extend CR8OR into broader business operations and financial intelligence.
 - Operational metrics.
 - Business health reporting.
 - Financial reporting and business-health results derived from authoritative Phase 6 records.
+
+**Verified Phase 6 implementation:** Issues 78-85 implement and audit the financial foundation, statement/import records, invoices/revenue/expenses, financial periods/budgets, derived reporting/business-health results, authorization-aware Agent financial context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6.
 
 **Verified Phase 6.3 implementation:** Invoices, Revenue and Expense are authoritative CR8OR records with Enterprise-safe relationships, historical invoice counterparty snapshots, fixed-precision monetary values and server-side organization authorization. Revenue and Expense reference authoritative accounts/transactions rather than duplicating ledger state; payment is not inferred from invoice lifecycle status.
 
@@ -1022,7 +1024,7 @@ Phase 4 delivers the governed AI/MCP execution infrastructure and capability bou
 - Phase 4.6 adds normalized errors, correlation, provider/external references, retry/idempotency coverage and redacted observability.
 - All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs.
 
-Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are now implemented in Phase 5; agent-to-agent collaboration, Finance and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
+Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are implemented in Phase 5, and Finance & Business Operations are implemented in Phase 6. Agent-to-agent collaboration and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
 
 ### Workflow / Job / Execution Boundary
 
@@ -1064,7 +1066,7 @@ Current context assembly is enterprise-scoped and authorization-aware, but it do
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit, and the Phase 5 Marketing/Media/Publishing implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phases 4 and 5 should therefore be treated as closed, not as backlogs of missing MCP, AI-runtime, Marketing, Media or Publishing implementation work.
+The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, the Phase 4 MCP Core implementation and audit, the Phase 5 Marketing/Media/Publishing implementation and audit, and the Phase 6 Finance & Business Operations implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phases 4-6 should therefore be treated as closed, not as backlogs of missing MCP, AI-runtime, Marketing, Media, Publishing or Finance implementation work.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
@@ -1074,7 +1076,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
-| Phase 6 — Finance & Business Operations | **In progress** | Financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, and derived financial reporting/business health are implemented; remaining Phase 6 administration and audit work is tracked in issues 84-85. |
+| Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
 | Phase 7 — Multi-Agent Business Operations | **Not started** | Future capability. |
 
 ### Reconciliation Rules
@@ -1090,7 +1092,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phases 0 through 5 have been implemented and audited within their defined boundaries. Phase 6 Finance and Phase 7 Multi-Agent Business Operations remain future roadmap phases.
+The repository is no longer a foundation-only greenfield baseline. Phases 0 through 6 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations remains the next product roadmap phase.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
