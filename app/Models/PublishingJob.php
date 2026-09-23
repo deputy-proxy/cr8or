@@ -34,7 +34,9 @@ class PublishingJob extends Model
     {
         if ($this->status !== self::STATUS_PENDING) {
             throw new LogicException('Publishing job is not pending.');
-        } $this->status = self::STATUS_RUNNING;
+        }
+
+        $this->status = self::STATUS_RUNNING;
         $this->attempts++;
         $this->started_at ??= now();
 
