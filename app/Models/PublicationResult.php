@@ -20,7 +20,9 @@ class PublicationResult extends Model
             $p = Publication::query()->find($r->publication_id);
             if ($p === null || $p->enterprise_id !== (int) $r->enterprise_id) {
                 throw new LogicException('Publication result enterprise mismatch.');
-            }if ($r->exists) {
+            }
+
+            if ($r->exists) {
                 throw new LogicException('Publication results are historical and immutable.');
             }
         });
