@@ -116,7 +116,7 @@ Credential references may be persisted, but plaintext credentials should not be 
 
 ## MCP Security Boundary
 
-MCP is an external interface to CR8OR capabilities.
+MCP is an external interface to CR8OR capabilities. The current remote endpoint is `/mcp`, protected by Laravel Passport through the `auth:api` guard. Laravel MCP OAuth discovery/registration endpoints remain separate from the protected MCP endpoint.
 
 The MCP boundary must:
 - authenticate the client;
