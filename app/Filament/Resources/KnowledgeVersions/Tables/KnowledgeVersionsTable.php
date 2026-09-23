@@ -10,6 +10,7 @@ class KnowledgeVersionsTable
     public static function configure(Table $table): Table
     {
         return $table->columns([
+            TextColumn::make('item.title')->label('Knowledge item')->searchable()->sortable(),
             TextColumn::make('version')->sortable(),
             TextColumn::make('recorded_at')->dateTime()->sortable(),
         ]);
