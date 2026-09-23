@@ -188,7 +188,7 @@ Persistent information about them belongs in separate records such as:
 - Approval;
 - Audit Entry.
 
-The exact schema, lifecycle and provider abstraction are implementation concerns for Phase 2 and later phases.
+The exact schema and lifecycle remain implementation concerns for later phases. Model-provider access is now isolated behind the internal `App\AI\Contracts\ModelProvider` contract. The Laravel AI SDK is an infrastructure adapter only; Agent and Expert runtime classes must not depend on its provider-specific API. Provider credentials remain configuration-only and are never persisted as Agent or Expert business state.
 
 ## Verified Phase 2 Implementation Boundary
 
@@ -197,7 +197,7 @@ The current repository implements and tests the Agent/Expert runtime contracts, 
 ## Deferred
 
 The following remain intentionally deferred:
-- model-provider abstraction and production Agent execution;
+- production Agent execution and governance orchestration;
 - execution context schema beyond the current execution/approval records;
 - Agent memory implementation;
 - agent-to-agent collaboration and workflow orchestration;
