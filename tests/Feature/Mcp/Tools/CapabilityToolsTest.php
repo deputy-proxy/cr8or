@@ -2,9 +2,13 @@
 
 use App\Enums\MembershipRole;
 use App\Mcp\Servers\Cr8orServer;
+use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\RequestApprovalTool;
+use App\Mcp\Tools\SubmitContentForReviewTool;
+use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Models\AgentAssignment;
@@ -48,9 +52,13 @@ it('registers the initial governed capability catalogue for an organization memb
     mcpCapabilityOwner($user, $organization);
 
     Cr8orServer::actingAs($user, 'api')->tools()->assertRegistered([
+        CreateContentItemTool::class,
         CreateStrategyTool::class,
         CreateWorkItemTool::class,
+        MarkContentPublicationReadyTool::class,
         RequestApprovalTool::class,
+        SubmitContentForReviewTool::class,
+        UpdateContentItemTool::class,
         UpdateStrategyTool::class,
         UpdateWorkItemTool::class,
     ]);

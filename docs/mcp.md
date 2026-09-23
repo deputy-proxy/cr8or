@@ -8,9 +8,9 @@ Resources provide authorized contextual information to an AI client and should r
 
 Tools request explicit capabilities that may change state or initiate execution.
 
-### Phase 4.3 tool catalogue
+### Governed tool catalogue
 
-The initial state-changing catalogue is intentionally small and limited to already implemented Phase 1-3 capabilities:
+The state-changing catalogue is intentionally limited to implemented, server-authorized capabilities:
 
 | Tool | Capability | Purpose |
 | --- | --- | --- |
@@ -18,6 +18,10 @@ The initial state-changing catalogue is intentionally small and limited to alrea
 | update-work-item | work.update | Update an existing work item without changing enterprise ownership. |
 | create-strategy | strategy.create | Create a strategy under an authorized objective. |
 | update-strategy | strategy.update | Update an existing strategy without changing objective ownership. |
+| create-content-item | content.create | Create draft Content Item state under an authorized enterprise. |
+| update-content-item | content.update | Revise draft or in-review Content Item state. |
+| submit-content-for-review | content.review | Move draft content into the governed review state. |
+| mark-content-publication-ready | content.publication_ready | Mark approved content publication-ready only with matching server-side approval. |
 | request-approval | N/A | Create an auditable approval request for an Agent capability and exact target context. |
 
 For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer.

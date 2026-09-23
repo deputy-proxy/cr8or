@@ -6,9 +6,13 @@ use App\Mcp\Resources\EnterpriseContextResource;
 use App\Mcp\Resources\KnowledgeContextResource;
 use App\Mcp\Resources\StrategyContextResource;
 use App\Mcp\Resources\WorkContextResource;
+use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\RequestApprovalTool;
+use App\Mcp\Tools\SubmitContentForReviewTool;
+use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use Laravel\Mcp\Server;
@@ -27,6 +31,10 @@ class Cr8orServer extends Server
         UpdateWorkItemTool::class,
         CreateStrategyTool::class,
         UpdateStrategyTool::class,
+        CreateContentItemTool::class,
+        UpdateContentItemTool::class,
+        SubmitContentForReviewTool::class,
+        MarkContentPublicationReadyTool::class,
         RequestApprovalTool::class,
     ];
 

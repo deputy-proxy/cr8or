@@ -116,17 +116,19 @@ This document defines the initial bounded domains and known conceptual entities.
 
 ## Marketing
 
-**Purpose:** Represent marketing strategy and content operations.
+**Purpose:** Represent marketing strategy and controlled content operations.
 
 **Core entities:** Marketing Strategy, Campaign, Content Series, Content Item, Script, Channel, Audience, Publication, Content Metric.
 
-**Relationships:** Campaigns contain content series and content items; publications connect approved content to channels.
+**Relationships:** Campaigns contain content series and content items; Content Items may contain Scripts; publications connect approved content to channels. AI-derived Content Items may retain provenance to an AgentExecution and AgentDecision without duplicating execution state.
 
 **Ownership:** CR8OR for business state; external systems execute specialized publishing or media operations.
 
-**Known invariants:** Published content remains traceable to its CR8OR source.
+**Known invariants:** Content lifecycle transitions are enforced server-side. Content moves through draft → in-review → approved → publication-ready, with archival as a terminal path. Publication readiness requires an explicit matching approval and cannot be set by a raw status update. Approved/publication-ready content cannot be silently rewritten. AI-generated content enters as derived draft state until accepted through the normal review/approval workflow. Agent execution is constrained by organization, enterprise, assignment, capability and approval context.
 
-**Deferred:** Channel-specific APIs and campaign automation.
+**Verified Phase 5.2 implementation:** Content lifecycle/application services, AI-assisted generation/revision through the existing AgentExecutionService and ModelProvider boundary, AgentExecution/AgentDecision provenance, governed MCP content capabilities and server-side publication-readiness approval are implemented. No media renderer or publishing provider logic belongs in this domain.
+
+**Deferred:** Channel-specific APIs, media generation/rendering and publishing integrations.
 
 ## Media
 

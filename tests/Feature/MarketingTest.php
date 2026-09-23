@@ -11,6 +11,7 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\Script;
 use App\Models\User;
+use App\Services\ContentItemService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use LogicException;
@@ -77,11 +78,10 @@ it('enforces content lifecycle transitions at the model boundary', function () {
     expect(fn () => $item->transitionTo(ContentItem::STATUS_PUBLICATION_READY))->toThrow(LogicException::class);
 
     $item->transitionTo(ContentItem::STATUS_IN_REVIEW)
-        ->transitionTo(ContentItem::STATUS_APPROVED)
-        ->transitionTo(ContentItem::STATUS_PUBLICATION_READY);
+        ->transitionTo(ContentItem::STATUS_APPROVED);
 
-    expect($item->status)->toBe(ContentItem::STATUS_PUBLICATION_READY)
-        ->and(fn () => $item->transitionTo(ContentItem::STATUS_DRAFT))->toThrow(LogicException::class);
+    expect($item->status)->toBe(ContentItem::STATUS_APPROVED)
+        ->and(fn () => $item->transitionTo(ContentItem::STATUS_PUBLICATION_READY))->toThrow(LogicException::class);
 });
 
 it('enforces the enterprise organization boundary through marketing policies', function () {
@@ -118,4 +118,56 @@ it('keeps the marketing schema explicit and non-polymorphic', function () {
     ])->and(Schema::getColumnListing('scripts'))->toBe([
         'id', 'content_item_id', 'title', 'body', 'created_at', 'updated_at',
     ]);
+});
+
+it('requires explicit approval for publication readiness', function () {
+    $enterprise = Enterprise::factory()->create();
+    $actor = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
+    $descriptor = App\Models\AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\Agent::class], ['slug' => 'content-test-agent', 'enabled' => true]);
+    $assignment = App\Models\AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
+    App\Models\AgentPermission::factory()->requiresApproval()->create([
+        'agent_assignment_id' => $assignment,
+        'capability' => 'content.publication_ready',
+    ]);
+    $execution = App\Models\AgentExecution::factory()->forAssignment($assignment)->executing()->create(['actor_id' => $actor]);
+    $campaign = Campaign::factory()->create([
+        'enterprise_id' => $enterprise,
+        'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),
+    ]);
+    $item = ContentItem::factory()->forCampaign($campaign)->create(['status' => ContentItem::STATUS_APPROVED]);
+    $approval = App\Models\ApprovalRequest::query()->create([
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->id,
+        'agent_assignment_id' => $assignment->id,
+        'agent_execution_id' => $execution->id,
+        'actor_id' => $actor->id,
+        'capability' => 'content.publication_ready',
+        'target_context' => ['content_item_id' => $item->id],
+        'organization_name' => $enterprise->organization->name,
+        'enterprise_name' => $enterprise->name,
+        'agent_slug' => $descriptor->slug,
+        'agent_runtime_class' => $descriptor->runtime_class,
+        'actor_name' => $actor->name,
+        'status' => App\Models\ApprovalRequest::STATUS_APPROVED,
+        'approver_id' => $actor->id,
+        'approver_name' => $actor->name,
+        'requested_at' => now(),
+        'expires_at' => now()->addHour(),
+        'decided_at' => now(),
+    ]);
+
+    $mismatchedApproval = clone $approval;
+    $mismatchedApproval->target_context = ['content_item_id' => $item->id + 1];
+
+    expect(fn () => app(ContentItemService::class)->markPublicationReady(
+        $actor, $item, $mismatchedApproval, $assignment, $execution,
+    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+
+    expect(fn () => $item->transitionTo(ContentItem::STATUS_PUBLICATION_READY))
+        ->toThrow(LogicException::class);
+
+    app(ContentItemService::class)->markPublicationReady($actor, $item, $approval, $assignment, $execution);
+
+    expect($item->refresh()->status)->toBe(ContentItem::STATUS_PUBLICATION_READY);
 });

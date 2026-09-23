@@ -916,7 +916,7 @@ The status above distinguishes completed Phase 4 infrastructure from intentional
 
 ### Phase 5 — Marketing, Media & Publishing
 
-**Status: Not started**
+**Status: In progress**
 
 **Objective**
 
@@ -936,6 +936,8 @@ Implement the AI-assisted content operating system.
 - Publishing.
 - Postiz integration.
 - Canva-assisted workflows.
+
+**Current implementation:** Phase 5.1 Marketing foundation and Phase 5.2 controlled content lifecycle / AI-assisted content operations are implemented. Media, publishing, Canva workflows, administration UI and the final Phase 5 audit remain pending.
 
 **Completion Criteria**
 
@@ -1060,7 +1062,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 2 — Agents, Experts & Governance | **Complete** | The 2.1–2.7 governance/control-plane implementation is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Phase 4 supplies the later production execution/provider integration; agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
 | Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
-| Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
+| Phase 5 — Marketing, Media & Publishing | **In progress** | Marketing foundation and controlled content/AI-assisted operations are implemented; media, publishing, Canva, administration UI and final audit remain pending. Existing external media/integration projects are not treated as completed CR8OR Core capabilities. |
 | Phase 6 — Finance & Business Operations | **Not started** | Architecture defined, implementation pending. |
 | Phase 7 — Multi-Agent Business Operations | **Not started** | Future capability. |
 
