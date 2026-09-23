@@ -28,6 +28,8 @@ Organizations are the primary business-data isolation boundary. Application serv
 
 ## Historical Integrity
 
-Important approvals, financial transactions, audit entries, publication results, agent decisions and external execution records must remain interpretable under the context applicable when created. Changing current permissions or instructions must not retroactively rewrite history.
+Important approvals, financial transactions, audit entries, publication results, decision records, agent decisions and external execution records must remain interpretable under the context applicable when created. Changing current permissions or instructions must not retroactively rewrite history.
+
+Decision records are separate from AgentDecision and EnterpriseDecision and preserve actor identity, decision-time context and timestamp as historical facts.
 
 Governance constrains domain operations. It does not become a parallel business process engine.
