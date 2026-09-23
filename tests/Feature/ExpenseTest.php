@@ -3,6 +3,7 @@
 use App\Models\Enterprise;
 use App\Models\Expense;
 use App\Models\FinancialAccount;
+use App\Models\FinancialPeriod;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use Illuminate\Support\Facades\Schema;
@@ -62,6 +63,38 @@ it('keeps exact decimal expense amounts', function () {
 it('keeps the expense schema focused on current requirements', function () {
     expect(Schema::getColumnListing('expenses'))->toBe([
         'id', 'enterprise_id', 'financial_account_id', 'transaction_id', 'transaction_category_id', 'amount',
-        'currency', 'expense_date', 'source', 'reference', 'description', 'created_at', 'updated_at',
+        'currency', 'expense_date', 'source', 'reference', 'description', 'created_at', 'updated_at', 'financial_period_id',
     ]);
+});
+
+it('rejects an expense period from another enterprise', function () {
+    $enterprise = Enterprise::factory()->create();
+    $foreignPeriod = FinancialPeriod::factory()->create();
+
+    expect(fn () => Expense::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_period_id' => $foreignPeriod,
+    ]))->toThrow(LogicException::class);
+});
+
+it('requires an expense period to match its transaction when both are set', function () {
+    $enterprise = Enterprise::factory()->create();
+    $account = FinancialAccount::factory()->create(['enterprise_id' => $enterprise]);
+    $category = TransactionCategory::factory()->create(['enterprise_id' => $enterprise]);
+    $period = FinancialPeriod::factory()->create(['enterprise_id' => $enterprise]);
+    $otherPeriod = FinancialPeriod::factory()->create(['enterprise_id' => $enterprise]);
+    $transaction = Transaction::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_account_id' => $account,
+        'transaction_category_id' => $category,
+        'financial_period_id' => $period,
+    ]);
+
+    expect(fn () => Expense::factory()->create([
+        'enterprise_id' => $enterprise,
+        'financial_account_id' => $account,
+        'transaction_id' => $transaction,
+        'transaction_category_id' => $category,
+        'financial_period_id' => $otherPeriod,
+    ]))->toThrow(LogicException::class);
 });
