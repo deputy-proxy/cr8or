@@ -201,4 +201,22 @@ class Enterprise extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+
+    /** @return HasMany<FinancialAccount, $this> */
+    public function financialAccounts(): HasMany
+    {
+        return $this->hasMany(FinancialAccount::class);
+    }
+
+    /** @return HasMany<TransactionCategory, $this> */
+    public function transactionCategories(): HasMany
+    {
+        return $this->hasMany(TransactionCategory::class);
+    }
+
+    /** @return HasMany<Transaction, $this> */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }
