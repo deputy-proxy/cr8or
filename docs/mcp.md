@@ -69,3 +69,7 @@ Tool failures are returned as MCP `isError` responses with a machine-readable er
 Server-side logs contain correlation, actor, organization/execution and failure metadata only. Secrets, credentials, tokens and model prompt/context are not logged.
 
 An AgentExecution records its correlation identifier, provider and external provider invocation identifier when available. Provider failure records the normalized failure code and transitions the execution to `failed`; a provider failure cannot produce a successful AgentDecision.
+
+### Financial context
+
+Phase 6.5 financial context is exposed through the existing authorization-aware Agent application context assembler rather than as a separate MCP financial resource. It is Enterprise-scoped, authorization-checked before assembly, and exposes derived/intentional context without unrestricted financial record access. A dedicated financial MCP resource is deferred unless a later product requirement establishes a distinct MCP contract.

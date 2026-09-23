@@ -31,6 +31,7 @@ class McpContextAssembler
                 'knowledge' => $this->knowledge($user, $enterprise->getKey()),
                 'strategy' => $this->strategy($user, $enterprise->getKey()),
                 'work' => $this->work($user, $enterprise->getKey()),
+                'financial' => $this->financial($user, $enterprise->getKey()),
                 default => throw new \InvalidArgumentException(
                     "Agent requires unsupported context category [{$requirement}].",
                 ),
@@ -117,6 +118,14 @@ class McpContextAssembler
                 ])
                 ->all(),
         ];
+    }
+
+    /** @return array<string, mixed> */
+    public function financial(User $user, int $enterpriseId): array
+    {
+        $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
+
+        return app(FinancialReportingService::class)->context($enterprise);
     }
 
     /** @return array<string, mixed> */
