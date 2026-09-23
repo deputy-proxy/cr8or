@@ -1,1 +1,56 @@
-{"stdout":"<?php\n\nnamespace Database\\Factories;\n\nuse App\\Models\\Enterprise;\nuse App\\Models\\Expense;\nuse App\\Models\\FinancialAccount;\nuse App\\Models\\Transaction;\nuse App\\Models\\TransactionCategory;\nuse Illuminate\\Database\\Eloquent\\Factories\\Factory;\n\n/** @extends Factory<Expense> */\nclass ExpenseFactory extends Factory\n{\n    public function definition(): array\n    {\n        return [\n            'enterprise_id' => Enterprise::factory(),\n            'financial_account_id' => null,\n            'transaction_id' => null,\n            'transaction_category_id' => null,\n            'amount' => fake()->randomFloat(4, 1, 100000),\n            'currency' => 'EUR',\n            'expense_date' => fake()->date(),\n            'source' => fake()->optional()->randomElement(['manual', 'bill', 'bank']),\n            'reference' => fake()->optional()->bothify('EXP-########'),\n            'description' => fake()->sentence(),\n        ];\n    }\n\n    public function forAccount(): static\n    {\n        return $this->state(fn (array $attributes): array => [\n            'financial_account_id' => FinancialAccount::factory()->create(['enterprise_id' => $attributes['enterprise_id']])->getKey(),\n        ]);\n    }\n\n    public function forTransaction(): static\n    {\n        return $this->state(function (array $attributes): array {\n            $account = FinancialAccount::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);\n            $category = TransactionCategory::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);\n            $transaction = Transaction::factory()->create([\n                'enterprise_id' => $attributes['enterprise_id'],\n                'financial_account_id' => $account,\n                'transaction_category_id' => $category,\n            ]);\n\n            return [\n                'financial_account_id' => $account->getKey(),\n                'transaction_id' => $transaction->getKey(),\n                'transaction_category_id' => $category->getKey(),\n            ];\n        });\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Enterprise;
+use App\Models\Expense;
+use App\Models\FinancialAccount;
+use App\Models\Transaction;
+use App\Models\TransactionCategory;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/** @extends Factory<Expense> */
+class ExpenseFactory extends Factory
+{
+    public function definition(): array
+    {
+        return [
+            'enterprise_id' => Enterprise::factory(),
+            'financial_account_id' => null,
+            'transaction_id' => null,
+            'transaction_category_id' => null,
+            'amount' => fake()->randomFloat(4, 1, 100000),
+            'currency' => 'EUR',
+            'expense_date' => fake()->date(),
+            'source' => fake()->optional()->randomElement(['manual', 'bill', 'bank']),
+            'reference' => fake()->optional()->bothify('EXP-########'),
+            'description' => fake()->sentence(),
+        ];
+    }
+
+    public function forAccount(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'financial_account_id' => FinancialAccount::factory()->create(['enterprise_id' => $attributes['enterprise_id']])->getKey(),
+        ]);
+    }
+
+    public function forTransaction(): static
+    {
+        return $this->state(function (array $attributes): array {
+            $account = FinancialAccount::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);
+            $category = TransactionCategory::factory()->create(['enterprise_id' => $attributes['enterprise_id']]);
+            $transaction = Transaction::factory()->create([
+                'enterprise_id' => $attributes['enterprise_id'],
+                'financial_account_id' => $account,
+                'transaction_category_id' => $category,
+            ]);
+
+            return [
+                'financial_account_id' => $account->getKey(),
+                'transaction_id' => $transaction->getKey(),
+                'transaction_category_id' => $category->getKey(),
+            ];
+        });
+    }
+}
