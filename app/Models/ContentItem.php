@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'title', 'body', 'status'])]
+#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'status'])]
 class ContentItem extends Model
 {
     /** @use HasFactory<ContentItemFactory> */
@@ -27,7 +27,13 @@ class ContentItem extends Model
     public const STATUS_ARCHIVED = 'archived';
 
     /** @var list<string> */
-    private const STATUSES = [self::STATUS_DRAFT, self::STATUS_IN_REVIEW, self::STATUS_APPROVED, self::STATUS_PUBLICATION_READY, self::STATUS_ARCHIVED];
+    private const STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_IN_REVIEW,
+        self::STATUS_APPROVED,
+        self::STATUS_PUBLICATION_READY,
+        self::STATUS_ARCHIVED,
+    ];
 
     protected static function booted(): void
     {
@@ -50,13 +56,11 @@ class ContentItem extends Model
 
             foreach (['channel_id' => Channel::class, 'audience_id' => Audience::class] as $field => $model) {
                 $id = $item->{$field};
-
                 if ($id === null) {
                     continue;
                 }
 
                 $record = $model::query()->find($id);
-
                 if ($record === null || $record->enterprise_id !== (int) $item->enterprise_id) {
                     throw new LogicException("Content item {$field} must belong to its enterprise.");
                 }
@@ -67,11 +71,19 @@ class ContentItem extends Model
             }
 
             if ($item->exists && in_array($item->getOriginal('status'), [self::STATUS_APPROVED, self::STATUS_PUBLICATION_READY], true)) {
-                foreach (['campaign_id', 'content_series_id', 'channel_id', 'audience_id'] as $field) {
+                foreach (['campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'title', 'body'] as $field) {
                     if ($item->isDirty($field)) {
-                        throw new LogicException("Approved content item {$field} cannot be silently reassigned.");
+                        throw new LogicException("Approved content item {$field} cannot be silently changed.");
                     }
                 }
+            }
+
+            if ($item->exists && $item->isDirty('agent_execution_id') && $item->getOriginal('agent_execution_id') !== null) {
+                throw new LogicException('Content item Agent execution provenance cannot be replaced.');
+            }
+
+            if ($item->exists && $item->isDirty('agent_decision_id') && $item->getOriginal('agent_decision_id') !== null) {
+                throw new LogicException('Content item Agent decision provenance cannot be replaced.');
             }
         });
     }
@@ -106,6 +118,18 @@ class ContentItem extends Model
         return $this->belongsTo(Audience::class);
     }
 
+    /** @return BelongsTo<AgentExecution, $this> */
+    public function agentExecution(): BelongsTo
+    {
+        return $this->belongsTo(AgentExecution::class);
+    }
+
+    /** @return BelongsTo<AgentDecision, $this> */
+    public function agentDecision(): BelongsTo
+    {
+        return $this->belongsTo(AgentDecision::class);
+    }
+
     /** @return HasMany<Script, $this> */
     public function scripts(): HasMany
     {
@@ -114,6 +138,10 @@ class ContentItem extends Model
 
     public function transitionTo(string $status): static
     {
+        if ($status === self::STATUS_PUBLICATION_READY) {
+            throw new LogicException('Publication readiness requires a matching server-side approval.');
+        }
+
         if (! in_array($status, self::STATUSES, true)) {
             throw new LogicException("Invalid content item status [{$status}].");
         }
@@ -121,7 +149,7 @@ class ContentItem extends Model
         $allowed = match ($this->status) {
             self::STATUS_DRAFT => [self::STATUS_IN_REVIEW, self::STATUS_ARCHIVED],
             self::STATUS_IN_REVIEW => [self::STATUS_DRAFT, self::STATUS_APPROVED, self::STATUS_ARCHIVED],
-            self::STATUS_APPROVED => [self::STATUS_PUBLICATION_READY, self::STATUS_ARCHIVED],
+            self::STATUS_APPROVED => [self::STATUS_ARCHIVED],
             self::STATUS_PUBLICATION_READY => [self::STATUS_ARCHIVED],
             self::STATUS_ARCHIVED => [],
             default => throw new LogicException('Content item has no valid lifecycle state.'),
@@ -132,6 +160,17 @@ class ContentItem extends Model
         }
 
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function transitionToPublicationReady(): static
+    {
+        if ($this->status !== self::STATUS_APPROVED) {
+            throw new LogicException('Only approved content can become publication-ready.');
+        }
+
+        $this->status = self::STATUS_PUBLICATION_READY;
 
         return $this;
     }
