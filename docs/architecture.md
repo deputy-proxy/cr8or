@@ -72,3 +72,11 @@ Specialized services such as media renderers, publishing systems, Canva, GitHub,
 - External retries must not create duplicate business effects where idempotency is required.
 
 This document establishes boundaries, not a final class hierarchy or database schema.
+
+## Execution Error and Correlation Contract
+
+MCP and Agent execution use a small shared error taxonomy rather than a generalized workflow/error engine. Correlation begins at the MCP HTTP/request boundary and is propagated to AgentExecution, ApprovalRequest and provider invocation metadata where applicable.
+
+AgentExecution remains the authoritative lifecycle record for Agent execution. Its failure code is normalized independently from its human-readable failure reason, while provider and external invocation identifiers are stored only when actually returned.
+
+The existing Phase 3 Job/Execution idempotency model remains authoritative for background operations. MCP update tools marked idempotent rely on their existing replacement semantics; no second retry engine is introduced.
