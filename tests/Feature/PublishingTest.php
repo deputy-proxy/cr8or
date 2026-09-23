@@ -148,5 +148,5 @@ it('uses the same server-side capability boundary for MCP publication authorizat
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $user->id]);
     AgentPermission::factory()->create(['agent_assignment_id' => $assignment->id, 'capability' => 'publication.publish']);
 
-    expect(app(McpCapabilityAuthorizer::class)->authorizeMutation($user, 'publication.publish', $enterprise,$assignment->id,$execution->id,null,['content_item_id' => $content->id],['update', $content]))->toBeNull();
+    expect(app(McpCapabilityAuthorizer::class)->authorizeMutation($user, 'publication.publish', $enterprise, $assignment->id, $execution->id, null, ['content_item_id' => $content->id], ['update', $content]))->toBeNull();
 });
