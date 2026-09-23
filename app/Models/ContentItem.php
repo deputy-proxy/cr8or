@@ -130,6 +130,12 @@ class ContentItem extends Model
         return $this->belongsTo(AgentDecision::class);
     }
 
+    /** @return HasMany<Asset, $this> */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
+    }
+
     /** @return HasMany<Script, $this> */
     public function scripts(): HasMany
     {

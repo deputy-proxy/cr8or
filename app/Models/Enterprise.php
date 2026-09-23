@@ -178,6 +178,24 @@ class Enterprise extends Model
         return $this->hasMany(Dependency::class);
     }
 
+    /** @return HasMany<Asset, $this> */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
+    }
+
+    /** @return HasMany<GenerationRequest, $this> */
+    public function generationRequests(): HasMany
+    {
+        return $this->hasMany(GenerationRequest::class);
+    }
+
+    /** @return HasMany<RenderRequest, $this> */
+    public function renderRequests(): HasMany
+    {
+        return $this->hasMany(RenderRequest::class);
+    }
+
     /** @return HasMany<Assignment, $this> */
     public function assignments(): HasMany
     {
