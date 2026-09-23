@@ -33,7 +33,7 @@ The adapter normalizes connection failures, rate limits, provider failures and i
 The current implementation deliberately does not make preview-only Canva APIs part of the contract. Canva's current documentation identifies design-copy/brand-template creation and some asset URL-upload APIs as preview functionality, so those remain outside this boundary until separately verified and approved. citeturn1search0turn0search2
 
 ## n8n
-**Role:** Cross-service workflow orchestration. n8n may coordinate multi-step workflows but must not become the authoritative store for CR8OR business state.
+**Role:** Optional future MCP-connected automation capability. An Automatiser Expert may use n8n for multi-step external automation when a business workflow requires it. n8n must not become the authoritative store for CR8OR business state or the primary CR8OR orchestration layer.
 
 ## Cloudflare R2
 **Role:** Canonical file and generated-media storage. R2 stores files referenced by CR8OR; CR8OR owns business metadata, lifecycle and authorization.
