@@ -1,1 +1,78 @@
-{"stdout":"<?php\n\nnamespace App\\Models;\n\nuse Database\\Factories\\RevenueFactory;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;\nuse LogicException;\n\n#[Fillable(['enterprise_id', 'financial_account_id', 'transaction_id', 'amount', 'currency', 'revenue_date', 'source', 'reference', 'description'])]\nclass Revenue extends Model\n{\n    /** @use HasFactory<RevenueFactory> */\n    use HasFactory;\n\n    protected static function booted(): void\n    {\n        static::saving(function (Revenue $revenue): void {\n            $revenue->validateScope();\n            if ($revenue->exists && $revenue->isDirty('enterprise_id')) {\n                throw new LogicException('Revenue enterprise ownership cannot be changed.');\n            }\n            if ($revenue->amount < 0) {\n                throw new LogicException('Revenue amount cannot be negative.');\n            }\n            if (! preg_match('/^[A-Z]{3}$/', $revenue->currency)) {\n                throw new LogicException('Revenue currency must be a three-letter uppercase code.');\n            }\n        });\n    }\n\n    /** @return BelongsTo<Enterprise, $this> */\n    public function enterprise(): BelongsTo\n    {\n        return $this->belongsTo(Enterprise::class);\n    }\n\n    /** @return BelongsTo<FinancialAccount, $this> */\n    public function financialAccount(): BelongsTo\n    {\n        return $this->belongsTo(FinancialAccount::class);\n    }\n\n    /** @return BelongsTo<Transaction, $this> */\n    public function transaction(): BelongsTo\n    {\n        return $this->belongsTo(Transaction::class);\n    }\n\n    /** @return array<string, string> */\n    protected function casts(): array\n    {\n        return ['amount' => 'decimal:4', 'revenue_date' => 'date'];\n    }\n\n    private function validateScope(): void\n    {\n        if (! Enterprise::query()->whereKey($this->enterprise_id)->exists()) {\n            return;\n        }\n\n        if ($this->financial_account_id !== null && FinancialAccount::query()->whereKey($this->financial_account_id)->value('enterprise_id') !== $this->enterprise_id) {\n            throw new LogicException('Revenue financial account must belong to its enterprise.');\n        }\n\n        if ($this->transaction_id !== null) {\n            $transaction = Transaction::query()->find($this->transaction_id);\n            if ($transaction === null || (int) $transaction->enterprise_id !== (int) $this->enterprise_id) {\n                throw new LogicException('Revenue transaction must belong to its enterprise.');\n            }\n            if ($this->financial_account_id !== null && (int) $transaction->financial_account_id !== (int) $this->financial_account_id) {\n                throw new LogicException('Revenue financial account must match its transaction.');\n            }\n        }\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Models;
+
+use Database\Factories\RevenueFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
+
+#[Fillable(['enterprise_id', 'financial_account_id', 'transaction_id', 'amount', 'currency', 'revenue_date', 'source', 'reference', 'description'])]
+class Revenue extends Model
+{
+    /** @use HasFactory<RevenueFactory> */
+    use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saving(function (Revenue $revenue): void {
+            $revenue->validateScope();
+            if ($revenue->exists && $revenue->isDirty('enterprise_id')) {
+                throw new LogicException('Revenue enterprise ownership cannot be changed.');
+            }
+            if ($revenue->amount < 0) {
+                throw new LogicException('Revenue amount cannot be negative.');
+            }
+            if (! preg_match('/^[A-Z]{3}$/', $revenue->currency)) {
+                throw new LogicException('Revenue currency must be a three-letter uppercase code.');
+            }
+        });
+    }
+
+    /** @return BelongsTo<Enterprise, $this> */
+    public function enterprise(): BelongsTo
+    {
+        return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<FinancialAccount, $this> */
+    public function financialAccount(): BelongsTo
+    {
+        return $this->belongsTo(FinancialAccount::class);
+    }
+
+    /** @return BelongsTo<Transaction, $this> */
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['amount' => 'decimal:4', 'revenue_date' => 'date'];
+    }
+
+    private function validateScope(): void
+    {
+        if (! Enterprise::query()->whereKey($this->enterprise_id)->exists()) {
+            return;
+        }
+
+        if ($this->financial_account_id !== null && FinancialAccount::query()->whereKey($this->financial_account_id)->value('enterprise_id') !== $this->enterprise_id) {
+            throw new LogicException('Revenue financial account must belong to its enterprise.');
+        }
+
+        if ($this->transaction_id !== null) {
+            $transaction = Transaction::query()->find($this->transaction_id);
+            if ($transaction === null || (int) $transaction->enterprise_id !== (int) $this->enterprise_id) {
+                throw new LogicException('Revenue transaction must belong to its enterprise.');
+            }
+            if ($this->financial_account_id !== null && (int) $transaction->financial_account_id !== (int) $this->financial_account_id) {
+                throw new LogicException('Revenue financial account must match its transaction.');
+            }
+        }
+    }
+}
