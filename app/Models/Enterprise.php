@@ -28,6 +28,36 @@ class Enterprise extends Model
         return $this->hasOne(EnterpriseContext::class);
     }
 
+    /** @return HasMany<MarketingStrategy, $this> */
+    public function marketingStrategies(): HasMany
+    {
+        return $this->hasMany(MarketingStrategy::class);
+    }
+
+    /** @return HasMany<Campaign, $this> */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    /** @return HasMany<ContentItem, $this> */
+    public function contentItems(): HasMany
+    {
+        return $this->hasMany(ContentItem::class);
+    }
+
+    /** @return HasMany<Channel, $this> */
+    public function channels(): HasMany
+    {
+        return $this->hasMany(Channel::class);
+    }
+
+    /** @return HasMany<Audience, $this> */
+    public function audiences(): HasMany
+    {
+        return $this->hasMany(Audience::class);
+    }
+
     /** @return HasMany<Product, $this> */
     public function products(): HasMany
     {
