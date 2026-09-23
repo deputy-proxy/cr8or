@@ -768,7 +768,7 @@ Establish the Agent and Expert runtime architecture, persistent descriptors, gov
 
 ### Phase 3 — Strategy, Knowledge & Work
 
-**Status: Not started**
+**Status: Complete**
 
 **Objective**
 
@@ -786,13 +786,22 @@ Give agents and humans a structured operating model for planning and execution.
 - Jobs.
 - Decisions.
 
-**Completion Criteria**
+**Verified implementation**
 
-- Business knowledge is persistently represented.
-- Strategy can be connected to operational work.
-- Tasks and projects can be assigned.
-- Important decisions are recorded.
-- Background execution is traceable.
+- Business knowledge is persistently represented with enterprise-scoped sources, documents, items, contexts, references, specifications and historical versions with version edits and deletion blocked by the authorization boundary.
+- Strategy connects objectives, strategies, plans and initiatives and can reference existing Goals and KPIs.
+- Projects, tasks, work items, milestones, dependencies and assignments provide the operational work model.
+- Workflows, jobs and executions provide traceable CR8OR-owned execution history with explicit lifecycle and retry semantics.
+- Decision records preserve decision-time actor and context as historical facts and remain distinct from AgentDecision and EnterpriseDecision.
+- Filament administration is implemented with server-side organization/enterprise authorization and scoping.
+- Full local validation and the implementation PR CI checks were verified during the Phase 3 audit.
+
+**Deferred**
+
+- Knowledge retrieval, indexing and vector infrastructure.
+- AI planning or metric-calculation engines.
+- Full workflow-engine semantics.
+- Concrete provider execution and external task-management integrations.
 
 ### Phase 4 — MCP Core
 
@@ -912,14 +921,14 @@ Allow multiple specialized agents to collaborate through a shared business opera
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit. The Phase 2 implementation slice through Agent governance administration has also been implemented and audited. The original Phase 2 roadmap remains broader than that slice, so deferred capabilities are explicitly retained as future work rather than being represented as complete.
+The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, and the Phase 3 Strategy, Knowledge & Work implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
 | Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
 | Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
 | Phase 2 — Agents, Experts & Governance | **Partially implemented** | The 2.1–2.7 implementation slice is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Production execution, agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
-| Phase 3 — Strategy, Knowledge & Work | **Not started** | Architecture defined, implementation pending. |
+| Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
 | Phase 4 — MCP Core | **Not started** | MCP architecture defined, implementation pending. |
 | Phase 5 — Marketing, Media & Publishing | **Not started** | Existing CR8OR media/integration projects are external execution systems, not evidence that this phase is implemented in CR8OR Core. |
 | Phase 6 — Finance & Business Operations | **Not started** | Architecture defined, implementation pending. |
@@ -938,7 +947,7 @@ The repository has completed the Phase 1 implementation and audit. The Phase 2 i
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phase 0 and Phase 1 have been implemented and audited.
+The repository is no longer a foundation-only greenfield baseline. Phase 0, Phase 1 and Phase 3 have been implemented and audited, while the verified Phase 2 governance slice has also been audited.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
