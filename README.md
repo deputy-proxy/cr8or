@@ -970,6 +970,7 @@ Extend CR8OR into broader business operations and financial intelligence.
 - Financial reporting.
 - Operational metrics.
 - Business health reporting.
+- Financial reporting and business-health results derived from authoritative Phase 6 records.
 
 **Verified Phase 6.3 implementation:** Invoices, Revenue and Expense are authoritative CR8OR records with Enterprise-safe relationships, historical invoice counterparty snapshots, fixed-precision monetary values and server-side organization authorization. Revenue and Expense reference authoritative accounts/transactions rather than duplicating ledger state; payment is not inferred from invoice lifecycle status.
 
@@ -1073,7 +1074,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
-| Phase 6 — Finance & Business Operations | **In progress** | Finance foundation and statement/import records are implemented; remaining Phase 6 capabilities are tracked in issues 81-85. |
+| Phase 6 — Finance & Business Operations | **In progress** | Financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, and derived financial reporting/business health are implemented; remaining Phase 6 administration and audit work is tracked in issues 84-85. |
 | Phase 7 — Multi-Agent Business Operations | **Not started** | Future capability. |
 
 ### Reconciliation Rules
