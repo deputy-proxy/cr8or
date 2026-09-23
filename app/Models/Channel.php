@@ -44,4 +44,16 @@ class Channel extends Model
     {
         return $this->hasMany(ContentItem::class);
     }
+
+    /** @return HasMany<SocialAccount, $this> */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    /** @return HasMany<Publication, $this> */
+    public function publications(): HasMany
+    {
+        return $this->hasMany(Publication::class);
+    }
 }
