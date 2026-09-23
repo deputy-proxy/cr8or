@@ -932,9 +932,9 @@ Implement the AI-assisted content operating system.
 - Asset requests.
 - Generation jobs.
 - Media rendering.
-- R2 storage.
+- Provider-neutral media storage, with S3/R2-compatible deployment through the storage boundary.
 - Publishing.
-- Postiz integration.
+- Postiz publishing adapter/integration boundary.
 - Canva-assisted workflows.
 
 **Verified implementation:** Issues 65-70 implement and audit the Marketing, controlled content, media, publishing/Postiz, Canva integration boundary and Filament administration slices. CR8OR remains authoritative for business state, lifecycle, authorization, approval and historical records; external providers remain execution boundaries.
@@ -1016,7 +1016,7 @@ Phase 4 delivers the governed AI/MCP execution infrastructure and capability bou
 - Phase 4.6 adds normalized errors, correlation, provider/external references, retry/idempotency coverage and redacted observability.
 - All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs, and the complete current repository validation passes locally.
 
-Phase 4 does not introduce agent-to-agent collaboration, Marketing/Media/Publishing, Finance, or a generalized workflow/policy engine. Those remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
+Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are now implemented in Phase 5; agent-to-agent collaboration, Finance and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
 
 ### Workflow / Job / Execution Boundary
 
@@ -1043,6 +1043,11 @@ The implemented MCP surface is intentionally narrower than the target architectu
 - Update Work Item
 - Create Strategy
 - Update Strategy
+- Create Content Item
+- Update Content Item
+- Submit Content for Review
+- Mark Content Publication Ready
+- Publish Content
 - Request Approval
 
 These resources and tools are the currently implemented governed MCP capabilities. The broader examples in the target architecture are roadmap examples, not claims that those tools already exist.
@@ -1053,7 +1058,7 @@ Current context assembly is enterprise-scoped and authorization-aware, but it do
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phase 4 should therefore be treated as closed, not as a backlog of missing MCP or AI-runtime implementation work.
+The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, and the Phase 4 MCP Core implementation and audit, and the Phase 5 Marketing/Media/Publishing implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phases 4 and 5 should therefore be treated as closed, not as backlogs of missing MCP, AI-runtime, Marketing, Media or Publishing implementation work.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
@@ -1079,7 +1084,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phase 0, Phase 1 and Phase 3 have been implemented and audited, while the verified Phase 2 governance slice has also been audited.
+The repository is no longer a foundation-only greenfield baseline. Phases 0 through 5 have been implemented and audited within their defined boundaries. Phase 6 Finance and Phase 7 Multi-Agent Business Operations remain future roadmap phases.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
