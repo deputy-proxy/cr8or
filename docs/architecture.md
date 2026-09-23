@@ -32,6 +32,8 @@ Filament is the administrative and operational interface. UI controls may reflec
 
 Laravel jobs and events are used for asynchronous work that belongs to CR8OR. Work that coordinates multiple external services belongs at the orchestration boundary.
 
+Workflow, Job and Execution records provide the authoritative trace for CR8OR-owned background work. A Workflow retains the originating Enterprise and optional operational work context, a Job represents one idempotent logical background operation, and an Execution records an attempt through an explicit pending/running/succeeded/failed lifecycle. This is execution tracking, not a general workflow engine. Concrete provider execution remains outside this boundary.
+
 ## AI and MCP Boundaries
 
 AI agents reason over authorized CR8OR context. An agent may propose a plan or request a capability, but technical access to a tool does not itself grant business authority.
