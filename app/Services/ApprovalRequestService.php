@@ -70,7 +70,10 @@ class ApprovalRequestService
         return $this->normalizeContext($request->target_context ?? []) === $this->normalizeContext($targetContext);
     }
 
-    /** @param array<string, mixed>|string|null $context */
+    /**
+     * @param  array<string, mixed>|string|null  $context
+     * @return array<string, mixed>
+     */
     private function normalizeContext(array|string|null $context): array
     {
         if (is_string($context)) {
