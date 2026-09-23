@@ -26,7 +26,7 @@ final class PostizPublishingProvider implements PublishingProvider
                 ->timeout((int) config('services.postiz.timeout', 15))
                 ->withHeaders(['Idempotency-Key' => $r->idempotencyKey])
                 ->post(
-                    rtrim((string) config('services.postiz.url'), '/') . '/posts',
+                    rtrim((string) config('services.postiz.url'), '/').'/posts',
                     [
                         'type' => 'schedule',
                         'date' => $r->scheduledAt,
