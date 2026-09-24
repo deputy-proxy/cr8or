@@ -250,7 +250,9 @@ final class AgentDelegationService
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $storedContext = [];
                 break;
-            } $storedContext = $decoded;
+            }
+
+            $storedContext = $decoded;
         }
 
         if (
