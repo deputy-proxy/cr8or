@@ -69,6 +69,10 @@ Specialized services such as media renderers, publishing systems, Canva, GitHub,
 
 The report is intentionally narrower than a generalized reporting system. It does not introduce a reporting engine, forecasting, analytics platform, visualization layer, route or MCP surface.
 
+## Multi-Agent Administration Boundary
+
+Phase 7.6 uses Filament as an operational interface over CR8OR-owned multi-Agent state. Delegation history and the collaboration report are organization-scoped through existing authorization/query-scoping patterns. Historical execution, decision, approval and delegation records are exposed read-only where required by their domain invariants. Runtime Agent/Expert metadata is resolved from PHP classes rather than editable descriptor copies. Filament does not become an alternative authorization or business-logic layer.
+
 ## Prohibited Shortcuts
 
 - Agents must not connect directly to the database.
