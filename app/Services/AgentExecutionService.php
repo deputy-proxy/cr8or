@@ -314,6 +314,7 @@ final class AgentExecutionService
                 $approval,
                 $execution,
                 $requestContext,
+                $delegation,
             )) {
                 throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
             }
