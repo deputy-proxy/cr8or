@@ -15,7 +15,7 @@ use LogicException;
  * @property Carbon|null $expires_at
  * @property Carbon|null $decided_at
  */
-#[Fillable(['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'approver_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'approver_name', 'status', 'requested_at', 'expires_at', 'decided_at', 'decision_reason'])]
+#[Fillable(['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'agent_delegation_id', 'consumed_agent_execution_id', 'consumed_agent_delegation_id', 'actor_id', 'approver_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'approver_name', 'status', 'requested_at', 'expires_at', 'decided_at', 'decision_reason'])]
 class ApprovalRequest extends Model
 {
     /** @use HasFactory<ApprovalRequestFactory> */
@@ -46,6 +46,27 @@ class ApprovalRequest extends Model
             foreach (self::HISTORICAL_FIELDS as $field) {
                 $request->{$field} = $request->getRawOriginal($field);
             }
+
+            $originalDelegation = $request->getRawOriginal('agent_delegation_id');
+            if ($originalDelegation !== null
+                && (int) $request->agent_delegation_id !== (int) $originalDelegation
+            ) {
+                throw new LogicException('An approval request cannot be rebound to another delegation.');
+            }
+
+            $originalConsumedDelegation = $request->getRawOriginal('consumed_agent_delegation_id');
+            if ($originalConsumedDelegation !== null
+                && (int) $request->consumed_agent_delegation_id !== (int) $originalConsumedDelegation
+            ) {
+                throw new LogicException('An approval request cannot be rebound after delegation consumption.');
+            }
+
+            $originalConsumedExecution = $request->getRawOriginal('consumed_agent_execution_id');
+            if ($originalConsumedExecution !== null
+                && (int) $request->consumed_agent_execution_id !== (int) $originalConsumedExecution
+            ) {
+                throw new LogicException('An approval request cannot be rebound after it has been consumed.');
+            }
         });
     }
 
@@ -71,6 +92,12 @@ class ApprovalRequest extends Model
     public function agentExecution(): BelongsTo
     {
         return $this->belongsTo(AgentExecution::class);
+    }
+
+    /** @return BelongsTo<AgentDelegation, $this> */
+    public function agentDelegation(): BelongsTo
+    {
+        return $this->belongsTo(AgentDelegation::class);
     }
 
     /** @return BelongsTo<User, $this> */
@@ -156,6 +183,17 @@ class ApprovalRequest extends Model
             $execution = AgentExecution::query()->find($this->agent_execution_id);
             if ($execution === null || $execution->organization_id !== $this->organization_id || $execution->enterprise_id !== $this->enterprise_id || $execution->agent_assignment_id !== $this->agent_assignment_id) {
                 throw new LogicException('Approval request execution must belong to its organization, enterprise and assignment scope.');
+            }
+        }
+
+        if ($this->agent_delegation_id !== null) {
+            $delegation = AgentDelegation::query()->find($this->agent_delegation_id);
+            if ($delegation === null
+                || $delegation->organization_id !== $this->organization_id
+                || $delegation->enterprise_id !== $this->enterprise_id
+                || $delegation->actor_id !== $this->actor_id
+            ) {
+                throw new LogicException('Approval request delegation must match its organization, Enterprise and actor scope.');
             }
         }
 
