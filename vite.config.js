@@ -1,10 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
-import { defineConfig, lazyPlugins } from 'vite-plus';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-    plugins: lazyPlugins(() => [
+    plugins: [
         laravel({
             input: [
                 'resources/css/app.css',
@@ -19,7 +19,7 @@ export default defineConfig({
             ],
         }),
         tailwindcss(),
-    ]),
+    ],
     server: {
         cors: true,
         watch: {
