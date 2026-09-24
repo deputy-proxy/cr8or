@@ -28,8 +28,7 @@ final class AgentExecutionService
         private readonly McpContextAssembler $contextAssembler,
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
         private readonly ?ExecutionCorrelationService $correlation = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $targetContext

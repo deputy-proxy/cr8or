@@ -22,8 +22,7 @@ final class AgentDelegationService
         private readonly ExecutionCorrelationService $correlation,
         private readonly AgentExecutionService $executionService,
         private readonly ApprovalRequestService $approvalRequests,
-    ) {
-    }
+    ) {}
 
     public function delegate(AgentDelegationRequest $request): AgentDelegationResponse
     {

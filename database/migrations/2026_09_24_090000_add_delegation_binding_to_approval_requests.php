@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void {
+    public function up(): void
+    {
         Schema::table('approval_requests', function (Blueprint $table): void {
             $table->foreignId('agent_delegation_id')
                 ->nullable()
@@ -32,7 +33,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         Schema::table('approval_requests', function (Blueprint $table): void {
             $table->dropForeign(['consumed_agent_delegation_id']);
             $table->dropForeign(['consumed_agent_execution_id']);
