@@ -20,9 +20,9 @@ return new class extends Migration
             $table->timestamp('generated_at');
             $table->timestamps();
 
-            $table->index(['enterprise_id', 'financial_period_id', 'generated_at']);
+            $table->index(['enterprise_id', 'financial_period_id', 'generated_at'], 'financial_reports_period_generated_index');
             $table->index(['financial_account_id', 'financial_period_id']);
-            $table->index(['transaction_category_id', 'financial_period_id']);
+            $table->index(['transaction_category_id', 'financial_period_id'], 'financial_reports_category_period_index');
         });
 
         Schema::create('business_health_results', function (Blueprint $table) {

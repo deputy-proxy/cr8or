@@ -45,7 +45,7 @@ return new class extends Migration
                 ->constrained('financial_periods')
                 ->restrictOnDelete();
 
-            $table->index(['enterprise_id', 'financial_period_id', 'transaction_date']);
+            $table->index(['enterprise_id', 'financial_period_id', 'transaction_date'], 'transactions_period_date_index');
         });
 
         Schema::table('revenues', function (Blueprint $table) {
@@ -55,7 +55,7 @@ return new class extends Migration
                 ->constrained('financial_periods')
                 ->restrictOnDelete();
 
-            $table->index(['enterprise_id', 'financial_period_id', 'revenue_date']);
+            $table->index(['enterprise_id', 'financial_period_id', 'revenue_date'], 'revenues_period_date_index');
         });
 
         Schema::table('expenses', function (Blueprint $table) {
@@ -65,7 +65,7 @@ return new class extends Migration
                 ->constrained('financial_periods')
                 ->restrictOnDelete();
 
-            $table->index(['enterprise_id', 'financial_period_id', 'expense_date']);
+            $table->index(['enterprise_id', 'financial_period_id', 'expense_date'], 'expenses_period_date_index');
         });
     }
 
@@ -73,19 +73,19 @@ return new class extends Migration
     {
         Schema::table('expenses', function (Blueprint $table) {
             $table->dropForeign(['financial_period_id']);
-            $table->dropIndex(['enterprise_id', 'financial_period_id', 'expense_date']);
+            $table->dropIndex('expenses_period_date_index');
             $table->dropColumn('financial_period_id');
         });
 
         Schema::table('revenues', function (Blueprint $table) {
             $table->dropForeign(['financial_period_id']);
-            $table->dropIndex(['enterprise_id', 'financial_period_id', 'revenue_date']);
+            $table->dropIndex('revenues_period_date_index');
             $table->dropColumn('financial_period_id');
         });
 
         Schema::table('transactions', function (Blueprint $table) {
             $table->dropForeign(['financial_period_id']);
-            $table->dropIndex(['enterprise_id', 'financial_period_id', 'transaction_date']);
+            $table->dropIndex('transactions_period_date_index');
             $table->dropColumn('financial_period_id');
         });
 

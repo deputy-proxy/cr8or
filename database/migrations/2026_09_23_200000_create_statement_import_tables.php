@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['organization_id', 'source', 'source_reference']);
-            $table->index(['enterprise_id', 'financial_account_id', 'statement_date']);
+            $table->index(['enterprise_id', 'financial_account_id', 'statement_date'], 'statements_account_date_index');
         });
 
         Schema::create('statement_entries', function (Blueprint $table) {
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['organization_id', 'source', 'source_reference']);
-            $table->index(['enterprise_id', 'financial_account_id', 'entry_date']);
+            $table->index(['enterprise_id', 'financial_account_id', 'entry_date'], 'statement_entries_account_date_index');
             $table->index(['statement_id', 'entry_date']);
             $table->index(['transaction_id']);
         });
