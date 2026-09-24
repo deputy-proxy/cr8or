@@ -81,4 +81,6 @@ MCP and Agent execution use a small shared error taxonomy rather than a generali
 
 AgentExecution remains the authoritative lifecycle record for Agent execution. Its failure code is normalized independently from its human-readable failure reason, while provider and external invocation identifiers are stored only when actually returned.
 
+The Phase 7 delegation foundation uses an application-level AgentDelegationService and explicit request/response data contracts. It resolves target assignments from the existing Agent descriptor/assignment registry, enforces organization and Enterprise scope, re-checks source delegation and target capability authority, preserves approval requirements, and carries actor/correlation attribution without introducing a second persistent workflow record. Persistent cross-Agent traceability remains a later boundary.
+
 The existing Phase 3 Job/Execution idempotency model remains authoritative for background operations. MCP update tools marked idempotent rely on their existing replacement semantics; no second retry engine is introduced.

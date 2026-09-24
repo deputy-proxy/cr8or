@@ -173,6 +173,10 @@ AI model capability, prompt instructions, Expert delegation or tool visibility m
 - Runtime components must not mutate Eloquent models directly when an application/domain capability should own the operation.
 - Historical execution and decision records must not be replaced by current Agent memory or configuration.
 
+### Agent-to-Agent Delegation Foundation
+
+The runtime exposes governed Agent-to-Agent delegation through AgentDelegationService. A delegation request identifies the originating Agent assignment, target Agent descriptor slug, requested capability, actor, task context and correlation identifier. The service resolves the target through AgentDescriptor and AgentAssignment, requires both assignments to be enabled and within the same organization and Enterprise scope, and re-authorizes both the source agent.delegate capability and the target capability server-side. Approval requirements remain enforced through ApprovalRequestService. This foundation returns a delegation contract only; persistent cross-Agent workflow traceability is deferred to the subsequent Phase 7 workflow slice.
+
 ## Persistence Boundary
 
 Agents and Experts are executable runtime components, not persistent business entities.
@@ -200,5 +204,5 @@ The following remain intentionally deferred:
 - generalized Agent governance/orchestration beyond the current execution service;
 - a broader execution context catalogue beyond Enterprise, Knowledge, Strategy and Work;
 - Agent memory implementation;
-- agent-to-agent collaboration and generalized workflow orchestration;
+- persistent cross-Agent workflow traceability and generalized workflow orchestration;
 - broader capability catalogue and general policy language;
