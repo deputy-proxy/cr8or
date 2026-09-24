@@ -198,6 +198,12 @@ The runtime execution context is assembled from authorized Enterprise, Knowledge
 
 The current repository implements and tests the Agent/Expert runtime contracts, descriptor registry, organization/enterprise-scoped assignments, capability permissions, governed Agent execution, execution and decision records, approval enforcement, MCP capability boundaries, and Filament governance administration. The governed execution service resolves enabled assignments, assembles authorized context, coordinates selected Experts, invokes the provider-neutral model contract, re-authorizes capability requests, and records execution outcomes. The runtime PHP classes remain authoritative for behavior and metadata.
 
+## Core Business Roles
+
+Phase 7.2 implements the five roadmap runtime Agents: CEO/Orchestration, Marketing, Finance, Product and Operations. Their metadata is authoritative in PHP and they remain non-persistent runtime components.
+
+The minimum supporting Experts are Business Analysis, Marketing, Finance, Product and Operations. Expert descriptors register these runtime classes without granting execution authority.
+
 ## Deferred
 
 The following remain intentionally deferred:
