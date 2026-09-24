@@ -175,7 +175,7 @@ AI model capability, prompt instructions, Expert delegation or tool visibility m
 
 ### Agent-to-Agent Delegation Foundation
 
-The runtime exposes governed Agent-to-Agent delegation through AgentDelegationService. A delegation request identifies the originating Agent assignment, target Agent descriptor slug, requested capability, actor, task context and correlation identifier. The service resolves the target through AgentDescriptor and AgentAssignment, requires both assignments to be enabled and within the same organization and Enterprise scope, and re-authorizes both the source agent.delegate capability and the target capability server-side. Approval requirements remain enforced through ApprovalRequestService. This foundation returns a delegation contract only; persistent cross-Agent workflow traceability is deferred to the subsequent Phase 7 workflow slice.
+The runtime exposes governed Agent-to-Agent delegation through AgentDelegationService. A delegation request identifies the originating Agent assignment, target Agent descriptor slug, requested capability, actor, task context and correlation identifier. The service resolves the target through AgentDescriptor and AgentAssignment, requires both assignments to be enabled and within the same organization and Enterprise scope, and re-authorizes both the source agent.delegate capability and the target capability server-side. Approval requirements remain enforced through ApprovalRequestService. The Phase 7.3 traceability boundary persists each delegation with source/target Agent assignment references, Enterprise and organization scope, historical identity snapshots, actor, correlation and idempotency data. Delegation lifecycle is CR8OR-owned and reuses AgentExecutionService for the receiving Agent execution; the resulting AgentExecution references the delegation. Retries reuse the same delegation identity and cannot directly convert a failed delegation to succeeded.
 
 ## Persistence Boundary
 
@@ -210,5 +210,5 @@ The following remain intentionally deferred:
 - generalized Agent governance/orchestration beyond the current execution service;
 - a broader execution context catalogue beyond Enterprise, Knowledge, Strategy and Work;
 - Agent memory implementation;
-- persistent cross-Agent workflow traceability and generalized workflow orchestration;
+- generalized cross-Agent workflow orchestration beyond the governed delegation traceability boundary;
 - broader capability catalogue and general policy language;
