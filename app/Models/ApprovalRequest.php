@@ -39,7 +39,7 @@ class ApprovalRequest extends Model
             $request->validateState();
             $request->validateScope();
 
-            if (! $request->exists) {
+            if (!$request->exists) {
                 return;
             }
 
@@ -154,7 +154,7 @@ class ApprovalRequest extends Model
 
     private function validateState(): void
     {
-        if (! in_array($this->status, self::STATUSES, true)) {
+        if (!in_array($this->status, self::STATUSES, true)) {
             throw new LogicException("Invalid approval request status [{$this->status}].");
         }
         if ($this->status === self::STATUS_PENDING && ($this->approver_id !== null || $this->decided_at !== null)) {
@@ -199,7 +199,7 @@ class ApprovalRequest extends Model
 
         if ($this->approver_id !== null) {
             $approver = User::query()->find($this->approver_id);
-            if ($approver === null || ! $approver->memberships()->where('organization_id', $this->organization_id)->exists()) {
+            if ($approver === null || !$approver->memberships()->where('organization_id', $this->organization_id)->exists()) {
                 throw new LogicException('Approval request approver must belong to its organization.');
             }
         }
