@@ -1077,7 +1077,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
-| Phase 7 — Multi-Agent Business Operations | **In progress** | Phase 7.1 delegation foundation and Phase 7.2 core business Agent/Expert runtimes are implemented; workflow traceability, cross-domain approvals, reporting and administration remain pending. |
+| Phase 7 — Multi-Agent Business Operations | **In progress** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes and Phase 7.3 governed cross-Agent workflow traceability are implemented; cross-domain approvals, reporting and administration remain pending. |
 
 ### Reconciliation Rules
 
