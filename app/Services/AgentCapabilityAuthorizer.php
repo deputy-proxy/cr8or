@@ -24,7 +24,7 @@ class AgentCapabilityAuthorizer
         array $targetContext = [],
         ?AgentDelegation $delegation = null,
     ): bool {
-        if (!$assignment->enabled || !$assignment->agentDescriptor->enabled) {
+        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
             return false;
         }
         if ($organization !== null && $organization->getKey() !== $assignment->organization_id) {
@@ -46,7 +46,7 @@ class AgentCapabilityAuthorizer
         if ($permission === null) {
             return false;
         }
-        if (!$permission->requires_approval) {
+        if (! $permission->requires_approval) {
             return true;
         }
         if ($actor === null || $approval === null) {
