@@ -62,7 +62,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 7.2 implementation:** The five core business Agent runtimes (CEO/Orchestration, Marketing, Finance, Product and Operations) and the minimum supporting Expert runtimes are implemented as non-persistent PHP components and registered through AgentDescriptor and ExpertDescriptor. Their runtime metadata remains authoritative in code and invocation does not grant execution authority.
 
-**Deferred:** Agent memory implementation, persistent cross-Agent workflow traceability, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 7.3 implementation:** AgentDelegation persists governed cross-Agent work with source/target assignment references, Enterprise/organization scope, historical identity snapshots, parent AgentExecution, correlation, idempotency and explicit pending/running/succeeded/failed lifecycle. The receiving Agent execution remains authoritative in AgentExecution and is linked back to the delegation. Retries reuse the same delegation identity.
+
+**Deferred:** Agent memory implementation, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 
