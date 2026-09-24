@@ -70,8 +70,8 @@ it('enforces decision authorization through the enterprise organization', functi
         ->and(Gate::forUser($member)->allows('view', $decision))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $decision))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignDecision))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [EnterpriseDecision::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [EnterpriseDecision::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [EnterpriseDecision::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [EnterpriseDecision::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the decision schema focused on historical decision records', function () {

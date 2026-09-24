@@ -85,6 +85,6 @@ it('allows enterprise creation only to organization administrators', function ()
     Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
     Membership::factory()->create(['user_id' => $member, 'organization_id' => $organization]);
 
-    expect(Gate::forUser($owner)->allows('create', [Enterprise::class, $organization]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Enterprise::class, $organization]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForOrganization', [Enterprise::class, $organization]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForOrganization', [Enterprise::class, $organization]))->toBeFalse();
 });

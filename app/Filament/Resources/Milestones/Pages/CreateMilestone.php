@@ -17,7 +17,7 @@ class CreateMilestone extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Milestone::class, $enterprise]);
+        Gate::authorize('createForEnterprise', [Milestone::class, $enterprise]);
         if (Project::query()->whereKey($data['project_id'])->value('enterprise_id') !== $enterprise->id) {
             throw ValidationException::withMessages(['project_id' => 'The project must belong to the selected enterprise.']);
         }

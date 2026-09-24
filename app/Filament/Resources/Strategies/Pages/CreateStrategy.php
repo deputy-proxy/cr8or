@@ -15,7 +15,7 @@ class CreateStrategy extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $objective = Objective::query()->with('enterprise')->findOrFail((int) $data['objective_id']);
-        Gate::authorize('create', [Strategy::class, $objective]);
+        Gate::authorize('createForObjective', [Strategy::class, $objective]);
 
         return $data;
     }

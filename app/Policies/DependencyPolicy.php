@@ -13,9 +13,14 @@ class DependencyPolicy
         return (new EnterprisePolicy)->view($user, $dependency->enterprise);
     }
 
-    public function create(User $user, Enterprise $enterprise): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $enterprise->organization);
     }
 
     public function update(User $user, Dependency $dependency): bool

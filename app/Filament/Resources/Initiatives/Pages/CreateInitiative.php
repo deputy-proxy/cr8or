@@ -15,7 +15,7 @@ class CreateInitiative extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $plan = Plan::query()->with('strategy.objective.enterprise')->findOrFail((int) $data['plan_id']);
-        Gate::authorize('create', [Initiative::class, $plan]);
+        Gate::authorize('createForPlan', [Initiative::class, $plan]);
 
         return $data;
     }

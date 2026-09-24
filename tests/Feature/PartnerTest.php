@@ -70,8 +70,8 @@ it('enforces partner authorization through the enterprise organization', functio
         ->and(Gate::forUser($member)->allows('view', $partner))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $partner))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignPartner))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Partner::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Partner::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Partner::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Partner::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the partner schema limited to phase 1 fields', function () {

@@ -15,7 +15,7 @@ class CreateEnterprise extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Organization::query()->findOrFail((int) $data['organization_id']);
-        Gate::authorize('create', [Enterprise::class, $parent]);
+        Gate::authorize('createForOrganization', [Enterprise::class, $parent]);
 
         return $data;
     }

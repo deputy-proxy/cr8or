@@ -13,9 +13,14 @@ class InitiativePolicy
         return (new EnterprisePolicy)->view($user, $initiative->plan->strategy->objective->enterprise);
     }
 
-    public function create(User $user, Plan $plan): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $plan->strategy->objective->enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForPlan(User $user, Plan $plan): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $plan->strategy->objective->enterprise->organization);
     }
 
     public function update(User $user, Initiative $initiative): bool

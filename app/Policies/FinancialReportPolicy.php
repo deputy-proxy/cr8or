@@ -13,9 +13,14 @@ class FinancialReportPolicy
         return $this->enterprisePolicy()->view($user, $report->enterprise);
     }
 
-    public function create(User $user, Enterprise $enterprise): bool
+    public function create(User $user): bool
     {
-        return $this->enterprisePolicy()->create($user, $enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
+    {
+        return $this->enterprisePolicy()->createForOrganization($user, $enterprise->organization);
     }
 
     private function enterprisePolicy(): EnterprisePolicy

@@ -56,10 +56,10 @@ it('enforces organization authorization for invoices revenue and expenses', func
             ->and(Gate::forUser($owner)->allows('delete', $record))->toBeFalse();
     }
 
-    expect(Gate::forUser($owner)->allows('create', [Invoice::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Invoice::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Revenue::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Revenue::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Expense::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Expense::class, $enterprise]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForEnterprise', [Invoice::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Invoice::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Revenue::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Revenue::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Expense::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Expense::class, $enterprise]))->toBeFalse();
 });

@@ -15,7 +15,7 @@ class CreateGoal extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Goal::class, $parent]);
+        Gate::authorize('createForEnterprise', [Goal::class, $parent]);
 
         return $data;
     }

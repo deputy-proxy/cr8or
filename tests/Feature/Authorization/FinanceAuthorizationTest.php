@@ -58,10 +58,10 @@ it('enforces organization authorization for financial accounts, categories and t
             ->and(Gate::forUser($owner)->allows('delete', $record))->toBeFalse();
     }
 
-    expect(Gate::forUser($owner)->allows('create', [FinancialAccount::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [FinancialAccount::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [TransactionCategory::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [TransactionCategory::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Transaction::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Transaction::class, $enterprise]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForEnterprise', [FinancialAccount::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [FinancialAccount::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [TransactionCategory::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [TransactionCategory::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Transaction::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Transaction::class, $enterprise]))->toBeFalse();
 });

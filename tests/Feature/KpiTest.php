@@ -61,8 +61,8 @@ it('enforces KPI authorization through the enterprise organization', function ()
         ->and(Gate::forUser($member)->allows('view', $kpi))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $kpi))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignKpi))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Kpi::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Kpi::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Kpi::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Kpi::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the KPI schema limited to phase 1 definition and recorded value fields', function () {

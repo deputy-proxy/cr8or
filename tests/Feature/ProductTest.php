@@ -69,8 +69,8 @@ it('enforces product authorization through the enterprise organization', functio
         ->and(Gate::forUser($member)->allows('view', $product))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $product))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignProduct))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Product::class, $product->enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Product::class, $product->enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Product::class, $product->enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Product::class, $product->enterprise]))->toBeFalse();
 });
 
 it('keeps the product schema limited to phase 1 fields', function () {

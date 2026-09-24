@@ -13,9 +13,14 @@ class StrategyPolicy
         return (new EnterprisePolicy)->view($user, $strategy->objective->enterprise);
     }
 
-    public function create(User $user, Objective $objective): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $objective->enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForObjective(User $user, Objective $objective): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $objective->enterprise->organization);
     }
 
     public function update(User $user, Strategy $strategy): bool

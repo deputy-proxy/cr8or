@@ -13,7 +13,12 @@ class AgentAssignmentPolicy
         return $this->hasRole($user, $assignment, MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Member);
     }
 
-    public function create(User $user, AgentAssignment $assignment): bool
+    public function create(User $user): bool
+    {
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForAgentAssignment(User $user, AgentAssignment $assignment): bool
     {
         return $this->hasRole($user, $assignment, MembershipRole::Owner, MembershipRole::Admin);
     }

@@ -15,7 +15,7 @@ class CreateEnterpriseContext extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [EnterpriseContext::class, $parent]);
+        Gate::authorize('createForEnterprise', [EnterpriseContext::class, $parent]);
 
         return $data;
     }

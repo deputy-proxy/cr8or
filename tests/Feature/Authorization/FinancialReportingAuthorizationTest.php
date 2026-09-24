@@ -35,10 +35,10 @@ it('enforces enterprise authorization for reports and health results', function 
         ->and(Gate::forUser($owner)->allows('view', $foreignReport))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $health))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('view', $foreignHealth))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [FinancialReport::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [FinancialReport::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [BusinessHealthResult::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [BusinessHealthResult::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [FinancialReport::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [FinancialReport::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [BusinessHealthResult::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [BusinessHealthResult::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps Agent financial context inside the authorized enterprise boundary', function () {

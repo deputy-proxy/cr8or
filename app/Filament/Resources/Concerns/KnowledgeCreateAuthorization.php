@@ -10,7 +10,7 @@ trait KnowledgeCreateAuthorization
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [$this->getResource()::getModel(), $enterprise]);
+        Gate::authorize('createForEnterprise', [$this->getResource()::getModel(), $enterprise]);
 
         return $data;
     }
