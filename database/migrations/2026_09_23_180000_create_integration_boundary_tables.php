@@ -18,7 +18,7 @@ return new class extends Migration
             $t->string('status')->default('active');
             $t->json('metadata')->nullable();
             $t->timestamps();
-            $t->unique(['organization_id', 'provider', 'external_account_id']);
+            $t->unique(['organization_id', 'provider', 'external_account_id'], 'integration_connections_account_scope_unique');
             $t->index(['organization_id', 'provider', 'status']);
         });
 
