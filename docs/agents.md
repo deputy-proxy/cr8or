@@ -177,6 +177,10 @@ AI model capability, prompt instructions, Expert delegation or tool visibility m
 
 The runtime exposes governed Agent-to-Agent delegation through AgentDelegationService. A delegation request identifies the originating Agent assignment, target Agent descriptor slug, requested capability, actor, task context and correlation identifier. The service resolves the target through AgentDescriptor and AgentAssignment, requires both assignments to be enabled and within the same organization and Enterprise scope, and re-authorizes both the source agent.delegate capability and the target capability server-side. Approval requirements remain enforced through ApprovalRequestService. The Phase 7.3 traceability boundary persists each delegation with source/target Agent assignment references, Enterprise and organization scope, historical identity snapshots, actor, correlation and idempotency data. Delegation lifecycle is CR8OR-owned and reuses AgentExecutionService for the receiving Agent execution; the resulting AgentExecution references the delegation. Retries reuse the same delegation identity and cannot directly convert a failed delegation to succeeded.
 
+### Cross-Domain Approval Coordination
+
+Sensitive delegated capabilities reuse the existing ApprovalRequest and ApprovalRequestService boundary. Source-agent delegation approval and target-agent capability approval are bound to the exact AgentDelegation record, including the relevant actor, organization, Enterprise and target context. Approval decisions remain server-side and a target Agent cannot treat delegation itself as approval. When a sensitive capability is authorized for execution, the approval is consumed for that AgentExecution so the same approval cannot be replayed for another execution. Expiration, rejection, assignment/capability/context mismatch, cross-organization approval and terminal-state checks remain enforced.
+
 ## Persistence Boundary
 
 Agents and Experts are executable runtime components, not persistent business entities.
