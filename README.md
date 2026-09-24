@@ -558,7 +558,7 @@ The operational lifecycle of an AI-assisted business action is:
 ↓
 **Result**
 ↓
-**Event**
+**Event, where an event is applicable to the operation**
 ↓
 **Updated Business State**
 ↓
@@ -576,7 +576,17 @@ Lifecycle rules:
 
 ## Methodology
 
-### CR8OR Operating Model
+CR8OR uses a governed operating methodology that keeps AI reasoning separate from authoritative business execution:
+
+1. **Understand context** — resolve the authorized Enterprise, organization, business state and relevant Knowledge, Strategy and Work context.
+2. **Reason within role** — an Agent coordinates the task and Experts provide specialized reasoning without gaining independent execution authority.
+3. **Form a capability request** — reasoning produces a structured request for an application capability rather than a direct database operation.
+4. **Authorize and approve** — CR8OR evaluates server-side permissions, organization/Enterprise scope and any required human approval before sensitive execution.
+5. **Execute through application boundaries** — application/domain services own mutations and integration calls; MCP and external services do not duplicate business rules or become authoritative state stores.
+6. **Record the outcome** — execution, decision, approval, delegation and external-result records preserve the context needed for historical interpretation.
+7. **Report from authoritative state** — derived reports read CR8OR-owned records and do not replace the underlying business state.
+
+This methodology is intentionally narrower than a generalized workflow engine, policy language, reporting platform or Agent-memory system. Those capabilities remain separately scoped and deferred where not implemented.### CR8OR Operating Model
 
 CR8OR separates four responsibilities:
 
@@ -670,8 +680,8 @@ The Phase 1 audit confirmed the domain foundation, organization isolation, autho
 Current follow-up items are:
 
 - keep authorization independent from UI visibility;
-- continue tracking any non-Phase-4 hardening separately from phase-completion audits;
-- align authoritative documentation and CI instructions with the repository's actual commands and files.
+- continue tracking non-phase hardening separately from phase-completion audits;
+- keep authoritative documentation and CI instructions aligned with the repository's actual commands and files.
 
 These are ongoing hardening/documentation items, not evidence that the completed phases are absent. They should be tracked separately from the phase-completion status.
 
@@ -683,7 +693,7 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 **Phase 7 — Multi-Agent Business Operations**
 
-Phase 6 has now been implemented and audited across issues 78-85. Phase 7.1-7.6 now provide the governed delegation, core business Agent/Expert runtimes, cross-Agent traceability, delegated approvals, business-level reporting and administration required by the current Phase 7 scope. The remaining work is the final Phase 7 audit and reconciliation, with deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities kept outside the completed scope.
+Phase 6 has now been implemented and audited across issues 78-85. Phase 7.1-7.6 now provide the governed delegation, core business Agent/Expert runtimes, cross-Agent traceability, delegated approvals, business-level reporting and administration required by the current Phase 7 scope. Phase 7 has now been implemented and audited within its defined scope. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside the completed scope.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure is a separate deferred platform capability. It should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 completion gap.
 
@@ -986,7 +996,7 @@ Extend CR8OR into broader business operations and financial intelligence.
 
 ### Phase 7 — Multi-Agent Business Operations
 
-**Status: In progress — Phase 7.1–7.6 implemented; final audit remains**
+**Status: Complete — Phase 7.1–7.7 implemented and audited**
 
 **Objective**
 
@@ -1085,7 +1095,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
-| Phase 7 — Multi-Agent Business Operations | **In progress** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting and Phase 7.6 administration are implemented; the final audit remains pending. |
+| Phase 7 — Multi-Agent Business Operations | **Complete** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting, Phase 7.6 administration and Phase 7.7 final audit are implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside Phase 7. |
 
 ### Reconciliation Rules
 
@@ -1100,7 +1110,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phases 0 through 6 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations is in progress, with delegation, core Agent/Expert runtimes, governed workflow traceability, delegated approvals, business-level reporting and administration implemented within their defined boundaries. The final Phase 7 audit is the remaining phase-completion step.
+The repository is no longer a foundation-only greenfield baseline. Phases 0 through 7 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations is complete, with delegation, core Agent/Expert runtimes, governed workflow traceability, delegated approvals, business-level reporting and administration implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside the completed scope.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
@@ -1221,8 +1231,6 @@ followed by:
 `composer ci:check`
 
 The `ci:check` script invokes the repository's complete test sequence. GitHub Actions is the authoritative validation environment.
-
-> **Dependency-install note:** the current `composer setup` script uses `npm install`, while `.github/AI_DEVELOPMENT_RULES.md` recommends reproducible dependency installation with `npm ci`. The repository therefore has a tooling-consistency debt: both paths currently work, but the setup contract should be deliberately reconciled rather than implying they are equivalent.
 
 ### Completion Requirement
 
