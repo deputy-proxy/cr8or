@@ -64,6 +64,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 7.3 implementation:** AgentDelegation persists governed cross-Agent work with source/target assignment references, Enterprise/organization scope, historical identity snapshots, parent AgentExecution, correlation, idempotency and explicit pending/running/succeeded/failed lifecycle. The receiving Agent execution remains authoritative in AgentExecution and is linked back to the delegation. Retries reuse the same delegation identity.
 
+**Verified Phase 7.4 implementation:** ApprovalRequest may be immutably bound to an AgentDelegation for governed source or target approval. Authorization verifies the delegation identity and applicable assignment/context, while consumption records the exact AgentExecution that used the approval and prevents replay against another execution.
+
 **Deferred:** Agent memory implementation, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
@@ -206,7 +208,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Ownership:** CR8OR.
 
-**Known invariants:** Sensitive operations are attributable and auditable. Agent capability permissions may require approval; approval requests are scoped to organization, enterprise, Agent assignment, actor, capability and execution/target context; only authorized organization approvers may decide them; approved requests expire and cannot be reused outside their recorded context.
+**Known invariants:** Sensitive operations are attributable and auditable. Agent capability permissions may require approval; approval requests are scoped to organization, enterprise, Agent assignment, actor, capability and execution/target context; delegated approvals additionally bind to the exact AgentDelegation; only authorized organization approvers may decide them; approved requests expire and consumed approvals cannot be replayed outside their recorded context.
 
 **Verified Phase 3.5 implementation:** Decision records are an explicit governance record distinct from AgentDecision and EnterpriseDecision. They preserve actor identity, decision-time context and timestamp as historical fields and remain scoped to the Enterprise organization.
 

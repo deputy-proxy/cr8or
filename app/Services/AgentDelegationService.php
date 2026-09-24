@@ -21,6 +21,7 @@ final class AgentDelegationService
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
         private readonly ExecutionCorrelationService $correlation,
         private readonly AgentExecutionService $executionService,
+        private readonly ApprovalRequestService $approvalRequests,
     ) {}
 
     public function delegate(AgentDelegationRequest $request): AgentDelegationResponse
@@ -57,6 +58,23 @@ final class AgentDelegationService
             'target_capability' => $request->capability,
         ]);
 
+        $delegation = $this->findOrCreateDelegation(
+            $request,
+            $source,
+            $target,
+            $parentExecution,
+            $correlationId,
+            $idempotencyKey,
+        );
+
+        if ($request->sourceApproval !== null) {
+            $this->approvalRequests->bindToDelegation($request->sourceApproval, $delegation);
+        }
+
+        if ($request->targetApproval !== null) {
+            $this->approvalRequests->bindToDelegation($request->targetApproval, $delegation);
+        }
+
         if (! $this->capabilityAuthorizer->allows(
             $source,
             self::DELEGATION_CAPABILITY,
@@ -66,8 +84,13 @@ final class AgentDelegationService
             $request->sourceApproval,
             $parentExecution,
             $delegationContext,
+            $delegation,
         )) {
             throw new AuthorizationException('The source Agent is not authorized to delegate this work.');
+        }
+
+        if ($request->sourceApproval !== null) {
+            $this->approvalRequests->consumeForDelegation($request->sourceApproval, $delegation);
         }
 
         if (! $this->capabilityAuthorizer->allows(
@@ -79,21 +102,13 @@ final class AgentDelegationService
             $request->targetApproval,
             null,
             $request->targetContext,
+            $delegation,
         )) {
             throw new AuthorizationException(sprintf(
                 'The target Agent is not authorized for capability [%s].',
                 $request->capability,
             ));
         }
-
-        $delegation = $this->findOrCreateDelegation(
-            $request,
-            $source,
-            $target,
-            $parentExecution,
-            $correlationId,
-            $idempotencyKey,
-        );
 
         if ($delegation->status === AgentDelegation::STATUS_SUCCEEDED
             || $delegation->status === AgentDelegation::STATUS_RUNNING
@@ -113,9 +128,10 @@ final class AgentDelegationService
                 $target,
                 $request->prompt,
                 $request->targetContext,
-                modelOptions: ['correlation_id' => $correlationId],
+                modelOptions: ['correlation_id' => $correlationId, 'delegation_id' => $delegation->getKey()],
             );
 
+            $delegation->target_agent_execution_id = $result->execution->getKey();
             $delegation->succeed()->save();
 
             return $this->response($request, $source, $target, $delegation, $result->execution);
@@ -234,7 +250,9 @@ final class AgentDelegationService
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $storedContext = [];
                 break;
-            } $storedContext = $decoded;
+            }
+
+            $storedContext = $decoded;
         }
 
         if (

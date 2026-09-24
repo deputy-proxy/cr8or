@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgentAssignment;
+use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\User;
@@ -52,7 +53,7 @@ class ApprovalRequestService
     }
 
     /** @param array<string, mixed> $targetContext */
-    public function matches(ApprovalRequest $request, User $actor, AgentAssignment $assignment, string $capability, ?AgentExecution $execution = null, array $targetContext = []): bool
+    public function matches(ApprovalRequest $request, User $actor, AgentAssignment $assignment, string $capability, ?AgentExecution $execution = null, array $targetContext = [], ?AgentDelegation $delegation = null): bool
     {
         if (! $request->isValid() || $request->actor_id !== $actor->getKey()) {
             return false;
@@ -62,12 +63,118 @@ class ApprovalRequestService
             || $request->enterprise_id !== $assignment->enterprise_id
             || $request->agent_assignment_id !== $assignment->getKey()
             || $request->capability !== $capability
-            || $request->agent_execution_id !== $execution?->getKey()
         ) {
             return false;
         }
 
+        if ($delegation !== null) {
+            $assignmentMatchesDelegation = $request->agent_assignment_id === $delegation->source_agent_assignment_id
+                || $request->agent_assignment_id === $delegation->target_agent_assignment_id;
+
+            if ($request->agent_delegation_id !== $delegation->getKey()
+                || ! $assignmentMatchesDelegation
+                || $delegation->organization_id !== $assignment->organization_id
+                || $delegation->enterprise_id !== $assignment->enterprise_id
+                || $delegation->actor_id !== $actor->getKey()
+            ) {
+                return false;
+            }
+        } elseif ($request->agent_delegation_id !== null) {
+            return false;
+        }
+
+        if ($execution !== null && $request->agent_execution_id !== null && $request->agent_execution_id !== $execution->getKey()) {
+            return false;
+        }
+
         return $this->normalizeContext($request->target_context ?? []) === $this->normalizeContext($targetContext);
+    }
+
+    public function bindToDelegation(ApprovalRequest $request, AgentDelegation $delegation): ApprovalRequest
+    {
+        if ($request->agent_delegation_id !== null) {
+            if ($request->agent_delegation_id !== $delegation->getKey()) {
+                throw new \LogicException('Approval request is already bound to another delegation.');
+            }
+
+            return $request;
+        }
+
+        if ($request->status !== ApprovalRequest::STATUS_PENDING) {
+            throw new \LogicException('An approved or rejected approval request cannot be newly bound to a delegation.');
+        }
+
+        if ($request->organization_id !== $delegation->organization_id
+            || $request->enterprise_id !== $delegation->enterprise_id
+            || $request->actor_id !== $delegation->actor_id
+        ) {
+            throw new \LogicException('Approval request does not match the delegation it is intended to authorize.');
+        }
+
+        $delegationContext = $this->normalizeContext($delegation->target_context ?? []);
+        $expectedContext = $request->agent_assignment_id === $delegation->source_agent_assignment_id
+            ? array_merge($delegationContext, [
+                'target_agent_slug' => $delegation->target_agent_slug,
+                'target_capability' => $delegation->capability,
+            ])
+            : $delegationContext;
+
+        if ($request->agent_assignment_id !== $delegation->source_agent_assignment_id
+            && $request->agent_assignment_id !== $delegation->target_agent_assignment_id
+        ) {
+            throw new \LogicException('Approval request assignment does not belong to the delegation.');
+        }
+
+        if ($this->normalizeContext($request->target_context ?? []) !== $this->normalizeContext($expectedContext)) {
+            throw new \LogicException('Approval request target context does not match the delegation it is intended to authorize.');
+        }
+
+        if ($request->agent_assignment_id === $delegation->target_agent_assignment_id
+            && $request->capability !== $delegation->capability
+        ) {
+            throw new \LogicException('Target approval capability does not match the delegation capability.');
+        }
+
+        $request->agent_delegation_id = $delegation->getKey();
+        $request->save();
+
+        return $request->refresh();
+    }
+
+    public function consumeForDelegation(ApprovalRequest $request, AgentDelegation $delegation): ApprovalRequest
+    {
+        if ($request->agent_delegation_id !== $delegation->getKey()) {
+            throw new \LogicException('Approval request is not bound to this delegation.');
+        }
+
+        if ($request->consumed_agent_delegation_id !== null
+            && $request->consumed_agent_delegation_id !== $delegation->getKey()
+        ) {
+            throw new \LogicException('Approval request has already been consumed by another delegation.');
+        }
+
+        if ($request->consumed_agent_delegation_id === null) {
+            $request->consumed_agent_delegation_id = $delegation->getKey();
+            $request->save();
+        }
+
+        return $request->refresh();
+    }
+
+    public function consume(ApprovalRequest $request, AgentExecution $execution): ApprovalRequest
+    {
+        if ($request->consumed_agent_execution_id !== null
+            && $request->consumed_agent_execution_id !== $execution->getKey()
+        ) {
+            throw new \LogicException('Approval request has already been consumed by another execution.');
+        }
+
+        if ($request->consumed_agent_execution_id === null) {
+            $request->consumed_agent_execution_id = $execution->getKey();
+            $request->save();
+        }
+
+        return $request->refresh();
     }
 
     /**
@@ -76,12 +183,19 @@ class ApprovalRequestService
      */
     private function normalizeContext(array|string|null $context): array
     {
-        if (is_string($context)) {
+        while (is_string($context)) {
             $decoded = json_decode($context, true);
-            $context = is_array($decoded) ? $decoded : [];
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return [];
+            }
+
+            $context = $decoded;
         }
 
         $context ??= [];
+        if (! is_array($context)) {
+            return [];
+        }
         foreach ($context as $key => $value) {
             if (is_array($value)) {
                 $context[$key] = $this->normalizeContext($value);

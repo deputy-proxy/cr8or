@@ -11,6 +11,7 @@ use App\AI\Data\ModelResult;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
+use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
@@ -46,6 +47,10 @@ final class AgentExecutionService
         $correlationId = $correlation->resolve(isset($modelOptions['correlation_id']) ? (string) $modelOptions['correlation_id'] : null);
 
         $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);
+
+        $delegation = isset($modelOptions['delegation_id'])
+            ? AgentDelegation::query()->find((int) $modelOptions['delegation_id'])
+            : null;
 
         Gate::forUser($actor)->authorize('view', $assignment);
 
@@ -134,6 +139,7 @@ final class AgentExecutionService
                 $execution,
                 $modelResult,
                 $targetContext,
+                $delegation,
             );
 
             $decision = $this->persistDecision(
@@ -269,6 +275,7 @@ final class AgentExecutionService
         AgentExecution $execution,
         ModelResult $result,
         array $targetContext,
+        ?AgentDelegation $delegation = null,
     ): array {
         $requests = $result->structured['capability_requests'] ?? [];
 
@@ -307,6 +314,7 @@ final class AgentExecutionService
                 $approval,
                 $execution,
                 $requestContext,
+                $delegation,
             )) {
                 throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
             }

@@ -108,6 +108,47 @@ function delegationCrossScopeRuntimeClass(): string
     });
 }
 
+it('binds an approval to one delegation and rejects rebinding it', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $source = delegationAssignment($actor, $enterprise, 'source-agent');
+    $target = delegationAssignment($actor, $enterprise, 'target-agent');
+
+    $approval = app(\App\Services\ApprovalRequestService::class)->request(
+        $actor,
+        'work.create',
+        $target,
+        null,
+        ['job' => 'job-7'],
+    );
+
+    $first = \App\Models\AgentDelegation::factory()->create([
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->id,
+        'source_agent_assignment_id' => $source->id,
+        'target_agent_assignment_id' => $target->id,
+        'actor_id' => $actor->id,
+        'capability' => 'work.create',
+        'target_context' => ['job' => 'job-7'],
+    ]);
+
+    $second = \App\Models\AgentDelegation::factory()->create([
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->id,
+        'source_agent_assignment_id' => $source->id,
+        'target_agent_assignment_id' => $target->id,
+        'actor_id' => $actor->id,
+        'capability' => 'work.create',
+        'target_context' => ['job' => 'job-7'],
+    ]);
+
+    app(\App\Services\ApprovalRequestService::class)->bindToDelegation($approval, $first);
+
+    expect($approval->refresh()->agent_delegation_id)->toBe($first->getKey())
+        ->and(fn () => app(\App\Services\ApprovalRequestService::class)->bindToDelegation($approval, $second))
+        ->toThrow(LogicException::class, 'already bound to another delegation');
+});
+
 function delegationAssignment(User $actor, Enterprise $enterprise, string $slug): AgentAssignment
 {
     Membership::query()->firstOrCreate([
@@ -311,10 +352,30 @@ it('preserves approval requirements for source delegation and target capability'
     ], [
         'role' => 'owner',
     ]);
+    $service = app(AgentDelegationService::class);
+    expect(fn () => $service->delegate(new AgentDelegationRequest(
+        actor: $actor,
+        sourceAssignment: $source,
+        targetAgentSlug: 'target-agent',
+        capability: 'work.create',
+        prompt: 'Perform the delegated work.',
+        targetContext: ['job' => 'job-7'],
+        sourceApproval: $sourceApproval,
+        targetApproval: $targetApproval,
+        correlationId: 'approval-delegation',
+        idempotencyKey: 'approval-delegation-key',
+    )))->toThrow(AuthorizationException::class);
+
+    $delegation = \App\Models\AgentDelegation::query()
+        ->where('idempotency_key', 'approval-delegation-key')
+        ->firstOrFail();
+
+    app(\App\Services\ApprovalRequestService::class)->bindToDelegation($sourceApproval, $delegation);
+    app(\App\Services\ApprovalRequestService::class)->bindToDelegation($targetApproval, $delegation);
     app(\App\Services\ApprovalRequestService::class)->approve($sourceApproval, $approver);
     app(\App\Services\ApprovalRequestService::class)->approve($targetApproval, $approver);
 
-    $response = app(AgentDelegationService::class)->delegate(new AgentDelegationRequest(
+    $response = $service->delegate(new AgentDelegationRequest(
         actor: $actor,
         sourceAssignment: $source,
         targetAgentSlug: 'target-agent',
@@ -327,7 +388,8 @@ it('preserves approval requirements for source delegation and target capability'
         idempotencyKey: 'approval-delegation-key',
     ));
 
-    expect($response->correlationId)->toBe('approval-delegation');
+    expect($response->correlationId)->toBe('approval-delegation')
+        ->and($sourceApproval->refresh()->consumed_agent_delegation_id)->toBe($delegation->getKey());
 });
 
 it('preserves actor and correlation attribution in the delegation response', function () {
