@@ -55,7 +55,7 @@ class ApprovalRequestService
     /** @param array<string, mixed> $targetContext */
     public function matches(ApprovalRequest $request, User $actor, AgentAssignment $assignment, string $capability, ?AgentExecution $execution = null, array $targetContext = [], ?AgentDelegation $delegation = null): bool
     {
-        if (! $request->isValid() || $request->actor_id !== $actor->getKey()) {
+        if (!$request->isValid() || $request->actor_id !== $actor->getKey()) {
             return false;
         }
 
@@ -72,7 +72,7 @@ class ApprovalRequestService
                 || $request->agent_assignment_id === $delegation->target_agent_assignment_id;
 
             if ($request->agent_delegation_id !== $delegation->getKey()
-                || ! $assignmentMatchesDelegation
+                || !$assignmentMatchesDelegation
                 || $delegation->organization_id !== $assignment->organization_id
                 || $delegation->enterprise_id !== $assignment->enterprise_id
                 || $delegation->actor_id !== $actor->getKey()
@@ -193,7 +193,7 @@ class ApprovalRequestService
         }
 
         $context ??= [];
-        if (! is_array($context)) {
+        if (!is_array($context)) {
             return [];
         }
         foreach ($context as $key => $value) {
