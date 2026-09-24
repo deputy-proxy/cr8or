@@ -3,14 +3,14 @@
 namespace App\Data;
 
 use App\Models\AgentAssignment;
+use App\Models\AgentDelegation;
 use App\Models\AgentDescriptor;
+use App\Models\AgentExecution;
 use App\Models\User;
 
 final readonly class AgentDelegationResponse
 {
-    /**
-     * @param  array<string, mixed>  $targetContext
-     */
+    /** @param array<string, mixed> $targetContext */
     public function __construct(
         public User $actor,
         public AgentAssignment $sourceAssignment,
@@ -21,5 +21,7 @@ final readonly class AgentDelegationResponse
         public string $prompt,
         public array $targetContext,
         public string $correlationId,
+        public AgentDelegation $delegation,
+        public ?AgentExecution $execution = null,
     ) {}
 }
