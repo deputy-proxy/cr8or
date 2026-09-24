@@ -63,6 +63,12 @@ Specialized services such as media renderers, publishing systems, Canva, GitHub,
 11. CR8OR records relevant result, status and audit information.
 12. Reporting and subsequent agent context derive from authoritative CR8OR state.
 
+## Multi-Agent Reporting Boundary
+
+`MultiAgentBusinessReportingService` is the application boundary for the Phase 7.5 business-level report. It authorizes the requested Enterprise through the existing Enterprise policy, reads only Enterprise-scoped authoritative records, and returns a deterministic derived view. It does not persist report state or mutate executions, delegations, approvals, workflows or domain results. Failed Agent executions, delegations and workflows remain explicitly represented as failures. Existing historical identity snapshots are used rather than reconstructing mutable Agent metadata.
+
+The report is intentionally narrower than a generalized reporting system. It does not introduce a reporting engine, forecasting, analytics platform, visualization layer, route or MCP surface.
+
 ## Prohibited Shortcuts
 
 - Agents must not connect directly to the database.

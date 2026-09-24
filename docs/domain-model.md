@@ -66,6 +66,10 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 7.4 implementation:** ApprovalRequest may be immutably bound to an AgentDelegation for governed source or target approval. Authorization verifies the delegation identity and applicable assignment/context, while consumption records the exact AgentExecution that used the approval and prevents replay against another execution.
 
+**Verified Phase 7.5 implementation:** `MultiAgentBusinessReportingService` provides an Enterprise-authorized, read-only derived collaboration report from AgentExecution, AgentDecision, AgentDelegation, ApprovalRequest, Workflow and existing FinancialReport/BusinessHealthResult records. The report summarizes Agent activity, delegation and workflow status, approval outcomes, explicit failures and existing business-domain result references without creating a second source of truth. Historical Agent identity is read from immutable execution/delegation snapshots.
+
+**Deferred:** Generalized reporting engines, forecasting, analytics platforms, visualization and cross-enterprise reporting.
+
 **Deferred:** Agent memory implementation, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge

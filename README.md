@@ -986,7 +986,7 @@ Extend CR8OR into broader business operations and financial intelligence.
 
 ### Phase 7 — Multi-Agent Business Operations
 
-**Status: In progress — Phase 7.1 delegation foundation implemented**
+**Status: In progress — Phase 7.1–7.5 implemented; administration and final audit remain**
 
 **Objective**
 
@@ -1025,6 +1025,10 @@ Phase 4 delivers the governed AI/MCP execution infrastructure and capability bou
 - All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs.
 
 Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are implemented in Phase 5, and Finance & Business Operations are implemented in Phase 6. Agent-to-agent collaboration and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
+
+### Phase 7 Reporting Boundary
+
+Phase 7.5 adds the minimum business-level multi-Agent report. It is Enterprise-scoped and derived from authoritative AgentExecution, AgentDecision, AgentDelegation, ApprovalRequest, Workflow and existing financial/business-health results. Report generation is read-only, failed operations remain failures, and historical Agent identity comes from the execution/delegation snapshots already maintained by CR8OR. A generalized reporting engine, forecasting and analytics platform remain deferred.
 
 ### Workflow / Job / Execution Boundary
 
@@ -1077,7 +1081,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
-| Phase 7 — Multi-Agent Business Operations | **In progress** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes and Phase 7.3 governed cross-Agent workflow traceability are implemented; cross-domain approvals, reporting and administration remain pending. |
+| Phase 7 — Multi-Agent Business Operations | **In progress** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals and Phase 7.5 business-level reporting are implemented; administration and final audit remain pending. |
 
 ### Reconciliation Rules
 
@@ -1092,7 +1096,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phases 0 through 6 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations remains the next product roadmap phase.
+The repository is no longer a foundation-only greenfield baseline. Phases 0 through 6 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations is in progress, with delegation, core Agent/Expert runtimes, governed workflow traceability, delegated approvals and business-level reporting implemented within their defined boundaries.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
