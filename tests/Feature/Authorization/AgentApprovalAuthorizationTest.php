@@ -147,6 +147,51 @@ it('preserves approval attribution and history', function () {
         ->and($request->status)->toBe(ApprovalRequest::STATUS_APPROVED);
 });
 
+it('does not allow a consumed approval to authorize another execution', function () {
+    $organization = Organization::factory()->create();
+    $actor = User::factory()->create();
+    $approver = User::factory()->create();
+    $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
+    AgentPermission::factory()->requiresApproval()->create([
+        'agent_assignment_id' => $assignment,
+        'capability' => 'finance.execute',
+    ]);
+    Membership::factory()->owner()->create([
+        'user_id' => $approver,
+        'organization_id' => $organization,
+    ]);
+
+    $firstExecution = \App\Models\AgentExecution::factory()->forAssignment($assignment)->create();
+    $secondExecution = \App\Models\AgentExecution::factory()->forAssignment($assignment)->create();
+    $service = app(ApprovalRequestService::class);
+    $request = $service->request(
+        $actor,
+        'finance.execute',
+        $assignment,
+        $firstExecution,
+        ['transaction' => 'tx-1'],
+    );
+    $service->approve($request, $approver);
+    $service->consume($request, $firstExecution);
+
+    expect($service->matches(
+        $request->refresh(),
+        $actor,
+        $assignment,
+        'finance.execute',
+        $firstExecution,
+        ['transaction' => 'tx-1'],
+    ))->toBeTrue()
+        ->and($service->matches(
+            $request->refresh(),
+            $actor,
+            $assignment,
+            'finance.execute',
+            $secondExecution,
+            ['transaction' => 'tx-1'],
+        ))->toBeFalse();
+});
+
 it('does not require approval for a non-sensitive permitted capability', function () {
     $organization = Organization::factory()->create();
     $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
