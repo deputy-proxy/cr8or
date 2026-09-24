@@ -208,6 +208,10 @@ Phase 7.2 implements the five roadmap runtime Agents: CEO/Orchestration, Marketi
 
 The minimum supporting Experts are Business Analysis, Marketing, Finance, Product and Operations. Expert descriptors register these runtime classes without granting execution authority.
 
+## Phase 7 Administration Boundary
+
+Phase 7.6 exposes multi-Agent operational state through the existing Filament administration foundation. Delegation history and the derived collaboration report are organization-scoped and server-authorized. Existing execution, decision, approval and workflow records remain read-only where their historical semantics require it. Runtime Agent and Expert metadata remains code-authoritative and is displayed read-only; the administration layer does not grant runtime authority or replace application services.
+
 ## Deferred
 
 The following remain intentionally deferred:
