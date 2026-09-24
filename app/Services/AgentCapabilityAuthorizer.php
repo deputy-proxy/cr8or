@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgentAssignment;
+use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
@@ -21,6 +22,7 @@ class AgentCapabilityAuthorizer
         ?ApprovalRequest $approval = null,
         ?AgentExecution $execution = null,
         array $targetContext = [],
+        ?AgentDelegation $delegation = null,
     ): bool {
         if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
             return false;
@@ -58,6 +60,7 @@ class AgentCapabilityAuthorizer
             $capability,
             $execution,
             $targetContext,
+            $delegation,
         );
     }
 }
