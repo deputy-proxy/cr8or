@@ -16,7 +16,7 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->unique(['agent_descriptor_id', 'organization_id', 'enterprise_id']);
+            $table->unique(['agent_descriptor_id', 'organization_id', 'enterprise_id'], 'agent_assignments_scope_unique');
             $table->index(['organization_id', 'enterprise_id']);
         });
     }
