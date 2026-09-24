@@ -17,8 +17,7 @@ beforeEach(function (): void {
 
 function delegationSourceRuntimeClass(): string
 {
-    return get_class(new class extends \App\Agents\Agent
-    {
+    return get_class(new class extends \App\Agents\Agent {
         public function name(): string
         {
             return 'Source Delegation Agent';
@@ -48,8 +47,7 @@ function delegationSourceRuntimeClass(): string
 
 function delegationTargetRuntimeClass(): string
 {
-    return get_class(new class extends \App\Agents\Agent
-    {
+    return get_class(new class extends \App\Agents\Agent {
         public function name(): string
         {
             return 'Target Delegation Agent';
@@ -79,8 +77,7 @@ function delegationTargetRuntimeClass(): string
 
 function delegationCrossScopeRuntimeClass(): string
 {
-    return get_class(new class extends \App\Agents\Agent
-    {
+    return get_class(new class extends \App\Agents\Agent {
         public function name(): string
         {
             return 'Cross Scope Delegation Agent';
