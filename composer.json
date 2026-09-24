@@ -53,7 +53,7 @@
             "@php artisan db:seed --class=AgentDescriptorSeeder --force",
             "@php artisan db:seed --class=ExpertDescriptorSeeder --force",
             "@php -r \"(file_exists('storage/oauth-private.key') && file_exists('storage/oauth-public.key')) ? print('Passport keys already exist.'.PHP_EOL) : passthru('php artisan passport:keys');\"",
-            "npm install",
+            "npm ci",
             "npm run build"
         ],
         "dev": [
