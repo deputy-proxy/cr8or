@@ -55,13 +55,13 @@ final class AgentExecutionService
 
         Gate::forUser($actor)->authorize('view', $assignment);
 
-        if (!$assignment->enabled || !$assignment->agentDescriptor->enabled) {
+        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
             throw new AuthorizationException('The Agent assignment is disabled.');
         }
 
         $enterprise = $assignment->enterprise;
 
-        if (!$enterprise instanceof Enterprise) {
+        if (! $enterprise instanceof Enterprise) {
             throw new AuthorizationException('Agent execution requires an enterprise-scoped assignment.');
         }
 
@@ -73,7 +73,7 @@ final class AgentExecutionService
         $runtimeClass = $descriptor->resolveRuntimeClass();
         $agent = app($runtimeClass);
 
-        if (!$agent instanceof Agent) {
+        if (! $agent instanceof Agent) {
             throw new AuthorizationException('The configured Agent runtime is invalid.');
         }
 
@@ -204,13 +204,13 @@ final class AgentExecutionService
             /** @var ExpertDescriptor $descriptor */
             $descriptor = $descriptors->get($slug);
 
-            if (!$descriptor->enabled) {
+            if (! $descriptor->enabled) {
                 throw new AuthorizationException("Expert [{$slug}] is disabled.");
             }
 
             $runtime = app($descriptor->resolveRuntimeClass());
 
-            if (!$runtime instanceof Expert) {
+            if (! $runtime instanceof Expert) {
                 throw new AuthorizationException("Expert [{$slug}] has an invalid runtime.");
             }
 
@@ -280,20 +280,20 @@ final class AgentExecutionService
     ): array {
         $requests = $result->structured['capability_requests'] ?? [];
 
-        if (!is_array($requests)) {
+        if (! is_array($requests)) {
             return [];
         }
 
         $authorized = [];
 
         foreach ($requests as $encodedRequest) {
-            if (!is_string($encodedRequest)) {
+            if (! is_string($encodedRequest)) {
                 throw new AuthorizationException('The model returned an invalid capability request.');
             }
 
             $request = json_decode($encodedRequest, true);
 
-            if (!is_array($request) || !isset($request['capability']) || !is_string($request['capability'])) {
+            if (! is_array($request) || ! isset($request['capability']) || ! is_string($request['capability'])) {
                 throw new AuthorizationException('The model returned an invalid capability request.');
             }
 
@@ -306,7 +306,7 @@ final class AgentExecutionService
                 ? ApprovalRequest::query()->find((int) $request['approval_request_id'])
                 : null;
 
-            if (!$this->capabilityAuthorizer->allows(
+            if (! $this->capabilityAuthorizer->allows(
                 $assignment,
                 $capability,
                 $assignment->organization,
@@ -336,7 +336,7 @@ final class AgentExecutionService
         $title = $result->structured['decision_title'] ?? null;
         $summary = $result->structured['decision_summary'] ?? null;
 
-        if (!is_string($title) || $title === '' || !is_string($summary) || $summary === '') {
+        if (! is_string($title) || $title === '' || ! is_string($summary) || $summary === '') {
             return null;
         }
 
