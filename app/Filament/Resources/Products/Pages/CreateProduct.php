@@ -15,7 +15,7 @@ class CreateProduct extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Product::class, $parent]);
+        Gate::authorize('createForEnterprise', [Product::class, $parent]);
 
         return $data;
     }

@@ -48,8 +48,8 @@ it('enforces goal authorization through the enterprise organization', function (
         ->and(Gate::forUser($member)->allows('view', $goal))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $goal))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignGoal))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Goal::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Goal::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Goal::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Goal::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the goal schema limited to phase 1 fields', function () {

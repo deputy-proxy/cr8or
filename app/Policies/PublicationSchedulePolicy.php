@@ -13,7 +13,12 @@ class PublicationSchedulePolicy
         return (new EnterprisePolicy)->view($user, $schedule->enterprise);
     }
 
-    public function create(User $user, Enterprise $enterprise): bool
+    public function create(User $user): bool
+    {
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
     {
         return (new EnterprisePolicy)->update($user, $enterprise);
     }

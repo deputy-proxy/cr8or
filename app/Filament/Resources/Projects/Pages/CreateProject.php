@@ -19,7 +19,7 @@ class CreateProject extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Project::class, $enterprise]);
+        Gate::authorize('createForEnterprise', [Project::class, $enterprise]);
 
         if (! empty($data['strategy_id'])) {
             /** @var Strategy $strategy */

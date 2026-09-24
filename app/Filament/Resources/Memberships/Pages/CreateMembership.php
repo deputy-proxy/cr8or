@@ -15,7 +15,7 @@ class CreateMembership extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Organization::query()->findOrFail((int) $data['organization_id']);
-        Gate::authorize('create', [Membership::class, $parent]);
+        Gate::authorize('createForOrganization', [Membership::class, $parent]);
 
         return $data;
     }

@@ -15,7 +15,7 @@ class CreateEnterpriseDecision extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [EnterpriseDecision::class, $parent]);
+        Gate::authorize('createForEnterprise', [EnterpriseDecision::class, $parent]);
         $actor = \App\Models\User::query()->findOrFail((int) $data['actor_id']);
         $data['actor_name'] = $actor->name;
 

@@ -13,7 +13,12 @@ class AgentExecutionPolicy
         return $this->organizationRole($user, $record) !== null;
     }
 
-    public function create(User $user, AgentExecution $record): bool
+    public function create(User $user): bool
+    {
+        return $user->memberships()->exists();
+    }
+
+    public function createForAgentExecution(User $user, AgentExecution $record): bool
     {
         return $this->organizationRole($user, $record) !== null;
     }

@@ -12,7 +12,12 @@ class AgentDelegationPolicy
         return $user->memberships()->where('organization_id', $delegation->organization_id)->exists();
     }
 
-    public function create(User $user, AgentDelegation $delegation): bool
+    public function create(User $user): bool
+    {
+        return false;
+    }
+
+    public function createForAgentDelegation(User $user, AgentDelegation $delegation): bool
     {
         return false;
     }

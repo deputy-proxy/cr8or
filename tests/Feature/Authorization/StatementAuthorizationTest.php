@@ -57,8 +57,8 @@ it('enforces organization authorization for statements and statement entries', f
             ->and(Gate::forUser($owner)->allows('delete', $record))->toBeFalse();
     }
 
-    expect(Gate::forUser($owner)->allows('create', [Statement::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Statement::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [StatementEntry::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [StatementEntry::class, $enterprise]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForEnterprise', [Statement::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Statement::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [StatementEntry::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [StatementEntry::class, $enterprise]))->toBeFalse();
 });

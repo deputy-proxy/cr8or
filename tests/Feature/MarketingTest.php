@@ -105,7 +105,7 @@ it('enforces the enterprise organization boundary through marketing policies', f
         ->and(Gate::forUser($owner)->allows('view', $foreignStrategy))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignCampaign))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignItem))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [MarketingStrategy::class, $enterprise]))->toBeTrue();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [MarketingStrategy::class, $enterprise]))->toBeTrue();
 });
 
 it('keeps the marketing schema explicit and non-polymorphic', function () {

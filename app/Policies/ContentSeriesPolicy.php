@@ -13,9 +13,14 @@ class ContentSeriesPolicy
         return (new EnterprisePolicy)->view($user, $series->campaign->enterprise);
     }
 
-    public function create(User $user, Campaign $campaign): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $campaign->enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForCampaign(User $user, Campaign $campaign): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $campaign->enterprise->organization);
     }
 
     public function update(User $user, ContentSeries $series): bool

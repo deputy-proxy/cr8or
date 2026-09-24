@@ -14,9 +14,9 @@ class EditAgentPermission extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         /** @var AgentPermission $record */ $record = $this->record;
-        Gate::authorize('update', [$record, $record->agentAssignment]);
+        Gate::authorize('updateForAgentAssignment', [$record, $record->agentAssignment]);
         $assignment = \App\Models\AgentAssignment::query()->findOrFail((int) $data['agent_assignment_id']);
-        Gate::authorize('update', [$record, $assignment]);
+        Gate::authorize('updateForAgentAssignment', [$record, $assignment]);
 
         return $data;
     }

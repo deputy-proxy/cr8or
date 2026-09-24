@@ -15,7 +15,7 @@ class CreateCustomer extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Customer::class, $parent]);
+        Gate::authorize('createForEnterprise', [Customer::class, $parent]);
 
         return $data;
     }

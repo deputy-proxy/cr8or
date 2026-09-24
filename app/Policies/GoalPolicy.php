@@ -13,9 +13,14 @@ class GoalPolicy
         return $this->enterprisePolicy()->view($user, $goal->enterprise);
     }
 
-    public function create(User $user, Enterprise $enterprise): bool
+    public function create(User $user): bool
     {
-        return $this->enterprisePolicy()->create($user, $enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
+    {
+        return $this->enterprisePolicy()->createForOrganization($user, $enterprise->organization);
     }
 
     public function update(User $user, Goal $goal): bool

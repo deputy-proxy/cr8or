@@ -13,7 +13,12 @@ class SocialAccountPolicy
         return (new EnterprisePolicy)->view($u, $a->enterprise);
     }
 
-    public function create(User $u, Enterprise $e): bool
+    public function create(User $u): bool
+    {
+        return (new EnterprisePolicy)->create($u);
+    }
+
+    public function createForEnterprise(User $u, Enterprise $e): bool
     {
         return (new EnterprisePolicy)->update($u, $e);
     }

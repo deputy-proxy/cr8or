@@ -19,7 +19,7 @@ final class ContentItemService
     /** @param array<string, mixed> $attributes */
     public function create(User $actor, Enterprise $enterprise, array $attributes): ContentItem
     {
-        Gate::forUser($actor)->authorize('create', [ContentItem::class, $enterprise]);
+        Gate::forUser($actor)->authorize('createForEnterprise', [ContentItem::class, $enterprise]);
 
         /** @var Campaign $campaign */
         $campaign = Campaign::query()->findOrFail($attributes['campaign_id']);

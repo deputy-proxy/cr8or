@@ -13,7 +13,12 @@ class AgentDecisionPolicy
         return $this->organizationRole($user, $record) !== null;
     }
 
-    public function create(User $user, AgentDecision $record): bool
+    public function create(User $user): bool
+    {
+        return $user->memberships()->exists();
+    }
+
+    public function createForAgentDecision(User $user, AgentDecision $record): bool
     {
         return $this->organizationRole($user, $record) !== null;
     }

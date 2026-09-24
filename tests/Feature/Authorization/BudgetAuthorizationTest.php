@@ -45,8 +45,8 @@ it('enforces organization authorization for budgets and financial periods', func
             ->and(Gate::forUser($owner)->allows('delete', $record))->toBeFalse();
     }
 
-    expect(Gate::forUser($owner)->allows('create', [FinancialPeriod::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [FinancialPeriod::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Budget::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Budget::class, $enterprise]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForEnterprise', [FinancialPeriod::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [FinancialPeriod::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Budget::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Budget::class, $enterprise]))->toBeFalse();
 });

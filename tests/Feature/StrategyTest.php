@@ -102,14 +102,14 @@ it('enforces the enterprise organization boundary through each strategic policy'
         ->and(Gate::forUser($owner)->allows('view', $foreignStrategy))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignPlan))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignInitiative))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Objective::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Objective::class, $enterprise]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Strategy::class, $objective]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Strategy::class, $objective]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Plan::class, $strategy]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Plan::class, $strategy]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Initiative::class, $plan]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Initiative::class, $plan]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Objective::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Objective::class, $enterprise]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForObjective', [Strategy::class, $objective]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForObjective', [Strategy::class, $objective]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForStrategy', [Plan::class, $strategy]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForStrategy', [Plan::class, $strategy]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForPlan', [Initiative::class, $plan]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForPlan', [Initiative::class, $plan]))->toBeFalse();
 });
 
 it('keeps the strategy domain schema explicit and non-polymorphic', function () {

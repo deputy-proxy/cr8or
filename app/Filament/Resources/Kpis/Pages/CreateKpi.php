@@ -15,7 +15,7 @@ class CreateKpi extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Kpi::class, $parent]);
+        Gate::authorize('createForEnterprise', [Kpi::class, $parent]);
 
         return $data;
     }

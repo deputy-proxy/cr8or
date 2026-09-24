@@ -20,7 +20,14 @@ class MembershipPolicy
         );
     }
 
-    public function create(User $user, Organization $organization): bool
+    public function create(User $user): bool
+    {
+        return $user->memberships()
+            ->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value])
+            ->exists();
+    }
+
+    public function createForOrganization(User $user, Organization $organization): bool
     {
         return $this->hasRole(
             $user,

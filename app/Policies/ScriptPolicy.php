@@ -13,9 +13,14 @@ class ScriptPolicy
         return (new EnterprisePolicy)->view($user, $script->contentItem->enterprise);
     }
 
-    public function create(User $user, ContentItem $item): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $item->enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForContentItem(User $user, ContentItem $item): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $item->enterprise->organization);
     }
 
     public function update(User $user, Script $script): bool

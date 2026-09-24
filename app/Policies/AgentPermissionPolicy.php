@@ -14,14 +14,24 @@ class AgentPermissionPolicy
         return $this->role($user, $permission->agentAssignment) !== null;
     }
 
-    public function create(User $user, AgentAssignment $assignment): bool
+    public function create(User $user): bool
+    {
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForAgentAssignment(User $user, AgentAssignment $assignment): bool
     {
         return $this->role($user, $assignment, MembershipRole::Owner, MembershipRole::Admin) !== null;
     }
 
-    public function update(User $user, AgentPermission $permission, ?AgentAssignment $assignment = null): bool
+    public function update(User $user, AgentPermission $permission): bool
     {
-        return $this->role($user, $assignment ?? $permission->agentAssignment, MembershipRole::Owner, MembershipRole::Admin) !== null;
+        return $this->role($user, $permission->agentAssignment, MembershipRole::Owner, MembershipRole::Admin) !== null;
+    }
+
+    public function updateForAgentAssignment(User $user, AgentPermission $permission, AgentAssignment $assignment): bool
+    {
+        return $this->role($user, $assignment, MembershipRole::Owner, MembershipRole::Admin) !== null;
     }
 
     public function delete(User $user, AgentPermission $permission): bool

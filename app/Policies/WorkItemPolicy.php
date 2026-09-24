@@ -13,9 +13,14 @@ class WorkItemPolicy
         return (new EnterprisePolicy)->view($user, $item->enterprise);
     }
 
-    public function create(User $user, Enterprise $enterprise): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user, $enterprise->organization);
+        return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($user, $enterprise->organization);
     }
 
     public function update(User $user, WorkItem $item): bool

@@ -14,7 +14,7 @@ class CreateAgentAssignment extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $record = new AgentAssignment($data);
-        Gate::authorize('create', $record);
+        Gate::authorize('createForAgentAssignment', [AgentAssignment::class, $record]);
 
         return $data;
     }

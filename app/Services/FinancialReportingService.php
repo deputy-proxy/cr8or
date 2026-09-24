@@ -28,7 +28,7 @@ class FinancialReportingService
         ?FinancialAccount $account = null,
         ?TransactionCategory $category = null,
     ): FinancialReport {
-        Gate::forUser($user)->authorize('create', [FinancialReport::class, $enterprise]);
+        Gate::forUser($user)->authorize('createForEnterprise', [FinancialReport::class, $enterprise]);
 
         $this->validateScope($enterprise, $period, $account, $category);
 

@@ -18,7 +18,7 @@ class CreateObjective extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Objective::class, $enterprise]);
+        Gate::authorize('createForEnterprise', [Objective::class, $enterprise]);
 
         $this->validateReferenceOwnership($data, $enterprise);
 

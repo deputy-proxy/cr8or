@@ -15,7 +15,7 @@ class CreatePartner extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('create', [Partner::class, $parent]);
+        Gate::authorize('createForEnterprise', [Partner::class, $parent]);
 
         return $data;
     }

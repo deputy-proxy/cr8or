@@ -56,10 +56,10 @@ it('allows owners and admins to create memberships only in their organization', 
         'organization_id' => $organization,
     ]);
 
-    expect(Gate::forUser($owner)->allows('create', [Membership::class, $organization]))->toBeTrue()
-        ->and(Gate::forUser($admin)->allows('create', [Membership::class, $organization]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Membership::class, $organization]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Membership::class, $otherOrganization]))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('createForOrganization', [Membership::class, $organization]))->toBeTrue()
+        ->and(Gate::forUser($admin)->allows('createForOrganization', [Membership::class, $organization]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForOrganization', [Membership::class, $organization]))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('createForOrganization', [Membership::class, $otherOrganization]))->toBeFalse();
 });
 
 it('enforces membership mutation roles', function () {

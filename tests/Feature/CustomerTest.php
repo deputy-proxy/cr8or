@@ -70,8 +70,8 @@ it('enforces customer authorization through the enterprise organization', functi
         ->and(Gate::forUser($member)->allows('view', $customer))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $customer))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignCustomer))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('create', [Customer::class, $enterprise]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('create', [Customer::class, $enterprise]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Customer::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Customer::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the customer schema limited to phase 1 fields', function () {
