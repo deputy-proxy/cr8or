@@ -1,5 +1,7 @@
 <?php
 
+use App\AI\Contracts\ModelProvider;
+use App\AI\Providers\FakeModelProvider;
 use App\Data\AgentDelegationRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentPermission;
@@ -8,6 +10,10 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Services\AgentDelegationService;
 use Illuminate\Auth\Access\AuthorizationException;
+
+beforeEach(function (): void {
+    app()->bind(ModelProvider::class, fn (): FakeModelProvider => FakeModelProvider::returning());
+});
 
 function delegationSourceRuntimeClass(): string
 {
@@ -141,6 +147,7 @@ function delegationRequest(
         prompt: 'Perform the delegated work.',
         targetContext: $targetContext,
         correlationId: 'delegation-test-123',
+        idempotencyKey: 'delegation-'.$targetSlug.'-'.$capability,
     );
 }
 
@@ -175,7 +182,9 @@ it('authorizes same-scope delegation without persisting a second workflow record
         ->and($response->targetDescriptor->slug)->toBe('target-agent')
         ->and($response->actor->is($actor))->toBeTrue()
         ->and($response->correlationId)->toBe('delegation-test-123')
-        ->and(\App\Models\AgentExecution::query()->count())->toBe(0);
+        ->and(\App\Models\AgentExecution::query()->count())->toBe(1)
+        ->and($response->delegation->status)->toBe(\App\Models\AgentDelegation::STATUS_SUCCEEDED)
+        ->and($response->execution)->not->toBeNull();
 });
 
 it('rejects a disabled target Agent', function () {
@@ -315,6 +324,7 @@ it('preserves approval requirements for source delegation and target capability'
         sourceApproval: $sourceApproval,
         targetApproval: $targetApproval,
         correlationId: 'approval-delegation',
+        idempotencyKey: 'approval-delegation-key',
     ));
 
     expect($response->correlationId)->toBe('approval-delegation');
@@ -340,4 +350,107 @@ it('preserves actor and correlation attribution in the delegation response', fun
         ->and($response->sourceAssignment->getKey())->toBe($source->getKey())
         ->and($response->targetAssignment->getKey())->toBe($target->getKey())
         ->and($response->correlationId)->toBe('delegation-test-123');
+});
+
+it('returns the existing successful delegation for an idempotent retry without executing the target again', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $source = delegationAssignment($actor, $enterprise, 'source-agent');
+    $target = delegationAssignment($actor, $enterprise, 'target-agent');
+    grantDelegationPermission($source);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $target->getKey(),
+        'capability' => 'work.create',
+    ]);
+
+    $request = delegationRequest($actor, $source, 'target-agent');
+    $first = app(AgentDelegationService::class)->delegate($request);
+    $second = app(AgentDelegationService::class)->delegate($request);
+
+    expect($second->delegation->is($first->delegation))->toBeTrue()
+        ->and(\App\Models\AgentExecution::query()->count())->toBe(1);
+});
+
+it('preserves parent execution linkage and historical identity', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $source = delegationAssignment($actor, $enterprise, 'source-agent');
+    $target = delegationAssignment($actor, $enterprise, 'target-agent');
+    grantDelegationPermission($source);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $target->getKey(),
+        'capability' => 'work.create',
+    ]);
+
+    $parent = \App\Models\AgentExecution::factory()->forAssignment($source)->create();
+
+    $delegation = app(AgentDelegationService::class)->delegate(new AgentDelegationRequest(
+        actor: $actor,
+        sourceAssignment: $source,
+        targetAgentSlug: 'target-agent',
+        capability: 'work.create',
+        prompt: 'Perform the delegated work.',
+        parentExecution: $parent,
+        idempotencyKey: 'parent-key',
+    ))->delegation;
+
+    $delegation->update([
+        'organization_name' => 'tampered',
+        'source_agent_slug' => 'tampered',
+        'prompt' => 'tampered',
+        'target_context' => ['tampered' => true],
+    ]);
+    $delegation->refresh();
+
+    expect($delegation->parent_agent_execution_id)->toBe($parent->getKey())
+        ->and($delegation->organization_name)->toBe($enterprise->organization->name)
+        ->and($delegation->source_agent_slug)->toBe($source->agentDescriptor->slug)
+        ->and($delegation->prompt)->toBe('Perform the delegated work.')
+        ->and($delegation->target_context)->toBe([]);
+});
+
+it('rejects a failed-to-successful lifecycle transition and supports retry through the same delegation record', function () {
+    $delegation = \App\Models\AgentDelegation::factory()->failed('Provider unavailable')->create();
+
+    expect(fn () => $delegation->succeed()->save())
+        ->toThrow(LogicException::class, 'cannot transition from [failed] to [succeeded]');
+
+    $delegation->refresh()->retry()->save();
+    expect($delegation->status)->toBe(\App\Models\AgentDelegation::STATUS_PENDING)
+        ->and($delegation->attempts)->toBe(0);
+
+    $delegation->start()->save();
+    expect($delegation->attempts)->toBe(1);
+});
+
+it('links a failed delegation to the failed target Agent execution', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $source = delegationAssignment($actor, $enterprise, 'source-agent');
+    $target = delegationAssignment($actor, $enterprise, 'target-agent');
+    grantDelegationPermission($source);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $target->getKey(),
+        'capability' => 'work.create',
+    ]);
+
+    app()->bind(ModelProvider::class, fn (): FakeModelProvider => new FakeModelProvider(
+        fn () => throw new \App\AI\Exceptions\ModelProviderException(
+            \App\AI\Exceptions\ModelProviderFailureType::Unavailable,
+            'fake',
+            'provider unavailable',
+        ),
+    ));
+
+    $request = delegationRequest($actor, $source, 'target-agent');
+    expect(fn () => app(AgentDelegationService::class)->delegate($request))
+        ->toThrow(\App\AI\Exceptions\ModelProviderException::class);
+
+    $delegation = \App\Models\AgentDelegation::query()->firstOrFail();
+    $execution = \App\Models\AgentExecution::query()->firstOrFail();
+
+    expect($delegation->status)->toBe(\App\Models\AgentDelegation::STATUS_FAILED)
+        ->and($delegation->target_agent_execution_id)->toBe($execution->getKey())
+        ->and($execution->status)->toBe(\App\Models\AgentExecution::STATUS_FAILED)
+        ->and($execution->correlation_id)->toBe($delegation->correlation_id);
 });
