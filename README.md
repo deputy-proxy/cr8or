@@ -290,7 +290,8 @@ CR8OR follows the following architectural model. This describes the target syste
               +------+------+
               |             |
               v             v
-            Events        Jobs
+   State-change / async mechanisms
+        (where applicable)
                             |
                             v
                  External execution
@@ -314,8 +315,8 @@ CR8OR follows the following architectural model. This describes the target syste
 | MCP | Controlled AI-facing capability interface |
 | Application Services | Execute explicit business operations |
 | Policies / Authorization | Enforce authority and data boundaries |
-| Events | Communicate meaningful state changes |
-| Jobs | Perform asynchronous application work |
+| Event mechanisms | Communicate meaningful state changes where concrete event handling is implemented |
+| Async job mechanisms | Perform asynchronous application work where the corresponding domain capability requires it |
 | n8n | Optional future MCP-connected automation capability |
 | External Workers | Perform specialized execution |
 | Cloudflare R2 | Canonical generated-media and file storage |
@@ -446,8 +447,9 @@ Platform registry governance must not be confused with enterprise governance. Th
 
 An **Agent** is an orchestration component. It represents a broad operational domain and is responsible for understanding the request at a high level, selecting the appropriate Experts, coordinating their work, and combining their results.
 
-Examples:
+Current runtime examples:
 
+- CeoAgent
 - MarketingAgent
 - FinanceAgent
 - ProductAgent
@@ -455,15 +457,14 @@ Examples:
 
 An **Expert** is a domain-specialist component. It provides the methodology and reasoning required for a specific area of work, determines the context it needs, selects the Functions it requires, interprets their results, and produces a structured result.
 
-Examples:
+Current runtime examples:
 
-- SocialMediaExpert
-- CopywritingExpert
-- SEOExpert
-- AccountingExpert
+- MarketingExpert
+- FinanceExpert
 - ProductExpert
-- LaravelExpert
-- UXExpert
+- OperationsExpert
+
+Future/domain-specific Experts such as social media, copywriting, SEO, accounting, Laravel or UX specialists may be introduced when their corresponding responsibilities are implemented. They are illustrative roadmap examples, not claims about the current runtime catalog.
 
 The runtime relationship is:
 
@@ -600,7 +601,7 @@ CR8OR applies authorization, domain rules, policies and approval requirements.
 
 **Orchestrate**
 
-n8n coordinates asynchronous and multi-service workflows.
+CR8OR coordinates business workflows and owns authoritative business state. n8n is an optional future MCP-connected automation capability for external asynchronous or multi-service automation, not the primary CR8OR orchestration layer.
 
 **Execute**
 
@@ -629,7 +630,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phase 0 — Foundation & Architecture**, **Phase 1 — Identity, Organizations & Enterprise Context**, **Phase 2 — Agents, Experts & Governance**, **Phase 3 — Strategy, Knowledge & Work**, **Phase 4 — MCP Core**, **Phase 5 — Marketing, Media & Publishing**, and **Phase 6 — Finance & Business Operations**. Phases 0-6 have been implemented and audited within their defined boundaries. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. It does not claim a complete catalog of business-specific Agents or Experts. Later product capabilities remain intentionally deferred to their roadmap phases.
+The repository has completed **Phases 0 through 7**, from Foundation & Architecture through Multi-Agent Business Operations. Phases 0-7 have been implemented and audited within their defined boundaries. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. Phase 7 adds governed Agent delegation, concrete business Agent/Expert runtimes, cross-Agent traceability, delegated approvals, business-level reporting and administration. Deferred capabilities remain explicitly identified in the roadmap. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. It does not claim a complete catalog of business-specific Agents or Experts. Later product capabilities remain intentionally deferred to their roadmap phases.
 
 ### Implemented
 
@@ -689,13 +690,11 @@ These are ongoing hardening/documentation items, not evidence that the completed
 
 During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. Required foundation files should therefore be protected by automated integrity validation rather than relying on human memory or review alone.
 
-### Next Priority
+### Future Roadmap / Deferred Capabilities
 
-**Phase 7 — Multi-Agent Business Operations**
+Phase 7 is complete within its defined scope. The remaining roadmap consists of capabilities intentionally deferred from the completed phases, including generalized Knowledge Retrieval / AI Context Infrastructure, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, Agent memory and broader cross-service integrations.
 
-Phase 6 has now been implemented and audited across issues 78-85. Phase 7.1-7.6 now provide the governed delegation, core business Agent/Expert runtimes, cross-Agent traceability, delegated approvals, business-level reporting and administration required by the current Phase 7 scope. Phase 7 has now been implemented and audited within its defined scope. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside the completed scope.
-
-Generalized Knowledge Retrieval / AI Context Infrastructure is a separate deferred platform capability. It should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 completion gap.
+Generalized Knowledge Retrieval / AI Context Infrastructure should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 or Phase 7 completion gap.
 
 ## Development Roadmap
 
