@@ -76,7 +76,7 @@ final class AgentDelegationService
             $this->approvalRequests->bindToDelegation($request->targetApproval, $delegation);
         }
 
-        if (!$this->capabilityAuthorizer->allows(
+        if (! $this->capabilityAuthorizer->allows(
             $source,
             self::DELEGATION_CAPABILITY,
             $source->organization,
@@ -94,7 +94,7 @@ final class AgentDelegationService
             $this->approvalRequests->consumeForDelegation($request->sourceApproval, $delegation);
         }
 
-        if (!$this->capabilityAuthorizer->allows(
+        if (! $this->capabilityAuthorizer->allows(
             $target,
             $request->capability,
             $target->organization,
@@ -278,12 +278,12 @@ final class AgentDelegationService
 
     private function assertEnabled(AgentAssignment $assignment, string $role): void
     {
-        if (!$assignment->enabled || !$assignment->agentDescriptor->enabled) {
+        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
             throw new AuthorizationException(sprintf('The %s Agent assignment is disabled.', $role));
         }
 
         if ($assignment->enterprise_id !== null
-            && (!$assignment->enterprise instanceof Enterprise
+            && (! $assignment->enterprise instanceof Enterprise
                 || $assignment->enterprise->organization_id !== $assignment->organization_id)
         ) {
             throw new AuthorizationException(sprintf(
