@@ -60,7 +60,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 4 implementation:** Provider abstraction, governed production execution, authorized Enterprise/Knowledge/Strategy/Work context assembly, Expert coordination, MCP capability invocation boundaries, provider failure handling, correlation and execution audit contracts are implemented.
 
-**Deferred:** Agent memory implementation, agent-to-agent collaboration, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 7.2 implementation:** The five core business Agent runtimes (CEO/Orchestration, Marketing, Finance, Product and Operations) and the minimum supporting Expert runtimes are implemented as non-persistent PHP components and registered through AgentDescriptor and ExpertDescriptor. Their runtime metadata remains authoritative in code and invocation does not grant execution authority.
+
+**Deferred:** Agent memory implementation, persistent cross-Agent workflow traceability, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 
