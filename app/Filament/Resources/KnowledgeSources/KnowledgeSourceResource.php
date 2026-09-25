@@ -23,6 +23,12 @@ class KnowledgeSourceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Knowledge Sources';
+
+    protected static ?int $navigationSort = 90;
+
     public static function form(Schema $schema): Schema
     {
         return KnowledgeSourceForm::configure($schema);
