@@ -53,3 +53,4 @@ class ListStrategyTool extends DiscoveryListTool
         return $query->whereHas('objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }
+
