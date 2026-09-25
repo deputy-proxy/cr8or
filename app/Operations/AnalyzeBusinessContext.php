@@ -14,7 +14,7 @@ final class AnalyzeBusinessContext implements Operation
     ) {}
 
     /**
-     * @param array<string, mixed> $input
+     * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     public function execute(User $actor, array $input): array
