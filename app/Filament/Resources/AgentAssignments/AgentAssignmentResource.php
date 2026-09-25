@@ -21,17 +21,11 @@ use Illuminate\Database\Eloquent\Builder;
 class AgentAssignmentResource extends Resource
 {
     use ScopesPhaseOneRecords;
-
     protected static ?string $model = AgentAssignment::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
-
     protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
-
     protected static ?string $navigationLabel = 'Agent Assignments';
-
     protected static ?int $navigationSort = 20;
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -41,7 +35,6 @@ class AgentAssignmentResource extends Resource
             Toggle::make('enabled')->required(),
         ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table->columns([
@@ -49,33 +42,22 @@ class AgentAssignmentResource extends Resource
             TextColumn::make('organization.name')->searchable()->sortable(),
             TextColumn::make('enterprise.name')->searchable()->sortable(),
             IconColumn::make('enabled')->boolean(),
-        ])->recordActions([
-            \Filament\Actions\EditAction::make(),
-            \Filament\Actions\DeleteAction::make(),
-        ]);
+        ])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
     }
-
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->whereIn('organization_id', static::authorizedOrganizationIds());
     }
-
     public static function canViewAny(): bool
     {
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
-
     public static function canCreate(): bool
     {
-        return auth()->check() && static::canManageAnyOrganization();
+        return static::canCreateForCurrentUser(static::getModel());
     }
-
     public static function getPages(): array
     {
-        return [
-            'index' => ListAgentAssignments::route('/'),
-            'create' => CreateAgentAssignment::route('/create'),
-            'edit' => EditAgentAssignment::route('/{record}/edit'),
-        ];
+        return ['index' => ListAgentAssignments::route('/'), 'create' => CreateAgentAssignment::route('/create'), 'edit' => EditAgentAssignment::route('/{record}/edit')];
     }
 }
