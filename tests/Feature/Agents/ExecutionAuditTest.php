@@ -32,7 +32,7 @@ it('preserves the correlation identifier in approval historical context', functi
 
     $approval = app(ApprovalRequestService::class)->request(
         $actor,
-        'work.update',
+        'work.item.update',
         $assignment,
         null,
         ['work_item_id' => 123],

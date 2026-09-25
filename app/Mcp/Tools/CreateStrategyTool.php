@@ -2,12 +2,12 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\Objective;
 use App\Models\Strategy;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
-use App\Services\StrategyService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -18,7 +18,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-strategy')]
 #[Description('Create a strategy under an authorized enterprise objective through CR8OR strategy capabilities.')]
-class CreateStrategyTool extends AuthorizedTool
+class CreateStrategyTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -32,9 +32,9 @@ class CreateStrategyTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, StrategyService $strategies): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.strategy.create', function (string $correlationId) use ($request, $authorization, $strategies) {
+        return $this->executeWithErrors($request, 'mcp.strategy.create', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'objective_id' => ['required', 'integer', 'min:1', 'exists:objectives,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
@@ -57,7 +57,7 @@ class CreateStrategyTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'strategy.create',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -66,7 +66,7 @@ class CreateStrategyTool extends AuthorizedTool
                 ['create', [Strategy::class, $objective]],
             );
 
-            $strategy = $strategies->create($actor, $objective, $validated);
+            $strategy = $this->executeCapability($registry, $actor, ['objective' => $objective, ...$validated]);
 
             return Response::structured([
                 'success' => true,

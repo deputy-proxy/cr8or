@@ -198,7 +198,7 @@ it('denies a disabled Agent assignment even when the capability exists', functio
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
     ]);
     $assignment->update(['enabled' => false]);
     $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
@@ -227,7 +227,7 @@ it('requires and honors a matching approval for a sensitive Agent capability', f
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
     AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
     ]);
     $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
 
@@ -242,7 +242,7 @@ it('requires and honors a matching approval for a sensitive Agent capability', f
 
     $approval = app(ApprovalRequestService::class)->request(
         $actor,
-        'work.update',
+        'work.item.update',
         $assignment,
         $execution,
         ['work_item_id' => $workItem->getKey()],
@@ -278,13 +278,13 @@ it('rejects a matching approval when its target context does not match the mutat
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
     AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
     ]);
     $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
 
     $approval = app(ApprovalRequestService::class)->request(
         $actor,
-        'work.update',
+        'work.item.update',
         $assignment,
         $execution,
         ['work_item_id' => $workItem->getKey() + 1],
@@ -323,7 +323,7 @@ it('rejects a cross-organization Agent execution target', function () {
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
     ]);
     $foreignWorkItem = WorkItem::factory()->create(['enterprise_id' => $foreignEnterprise]);
 
@@ -350,20 +350,20 @@ it('creates approval requests only for enabled Agent assignments', function () {
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
     AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
     ]);
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(RequestApprovalTool::class, [
             'agent_assignment_id' => $assignment->getKey(),
-            'capability' => 'work.update',
+            'capability' => 'work.item.update',
             'target_context' => ['work_item_id' => 123],
         ])
         ->assertOk();
 
     expect(ApprovalRequest::query()
         ->where('agent_assignment_id', $assignment->getKey())
-        ->where('capability', 'work.update')
+        ->where('capability', 'work.item.update')
         ->exists())->toBeTrue();
 
     $assignment->update(['enabled' => false]);
@@ -371,7 +371,7 @@ it('creates approval requests only for enabled Agent assignments', function () {
     Cr8orServer::actingAs($actor, 'api')
         ->tool(RequestApprovalTool::class, [
             'agent_assignment_id' => $assignment->getKey(),
-            'capability' => 'work.update',
+            'capability' => 'work.item.update',
             'target_context' => ['work_item_id' => 456],
         ])
         ->assertHasErrors();
@@ -473,10 +473,10 @@ it('discovers runtime capabilities through enabled descriptors', function () {
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
         ->tool(\App\Mcp\Tools\ListCapabilitiesTool::class, ['search' => 'work.'])
         ->assertOk()
-        ->assertSee(['work.create', 'work.update']);
+        ->assertSee(['work.item.create', 'work.item.update']);
 
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
-        ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.create'])
+        ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.item.create'])
         ->assertOk()
-        ->assertSee('work.create');
+        ->assertSee('work.item.create');
 });

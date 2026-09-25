@@ -40,7 +40,7 @@ final class GenerateFinancialReportTool extends AuthorizedTool
         McpCapabilityAuthorizer $authorization,
         FinancialReportingService $reports,
     ): Response|ResponseFactory {
-        return $this->executeWithErrors($request, 'mcp.finance.execute', function () use ($request, $authorization, $reports) {
+        return $this->executeWithErrors($request, 'mcp.finance.report.generate', function () use ($request, $authorization, $reports) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'financial_period_id' => ['required', 'integer', 'min:1', 'exists:financial_periods,id'],
@@ -84,7 +84,7 @@ final class GenerateFinancialReportTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'finance.execute',
+                'finance.report.generate',
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,

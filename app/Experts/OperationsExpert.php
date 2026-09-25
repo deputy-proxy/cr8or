@@ -21,7 +21,7 @@ final class OperationsExpert extends Expert
 
     public function capabilities(): array
     {
-        return ['work.create', 'work.update'];
+        return ['work.item.create', 'work.item.update'];
     }
 
     public function requiredContext(): array

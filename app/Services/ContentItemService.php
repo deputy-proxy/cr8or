@@ -100,7 +100,7 @@ final class ContentItemService
 
         if (! app(AgentCapabilityAuthorizer::class)->allows(
             $assignment,
-            'content.publication_ready',
+            'marketing.content.publication-ready',
             $item->enterprise->organization,
             $item->enterprise,
             $actor,

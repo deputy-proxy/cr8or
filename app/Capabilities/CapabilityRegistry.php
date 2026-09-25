@@ -16,6 +16,7 @@ use App\Operations\SubmitContentForReview;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
 use App\Operations\UpdateWorkItem;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class CapabilityRegistry
@@ -24,35 +25,49 @@ final class CapabilityRegistry
     public function all(): array
     {
         return [
-            'agent.delegate' => new CapabilityDefinition('agent.delegate', DelegateAgent::class),
-            'business.analysis' => new CapabilityDefinition('business.analysis', AnalyzeBusinessContext::class),
-            'content.create' => new CapabilityDefinition('content.create', CreateContentItem::class),
-            'content.update' => new CapabilityDefinition('content.update', UpdateContentItem::class),
-            'content.review' => new CapabilityDefinition('content.review', SubmitContentForReview::class),
-            'content.publication_ready' => new CapabilityDefinition('content.publication_ready', MarkContentPublicationReady::class),
-            'finance.execute' => new CapabilityDefinition('finance.execute', GenerateFinancialReport::class),
-            'marketing.plan' => new CapabilityDefinition('marketing.plan', PlanMarketing::class),
-            'publication.publish' => new CapabilityDefinition('publication.publish', PublishContent::class),
-            'strategy.create' => new CapabilityDefinition('strategy.create', CreateStrategy::class),
-            'strategy.update' => new CapabilityDefinition('strategy.update', UpdateStrategy::class),
-            'work.create' => new CapabilityDefinition('work.create', CreateWorkItem::class),
-            'work.update' => new CapabilityDefinition('work.update', UpdateWorkItem::class),
+            'agent.delegate' => new CapabilityDefinition('agent.delegate', DelegateAgent::class, 'delegate-agent'),
+            'business.analysis' => new CapabilityDefinition('business.analysis', AnalyzeBusinessContext::class, 'analyze-business-context'),
+            'finance.report.generate' => new CapabilityDefinition('finance.report.generate', GenerateFinancialReport::class, 'generate-financial-report'),
+            'marketing.content.create' => new CapabilityDefinition('marketing.content.create', CreateContentItem::class, 'create-content-item'),
+            'marketing.content.update' => new CapabilityDefinition('marketing.content.update', UpdateContentItem::class, 'update-content-item'),
+            'marketing.content.review' => new CapabilityDefinition('marketing.content.review', SubmitContentForReview::class, 'submit-content-for-review'),
+            'marketing.content.publication-ready' => new CapabilityDefinition('marketing.content.publication-ready', MarkContentPublicationReady::class, 'mark-content-publication-ready'),
+            'marketing.plan' => new CapabilityDefinition('marketing.plan', PlanMarketing::class, 'plan-marketing'),
+            'publication.publish' => new CapabilityDefinition('publication.publish', PublishContent::class, 'publish-content'),
+            'strategy.create' => new CapabilityDefinition('strategy.create', CreateStrategy::class, 'create-strategy'),
+            'strategy.update' => new CapabilityDefinition('strategy.update', UpdateStrategy::class, 'update-strategy'),
+            'work.item.create' => new CapabilityDefinition('work.item.create', CreateWorkItem::class, 'create-work-item'),
+            'work.item.update' => new CapabilityDefinition('work.item.update', UpdateWorkItem::class, 'update-work-item'),
         ];
     }
 
     public function resolve(string $capability): CapabilityDefinition
     {
-        $definition = $this->all()[$capability] ?? null;
+        return $this->all()[$capability] ?? throw new InvalidArgumentException("Unknown capability [{$capability}].");
+    }
 
-        if ($definition === null) {
-            throw new InvalidArgumentException("Unknown capability [{$capability}].");
+    public function forTool(string $tool): CapabilityDefinition
+    {
+        if (str_contains($tool, '\\')) {
+            $tool = Str::kebab(Str::beforeLast(class_basename($tool), 'Tool'));
         }
 
-        return $definition;
+        foreach ($this->all() as $definition) {
+            if ($definition->tool === $tool) {
+                return $definition;
+            }
+        }
+
+        throw new InvalidArgumentException("Unknown governed MCP Tool [{$tool}].");
     }
 
     public function operation(string $capability): Operation
     {
         return app($this->resolve($capability)->operation);
+    }
+
+    public function operationForTool(string $tool): Operation
+    {
+        return $this->operation($this->forTool($tool)->key);
     }
 }

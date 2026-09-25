@@ -17,21 +17,21 @@ it('blocks a sensitive capability until its approval is approved', function () {
     $organization = Organization::factory()->create();
     $actor = User::factory()->create();
     $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
-    AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment, 'capability' => 'finance.execute']);
+    AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment, 'capability' => 'finance.report.generate']);
 
     $authorizer = app(AgentCapabilityAuthorizer::class);
 
-    expect($authorizer->allows($assignment, 'finance.execute', $organization, null, $actor))->toBeFalse();
+    expect($authorizer->allows($assignment, 'finance.report.generate', $organization, null, $actor))->toBeFalse();
 
-    $request = app(ApprovalRequestService::class)->request($actor, 'finance.execute', $assignment, null, ['transaction' => 'tx-1']);
+    $request = app(ApprovalRequestService::class)->request($actor, 'finance.report.generate', $assignment, null, ['transaction' => 'tx-1']);
 
-    expect($authorizer->allows($assignment, 'finance.execute', $organization, null, $actor, $request, null, ['transaction' => 'tx-1']))->toBeFalse();
+    expect($authorizer->allows($assignment, 'finance.report.generate', $organization, null, $actor, $request, null, ['transaction' => 'tx-1']))->toBeFalse();
 
     $approver = User::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $approver, 'organization_id' => $organization]);
     app(ApprovalRequestService::class)->approve($request, $approver, 'Approved for execution');
 
-    expect($authorizer->allows($assignment, 'finance.execute', $organization, null, $actor, $request, null, ['transaction' => 'tx-1']))->toBeTrue();
+    expect($authorizer->allows($assignment, 'finance.report.generate', $organization, null, $actor, $request, null, ['transaction' => 'tx-1']))->toBeTrue();
 });
 
 it('blocks pending and rejected approvals', function () {
@@ -108,16 +108,16 @@ it('rejects expired approvals at the authorization boundary', function () {
     $actor = User::factory()->create();
     $approver = User::factory()->create();
     $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
-    AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment, 'capability' => 'finance.execute']);
+    AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment, 'capability' => 'finance.report.generate']);
     Membership::factory()->owner()->create(['user_id' => $approver, 'organization_id' => $organization]);
 
-    $request = app(ApprovalRequestService::class)->request($actor, 'finance.execute', $assignment);
+    $request = app(ApprovalRequestService::class)->request($actor, 'finance.report.generate', $assignment);
     app(ApprovalRequestService::class)->approve($request, $approver);
     $request->expires_at = Carbon::now()->subMinute();
     $request->saveQuietly();
 
     expect($request->isValid())->toBeFalse()
-        ->and(app(AgentCapabilityAuthorizer::class)->allows($assignment, 'finance.execute', $organization, null, $actor, $request))->toBeFalse();
+        ->and(app(AgentCapabilityAuthorizer::class)->allows($assignment, 'finance.report.generate', $organization, null, $actor, $request))->toBeFalse();
 });
 
 it('preserves approval attribution and history', function () {
@@ -154,7 +154,7 @@ it('does not allow a consumed approval to authorize another execution', function
     $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
     AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $assignment,
-        'capability' => 'finance.execute',
+        'capability' => 'finance.report.generate',
     ]);
     Membership::factory()->owner()->create([
         'user_id' => $approver,
@@ -166,7 +166,7 @@ it('does not allow a consumed approval to authorize another execution', function
     $service = app(ApprovalRequestService::class);
     $request = $service->request(
         $actor,
-        'finance.execute',
+        'finance.report.generate',
         $assignment,
         $firstExecution,
         ['transaction' => 'tx-1'],
@@ -178,7 +178,7 @@ it('does not allow a consumed approval to authorize another execution', function
         $request->refresh(),
         $actor,
         $assignment,
-        'finance.execute',
+        'finance.report.generate',
         $firstExecution,
         ['transaction' => 'tx-1'],
     ))->toBeTrue()
@@ -186,7 +186,7 @@ it('does not allow a consumed approval to authorize another execution', function
             $request->refresh(),
             $actor,
             $assignment,
-            'finance.execute',
+            'finance.report.generate',
             $secondExecution,
             ['transaction' => 'tx-1'],
         ))->toBeFalse();

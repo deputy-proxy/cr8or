@@ -39,7 +39,7 @@ final class ContentGenerationService
 
         if (! $this->capabilities->allows(
             $assignment,
-            'content.create',
+            'marketing.content.create',
             $assignment->organization,
             $enterprise,
             $actor,
@@ -51,7 +51,7 @@ final class ContentGenerationService
         }
 
         /** @var ContentItem $item */
-        $item = $this->registry->operation('content.create')->execute($actor, [
+        $item = $this->registry->operation('marketing.content.create')->execute($actor, [
             'enterprise' => $enterprise,
             ...$attributes,
             'body' => $result->modelResult->text,
@@ -82,7 +82,7 @@ final class ContentGenerationService
 
         if (! $this->capabilities->allows(
             $assignment,
-            'content.update',
+            'marketing.content.update',
             $assignment->organization,
             $item->enterprise,
             $actor,
@@ -94,7 +94,7 @@ final class ContentGenerationService
         }
 
         /** @var ContentItem $updated */
-        $updated = $this->registry->operation('content.update')->execute($actor, [
+        $updated = $this->registry->operation('marketing.content.update')->execute($actor, [
             'content_item' => $item,
             'attributes' => [
                 'body' => $result->modelResult->text,

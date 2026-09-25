@@ -69,7 +69,7 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
         'agent_execution_id' => null,
         'actor_id' => $user->getKey(),
         'approver_id' => null,
-        'capability' => 'work.update',
+        'capability' => 'work.item.update',
         'target_context' => ['resource_id' => 123],
         'organization_name' => $enterprise->organization->name,
         'enterprise_name' => $enterprise->name,

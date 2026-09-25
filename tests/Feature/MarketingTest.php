@@ -128,7 +128,7 @@ it('requires explicit approval for publication readiness', function () {
     $assignment = App\Models\AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
     App\Models\AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $assignment,
-        'capability' => 'content.publication_ready',
+        'capability' => 'marketing.content.publication-ready',
     ]);
     $execution = App\Models\AgentExecution::factory()->forAssignment($assignment)->executing()->create(['actor_id' => $actor]);
     $campaign = Campaign::factory()->create([
@@ -142,7 +142,7 @@ it('requires explicit approval for publication readiness', function () {
         'agent_assignment_id' => $assignment->id,
         'agent_execution_id' => $execution->id,
         'actor_id' => $actor->id,
-        'capability' => 'content.publication_ready',
+        'capability' => 'marketing.content.publication-ready',
         'target_context' => ['content_item_id' => $item->id],
         'organization_name' => $enterprise->organization->name,
         'enterprise_name' => $enterprise->name,

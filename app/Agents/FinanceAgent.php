@@ -21,7 +21,7 @@ final class FinanceAgent extends Agent
 
     public function capabilities(): array
     {
-        return ['finance.execute'];
+        return ['finance.report.generate'];
     }
 
     public function requiredContext(): array

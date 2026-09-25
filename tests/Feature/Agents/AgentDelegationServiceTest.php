@@ -67,7 +67,7 @@ function delegationTargetRuntimeClass(): string
 
         public function capabilities(): array
         {
-            return ['work.create'];
+            return ['work.item.create'];
         }
 
         public function requiredContext(): array
@@ -98,7 +98,7 @@ function delegationCrossScopeRuntimeClass(): string
 
         public function capabilities(): array
         {
-            return ['work.create'];
+            return ['work.item.create'];
         }
 
         public function requiredContext(): array
@@ -116,7 +116,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
 
     $approval = app(\App\Services\ApprovalRequestService::class)->request(
         $actor,
-        'work.create',
+        'work.item.create',
         $target,
         null,
         ['job' => 'job-7'],
@@ -128,7 +128,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
         'source_agent_assignment_id' => $source->id,
         'target_agent_assignment_id' => $target->id,
         'actor_id' => $actor->id,
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
         'target_context' => ['job' => 'job-7'],
     ]);
 
@@ -138,7 +138,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
         'source_agent_assignment_id' => $source->id,
         'target_agent_assignment_id' => $target->id,
         'actor_id' => $actor->id,
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
         'target_context' => ['job' => 'job-7'],
     ]);
 
@@ -177,7 +177,7 @@ function delegationRequest(
     User $actor,
     AgentAssignment $source,
     string $targetSlug,
-    string $capability = 'work.create',
+    string $capability = 'work.item.create',
     array $targetContext = [],
 ): AgentDelegationRequest {
     return new AgentDelegationRequest(
@@ -210,7 +210,7 @@ it('authorizes same-scope delegation without persisting a second workflow record
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     $response = app(AgentDelegationService::class)->delegate(
@@ -239,7 +239,7 @@ it('rejects a disabled target Agent', function () {
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
@@ -270,7 +270,7 @@ it('rejects cross-organization and cross-Enterprise targets', function () {
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $otherOrgTarget->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
@@ -284,7 +284,7 @@ it('rejects cross-organization and cross-Enterprise targets', function () {
 
     AgentPermission::factory()->create([
         'agent_assignment_id' => $sameOrgTarget->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
@@ -302,11 +302,11 @@ it('does not allow the target Agent to inherit a capability it does not already 
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $source->getKey(),
-        'capability' => 'finance.execute',
+        'capability' => 'finance.report.generate',
     ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
-        delegationRequest($actor, $source, 'target-agent', 'finance.execute'),
+        delegationRequest($actor, $source, 'target-agent', 'finance.report.generate'),
     ))->toThrow(AuthorizationException::class, 'target Agent is not authorized');
 });
 
@@ -322,7 +322,7 @@ it('preserves approval requirements for source delegation and target capability'
     ]);
     AgentPermission::factory()->requiresApproval()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     $request = delegationRequest($actor, $source, 'target-agent', targetContext: ['job' => 'job-7']);
@@ -335,11 +335,11 @@ it('preserves approval requirements for source delegation and target capability'
         AgentDelegationService::DELEGATION_CAPABILITY,
         $source,
         null,
-        ['job' => 'job-7', 'target_agent_slug' => 'target-agent', 'target_capability' => 'work.create'],
+        ['job' => 'job-7', 'target_agent_slug' => 'target-agent', 'target_capability' => 'work.item.create'],
     );
     $targetApproval = app(\App\Services\ApprovalRequestService::class)->request(
         $actor,
-        'work.create',
+        'work.item.create',
         $target,
         null,
         ['job' => 'job-7'],
@@ -357,7 +357,7 @@ it('preserves approval requirements for source delegation and target capability'
         actor: $actor,
         sourceAssignment: $source,
         targetAgentSlug: 'target-agent',
-        capability: 'work.create',
+        capability: 'work.item.create',
         prompt: 'Perform the delegated work.',
         targetContext: ['job' => 'job-7'],
         sourceApproval: $sourceApproval,
@@ -379,7 +379,7 @@ it('preserves approval requirements for source delegation and target capability'
         actor: $actor,
         sourceAssignment: $source,
         targetAgentSlug: 'target-agent',
-        capability: 'work.create',
+        capability: 'work.item.create',
         prompt: 'Perform the delegated work.',
         targetContext: ['job' => 'job-7'],
         sourceApproval: $sourceApproval,
@@ -401,7 +401,7 @@ it('preserves actor and correlation attribution in the delegation response', fun
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     $response = app(AgentDelegationService::class)->delegate(
@@ -422,7 +422,7 @@ it('returns the existing successful delegation for an idempotent retry without e
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     $request = delegationRequest($actor, $source, 'target-agent');
@@ -441,7 +441,7 @@ it('preserves parent execution linkage and historical identity', function () {
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     $parent = \App\Models\AgentExecution::factory()->forAssignment($source)->create();
@@ -450,7 +450,7 @@ it('preserves parent execution linkage and historical identity', function () {
         actor: $actor,
         sourceAssignment: $source,
         targetAgentSlug: 'target-agent',
-        capability: 'work.create',
+        capability: 'work.item.create',
         prompt: 'Perform the delegated work.',
         parentExecution: $parent,
         idempotencyKey: 'parent-key',
@@ -493,7 +493,7 @@ it('links a failed delegation to the failed target Agent execution', function ()
     grantDelegationPermission($source);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
     ]);
 
     app()->bind(ModelProvider::class, fn (): FakeModelProvider => new FakeModelProvider(

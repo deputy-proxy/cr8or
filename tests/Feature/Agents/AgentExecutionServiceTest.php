@@ -39,7 +39,7 @@ function testAgentRuntimeClass(): string
 
         public function capabilities(): array
         {
-            return ['work.create'];
+            return ['work.item.create'];
         }
 
         public function requiredContext(): array
@@ -233,7 +233,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
 
     AgentPermission::factory()->create([
         'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.create',
+        'capability' => 'work.item.create',
         'requires_approval' => true,
     ]);
 
@@ -246,7 +246,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
             'agent_execution_id' => $executionId,
             'actor_id' => $actor->getKey(),
             'approver_id' => $actor->getKey(),
-            'capability' => 'work.create',
+            'capability' => 'work.item.create',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'status' => ApprovalRequest::STATUS_APPROVED,
             'decided_at' => now(),
@@ -261,7 +261,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
                 'decision_rationale' => '',
                 'capability_requests' => [
                     json_encode([
-                        'capability' => 'work.create',
+                        'capability' => 'work.item.create',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                         'approval_request_id' => $approval->getKey(),
                     ], JSON_THROW_ON_ERROR),
@@ -280,7 +280,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
     ))->execute($actor, $assignment, 'Create work.');
 
     expect($result->capabilityRequests)->toHaveCount(1)
-        ->and($result->capabilityRequests[0]['capability'])->toBe('work.create')
+        ->and($result->capabilityRequests[0]['capability'])->toBe('work.item.create')
         ->and($result->succeeded())->toBeTrue();
 });
 
@@ -317,7 +317,7 @@ it('fails the execution when a model capability request is not authorized', func
             'decision_summary' => '',
             'decision_rationale' => '',
             'capability_requests' => [
-                json_encode(['capability' => 'finance.execute'], JSON_THROW_ON_ERROR),
+                json_encode(['capability' => 'finance.report.generate'], JSON_THROW_ON_ERROR),
             ],
         ],
     );
@@ -327,7 +327,7 @@ it('fails the execution when a model capability request is not authorized', func
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
     ))->execute($actor, $assignment, 'Execute finance.'))
-        ->toThrow(AuthorizationException::class, 'not authorized for capability [finance.execute]');
+        ->toThrow(AuthorizationException::class, 'not authorized for capability [finance.report.generate]');
 
     $execution = AgentExecution::query()->latest('id')->first();
 
