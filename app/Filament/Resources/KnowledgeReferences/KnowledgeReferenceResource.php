@@ -23,6 +23,12 @@ class KnowledgeReferenceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Knowledge References';
+
+    protected static ?int $navigationSort = 80;
+
     public static function form(Schema $schema): Schema
     {
         return KnowledgeReferenceForm::configure($schema);
