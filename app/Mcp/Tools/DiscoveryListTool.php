@@ -184,3 +184,4 @@ abstract class DiscoveryListTool extends AuthorizedTool
         return $result;
     }
 }
+
