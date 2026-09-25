@@ -28,7 +28,7 @@ The core architectural boundary is:
 
 Automation systems such as n8n may be connected later through MCP by an Automatiser Expert when a business workflow requires them.
 
-Agent execution is intentionally split into reasoning and capability execution. The Agent runtime produces a governed capability request; CR8OR validates authority and approval requirements; the application capability boundary performs the operation; the resulting state and audit record remain authoritative in CR8OR.
+Agent execution is intentionally split into reasoning and governed execution. The Agent runtime produces a Capability Request; CR8OR validates authority and approval requirements; the requested Capability resolves to an Operation; the Operation invokes the appropriate application/domain service; the resulting state and audit record remain authoritative in CR8OR.
 
 ## Product Principles
 
@@ -69,7 +69,7 @@ A connected system that performs specialized execution, such as n8n, CR8OR Media
 
 ## Target Core Domain Model
 
-The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended persistent CR8OR domain model; they are not all implemented in the current repository. Runtime components such as Agents and Experts are documented separately because they are executable classes rather than business-state entities.
+The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended **target persistent CR8OR domain model**; they are not all implemented in the current repository. Runtime Capabilities and Operations are documented separately because they are executable contracts rather than generic CRUD records. Runtime components such as Agents and Experts are documented separately because they are executable classes rather than business-state entities.
 
 ### Identity & Access
 
@@ -122,9 +122,9 @@ CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as the
 
 The descriptor layer must not duplicate authoritative runtime metadata. Filament can resolve the registered PHP class and display its metadata read-only, providing a living technical glossary derived from the actual implementation.
 
-**Agents orchestrate. Experts specialize. Application services execute. Descriptors register and describe. Models persist business state.**
+**Agents orchestrate. Experts reason. Capabilities define governed authority. Operations execute business operations. Application services enforce business behavior. Descriptors register runtime components. Models persist business state.**
 
-Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, select appropriate application capabilities, apply their methodology, and produce structured results. Application services perform concrete operations against authoritative CR8OR state or approved external services.
+Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, and request appropriate Capabilities. A Capability is a reusable, governed business authority. An Operation is the concrete executable business operation associated with a Capability. Application services implement and enforce the business behavior required by Operations against authoritative CR8OR state or approved external services.
 
 ### Knowledge
 
@@ -324,17 +324,19 @@ CR8OR follows the following architectural model. This describes the target syste
 
 ### Core Interaction Pattern
 
-Every important operation should follow the conceptual pattern:
+Every important governed operation should follow the conceptual pattern:
 
-**Entity → Action → Capability Request → Authorization → Approval, where required → Capability Invocation → Application / Domain Service → State Transition → Result / Audit**
+**Agent reasoning → Capability Request → Authorization → Approval, where required → Capability → Operation → Application / Domain Service → State Transition → Result / Audit**
+
+The Capability is the reusable governed authority; the Operation is the executable business operation. An MCP Tool is only an interface through which the Capability may be requested.
 
 Not every operation requires every step, but the boundaries must remain explicit.
 
 Agent execution follows:
 
-**Agent reasoning → Capability request → CR8OR authorization → Approval when required → Capability invocation → Application / domain service → Authoritative state transition → Result / audit**
+**Agent reasoning → Capability request → CR8OR authorization → Approval when required → Capability → Operation → Application / domain service → Authoritative state transition → Result / audit**
 
-The Agent runtime produces and records governed requests. It does not implicitly execute arbitrary capabilities merely because an AI model requested them. Actual state-changing execution occurs through CR8OR's application capability boundary.
+The Agent runtime produces and records governed Capability Requests. It does not implicitly execute arbitrary capabilities merely because an AI model requested them. Actual state-changing execution occurs through the CR8OR Capability → Operation boundary.
 
 ## MCP Architecture
 
@@ -356,7 +358,15 @@ Examples:
 
 ### MCP Tools
 
-Tools expose explicit capabilities.
+Tools are MCP-facing interface identifiers. A Tool does not itself grant authority. A governed state-changing Tool resolves to a CR8OR Capability and its executable Operation.
+
+The canonical naming convention is:
+
+- **Capability:** `marketing.content.create`
+- **Operation:** `CreateContentItem`
+- **Tool:** `create-content-item`
+
+Capability identifiers use hierarchical dot notation, Operation classes use PascalCase, and MCP Tool names use kebab-case.
 
 Examples:
 
@@ -371,7 +381,7 @@ Examples:
 - `request_approval`
 - `get_business_metrics`
 
-MCP tools must call application/domain services rather than directly manipulating Eloquent models or database records.
+MCP Tools must resolve through the governed Capability boundary to an Operation and application/domain service rather than directly manipulating Eloquent models or database records. Tool registration does not grant authority.
 
 ### MCP Prompts / Workflows
 
@@ -384,7 +394,7 @@ Where appropriate, reusable operational workflows may be exposed for tasks such 
 - content campaign planning;
 - operational review.
 
-The MCP surface must remain capability-oriented rather than exposing internal database structure.
+The MCP surface must remain capability-oriented rather than exposing internal database structure. MCP Tools are interface contracts and must resolve through CR8OR Capabilities and Operations rather than becoming a second application layer.
 
 ## Agent Architecture
 
@@ -455,7 +465,7 @@ Current runtime examples:
 - ProductAgent
 - OperationsAgent
 
-An **Expert** is a domain-specialist component. It provides the methodology and reasoning required for a specific area of work, determines the context it needs, selects the Functions it requires, interprets their results, and produces a structured result.
+An **Expert** is a domain-specialist component. It provides the methodology and reasoning required for a specific area of work, determines the context it needs, requests the Capabilities it requires, interprets Operation results, and produces a structured result.
 
 Current runtime examples:
 
@@ -474,7 +484,13 @@ The runtime relationship is:
     Expert
       |
       v
-    Function / Application Service
+    Capability
+      |
+      v
+    Operation
+      |
+      v
+    Application Service
       |
       v
     Eloquent Models / External Services
@@ -486,12 +502,12 @@ For example:
       v
     SocialMediaExpert
       |
-      +-- GetBusiness
-      +-- GetProducts
-      +-- GetTemplates
-      +-- CreateCampaign
-      +-- CreateSeries
-      +-- CreatePost
+      +-- business.context.read
+      +-- marketing.product.read
+      +-- marketing.template.read
+      +-- marketing.campaign.create
+      +-- marketing.content_series.create
+      +-- marketing.content.create
       |
       v
     CR8OR state / approved external services
@@ -510,13 +526,29 @@ For example:
 
 - apply domain-specific methodology;
 - determine required context;
-- invoke appropriate Functions or application services;
+- request appropriate Capabilities;
 - reason over authorized enterprise context;
+- interpret Operation results;
 - produce structured domain results.
 
-**Functions / Application Services**
+**Capabilities**
 
-- perform concrete operations;
+- define reusable governed business authority;
+- use stable hierarchical identifiers;
+- do not grant authority merely by being declared or exposed;
+- resolve to explicit Operations.
+
+**Operations**
+
+- represent concrete executable business operations;
+- enforce application/domain rules through the appropriate service boundary;
+- read or mutate authoritative business state;
+- invoke approved external execution services;
+- remain independently testable where practical.
+
+**Application Services**
+
+- implement or coordinate the business behavior required by Operations;
 - enforce application/domain rules;
 - read or mutate authoritative business state;
 - invoke approved external execution services;
@@ -609,19 +641,39 @@ Specialized services perform rendering, generation, storage, publishing, develop
 
 This separation is authoritative for the initial architecture and should be documented further as implementation decisions are made.
 
+## Capability / Operation / Tool Model
+
+CR8OR uses three deliberately separate names for governed AI execution:
+
+| Concept | Canonical form | Meaning |
+|---|---|---|
+| Capability | `marketing.content.create` | Reusable governed business authority |
+| Operation | `CreateContentItem` | Concrete executable business operation |
+| Tool | `create-content-item` | MCP-facing interface identifier |
+
+A Tool does not grant authority. A Capability declaration does not grant permission. Authorization is evaluated server-side for the current actor, Agent/Expert context, organization and Enterprise scope, with approval applied independently where policy requires it.
+
+Capabilities may be reused by multiple Agents or Experts. They are not owned exclusively by one runtime component. Operations provide the concrete execution boundary and must not be bypassed by direct Expert calls to arbitrary application services.
+
+## Workflow Composition
+
+A Workflow is a business-level composition of governed Capabilities and Operations that produces a business outcome. Workflow, Operation, Execution and Job are distinct concepts. CR8OR should use the existing Agent, Expert, Capability and Operation primitives for real workflows rather than introducing a generic workflow engine prematurely. n8n remains an optional external automation/execution capability and never becomes authoritative CR8OR business state.
+
 ## Public Trust Model
 
 CR8OR's authoritative record is the Laravel application database and its associated immutable/versioned records.
 
 External services may provide execution results, but they do not become authoritative merely by holding a copy of the data.
 
-AI-generated plans, recommendations, prompts and outputs are derived artifacts until accepted or executed through the appropriate CR8OR workflow.
+AI-generated plans, recommendations, prompts and outputs are derived artifacts until accepted or executed through the appropriate CR8OR workflow. A Capability identifies governed authority; an Operation performs the concrete business operation; an MCP Tool is only the interface used to request it.
 
 Important state changes must be attributable to:
 
 - actor;
 - agent, where applicable;
-- action;
+- capability;
+- operation;
+- MCP tool, where applicable;
 - timestamp;
 - authorization context;
 - approval;
