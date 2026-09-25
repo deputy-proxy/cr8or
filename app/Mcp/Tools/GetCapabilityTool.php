@@ -68,3 +68,4 @@ class GetCapabilityTool extends AuthorizedTool
         });
     }
 }
+
