@@ -7,7 +7,10 @@ use App\Filament\Resources\MarketingStrategies\Pages\CreateMarketingStrategy;
 use App\Filament\Resources\MarketingStrategies\Pages\EditMarketingStrategy;
 use App\Filament\Resources\MarketingStrategies\Pages\ListMarketingStrategies;
 use App\Models\MarketingStrategy;
+use App\Models\User;
+use App\Services\DomainResourceService;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -38,16 +41,31 @@ class MarketingStrategyResource extends Resource
     {
         return $schema->components([
             Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            TextInput::make('name')->required()->maxLength(255), Textarea::make('description')->rows(4),
-            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'])->default('draft')->required(),
+            TextInput::make('name')->required()->maxLength(255),
+            Textarea::make('description')->rows(4),
+            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?MarketingStrategy $record): bool => $record !== null)->dehydrated(false),
         ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->searchable()->sortable(), TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('status')->badge()->sortable(),
-        ])->recordActions([EditAction::make(), DeleteAction::make()]);
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('status')->badge()->sortable(),
+        ])->recordActions([
+            EditAction::make(),
+            Action::make('transition')->label('Change status')->form([
+                Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'])->required(),
+            ])->action(function (MarketingStrategy $record, array $data): void {
+                $actor = auth()->user();
+                if (! $actor instanceof User) {
+                    abort(403);
+                }
+                app(DomainResourceService::class)->updateMarketingStrategy($actor, $record, ['status' => $data['status']]);
+            }),
+            DeleteAction::make(),
+        ]);
     }
 
     public static function getEloquentQuery(): Builder
