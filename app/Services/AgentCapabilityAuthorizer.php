@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
@@ -12,6 +13,8 @@ use App\Models\User;
 
 class AgentCapabilityAuthorizer
 {
+    public function __construct(private readonly CapabilityRegistry $capabilities) {}
+
     /** @param array<string, mixed> $targetContext */
     public function allows(
         AgentAssignment $assignment,
@@ -24,6 +27,12 @@ class AgentCapabilityAuthorizer
         array $targetContext = [],
         ?AgentDelegation $delegation = null,
     ): bool {
+        try {
+            $this->capabilities->resolve($capability);
+        } catch (\InvalidArgumentException) {
+            return false;
+        }
+
         if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
             return false;
         }
