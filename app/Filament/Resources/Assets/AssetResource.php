@@ -36,8 +36,8 @@ class AssetResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('content_item_id')->relationship('contentItem', 'title', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('content_item_id')->relationship('contentItem', 'title')->searchable()->preload()->required(),
             TextInput::make('name')->maxLength(255),
             TextInput::make('type')->maxLength(255),
             Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->required(),

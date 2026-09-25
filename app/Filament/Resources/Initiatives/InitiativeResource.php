@@ -35,7 +35,7 @@ class InitiativeResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('plan_id')->relationship('plan', 'name', fn (Builder $q) => $q->whereHas('strategy.objective.enterprise', fn (Builder $enterprise) => $enterprise->whereIn('organization_id', static::manageableOrganizationIds())))->searchable()->preload()->required(),
+            Select::make('plan_id')->relationship('plan', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);

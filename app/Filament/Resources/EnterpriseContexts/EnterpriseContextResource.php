@@ -34,7 +34,7 @@ class EnterpriseContextResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), Textarea::make('description')->rows(4), TextInput::make('industry')->maxLength(255), TextInput::make('business_model')->maxLength(255), TextInput::make('target_market')->maxLength(255), TextInput::make('geography')->maxLength(255)]);
+        return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), Textarea::make('description')->rows(4), TextInput::make('industry')->maxLength(255), TextInput::make('business_model')->maxLength(255), TextInput::make('target_market')->maxLength(255), TextInput::make('geography')->maxLength(255)]);
     }
 
     public static function table(Table $table): Table

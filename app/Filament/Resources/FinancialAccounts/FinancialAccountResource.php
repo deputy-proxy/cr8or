@@ -34,7 +34,7 @@ class FinancialAccountResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedEnterpriseIds()))->searchable()->preload()->required()->disabledOn('edit'),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required()->disabledOn('edit'),
             TextInput::make('name')->required()->maxLength(255),
             Select::make('type')->options(['bank' => 'Bank', 'cash' => 'Cash', 'credit_card' => 'Credit Card', 'other' => 'Other'])->required(),
             Select::make('status')->options(['active' => 'Active', 'inactive' => 'Inactive'])->required(),

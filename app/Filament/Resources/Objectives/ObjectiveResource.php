@@ -35,9 +35,9 @@ class ObjectiveResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('goal_id')->relationship('goal', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
-            Select::make('kpi_id')->relationship('kpi', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('goal_id')->relationship('goal', 'name')->searchable()->preload(),
+            Select::make('kpi_id')->relationship('kpi', 'name')->searchable()->preload(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);

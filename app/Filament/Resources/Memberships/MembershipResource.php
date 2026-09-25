@@ -32,7 +32,7 @@ class MembershipResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('user_id')->relationship('user', 'name')->searchable()->preload()->required(), Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(), Select::make('role')->options(\App\Enums\MembershipRole::class)->required()]);
+        return $schema->components([Select::make('user_id')->relationship('user', 'name')->searchable()->preload()->required(), Select::make('organization_id')->relationship('organization', 'name')->searchable()->preload()->required(), Select::make('role')->options(\App\Enums\MembershipRole::class)->required()]);
     }
 
     public static function table(Table $table): Table

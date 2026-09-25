@@ -35,7 +35,7 @@ class PlanResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('strategy_id')->relationship('strategy', 'name', fn (Builder $q) => $q->whereHas('objective.enterprise', fn (Builder $enterprise) => $enterprise->whereIn('organization_id', static::manageableOrganizationIds())))->searchable()->preload()->required(),
+            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);

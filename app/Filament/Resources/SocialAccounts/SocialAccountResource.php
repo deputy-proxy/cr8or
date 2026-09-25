@@ -36,8 +36,8 @@ class SocialAccountResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('channel_id')->relationship('channel', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('channel_id')->relationship('channel', 'name')->searchable()->preload()->required(),
             TextInput::make('provider')->maxLength(255),
             TextInput::make('name')->maxLength(255),
             TextInput::make('external_id')->maxLength(255),

@@ -40,8 +40,8 @@ class CampaignResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('marketing_strategy_id')->relationship('marketingStrategy', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('marketing_strategy_id')->relationship('marketingStrategy', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
             Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused', 'completed' => 'Completed', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?Campaign $record): bool => $record !== null)->dehydrated(false),

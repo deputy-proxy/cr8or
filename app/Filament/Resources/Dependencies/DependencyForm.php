@@ -9,7 +9,6 @@ use App\Models\WorkItem;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 
 class DependencyForm
 {
@@ -19,12 +18,12 @@ class DependencyForm
     {
         return $schema->components([
             Select::make('enterprise_id')
-                ->relationship('enterprise', 'name', fn (Builder $query) => $query->whereIn('id', self::manageableEnterpriseIds()))
+                ->relationship('enterprise', 'name')
                 ->searchable()
                 ->preload()
                 ->required(),
             Select::make('project_id')
-                ->relationship('project', 'name', fn (Builder $query) => $query->whereIn('enterprise_id', self::manageableEnterpriseIds()))
+                ->relationship('project', 'name')
                 ->searchable()
                 ->preload(),
             Select::make('predecessor_type')

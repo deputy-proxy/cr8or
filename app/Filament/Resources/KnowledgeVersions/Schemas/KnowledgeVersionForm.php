@@ -7,7 +7,6 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 
 class KnowledgeVersionForm
 {
@@ -24,16 +23,7 @@ class KnowledgeVersionForm
                 ->preload()
                 ->required(),
             Select::make('knowledge_item_id')
-                ->relationship(
-                    'item',
-                    'title',
-                    fn (Builder $query) => $query->whereIn(
-                        'enterprise_id',
-                        Enterprise::query()
-                            ->select('id')
-                            ->whereIn('organization_id', \App\Filament\Resources\KnowledgeVersions\KnowledgeVersionResource::authorizedOrganizationIds()),
-                    ),
-                )
+                ->relationship('item', 'title')
                 ->searchable()
                 ->preload()
                 ->required(),

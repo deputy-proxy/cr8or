@@ -35,10 +35,10 @@ class ProjectResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('strategy_id')->relationship('strategy', 'name', fn (Builder $q) => $q->whereHas('objective.enterprise', fn (Builder $e) => $e->whereIn('id', static::manageableEnterpriseIds())))->searchable()->preload(),
-            Select::make('plan_id')->relationship('plan', 'name', fn (Builder $q) => $q->whereHas('strategy.objective.enterprise', fn (Builder $e) => $e->whereIn('id', static::manageableEnterpriseIds())))->searchable()->preload(),
-            Select::make('initiative_id')->relationship('initiative', 'name', fn (Builder $q) => $q->whereHas('plan.strategy.objective.enterprise', fn (Builder $e) => $e->whereIn('id', static::manageableEnterpriseIds())))->searchable()->preload(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload(),
+            Select::make('plan_id')->relationship('plan', 'name')->searchable()->preload(),
+            Select::make('initiative_id')->relationship('initiative', 'name')->searchable()->preload(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
             Select::make('status')->options(['planned' => 'Planned', 'active' => 'Active', 'completed' => 'Completed'])->required(),

@@ -39,11 +39,11 @@ class ContentItemResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('campaign_id')->relationship('campaign', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('content_series_id')->relationship('contentSeries', 'name', fn (Builder $q) => $q->whereHas('campaign', fn (Builder $c) => $c->whereIn('enterprise_id', static::manageableEnterpriseIds())))->searchable()->preload(),
-            Select::make('channel_id')->relationship('channel', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
-            Select::make('audience_id')->relationship('audience', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('campaign_id')->relationship('campaign', 'name')->searchable()->preload()->required(),
+            Select::make('content_series_id')->relationship('contentSeries', 'name')->searchable()->preload(),
+            Select::make('channel_id')->relationship('channel', 'name')->searchable()->preload(),
+            Select::make('audience_id')->relationship('audience', 'name')->searchable()->preload(),
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('body')->rows(10),
         ]);
