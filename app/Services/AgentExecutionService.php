@@ -8,6 +8,7 @@ use App\AI\Contracts\ModelProvider;
 use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
+use App\Capabilities\CapabilityRegistry;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
@@ -28,13 +29,9 @@ final class AgentExecutionService
         private readonly McpContextAssembler $contextAssembler,
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
         private readonly ?ExecutionCorrelationService $correlation = null,
+        private readonly ?CapabilityRegistry $capabilities = null,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $targetContext
-     * @param  list<string>  $expertSlugs
-     * @param  array<string, mixed>  $modelOptions
-     */
     public function execute(
         User $actor,
         AgentAssignment $assignment,
@@ -101,11 +98,7 @@ final class AgentExecutionService
         try {
             $execution->start()->save();
 
-            $expertResults = $this->coordinateExperts(
-                $agent,
-                $context,
-                $expertSlugs,
-            );
+            $expertResults = $this->coordinateExperts($agent, $context, $expertSlugs);
 
             $request = new ModelRequest(
                 prompt: $prompt,
@@ -142,10 +135,7 @@ final class AgentExecutionService
                 $delegation,
             );
 
-            $decision = $this->persistDecision(
-                $execution,
-                $modelResult,
-            );
+            $decision = $this->persistDecision($execution, $modelResult);
 
             $execution->succeed()->save();
 
@@ -174,24 +164,13 @@ final class AgentExecutionService
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $context
-     * @param  list<string>  $expertSlugs
-     * @return array<string, mixed>
-     */
-    private function coordinateExperts(
-        Agent $agent,
-        array $context,
-        array $expertSlugs,
-    ): array {
+    private function coordinateExperts(Agent $agent, array $context, array $expertSlugs): array
+    {
         if ($expertSlugs === []) {
             return [];
         }
 
-        $descriptors = ExpertDescriptor::query()
-            ->whereIn('slug', $expertSlugs)
-            ->get()
-            ->keyBy('slug');
+        $descriptors = ExpertDescriptor::query()->whereIn('slug', $expertSlugs)->get()->keyBy('slug');
 
         if ($descriptors->count() !== count(array_unique($expertSlugs))) {
             throw new AuthorizationException('One or more requested Experts could not be resolved.');
@@ -222,9 +201,6 @@ final class AgentExecutionService
         return $result;
     }
 
-    /**
-     * @param  array<string, mixed>  $expertResults
-     */
     private function instructions(Agent $agent, array $expertResults): string
     {
         $instructions = implode("\n", [
@@ -244,9 +220,6 @@ final class AgentExecutionService
         return $instructions;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function outputSchema(): array
     {
         return [
@@ -264,10 +237,6 @@ final class AgentExecutionService
         ];
     }
 
-    /**
-     * @param  array<string, mixed>  $targetContext
-     * @return list<array<string, mixed>>
-     */
     private function authorizeCapabilityRequests(
         User $actor,
         AgentAssignment $assignment,
@@ -284,6 +253,7 @@ final class AgentExecutionService
         }
 
         $authorized = [];
+        $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);
 
         foreach ($requests as $encodedRequest) {
             if (! is_string($encodedRequest)) {
@@ -297,6 +267,7 @@ final class AgentExecutionService
             }
 
             $capability = $request['capability'];
+            $definition = $capabilities->resolve($capability);
             $requestContext = isset($request['target_context']) && is_array($request['target_context'])
                 ? $request['target_context']
                 : $targetContext;
@@ -321,6 +292,7 @@ final class AgentExecutionService
 
             $authorized[] = [
                 'capability' => $capability,
+                'operation' => $definition->operation,
                 'target_context' => $requestContext,
                 'approval_request_id' => $approval?->getKey(),
             ];
@@ -329,10 +301,8 @@ final class AgentExecutionService
         return $authorized;
     }
 
-    private function persistDecision(
-        AgentExecution $execution,
-        ModelResult $result,
-    ): ?AgentDecision {
+    private function persistDecision(AgentExecution $execution, ModelResult $result): ?AgentDecision
+    {
         $title = $result->structured['decision_title'] ?? null;
         $summary = $result->structured['decision_summary'] ?? null;
 
