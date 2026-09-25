@@ -24,7 +24,7 @@ An **Expert is an executable PHP runtime component** providing specialized reaso
 An Expert is responsible for:
 - applying domain-specific methodology;
 - determining required context;
-- selecting appropriate Functions or application services;
+- requesting appropriate Capabilities;
 - reasoning over authorized enterprise context;
 - producing structured domain results.
 
@@ -58,7 +58,7 @@ The runtime PHP class is authoritative for:
 - responsibilities;
 - capabilities exposed by the implementation;
 - required context;
-- available Functions;
+- available Capabilities and their Operations;
 - methodology;
 - executable behavior.
 
@@ -66,18 +66,40 @@ Descriptors must not duplicate editable copies of these runtime properties merel
 
 Filament may resolve the runtime class from a descriptor and display runtime metadata read-only, creating a living technical glossary derived from the implementation.
 
-### Function / Application Service
+### Capability
 
-A **Function** is a controlled executable capability boundary. In implementation, this may be represented by a dedicated Function class or an application/domain service where that is the appropriate boundary.
+A **Capability** is a reusable, governed business authority identified by a stable hierarchical key such as `marketing.content.create`. Declaring or exposing a Capability does not itself grant authorization.
 
-Functions and application/domain services:
-- perform concrete operations;
-- enforce application and domain rules;
+Capabilities:
+- may be reused by multiple Agents or Experts;
+- define the governed operation an actor may request;
+- resolve to an explicit Operation;
+- remain authoritative in runtime PHP rather than a duplicate editable persistence record.
+
+### Operation
+
+An **Operation** is the concrete executable business operation associated with a Capability, represented by an explicit PascalCase runtime class such as `CreateContentItem`.
+
+Operations:
+- perform the concrete business operation;
+- enforce application and domain rules through the appropriate service boundary;
 - read or mutate authoritative CR8OR state;
 - invoke approved external execution services;
 - remain deterministic and independently testable where practical.
 
-They are not model-generated authority.
+### Tool
+
+A **Tool** is an interface through which a Capability may be requested, such as an MCP Tool. Tool names use kebab-case, for example `create-content-item`. Tool visibility or registration never grants authority.
+
+Canonical example:
+
+- Capability: `marketing.content.create`
+- Operation: `CreateContentItem`
+- Tool: `create-content-item`
+
+### Application / Domain Service
+
+Application and domain services implement or coordinate the business behavior required by Operations. Experts and MCP handlers must not bypass the Capability boundary to invoke arbitrary services directly.
 
 ### Agent Instruction
 
@@ -129,7 +151,13 @@ The intended runtime boundary is:
     Expert PHP class
         |
         v
-    Function / Application Service
+    Capability
+        |
+        v
+    Operation
+        |
+        v
+    Application / Domain Service
         |
         v
     Eloquent Models / approved External Services
@@ -154,12 +182,13 @@ AI model capability, prompt instructions, Expert delegation or tool visibility m
 4. Apply Agent instructions and assigned role.
 5. Select and coordinate required Experts.
 6. Produce a plan, recommendation or decision.
-7. Request a named capability when execution is required.
-8. Re-evaluate server-side permissions for the requested capability.
-9. Require approval when policy demands it.
-10. Execute through an application/domain service or controlled Function.
-11. Persist execution and relevant result.
-12. Record audit information and external execution references where applicable.
+7. Request a named Capability when execution is required.
+8. Re-evaluate server-side permission for the requested Capability.
+9. Resolve the Capability to its Operation.
+10. Require approval when policy demands it.
+11. Execute the Operation through its application/domain service.
+12. Persist execution and relevant result.
+13. Record audit information and external execution references where applicable.
 
 ## Governance Rules
 
@@ -208,15 +237,15 @@ Phase 7.2 implements the five roadmap runtime Agents: CEO/Orchestration, Marketi
 
 The minimum supporting Experts are Business Analysis, Marketing, Finance, Product and Operations. Expert descriptors register these runtime classes without granting execution authority.
 
-## Current Capability / Action Graph
+## Current Capability / Operation / Tool Graph
 
 The runtime PHP classes are authoritative for Agent and Expert capability declarations. The executable MCP action surface is reconciled as follows:
 
-| Runtime | Capability | MCP action | Context | Execution boundary |
+| Runtime | Capability | Operation | Tool | Context | Execution boundary |
 | --- | --- | --- | --- | --- |
-| CEO / Orchestration | `agent.delegate` | `delegate-agent` | source/target Agent scope | `AgentDelegationService` + `AgentExecutionService` |
-| Marketing Agent / Marketing Expert | `marketing.plan` | `plan-marketing` | Enterprise, Strategy, Knowledge | `ExpertCapabilityService` + `MarketingExpert` |
-| Finance Agent / Finance Expert | `finance.execute` | `generate-financial-report` | Enterprise + financial period/account/category | `FinancialReportingService` |
+| CEO / Orchestration | `agent.delegate` | `DelegateAgent` | `delegate-agent` | source/target Agent scope | `AgentDelegationService` + `AgentExecutionService` |
+| Marketing Agent / Marketing Expert | `marketing.plan` | `PlanMarketing` | `plan-marketing` | Enterprise, Strategy, Knowledge | `ExpertCapabilityService` + `MarketingExpert` |
+| Finance Agent / Finance Expert | `finance.report.generate` | `GenerateFinancialReport` | `generate-financial-report` | Enterprise + financial period/account/category | `FinancialReportingService` |
 | Business Analysis Expert | `business.analysis` | `analyze-business-context` | Enterprise, Strategy, Work, Financial | `ExpertCapabilityService` + `BusinessAnalysisExpert` |
 | Marketing Agent | `content.create` | `create-content-item` | Enterprise + content context | `ContentItemService` |
 | Marketing Agent | `content.update` | `update-content-item` | Enterprise + content item | `ContentItemService` |
