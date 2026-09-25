@@ -42,3 +42,4 @@ class GetAudienceTool extends DiscoveryGetTool
         return $query->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }
+
