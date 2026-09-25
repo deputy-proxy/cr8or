@@ -2,9 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
-use App\Services\ExpertCapabilityService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('plan-marketing')]
 #[Description('Create a structured marketing plan from authorized Enterprise, strategy and knowledge context.')]
-final class PlanMarketingTool extends AuthorizedTool
+final class PlanMarketingTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -28,11 +28,9 @@ final class PlanMarketingTool extends AuthorizedTool
         ];
     }
 
-    public function handle(
-        Request $request,
-        ExpertCapabilityService $experts,
-    ): Response|ResponseFactory {
-        return $this->executeWithErrors($request, 'mcp.marketing.plan', function () use ($request, $experts) {
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
+    {
+        return $this->executeWithErrors($request, 'mcp.marketing.plan', function () use ($request, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'target_context' => ['nullable', 'array'],
@@ -47,19 +45,12 @@ final class PlanMarketingTool extends AuthorizedTool
                 throw new AuthenticationException;
             }
 
-            /** @var Enterprise $enterprise */
             $enterprise = Enterprise::query()->findOrFail($validated['enterprise_id']);
 
-            $result = $experts->execute(
-                $actor,
-                $enterprise,
-                'marketing',
-                'marketing.plan',
-                $validated['target_context'] ?? [],
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                $validated['approval_request_id'] ?? null,
-            );
+            $result = $this->executeCapability($registry, $actor, [
+                'enterprise' => $enterprise,
+                ...$validated,
+            ]);
 
             return Response::structured(['success' => true, 'result' => $result]);
         });

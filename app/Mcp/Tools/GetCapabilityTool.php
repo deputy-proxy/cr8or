@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentDescriptor;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
@@ -24,9 +25,9 @@ class GetCapabilityTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.discovery.get-capability', function () use ($request) {
+        return $this->executeWithErrors($request, 'mcp.discovery.get-capability', function () use ($request, $registry) {
             $actor = $request->user();
             if (! $actor instanceof User) {
                 throw new AuthenticationException;
@@ -34,6 +35,7 @@ class GetCapabilityTool extends AuthorizedTool
 
             $validated = $request->validate(['id' => ['required', 'string', 'min:1', 'max:255']]);
             $id = $validated['id'];
+            $definition = $registry->resolve($id);
             $sources = ['agents' => [], 'experts' => []];
 
             foreach (AgentDescriptor::query()->where('enabled', true)->get() as $descriptor) {
@@ -61,6 +63,8 @@ class GetCapabilityTool extends AuthorizedTool
                 'result' => [
                     'id' => $id,
                     'name' => $id,
+                    'operation' => $definition->operation,
+                    'tool' => $definition->tool,
                     'agents' => $sources['agents'],
                     'experts' => $sources['experts'],
                 ],

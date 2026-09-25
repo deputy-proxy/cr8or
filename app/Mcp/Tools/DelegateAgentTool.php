@@ -2,12 +2,11 @@
 
 namespace App\Mcp\Tools;
 
-use App\Data\AgentDelegationRequest;
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\User;
-use App\Services\AgentDelegationService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -18,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('delegate-agent')]
 #[Description('Delegate governed work from one Agent assignment to another Agent in the same Enterprise.')]
-final class DelegateAgentTool extends AuthorizedTool
+final class DelegateAgentTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -36,9 +35,9 @@ final class DelegateAgentTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, AgentDelegationService $delegations): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.agent.delegate', function () use ($request, $delegations) {
+        return $this->executeWithErrors($request, 'mcp.agent.delegate', function () use ($request, $registry) {
             $validated = $request->validate([
                 'source_agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'target_agent_slug' => ['required', 'string', 'min:1', 'max:100'],
@@ -58,37 +57,27 @@ final class DelegateAgentTool extends AuthorizedTool
                 throw new AuthenticationException;
             }
 
-            /** @var AgentAssignment $source */
             $source = AgentAssignment::query()
                 ->with(['agentDescriptor', 'organization', 'enterprise'])
                 ->findOrFail($validated['source_agent_assignment_id']);
 
-            /** @var ApprovalRequest|null $sourceApproval */
             $sourceApproval = isset($validated['source_approval_request_id'])
                 ? ApprovalRequest::query()->findOrFail($validated['source_approval_request_id'])
                 : null;
-            /** @var ApprovalRequest|null $targetApproval */
             $targetApproval = isset($validated['target_approval_request_id'])
                 ? ApprovalRequest::query()->findOrFail($validated['target_approval_request_id'])
                 : null;
-            /** @var AgentExecution|null $parentExecution */
             $parentExecution = isset($validated['parent_agent_execution_id'])
                 ? AgentExecution::query()->findOrFail($validated['parent_agent_execution_id'])
                 : null;
 
-            $response = $delegations->delegate(new AgentDelegationRequest(
-                actor: $actor,
-                sourceAssignment: $source,
-                targetAgentSlug: $validated['target_agent_slug'],
-                capability: $validated['capability'],
-                prompt: $validated['prompt'],
-                targetContext: $validated['target_context'] ?? [],
-                sourceApproval: $sourceApproval,
-                targetApproval: $targetApproval,
-                correlationId: $validated['correlation_id'] ?? null,
-                idempotencyKey: $validated['idempotency_key'],
-                parentExecution: $parentExecution,
-            ));
+            $response = $this->executeCapability($registry, $actor, [
+                ...$validated,
+                'source_assignment' => $source,
+                'source_approval' => $sourceApproval,
+                'target_approval' => $targetApproval,
+                'parent_execution' => $parentExecution,
+            ]);
 
             return Response::structured([
                 'success' => true,

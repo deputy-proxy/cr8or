@@ -511,10 +511,10 @@ it('discovers runtime capabilities through enabled descriptors', function () {
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
         ->tool(\App\Mcp\Tools\ListCapabilitiesTool::class, ['search' => 'work.'])
         ->assertOk()
-        ->assertSee(['work.item.create', 'work.item.update']);
+        ->assertSee(['work.item.create', 'work.item.update', 'CreateWorkItem', 'create-work-item']);
 
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
         ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.item.create'])
         ->assertOk()
-        ->assertSee('work.item.create');
+        ->assertSee(['work.item.create', 'CreateWorkItem', 'create-work-item']);
 });
