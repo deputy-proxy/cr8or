@@ -25,6 +25,12 @@ class BusinessHealthResultResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHeart;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Business Health';
+
+    protected static ?int $navigationSort = 90;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
