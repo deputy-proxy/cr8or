@@ -26,6 +26,12 @@ class PlanResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Plans';
+
+    protected static ?int $navigationSort = 80;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
