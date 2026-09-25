@@ -42,3 +42,4 @@ class GetContentSeriesTool extends DiscoveryGetTool
         return $query->whereHas('campaign.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }
+
