@@ -1142,6 +1142,7 @@ The following documents are also maintained as implementation-facing specificati
 - `docs/integrations.md` — external service boundaries and contracts.
 - `docs/implementation-decisions.md` — important architectural decisions.
 - `docs/security.md` — security and authorization requirements.
+- `docs/model-interface-boundaries.md` — human CRUD, controlled domain actions, and read-only operational/historical interface boundaries.
 
 The README remains the product roadmap and current-state reconciliation document. More specific technical specifications take precedence for their own subject areas, provided they do not silently contradict approved product decisions.
 
