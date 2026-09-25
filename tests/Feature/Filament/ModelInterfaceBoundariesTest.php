@@ -1,1 +1,51 @@
-{"stdout":"<?php\n\nuse App\\Filament\\Resources\\AgentDecisions\\AgentDecisionResource;\nuse App\\Filament\\Resources\\AgentDelegations\\AgentDelegationResource;\nuse App\\Filament\\Resources\\AgentExecutions\\AgentExecutionResource;\nuse App\\Filament\\Resources\\ApprovalRequests\\ApprovalRequestResource;\nuse App\\Filament\\Resources\\AssetVersions\\AssetVersionResource;\nuse App\\Filament\\Resources\\BusinessHealthResults\\BusinessHealthResultResource;\nuse App\\Filament\\Resources\\Executions\\ExecutionResource;\nuse App\\Filament\\Resources\\FinancialReports\\FinancialReportResource;\nuse App\\Filament\\Resources\\GenerationJobs\\GenerationJobResource;\nuse App\\Filament\\Resources\\GenerationRequests\\GenerationRequestResource;\nuse App\\Filament\\Resources\\IntegrationJobs\\IntegrationJobResource;\nuse App\\Filament\\Resources\\Jobs\\JobResource;\nuse App\\Filament\\Resources\\MediaMetadata\\MediaMetadataResource;\nuse App\\Filament\\Resources\\PublicationResults\\PublicationResultResource;\nuse App\\Filament\\Resources\\PublishingJobs\\PublishingJobResource;\nuse App\\Filament\\Resources\\RenderJobs\\RenderJobResource;\nuse App\\Filament\\Resources\\RenderOutputs\\RenderOutputResource;\nuse App\\Filament\\Resources\\RenderRequests\\RenderRequestResource;\nuse App\\Filament\\Resources\\Transformations\\TransformationResource;\nuse App\\Filament\\Resources\\Workflows\\WorkflowResource;\n\nit('keeps operational and historical resources free of unrestricted CRUD pages', function () {\n    foreach ([\n        AgentDecisionResource::class,\n        AgentDelegationResource::class,\n        AgentExecutionResource::class,\n        ApprovalRequestResource::class,\n        AssetVersionResource::class,\n        BusinessHealthResultResource::class,\n        ExecutionResource::class,\n        FinancialReportResource::class,\n        GenerationJobResource::class,\n        GenerationRequestResource::class,\n        IntegrationJobResource::class,\n        JobResource::class,\n        MediaMetadataResource::class,\n        PublicationResultResource::class,\n        PublishingJobResource::class,\n        RenderJobResource::class,\n        RenderOutputResource::class,\n        RenderRequestResource::class,\n        TransformationResource::class,\n        WorkflowResource::class,\n    ] as $resource) {\n        expect($resource::canCreate())->toBeFalse()\n            ->and($resource::getPages())->not->toHaveKey('create')\n            ->and($resource::getPages())->not->toHaveKey('edit');\n    }\n});\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+use App\Filament\Resources\AgentDecisions\AgentDecisionResource;
+use App\Filament\Resources\AgentDelegations\AgentDelegationResource;
+use App\Filament\Resources\AgentExecutions\AgentExecutionResource;
+use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
+use App\Filament\Resources\AssetVersions\AssetVersionResource;
+use App\Filament\Resources\BusinessHealthResults\BusinessHealthResultResource;
+use App\Filament\Resources\Executions\ExecutionResource;
+use App\Filament\Resources\FinancialReports\FinancialReportResource;
+use App\Filament\Resources\GenerationJobs\GenerationJobResource;
+use App\Filament\Resources\GenerationRequests\GenerationRequestResource;
+use App\Filament\Resources\IntegrationJobs\IntegrationJobResource;
+use App\Filament\Resources\Jobs\JobResource;
+use App\Filament\Resources\MediaMetadata\MediaMetadataResource;
+use App\Filament\Resources\PublicationResults\PublicationResultResource;
+use App\Filament\Resources\PublishingJobs\PublishingJobResource;
+use App\Filament\Resources\RenderJobs\RenderJobResource;
+use App\Filament\Resources\RenderOutputs\RenderOutputResource;
+use App\Filament\Resources\RenderRequests\RenderRequestResource;
+use App\Filament\Resources\Transformations\TransformationResource;
+use App\Filament\Resources\Workflows\WorkflowResource;
+
+it('keeps operational and historical resources free of unrestricted CRUD pages', function () {
+    foreach ([
+        AgentDecisionResource::class,
+        AgentDelegationResource::class,
+        AgentExecutionResource::class,
+        ApprovalRequestResource::class,
+        AssetVersionResource::class,
+        BusinessHealthResultResource::class,
+        ExecutionResource::class,
+        FinancialReportResource::class,
+        GenerationJobResource::class,
+        GenerationRequestResource::class,
+        IntegrationJobResource::class,
+        JobResource::class,
+        MediaMetadataResource::class,
+        PublicationResultResource::class,
+        PublishingJobResource::class,
+        RenderJobResource::class,
+        RenderOutputResource::class,
+        RenderRequestResource::class,
+        TransformationResource::class,
+        WorkflowResource::class,
+    ] as $resource) {
+        expect($resource::canCreate())->toBeFalse()
+            ->and($resource::getPages())->not->toHaveKey('create')
+            ->and($resource::getPages())->not->toHaveKey('edit');
+    }
+});
