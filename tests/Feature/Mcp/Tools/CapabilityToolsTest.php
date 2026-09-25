@@ -378,13 +378,18 @@ it('creates approval requests only for enabled Agent assignments', function () {
 });
 
 it('registers the foundational discovery tool surface', function () {
+    $user = \App\Models\User::factory()->create();
     $organization = \App\Models\Organization::factory()->create();
-    \App\Models\Membership::factory()->create([
-        'user_id' => \App\Models\User::query()->latest('id')->firstOrFail()->id,
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $user->id,
         'organization_id' => $organization->id,
-        'role' => \App\Enums\MembershipRole::Member,
     ]);
-
+    $user = \App\Models\User::factory()->create();
+    $organization = \App\Models\Organization::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $user->id,
+        'organization_id' => $organization->id,
+    ]);
     $toolClasses = [
         \App\Mcp\Tools\ListEnterpriseTool::class, \App\Mcp\Tools\GetEnterpriseTool::class,
         \App\Mcp\Tools\ListObjectiveTool::class, \App\Mcp\Tools\GetObjectiveTool::class,
@@ -402,7 +407,7 @@ it('registers the foundational discovery tool surface', function () {
         \App\Mcp\Tools\ListApprovalRequestTool::class, \App\Mcp\Tools\GetApprovalRequestTool::class,
     ];
 
-    \App\Mcp\Servers\Cr8orServer::actingAs(\App\Models\User::factory()->create(), 'api')
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
         ->tools()
         ->assertRegistered($toolClasses);
 });
