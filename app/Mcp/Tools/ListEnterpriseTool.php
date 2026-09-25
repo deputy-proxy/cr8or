@@ -52,4 +52,3 @@ class ListEnterpriseTool extends DiscoveryListTool
         return $query->whereIn('organization_id', $organizationIds);
     }
 }
-
