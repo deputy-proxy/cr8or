@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentDescriptor;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
@@ -25,9 +26,9 @@ class ListCapabilitiesTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.discovery.list-capabilities', function () use ($request) {
+        return $this->executeWithErrors($request, 'mcp.discovery.list-capabilities', function () use ($request, $registry) {
             $actor = $request->user();
             if (! $actor instanceof User) {
                 throw new \Illuminate\Auth\AuthenticationException;
@@ -43,16 +44,22 @@ class ListCapabilitiesTool extends AuthorizedTool
             foreach (AgentDescriptor::query()->where('enabled', true)->get() as $descriptor) {
                 $runtime = app($descriptor->resolveRuntimeClass());
                 foreach ($runtime->capabilities() as $capability) {
+                    $definition = $registry->resolve($capability);
                     $capabilities[$capability]['id'] = $capability;
                     $capabilities[$capability]['name'] = $capability;
+                    $capabilities[$capability]['operation'] = $definition->operation;
+                    $capabilities[$capability]['tool'] = $definition->tool;
                     $capabilities[$capability]['agents'][] = $descriptor->slug;
                 }
             }
             foreach (ExpertDescriptor::query()->where('enabled', true)->get() as $descriptor) {
                 $runtime = app($descriptor->resolveRuntimeClass());
                 foreach ($runtime->capabilities() as $capability) {
+                    $definition = $registry->resolve($capability);
                     $capabilities[$capability]['id'] = $capability;
                     $capabilities[$capability]['name'] = $capability;
+                    $capabilities[$capability]['operation'] = $definition->operation;
+                    $capabilities[$capability]['tool'] = $definition->tool;
                     $capabilities[$capability]['experts'][] = $descriptor->slug;
                 }
             }
