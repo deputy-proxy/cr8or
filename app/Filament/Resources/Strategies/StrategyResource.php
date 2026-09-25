@@ -64,7 +64,7 @@ class StrategyResource extends Resource
 
     public static function canCreate(): bool
     {
-        return auth()->check() && static::canManageAnyEnterprise();
+        return static::canCreateForCurrentUser(static::getModel());
     }
 
     public static function getPages(): array

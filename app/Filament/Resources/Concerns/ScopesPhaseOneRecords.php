@@ -7,6 +7,7 @@ use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 trait ScopesPhaseOneRecords
 {
@@ -43,5 +44,10 @@ trait ScopesPhaseOneRecords
     protected static function canManageAnyEnterprise(): bool
     {
         return static::manageableEnterpriseIds()->exists();
+    }
+
+    protected static function canCreateForCurrentUser(string $model): bool
+    {
+        return auth()->check() && Gate::allows('create', $model);
     }
 }
