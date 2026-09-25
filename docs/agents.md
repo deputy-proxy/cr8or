@@ -239,7 +239,7 @@ The minimum supporting Experts are Business Analysis, Marketing, Finance, Produc
 
 ## Current Capability / Operation / Tool Graph
 
-The runtime PHP classes are authoritative for Agent and Expert capability declarations. The executable MCP action surface is reconciled as follows:
+The runtime PHP classes are authoritative for Agent and Expert capability declarations. The executable MCP Tool surface is reconciled as follows:
 
 | Runtime | Capability | Operation | Tool | Context | Execution boundary |
 | --- | --- | --- | --- | --- |
