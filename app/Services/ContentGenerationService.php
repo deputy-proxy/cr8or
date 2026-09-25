@@ -18,8 +18,8 @@ final class ContentGenerationService
     ) {}
 
     /**
-     * @param array<string, mixed> $attributes
-     * @param array<string, mixed> $modelOptions
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $modelOptions
      */
     public function generate(
         User $actor,
@@ -63,7 +63,7 @@ final class ContentGenerationService
     }
 
     /**
-     * @param array<string, mixed> $modelOptions
+     * @param  array<string, mixed>  $modelOptions
      */
     public function revise(
         User $actor,
