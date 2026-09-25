@@ -92,3 +92,4 @@ class ListCapabilitiesTool extends AuthorizedTool
         });
     }
 }
+
