@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
@@ -9,7 +10,6 @@ use App\Models\ContentItem;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
-use App\Services\PublishingService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -20,7 +20,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('publish-content')]
 #[Description('Schedule publication-ready content through the governed CR8OR publishing boundary.')]
-class PublishContentTool extends AuthorizedTool
+final class PublishContentTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $s): array
     {
@@ -34,9 +34,9 @@ class PublishContentTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $r, McpCapabilityAuthorizer $a, PublishingService $p): Response|ResponseFactory
+    public function handle(Request $r, McpCapabilityAuthorizer $a, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($r, 'mcp.publication.publish', function () use ($r, $a, $p) {
+        return $this->executeWithErrors($r, 'mcp.publication.publish', function () use ($r, $a, $registry) {
             $v = $r->validate([
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'social_account_id' => ['required', 'integer', 'min:1', 'exists:social_accounts,id'],
@@ -58,29 +58,21 @@ class PublishContentTool extends AuthorizedTool
             $sa = SocialAccount::query()->findOrFail($v['social_account_id']);
 
             /** @var AgentAssignment|null $as */
-            $as = null;
-            if (isset($v['agent_assignment_id'])) {
-                /** @var AgentAssignment $as */
-                $as = AgentAssignment::query()->findOrFail($v['agent_assignment_id']);
-            }
-
+            $as = isset($v['agent_assignment_id'])
+                ? AgentAssignment::query()->findOrFail($v['agent_assignment_id'])
+                : null;
             /** @var AgentExecution|null $ex */
-            $ex = null;
-            if (isset($v['agent_execution_id'])) {
-                /** @var AgentExecution $ex */
-                $ex = AgentExecution::query()->findOrFail($v['agent_execution_id']);
-            }
-
+            $ex = isset($v['agent_execution_id'])
+                ? AgentExecution::query()->findOrFail($v['agent_execution_id'])
+                : null;
             /** @var ApprovalRequest|null $ap */
-            $ap = null;
-            if (isset($v['approval_request_id'])) {
-                /** @var ApprovalRequest $ap */
-                $ap = ApprovalRequest::query()->findOrFail($v['approval_request_id']);
-            }
+            $ap = isset($v['approval_request_id'])
+                ? ApprovalRequest::query()->findOrFail($v['approval_request_id'])
+                : null;
 
             $a->authorizeMutation(
                 $u,
-                'publication.publish',
+                $this->capability($registry),
                 $c->enterprise,
                 $as?->id,
                 $ex?->id,
@@ -89,16 +81,14 @@ class PublishContentTool extends AuthorizedTool
                 ['update', $c],
             );
 
-            $pub = $p->schedule(
-                $u,
-                $c,
-                $sa,
-                new \DateTimeImmutable($v['scheduled_at']),
-                $ap,
-                $as,
-                $ex,
-            );
-            $pub = $p->submit($u, $pub, $as, $ex, $ap);
+            $pub = $this->executeCapability($registry, $u, [
+                'content_item' => $c,
+                'social_account' => $sa,
+                'assignment' => $as,
+                'execution' => $ex,
+                'approval' => $ap,
+                ...$v,
+            ]);
 
             return Response::structured([
                 'success' => true,
