@@ -62,7 +62,9 @@ final class ContentGenerationService
         return $item;
     }
 
-    /** @param array<string, mixed> $modelOptions */
+    /**
+     * @param array<string, mixed> $modelOptions
+     */
     public function revise(
         User $actor,
         AgentAssignment $assignment,
