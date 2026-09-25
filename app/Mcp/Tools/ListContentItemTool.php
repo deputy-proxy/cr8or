@@ -60,3 +60,4 @@ class ListContentItemTool extends DiscoveryListTool
         return $query->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }
+
