@@ -27,6 +27,12 @@ class StatementEntryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Statement Entries';
+
+    protected static ?int $navigationSort = 160;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
