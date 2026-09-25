@@ -47,4 +47,3 @@ class GetApprovalRequestTool extends DiscoveryGetTool
         return $query->whereIn('organization_id', $organizationIds);
     }
 }
-
