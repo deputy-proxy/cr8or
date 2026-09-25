@@ -52,3 +52,6 @@ Every interface preserves organization isolation, enterprise scope, server-side 
 ## Audit outcome
 
 The repository already contains substantial boundary enforcement. This classification formalizes the current interface contract and is the reference for future Filament Resources and MCP actions. A new model or Resource must be classified before generic CRUD is exposed.
+## Finance Agent action boundary
+
+`FinancialReport` remains a read-only derived/historical record and is not exposed through generic Agent CRUD. The governed `generate-financial-report` MCP action is the current Agent-facing Finance operation because it maps to the existing `FinancialReportingService` and `FinancialReportPolicy::createForEnterprise` boundary. Financial accounts, transactions, statements, invoices, expenses, revenue, financial periods, budgets and transaction categories retain their existing policy/model boundaries and are not promoted to arbitrary Agent mutation without a dedicated application/domain action.
