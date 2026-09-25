@@ -174,4 +174,3 @@ it('discovers runtime capabilities without introducing a persistent capability m
         ->assertOk()
         ->assertSee(['work.create']);
 });
-
