@@ -22,17 +22,11 @@ use Illuminate\Database\Eloquent\Builder;
 class AgentPermissionResource extends Resource
 {
     use ScopesPhaseOneRecords;
-
     protected static ?string $model = AgentPermission::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
-
     protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
-
     protected static ?string $navigationLabel = 'Agent Permissions';
-
     protected static ?int $navigationSort = 30;
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -41,7 +35,6 @@ class AgentPermissionResource extends Resource
             Toggle::make('requires_approval')->required(),
         ]);
     }
-
     public static function table(Table $table): Table
     {
         return $table->columns([
@@ -50,33 +43,22 @@ class AgentPermissionResource extends Resource
             TextColumn::make('agentAssignment.enterprise.name')->label('Enterprise')->searchable()->sortable(),
             TextColumn::make('capability')->searchable()->sortable(),
             IconColumn::make('requires_approval')->boolean(),
-        ])->recordActions([
-            \Filament\Actions\EditAction::make(),
-            \Filament\Actions\DeleteAction::make(),
-        ]);
+        ])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
     }
-
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->whereHas('agentAssignment', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
     }
-
     public static function canViewAny(): bool
     {
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
-
     public static function canCreate(): bool
     {
-        return auth()->check() && static::canManageAnyOrganization();
+        return static::canCreateForCurrentUser(static::getModel());
     }
-
     public static function getPages(): array
     {
-        return [
-            'index' => ListAgentPermissions::route('/'),
-            'create' => CreateAgentPermission::route('/create'),
-            'edit' => EditAgentPermission::route('/{record}/edit'),
-        ];
+        return ['index' => ListAgentPermissions::route('/'), 'create' => CreateAgentPermission::route('/create'), 'edit' => EditAgentPermission::route('/{record}/edit')];
     }
 }
