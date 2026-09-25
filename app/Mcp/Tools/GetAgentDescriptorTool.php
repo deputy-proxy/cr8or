@@ -40,4 +40,3 @@ class GetAgentDescriptorTool extends DiscoveryGetTool
         return $query;
     }
 }
-
