@@ -266,55 +266,73 @@ Sensitive actions must be traceable from request through decision, execution and
 
 Reports provide derived views of authoritative business data and must not silently replace the underlying records.
 
-## Target Operating Architecture
+## Operating Architecture
 
-CR8OR follows the following architectural model. This describes the target system architecture; implementation is being introduced incrementally by product phase.
+CR8OR uses an explicit governed execution path. The current repository implements the **Capability → Operation** runtime boundary and the **MCP Tool → Capability** interface boundary. Application/domain services remain responsible for business behavior and authoritative state.
 
 ```
-                         HUMAN
-                           |
-                           v
-                    AI Client / UI
-                           |
-                           v
-                    +-------------+
-                    |   AI Agent  |
-                    +------+------+
-                           |
-                         MCP
-                           |
-                           v
-                    +-------------+
-                    |   CR8OR     |
-                    |   Laravel   |
-                    +------+------+ 
-                           |
-              +------------+------------+
-              |            |            |
-              v            v            v
-           Domain      Application    Policies
-           Model        Services      / Auth
-              |            |
-              +------+-----+
-                     |
-              +------+------+
-              |             |
-              v             v
-   State-change / async mechanisms
-        (where applicable)
-                            |
-                            v
-                 External execution
-                            |
-          +-----------------+------------------+
-          |                 |                  |
-          v                 v                  v
-       Media             Storage          Publishing
-       Workers             R2              Postiz
-          |
-       Canva / AI / other
-       specialized services
+                         HUMAN / AI CLIENT
+                                |
+                                v
+                         +-------------+
+                         |  MCP Tool   |
+                         +------+------+
+                                |
+                                v
+                       +-------------------+
+                       | Capability        |
+                       | Registry / Auth   |
+                       +---------+---------+
+                                 |
+                         approval, if required
+                                 |
+                                 v
+                       +-------------------+
+                       | Operation         |
+                       +---------+---------+
+                                 |
+                                 v
+                    +-------------------------+
+                    | Application / Domain    |
+                    | Service                 |
+                    +-----------+-------------+
+                                |
+                                v
+                         Authoritative State
+                                |
+                         +------+------+
+                         |             |
+                         v             v
+                    Events / Jobs   Audit / Result
+                         |
+                         v
+                  External Execution
+                  (Media / R2 / Postiz /
+                   Canva / other services)
 ```
+
+For Agent-driven execution, the reasoning layer sits before the MCP or application capability request:
+
+```
+Agent → Expert → Capability Request
+                         |
+                         v
+              Authorization / Approval
+                         |
+                         v
+                  Capability
+                         |
+                         v
+                   Operation
+                         |
+                         v
+              Application / Domain Service
+                         |
+                         v
+                 Authoritative State
+```
+
+Agents and Experts do not receive authority merely because a Capability is declared or an MCP Tool is technically callable. Authorization remains server-side and is evaluated for the current actor, Agent/Expert context, organization and Enterprise scope.
 
 ### Architectural Responsibilities
 
@@ -940,7 +958,7 @@ Expose CR8OR as a controlled AI operating interface and introduce the governed A
 - Agent and Expert execution runtime.
 - Model/provider adapter layer.
 - Agent context assembly and execution context management.
-- Tool → Capability → Operation invocation through application/domain services.
+- MCP Tool → Capability → Operation invocation through application/domain services.
 - Agent and Expert execution lifecycle and traceability.
 - Agent decisions and execution results.
 - MCP auditability.
@@ -966,11 +984,11 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 **Completion Criteria**
 
 - MCP clients can retrieve authorized enterprise context.
-- MCP tools invoke application services.
+- MCP tools resolve governed Capabilities to Operations that invoke application/domain services.
 - Authorized Agents and Experts can execute through the CR8OR runtime.
 - AI model/provider calls are isolated behind explicit runtime contracts.
 - Agent and Expert execution context is assembled from authorized CR8OR state.
-- Tool → Capability → Operation calls are authorization-checked and auditable.
+- MCP Tool → Capability → Operation calls are authorization-checked and auditable.
 - MCP cannot bypass authorization.
 - Execution failures and provider failures produce explicit, traceable outcomes.
 - Agent execution and decision records preserve the required historical context.
