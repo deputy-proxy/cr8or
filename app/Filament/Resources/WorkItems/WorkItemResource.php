@@ -59,6 +59,7 @@ class WorkItemResource extends Resource
     }
 
 
+
     public static function getPages(): array
     {
         return ['index' => ListWorkItems::route('/'), 'create' => CreateWorkItem::route('/create'), 'edit' => EditWorkItem::route('/{record}/edit')];
