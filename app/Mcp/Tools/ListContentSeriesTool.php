@@ -54,3 +54,4 @@ class ListContentSeriesTool extends DiscoveryListTool
         return $query->whereHas('campaign.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }
+
