@@ -62,3 +62,66 @@ it('registers a create action for every human CRUD resource with a create page',
     }
 });
 
+it('delegates resource create authorization to the model policy', function () {
+    $organization = \App\Models\Organization::factory()->create();
+    $owner = \App\Models\User::factory()->create();
+    $member = \App\Models\User::factory()->create();
+
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $owner->id,
+        'organization_id' => $organization->id,
+    ]);
+    \App\Models\Membership::factory()->create([
+        'user_id' => $member->id,
+        'organization_id' => $organization->id,
+    ]);
+
+    $resources = [
+        \App\Filament\Resources\Enterprises\EnterpriseResource::class,
+        \App\Filament\Resources\Products\ProductResource::class,
+        \App\Filament\Resources\Strategies\StrategyResource::class,
+    ];
+
+    $this->actingAs($owner);
+
+    foreach ($resources as $resource) {
+        expect($resource::canCreate())->toBeTrue();
+        expect(\Illuminate\Support\Facades\Gate::allows('create', $resource::getModel()))->toBeTrue();
+    }
+
+    $this->actingAs($member);
+
+    foreach ($resources as $resource) {
+        expect($resource::canCreate())->toBeFalse();
+        expect(\Illuminate\Support\Facades\Gate::allows('create', $resource::getModel()))->toBeFalse();
+    }
+});
+
+it('keeps the Enterprise organization field bound to its named relationship', function () {
+    $schema = \Filament\Schemas\Schema::make()->model(\App\Models\Enterprise::class);
+    $schema = \App\Filament\Resources\Enterprises\EnterpriseResource::form($schema);
+    $organization = $schema->getComponents()[0];
+
+    expect($organization)
+        ->toBeInstanceOf(\Filament\Forms\Components\Select::class)
+        ->and($organization->getRelationshipName())->toBe('organization')
+        ->and($organization->getRelationship())
+        ->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class)
+        ->and($organization->getRelationship()->getRelated())->toBeInstanceOf(\App\Models\Organization::class);
+});
+
+it('can mount the Enterprise list create action form for an authorized owner', function () {
+    $organization = \App\Models\Organization::factory()->create();
+    $owner = \App\Models\User::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $owner->id,
+        'organization_id' => $organization->id,
+    ]);
+
+    $this->actingAs($owner);
+
+    \Livewire\Livewire::test(\App\Filament\Resources\Enterprises\Pages\ListEnterprises::class)
+        ->assertStatus(200)
+        ->call('mountAction', 'create')
+        ->assertStatus(200);
+});

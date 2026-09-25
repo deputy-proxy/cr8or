@@ -51,11 +51,6 @@ class CustomerResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-    public static function canCreate(): bool
-    {
-        return auth()->check() && static::canManageAnyEnterprise();
-    }
-
     public static function getPages(): array
     {
         return ['index' => ListCustomers::route('/'), 'create' => CreateCustomer::route('/create'), 'edit' => EditCustomer::route('/{record}/edit')];

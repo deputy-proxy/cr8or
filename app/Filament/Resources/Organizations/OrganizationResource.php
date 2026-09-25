@@ -50,11 +50,6 @@ class OrganizationResource extends Resource
         return auth()->check();
     }
 
-    public static function canCreate(): bool
-    {
-        return auth()->check();
-    }
-
     public static function getPages(): array
     {
         return ['index' => ListOrganizations::route('/'), 'create' => CreateOrganization::route('/create'), 'edit' => EditOrganization::route('/{record}/edit')];
