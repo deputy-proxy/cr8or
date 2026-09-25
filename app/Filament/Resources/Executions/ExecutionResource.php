@@ -20,6 +20,12 @@ class ExecutionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPlayCircle;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Executions';
+
+    protected static ?int $navigationSort = 10;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

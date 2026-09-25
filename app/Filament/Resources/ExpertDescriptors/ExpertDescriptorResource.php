@@ -28,6 +28,12 @@ class ExpertDescriptorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Experts';
+
+    protected static ?int $navigationSort = 40;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

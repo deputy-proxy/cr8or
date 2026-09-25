@@ -26,6 +26,12 @@ class InitiativeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRocketLaunch;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Initiatives';
+
+    protected static ?int $navigationSort = 30;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -20,6 +20,12 @@ class JobResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Jobs';
+
+    protected static ?int $navigationSort = 20;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

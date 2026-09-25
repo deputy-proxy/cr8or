@@ -26,6 +26,12 @@ class ObjectiveResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLightBulb;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Objectives';
+
+    protected static ?int $navigationSort = 10;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

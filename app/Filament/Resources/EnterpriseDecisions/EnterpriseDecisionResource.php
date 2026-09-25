@@ -26,6 +26,12 @@ class EnterpriseDecisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Enterprise Decisions';
+
+    protected static ?int $navigationSort = 50;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), Select::make('actor_id')->options(fn () => \App\Models\User::query()->whereHas('memberships', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()))->pluck('name', 'id'))->searchable()->preload()->required(), Textarea::make('title')->required(), Textarea::make('summary')->required(), Textarea::make('rationale'), DateTimePicker::make('decided_at')->required()]);

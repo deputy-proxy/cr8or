@@ -28,6 +28,12 @@ class MarketingStrategyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Marketing Strategies';
+
+    protected static ?int $navigationSort = 25;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

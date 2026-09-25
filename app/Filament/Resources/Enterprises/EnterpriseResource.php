@@ -25,6 +25,12 @@ class EnterpriseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Enterprises';
+
+    protected static ?int $navigationSort = 20;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('slug')->required()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);

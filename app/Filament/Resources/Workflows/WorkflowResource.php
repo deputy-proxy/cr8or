@@ -20,6 +20,12 @@ class WorkflowResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Workflows';
+
+    protected static ?int $navigationSort = 70;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

@@ -25,6 +25,12 @@ class CustomerResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Customers';
+
+    protected static ?int $navigationSort = 60;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('email')->email()->required()->maxLength(255), TextInput::make('phone')->tel()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'inactive' => 'Inactive'])->default('active')->required()]);

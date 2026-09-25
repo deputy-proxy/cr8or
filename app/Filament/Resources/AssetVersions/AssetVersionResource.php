@@ -21,6 +21,12 @@ class AssetVersionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Media';
+
+    protected static ?string $navigationLabel = 'Asset Versions';
+
+    protected static ?int $navigationSort = 20;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

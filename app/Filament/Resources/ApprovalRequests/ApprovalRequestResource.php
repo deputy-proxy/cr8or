@@ -23,6 +23,12 @@ class ApprovalRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Approvals';
+
+    protected static ?int $navigationSort = 30;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

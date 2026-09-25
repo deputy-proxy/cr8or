@@ -21,6 +21,12 @@ class GenerationJobResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Media';
+
+    protected static ?string $navigationLabel = 'Generation Jobs';
+
+    protected static ?int $navigationSort = 40;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

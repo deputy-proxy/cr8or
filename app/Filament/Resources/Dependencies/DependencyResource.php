@@ -24,6 +24,12 @@ class DependencyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Dependencies';
+
+    protected static ?int $navigationSort = 50;
+
     public static function form(Schema $schema): Schema
     {
         return DependencyForm::configure($schema);

@@ -27,6 +27,12 @@ class AgentPermissionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Agent Permissions';
+
+    protected static ?int $navigationSort = 30;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

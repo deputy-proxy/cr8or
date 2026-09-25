@@ -20,6 +20,12 @@ class AgentDelegationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Agent Delegations';
+
+    protected static ?int $navigationSort = 60;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

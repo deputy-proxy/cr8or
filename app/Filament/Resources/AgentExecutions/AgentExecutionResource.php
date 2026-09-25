@@ -20,6 +20,12 @@ class AgentExecutionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPlayCircle;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Agent Executions';
+
+    protected static ?int $navigationSort = 40;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

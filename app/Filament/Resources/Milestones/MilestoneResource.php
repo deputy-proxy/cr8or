@@ -26,6 +26,12 @@ class MilestoneResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+
+    protected static ?string $navigationLabel = 'Milestones';
+
+    protected static ?int $navigationSort = 55;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

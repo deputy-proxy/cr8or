@@ -28,6 +28,12 @@ class AgentDescriptorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Agents';
+
+    protected static ?int $navigationSort = 10;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -26,6 +26,12 @@ class ExpenseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingDown;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Expenses';
+
+    protected static ?int $navigationSort = 190;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -23,6 +23,12 @@ class KnowledgeDocumentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Intelligence';
+
+    protected static ?string $navigationLabel = 'Knowledge Documents';
+
+    protected static ?int $navigationSort = 60;
+
     public static function form(Schema $schema): Schema
     {
         return KnowledgeDocumentForm::configure($schema);

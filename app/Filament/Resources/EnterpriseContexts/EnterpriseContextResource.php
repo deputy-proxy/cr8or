@@ -26,6 +26,12 @@ class EnterpriseContextResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInformationCircle;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Enterprise Contexts';
+
+    protected static ?int $navigationSort = 40;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), Textarea::make('description')->rows(4), TextInput::make('industry')->maxLength(255), TextInput::make('business_model')->maxLength(255), TextInput::make('target_market')->maxLength(255), TextInput::make('geography')->maxLength(255)]);
