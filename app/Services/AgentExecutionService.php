@@ -32,6 +32,11 @@ final class AgentExecutionService
         private readonly ?CapabilityRegistry $capabilities = null,
     ) {}
 
+    /**
+     * @param array<string, mixed> $targetContext
+     * @param list<string> $expertSlugs
+     * @param array<string, mixed> $modelOptions
+     */
     public function execute(
         User $actor,
         AgentAssignment $assignment,
@@ -164,6 +169,11 @@ final class AgentExecutionService
         }
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @param list<string> $expertSlugs
+     * @return array<string, mixed>
+     */
     private function coordinateExperts(Agent $agent, array $context, array $expertSlugs): array
     {
         if ($expertSlugs === []) {
@@ -201,6 +211,7 @@ final class AgentExecutionService
         return $result;
     }
 
+    /** @param array<string, mixed> $expertResults */
     private function instructions(Agent $agent, array $expertResults): string
     {
         $instructions = implode("\n", [
@@ -220,6 +231,7 @@ final class AgentExecutionService
         return $instructions;
     }
 
+    /** @return array<string, mixed> */
     private function outputSchema(): array
     {
         return [
@@ -237,6 +249,10 @@ final class AgentExecutionService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $targetContext
+     * @return list<array<string, mixed>>
+     */
     private function authorizeCapabilityRequests(
         User $actor,
         AgentAssignment $assignment,
@@ -252,6 +268,7 @@ final class AgentExecutionService
             return [];
         }
 
+        /** @var list<array<string, mixed>> $authorized */
         $authorized = [];
         $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);
 
