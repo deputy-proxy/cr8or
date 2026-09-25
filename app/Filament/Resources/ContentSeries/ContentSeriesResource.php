@@ -1,1 +1,90 @@
-{"stdout":"<?php\n\nnamespace App\\Filament\\Resources\\ContentSeries;\n\nuse App\\Filament\\Resources\\Concerns\\ScopesPhaseOneRecords;\nuse App\\Filament\\Resources\\ContentSeries\\Pages\\CreateContentSeries;\nuse App\\Filament\\Resources\\ContentSeries\\Pages\\EditContentSeries;\nuse App\\Filament\\Resources\\ContentSeries\\Pages\\ListContentSeries;\nuse App\\Models\\ContentSeries;\nuse App\\Models\\User;\nuse App\\Services\\DomainResourceService;\nuse BackedEnum;\nuse Filament\\Actions\\Action;\nuse Filament\\Actions\\DeleteAction;\nuse Filament\\Actions\\EditAction;\nuse Filament\\Forms\\Components\\Select;\nuse Filament\\Forms\\Components\\Textarea;\nuse Filament\\Forms\\Components\\TextInput;\nuse Filament\\Resources\\Resource;\nuse Filament\\Schemas\\Schema;\nuse Filament\\Support\\Icons\\Heroicon;\nuse Filament\\Tables\\Columns\\TextColumn;\nuse Filament\\Tables\\Table;\nuse Illuminate\\Database\\Eloquent\\Builder;\n\nclass ContentSeriesResource extends Resource\n{\n    use ScopesPhaseOneRecords;\n\n    protected static ?string $model = ContentSeries::class;\n\n    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;\n\n    protected static string|\\UnitEnum|null $navigationGroup = 'Content';\n\n    protected static ?string $navigationLabel = 'Series';\n\n    protected static ?int $navigationSort = 20;\n\n    public static function form(Schema $schema): Schema\n    {\n        return $schema->components([\n            Select::make('campaign_id')->relationship('campaign', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),\n            TextInput::make('name')->required()->maxLength(255),\n            Textarea::make('description')->rows(4),\n            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'completed' => 'Completed', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?ContentSeries $record): bool => $record !== null)->dehydrated(false),\n        ]);\n    }\n\n    public static function table(Table $table): Table\n    {\n        return $table->columns([\n            TextColumn::make('name')->searchable()->sortable(),\n            TextColumn::make('campaign.name')->label('Campaign')->searchable()->sortable(),\n            TextColumn::make('status')->badge()->sortable(),\n        ])->recordActions([\n            EditAction::make(),\n            Action::make('transition')->label('Change status')->form([\n                Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'completed' => 'Completed', 'archived' => 'Archived'])->required(),\n            ])->action(function (ContentSeries $record, array $data): void {\n                $actor = auth()->user();\n                if (! $actor instanceof User) {\n                    abort(403);\n                }\n                app(DomainResourceService::class)->transitionContentSeries($actor, $record, $data['status']);\n            }),\n            DeleteAction::make(),\n        ]);\n    }\n\n    public static function getEloquentQuery(): Builder\n    {\n        return parent::getEloquentQuery()->whereHas('campaign.enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));\n    }\n\n    public static function canViewAny(): bool\n    {\n        return auth()->check() && static::authorizedOrganizationIds()->exists();\n    }\n\n    public static function canCreate(): bool\n    {\n        return auth()->check() && static::canManageAnyEnterprise();\n    }\n\n    public static function getPages(): array\n    {\n        return ['index' => ListContentSeries::route('/'), 'create' => CreateContentSeries::route('/create'), 'edit' => EditContentSeries::route('/{record}/edit')];\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Filament\Resources\ContentSeries;
+
+use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\ContentSeries\Pages\CreateContentSeries;
+use App\Filament\Resources\ContentSeries\Pages\EditContentSeries;
+use App\Filament\Resources\ContentSeries\Pages\ListContentSeries;
+use App\Models\ContentSeries;
+use App\Models\User;
+use App\Services\DomainResourceService;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class ContentSeriesResource extends Resource
+{
+    use ScopesPhaseOneRecords;
+
+    protected static ?string $model = ContentSeries::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
+    protected static ?string $navigationLabel = 'Series';
+
+    protected static ?int $navigationSort = 20;
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Select::make('campaign_id')->relationship('campaign', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            TextInput::make('name')->required()->maxLength(255),
+            Textarea::make('description')->rows(4),
+            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'completed' => 'Completed', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?ContentSeries $record): bool => $record !== null)->dehydrated(false),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('campaign.name')->label('Campaign')->searchable()->sortable(),
+            TextColumn::make('status')->badge()->sortable(),
+        ])->recordActions([
+            EditAction::make(),
+            Action::make('transition')->label('Change status')->form([
+                Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'completed' => 'Completed', 'archived' => 'Archived'])->required(),
+            ])->action(function (ContentSeries $record, array $data): void {
+                $actor = auth()->user();
+                if (! $actor instanceof User) {
+                    abort(403);
+                }
+                app(DomainResourceService::class)->transitionContentSeries($actor, $record, $data['status']);
+            }),
+            DeleteAction::make(),
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereHas('campaign.enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && static::authorizedOrganizationIds()->exists();
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->check() && static::canManageAnyEnterprise();
+    }
+
+    public static function getPages(): array
+    {
+        return ['index' => ListContentSeries::route('/'), 'create' => CreateContentSeries::route('/create'), 'edit' => EditContentSeries::route('/{record}/edit')];
+    }
+}
