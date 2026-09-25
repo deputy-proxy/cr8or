@@ -420,7 +420,7 @@ The runtime PHP class is authoritative for:
 - responsibilities;
 - capabilities;
 - required context;
-- available Functions;
+- available Capabilities and their Operations;
 - methodology;
 - executable behavior.
 
@@ -1430,21 +1430,21 @@ Operational dashboards will expose queues, approvals, jobs, agent executions, in
 - Sensitive actions must communicate authority and consequences clearly.
 - Operational state should be visible without requiring users to inspect logs.
 - AI-generated work should be distinguishable from approved or executed work.
-## Current Agent / Expert capability actions
+## Current Agent / Expert Capability / Operation / Tool graph
 
-The current runtime capability graph is executable through governed MCP actions. Runtime PHP classes remain authoritative for capability metadata; MCP is the transport and authorization coordination layer.
+The current runtime capability graph is exposed through governed MCP Tools. Runtime PHP classes remain authoritative for Capability metadata and Operation bindings; MCP is the transport and authorization coordination layer.
 
-| Capability | Runtime consumer | MCP action | Type |
+| Capability | Runtime consumer | Operation | Tool | Type |
 | --- | --- | --- | --- |
-| `agent.delegate` | CEO / Orchestration Agent | `delegate-agent` | state-changing delegation |
-| `business.analysis` | Business Analysis Expert | `analyze-business-context` | analysis |
-| `marketing.plan` | Marketing Agent / Expert | `plan-marketing` | planning |
-| `finance.execute` | Finance Agent / Expert | `generate-financial-report` | controlled financial operation |
-| `content.create` | Marketing Agent | `create-content-item` | state-changing |
-| `content.update` | Marketing Agent | `update-content-item` | state-changing |
-| `content.review` | Marketing Agent | `submit-content-for-review` | lifecycle transition |
-| `content.publication_ready` | Marketing Agent | `mark-content-publication-ready` | lifecycle transition |
-| `strategy.create` / `strategy.update` | Product Agent | `create-strategy` / `update-strategy` | state-changing |
-| `work.create` / `work.update` | Product / Operations Agents | `create-work-item` / `update-work-item` | state-changing |
+| `agent.delegate` | CEO / Orchestration Agent | `DelegateAgent` | `delegate-agent` | state-changing delegation |
+| `business.analysis` | Business Analysis Expert | `AnalyzeBusinessContext` | `analyze-business-context` | analysis |
+| `marketing.plan` | Marketing Agent / Expert | `PlanMarketing` | `plan-marketing` | planning |
+| `finance.report.generate` | Finance Agent / Expert | `GenerateFinancialReport` | `generate-financial-report` | controlled financial operation |
+| `marketing.content.create` | Marketing Agent | `CreateContentItem` | `create-content-item` | state-changing |
+| `marketing.content.update` | Marketing Agent | `UpdateContentItem` | `update-content-item` | state-changing |
+| `marketing.content.review` | Marketing Agent | `SubmitContentForReview` | `submit-content-for-review` | lifecycle transition |
+| `marketing.content.publication-ready` | Marketing Agent | `MarkContentPublicationReady` | `mark-content-publication-ready` | lifecycle transition |
+| `strategy.create` / `strategy.update` | Product Agent | `CreateStrategy` / `UpdateStrategy` | `create-strategy` / `update-strategy` | state-changing |
+| `work.item.create` / `work.item.update` | Product / Operations Agents | `CreateWorkItem` / `UpdateWorkItem` | `create-work-item` / `update-work-item` | state-changing |
 
 Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance action is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain action exists.
