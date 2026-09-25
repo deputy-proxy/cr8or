@@ -40,7 +40,7 @@ function contentAgentRuntimeClass(): string
 
         public function capabilities(): array
         {
-            return ['content.create', 'content.update'];
+            return ['marketing.content.create', 'marketing.content.update'];
         }
 
         public function requiredContext(): array
@@ -56,7 +56,7 @@ it('keeps AI-generated content as a draft with execution and decision provenance
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'content.create']);
+    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.create']);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),
@@ -109,7 +109,7 @@ it('rejects AI revision of approved content', function () {
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'content.update']);
+    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.update']);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),
@@ -126,7 +126,7 @@ it('does not create content when the governed Agent provider fails', function ()
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-failure-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'content.create']);
+    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.create']);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),

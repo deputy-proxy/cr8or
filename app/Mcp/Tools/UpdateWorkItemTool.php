@@ -2,10 +2,10 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Services\McpCapabilityAuthorizer;
-use App\Services\WorkItemService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -19,7 +19,7 @@ use LogicException;
 #[Name('update-work-item')]
 #[Description('Update an existing work item through the authorized CR8OR work capability.')]
 #[IsIdempotent]
-class UpdateWorkItemTool extends AuthorizedTool
+class UpdateWorkItemTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -35,9 +35,9 @@ class UpdateWorkItemTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, WorkItemService $workItems): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.work.update', function (string $correlationId) use ($request, $authorization, $workItems) {
+        return $this->executeWithErrors($request, 'mcp.work.item.update', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'work_item_id' => ['required', 'integer', 'min:1', 'exists:work_items,id'],
                 'name' => ['sometimes', 'string', 'min:1', 'max:255'],
@@ -61,7 +61,7 @@ class UpdateWorkItemTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'work.update',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -76,7 +76,7 @@ class UpdateWorkItemTool extends AuthorizedTool
                 throw new LogicException('At least one mutable work item field is required.');
             }
 
-            $workItem = $workItems->update($actor, $workItem, $attributes);
+            $workItem = $this->executeCapability($registry, $actor, ['work_item' => $workItem, ...$validated, 'attributes' => $attributes]);
 
             return Response::structured([
                 'success' => true,

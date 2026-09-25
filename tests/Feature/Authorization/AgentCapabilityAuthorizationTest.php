@@ -31,7 +31,7 @@ it('denies a missing capability', function () {
         'capability' => 'marketing.plan',
     ]);
 
-    expect(app(AgentCapabilityAuthorizer::class)->allows($assignment, 'finance.execute'))->toBeFalse();
+    expect(app(AgentCapabilityAuthorizer::class)->allows($assignment, 'finance.report.generate'))->toBeFalse();
 });
 
 it('denies a disabled agent descriptor', function () {
@@ -132,6 +132,6 @@ it('does not inherit expert capabilities during delegation', function () {
 
     expect(app(AgentCapabilityAuthorizer::class)->allows(
         $assignment,
-        'finance.execute',
+        'finance.report.generate',
     ))->toBeFalse();
 });

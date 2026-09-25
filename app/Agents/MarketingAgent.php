@@ -21,7 +21,7 @@ final class MarketingAgent extends Agent
 
     public function capabilities(): array
     {
-        return ['marketing.plan', 'content.create', 'content.update', 'content.review', 'content.publication_ready'];
+        return ['marketing.plan', 'marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.content.publication-ready'];
     }
 
     public function requiredContext(): array

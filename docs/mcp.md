@@ -47,7 +47,7 @@ If the Agent permission requires approval, the mutation must also supply a valid
 
 ### Agent and Expert action boundary
 
-The current runtime capability graph is derived from the PHP Agent/Expert classes rather than a persistent Capability model. `delegate-agent` reuses `AgentDelegationService` and its existing approval, organization/Enterprise, correlation and idempotency controls. `analyze-business-context` and `plan-marketing` use `ExpertCapabilityService` to validate the enabled Expert runtime, assemble only the Expert's declared context and invoke its methodology. `generate-financial-report` uses `FinancialReportingService` and the existing FinancialReport policy boundary.
+The current runtime capability graph is derived from the PHP Agent/Expert classes and the governed MCP registry rather than a persistent Capability model. Governed mutation Tools resolve through `CapabilityRegistry` to exactly one Capability and Operation before execution; specialized analysis, planning, delegation and Finance Tools retain their existing application-service boundaries.
 
 Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
 

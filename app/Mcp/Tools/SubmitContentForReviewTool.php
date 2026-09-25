@@ -2,9 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\ContentItem;
 use App\Models\User;
-use App\Services\ContentItemService;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('submit-content-for-review')]
 #[Description('Move draft content into the governed review state.')]
-class SubmitContentForReviewTool extends AuthorizedTool
+class SubmitContentForReviewTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -28,9 +28,9 @@ class SubmitContentForReviewTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ContentItemService $content): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.content.review', function () use ($request, $authorization, $content) {
+        return $this->executeWithErrors($request, 'mcp.marketing.content.review', function () use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
@@ -47,7 +47,7 @@ class SubmitContentForReviewTool extends AuthorizedTool
             $item = ContentItem::query()->findOrFail($validated['content_item_id']);
             $authorization->authorizeMutation(
                 $actor,
-                'content.review',
+                $this->capability($registry),
                 $item->enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -56,7 +56,7 @@ class SubmitContentForReviewTool extends AuthorizedTool
                 ['update', $item],
             );
 
-            $item = $content->submitForReview($actor, $item);
+            $item = $this->executeCapability($registry, $actor, ['content_item' => $item, ...$validated]);
 
             return Response::structured(['success' => true, 'result' => ['id' => $item->id, 'status' => $item->status]]);
         });

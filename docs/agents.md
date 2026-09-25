@@ -247,15 +247,15 @@ The runtime PHP classes are authoritative for Agent and Expert capability declar
 | Marketing Agent / Marketing Expert | `marketing.plan` | `PlanMarketing` | `plan-marketing` | Enterprise, Strategy, Knowledge | `ExpertCapabilityService` + `MarketingExpert` |
 | Finance Agent / Finance Expert | `finance.report.generate` | `GenerateFinancialReport` | `generate-financial-report` | Enterprise + financial period/account/category | `FinancialReportingService` |
 | Business Analysis Expert | `business.analysis` | `analyze-business-context` | Enterprise, Strategy, Work, Financial | `ExpertCapabilityService` + `BusinessAnalysisExpert` |
-| Marketing Agent | `content.create` | `create-content-item` | Enterprise + content context | `ContentItemService` |
-| Marketing Agent | `content.update` | `update-content-item` | Enterprise + content item | `ContentItemService` |
-| Marketing Agent | `content.review` | `submit-content-for-review` | Enterprise + content item | `ContentItemService` |
-| Marketing Agent | `content.publication_ready` | `mark-content-publication-ready` | Enterprise + content item | governed content lifecycle service |
+| Marketing Agent | `marketing.content.create` | `create-content-item` | Enterprise + content context | `ContentItemService` |
+| Marketing Agent | `marketing.content.update` | `update-content-item` | Enterprise + content item | `ContentItemService` |
+| Marketing Agent | `marketing.content.review` | `submit-content-for-review` | Enterprise + content item | `ContentItemService` |
+| Marketing Agent | `marketing.content.publication-ready` | `mark-content-publication-ready` | Enterprise + content item | governed content lifecycle service |
 | Product Agent | `strategy.create` / `strategy.update` | `create-strategy` / `update-strategy` | Enterprise + objective/strategy | `StrategyService` |
-| Product Agent | `work.create` / `work.update` | `create-work-item` / `update-work-item` | Enterprise + work | `WorkItemService` |
-| Operations Agent | `work.create` / `work.update` | `create-work-item` / `update-work-item` | Enterprise + work | `WorkItemService` |
+| Product Agent | `work.item.create` / `work.item.update` | `create-work-item` / `update-work-item` | Enterprise + work | `WorkItemService` |
+| Operations Agent | `work.item.create` / `work.item.update` | `create-work-item` / `update-work-item` | Enterprise + work | `WorkItemService` |
 
-Finance was audited separately from the generic CRUD surface. The current Finance domain has governed policies and a concrete `FinancialReportingService`; therefore the Agent-facing `finance.execute` capability is exposed through `generate-financial-report`. Generic mutation of financial history is intentionally not exposed as a single Agent operation. Financial accounts, transactions, statements, invoices, expenses, revenue, periods, budgets and categories remain governed by their existing model/policy boundaries until a dedicated application/domain action exists for an Agent-facing use case.
+Finance was audited separately from the generic CRUD surface. The current Finance domain has governed policies and a concrete `FinancialReportingService`; therefore the Agent-facing `finance.report.generate` capability is exposed through `generate-financial-report`. Generic mutation of financial history is intentionally not exposed as a single Agent operation. Financial accounts, transactions, statements, invoices, expenses, revenue, periods, budgets and categories remain governed by their existing model/policy boundaries until a dedicated application/domain action exists for an Agent-facing use case.
 
 Analysis and planning actions are non-mutating at the business-state level. They assemble only authorized context, verify the requested Expert runtime is enabled and declares the capability, and invoke the Expert methodology. State-changing capabilities continue through their existing application/domain services and approval boundaries.
 

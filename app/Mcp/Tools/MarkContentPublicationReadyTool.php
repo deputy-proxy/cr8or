@@ -2,12 +2,12 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\ContentItem;
 use App\Models\User;
-use App\Services\ContentItemService;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -19,7 +19,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('mark-content-publication-ready')]
 #[Description('Mark approved content as publication-ready only with matching server-side approval.')]
-class MarkContentPublicationReadyTool extends AuthorizedTool
+class MarkContentPublicationReadyTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -31,9 +31,9 @@ class MarkContentPublicationReadyTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ContentItemService $content): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.content.publication-ready', function () use ($request, $authorization, $content) {
+        return $this->executeWithErrors($request, 'mcp.content.publication-ready', function () use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
@@ -57,7 +57,7 @@ class MarkContentPublicationReadyTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'content.publication_ready',
+                $this->capability($registry),
                 $item->enterprise,
                 $assignment->getKey(),
                 $execution->getKey(),
@@ -66,7 +66,7 @@ class MarkContentPublicationReadyTool extends AuthorizedTool
                 ['update', $item],
             );
 
-            $item = $content->markPublicationReady($actor, $item, $approval, $assignment, $execution);
+            $item = $this->executeCapability($registry, $actor, ['content_item' => $item, 'approval' => $approval, 'assignment' => $assignment, 'execution' => $execution, ...$validated]);
 
             return Response::structured(['success' => true, 'result' => ['id' => $item->id, 'status' => $item->status]]);
         });

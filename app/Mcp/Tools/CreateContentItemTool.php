@@ -2,10 +2,10 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
 use App\Models\User;
-use App\Services\ContentItemService;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-content-item')]
 #[Description('Create draft content through the authorized CR8OR content capability.')]
-class CreateContentItemTool extends AuthorizedTool
+class CreateContentItemTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -35,9 +35,9 @@ class CreateContentItemTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ContentItemService $content): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.content.create', function () use ($request, $authorization, $content) {
+        return $this->executeWithErrors($request, 'mcp.marketing.content.create', function () use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'campaign_id' => ['required', 'integer', 'min:1', 'exists:campaigns,id'],
@@ -61,7 +61,7 @@ class CreateContentItemTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'content.create',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -70,7 +70,7 @@ class CreateContentItemTool extends AuthorizedTool
                 ['create', [ContentItem::class, $enterprise]],
             );
 
-            $item = $content->create($actor, $enterprise, $validated);
+            $item = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
 
             return Response::structured([
                 'success' => true,

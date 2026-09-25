@@ -45,21 +45,21 @@ function capabilityActionMatrix(): array
         CeoAgent::class => ['agent.delegate' => DelegateAgentTool::class],
         MarketingAgent::class => [
             'marketing.plan' => PlanMarketingTool::class,
-            'content.create' => 'create-content-item',
-            'content.update' => 'update-content-item',
-            'content.review' => 'submit-content-for-review',
-            'content.publication_ready' => 'mark-content-publication-ready',
+            'marketing.content.create' => 'create-content-item',
+            'marketing.content.update' => 'update-content-item',
+            'marketing.content.review' => 'submit-content-for-review',
+            'marketing.content.publication-ready' => 'mark-content-publication-ready',
         ],
-        FinanceAgent::class => ['finance.execute' => GenerateFinancialReportTool::class],
+        FinanceAgent::class => ['finance.report.generate' => GenerateFinancialReportTool::class],
         ProductAgent::class => [
             'strategy.create' => 'create-strategy',
             'strategy.update' => 'update-strategy',
-            'work.create' => 'create-work-item',
-            'work.update' => 'update-work-item',
+            'work.item.create' => 'create-work-item',
+            'work.item.update' => 'update-work-item',
         ],
         OperationsAgent::class => [
-            'work.create' => 'create-work-item',
-            'work.update' => 'update-work-item',
+            'work.item.create' => 'create-work-item',
+            'work.item.update' => 'update-work-item',
         ],
     ];
 }
@@ -86,8 +86,8 @@ it('maps every current Expert capability to an executable governed expert action
     $experts = [
         BusinessAnalysisExpert::class => 'business.analysis',
         MarketingExpert::class => 'marketing.plan',
-        FinanceExpert::class => 'finance.execute',
-        OperationsExpert::class => 'work.create',
+        FinanceExpert::class => 'finance.report.generate',
+        OperationsExpert::class => 'work.item.create',
         ProductExpert::class => 'strategy.create',
     ];
 
@@ -259,13 +259,13 @@ it('delegates through AgentDelegationService and preserves idempotency', functio
 
     AgentPermission::factory()->create([
         'agent_assignment_id' => $target->getKey(),
-        'capability' => 'finance.execute',
+        'capability' => 'finance.report.generate',
     ]);
 
     $payload = [
         'source_agent_assignment_id' => $source->getKey(),
         'target_agent_slug' => 'finance',
-        'capability' => 'finance.execute',
+        'capability' => 'finance.report.generate',
         'prompt' => 'Create the approved work.',
         'target_context' => ['enterprise_id' => $enterprise->getKey()],
         'idempotency_key' => 'mcp-delegation-123',

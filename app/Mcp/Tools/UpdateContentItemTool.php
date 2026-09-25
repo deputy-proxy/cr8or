@@ -2,9 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\ContentItem;
 use App\Models\User;
-use App\Services\ContentItemService;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('update-content-item')]
 #[Description('Revise draft or in-review content through the authorized CR8OR content capability.')]
-class UpdateContentItemTool extends AuthorizedTool
+class UpdateContentItemTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -30,9 +30,9 @@ class UpdateContentItemTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ContentItemService $content): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.content.update', function () use ($request, $authorization, $content) {
+        return $this->executeWithErrors($request, 'mcp.marketing.content.update', function () use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'title' => ['sometimes', 'string', 'min:1', 'max:255'],
@@ -51,7 +51,7 @@ class UpdateContentItemTool extends AuthorizedTool
             $item = ContentItem::query()->findOrFail($validated['content_item_id']);
             $authorization->authorizeMutation(
                 $actor,
-                'content.update',
+                $this->capability($registry),
                 $item->enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -65,7 +65,7 @@ class UpdateContentItemTool extends AuthorizedTool
                 throw new \LogicException('At least one mutable content field is required.');
             }
 
-            $item = $content->update($actor, $item, $attributes);
+            $item = $this->executeCapability($registry, $actor, ['content_item' => $item, ...$validated, 'attributes' => $attributes]);
 
             return Response::structured([
                 'success' => true,

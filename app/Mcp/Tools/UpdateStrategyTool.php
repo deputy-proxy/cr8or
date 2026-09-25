@@ -2,11 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\Strategy;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
-use App\Services\StrategyService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -20,7 +20,7 @@ use LogicException;
 #[Name('update-strategy')]
 #[Description('Update an existing strategy through the authorized CR8OR strategy capability.')]
 #[IsIdempotent]
-class UpdateStrategyTool extends AuthorizedTool
+class UpdateStrategyTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -34,9 +34,9 @@ class UpdateStrategyTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, StrategyService $strategies): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.strategy.update', function (string $correlationId) use ($request, $authorization, $strategies) {
+        return $this->executeWithErrors($request, 'mcp.strategy.update', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'strategy_id' => ['required', 'integer', 'min:1', 'exists:strategies,id'],
                 'name' => ['sometimes', 'string', 'min:1', 'max:255'],
@@ -59,7 +59,7 @@ class UpdateStrategyTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'strategy.update',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -74,7 +74,7 @@ class UpdateStrategyTool extends AuthorizedTool
                 throw new LogicException('At least one mutable strategy field is required.');
             }
 
-            $strategy = $strategies->update($actor, $strategy, $attributes);
+            $strategy = $this->executeCapability($registry, $actor, ['strategy' => $strategy, ...$validated, 'attributes' => $attributes]);
 
             return Response::structured([
                 'success' => true,

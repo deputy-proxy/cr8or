@@ -2,11 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Services\McpCapabilityAuthorizer;
-use App\Services\WorkItemService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-work-item')]
 #[Description('Create a work item in an enterprise through the authorized CR8OR work capability.')]
-class CreateWorkItemTool extends AuthorizedTool
+class CreateWorkItemTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -33,9 +33,9 @@ class CreateWorkItemTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, WorkItemService $workItems): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.work.create', function (string $correlationId) use ($request, $authorization, $workItems) {
+        return $this->executeWithErrors($request, 'mcp.work.item.create', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
@@ -58,7 +58,7 @@ class CreateWorkItemTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'work.create',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -70,7 +70,7 @@ class CreateWorkItemTool extends AuthorizedTool
                 ['create', [WorkItem::class, $enterprise]],
             );
 
-            $workItem = $workItems->create($actor, $enterprise, $validated);
+            $workItem = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
 
             return Response::structured([
                 'success' => true,

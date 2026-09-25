@@ -21,7 +21,7 @@ final class ProductExpert extends Expert
 
     public function capabilities(): array
     {
-        return ['strategy.create', 'strategy.update', 'work.create', 'work.update'];
+        return ['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'];
     }
 
     public function requiredContext(): array
