@@ -126,6 +126,16 @@ The descriptor layer must not duplicate authoritative runtime metadata. Filament
 
 Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, and request appropriate Capabilities. A Capability is a reusable, governed business authority. An Operation is the concrete executable business operation associated with a Capability. Application services implement and enforce the business behavior required by Operations against authoritative CR8OR state or approved external services.
 
+### Capability governance boundary
+
+Capability availability, authorization and approval are intentionally separate:
+
+- **Availability:** an Agent or Expert runtime declares a Capability it can use. The same Capability may be reused by multiple Agents or Experts.
+- **Permission:** an Agent assignment receives explicit server-side permission for that Capability within its organization and Enterprise scope. Declaring a Capability does not grant permission.
+- **Approval:** a separate governance decision is required when the permission is approval-sensitive. Permission does not imply approval.
+
+When an Expert is used through an Agent, CR8OR verifies that the Expert declares the Capability and that the Agent assignment is explicitly permitted to use it. MCP and non-MCP execution share this authorization boundary.
+
 ### Knowledge
 
 - Knowledge Source

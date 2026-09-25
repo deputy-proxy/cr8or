@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\MembershipRole;
+use App\Experts\MarketingExpert;
 use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
+use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
@@ -16,6 +18,7 @@ use App\Models\AgentExecution;
 use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
@@ -62,6 +65,41 @@ it('registers the initial governed capability catalogue for an organization memb
         UpdateStrategyTool::class,
         UpdateWorkItemTool::class,
     ]);
+});
+
+it('uses the same Agent capability authorization boundary for Expert MCP execution', function () {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(MarketingExpert::class)
+        ->create(['slug' => 'marketing']);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(PlanMarketingTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'agent_assignment_id' => $assignment->getKey(),
+            'agent_execution_id' => $execution->getKey(),
+        ])
+        ->assertHasErrors();
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'marketing.plan',
+    ]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(PlanMarketingTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'agent_assignment_id' => $assignment->getKey(),
+            'agent_execution_id' => $execution->getKey(),
+        ])
+        ->assertOk();
 });
 
 it('allows an authorized human to create and update a work item', function () {

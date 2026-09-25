@@ -5,7 +5,6 @@ namespace App\Mcp\Tools;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\ExpertCapabilityService;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -31,10 +30,9 @@ final class PlanMarketingTool extends AuthorizedTool
 
     public function handle(
         Request $request,
-        McpCapabilityAuthorizer $authorization,
         ExpertCapabilityService $experts,
     ): Response|ResponseFactory {
-        return $this->executeWithErrors($request, 'mcp.marketing.plan', function () use ($request, $authorization, $experts) {
+        return $this->executeWithErrors($request, 'mcp.marketing.plan', function () use ($request, $experts) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'target_context' => ['nullable', 'array'],
@@ -52,22 +50,15 @@ final class PlanMarketingTool extends AuthorizedTool
             /** @var Enterprise $enterprise */
             $enterprise = Enterprise::query()->findOrFail($validated['enterprise_id']);
 
-            $authorization->authorizeCapability(
-                $actor,
-                'marketing.plan',
-                $enterprise,
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                $validated['approval_request_id'] ?? null,
-                ['enterprise_id' => $enterprise->getKey(), ...($validated['target_context'] ?? [])],
-            );
-
             $result = $experts->execute(
                 $actor,
                 $enterprise,
                 'marketing',
                 'marketing.plan',
                 $validated['target_context'] ?? [],
+                $validated['agent_assignment_id'] ?? null,
+                $validated['agent_execution_id'] ?? null,
+                $validated['approval_request_id'] ?? null,
             );
 
             return Response::structured(['success' => true, 'result' => $result]);

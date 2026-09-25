@@ -103,7 +103,7 @@ final class AgentExecutionService
         try {
             $execution->start()->save();
 
-            $expertResults = $this->coordinateExperts($agent, $context, $expertSlugs);
+            $expertResults = $this->coordinateExperts($agent, $context, $expertSlugs, $assignment, $enterprise);
 
             $request = new ModelRequest(
                 prompt: $prompt,
@@ -174,8 +174,13 @@ final class AgentExecutionService
      * @param  list<string>  $expertSlugs
      * @return array<string, mixed>
      */
-    private function coordinateExperts(Agent $agent, array $context, array $expertSlugs): array
-    {
+    private function coordinateExperts(
+        Agent $agent,
+        array $context,
+        array $expertSlugs,
+        AgentAssignment $assignment,
+        Enterprise $enterprise,
+    ): array {
         if ($expertSlugs === []) {
             return [];
         }
@@ -200,6 +205,18 @@ final class AgentExecutionService
 
             if (! $runtime instanceof Expert) {
                 throw new AuthorizationException("Expert [{$slug}] has an invalid runtime.");
+            }
+
+            foreach ($runtime->capabilities() as $capability) {
+                if (! $this->capabilityAuthorizer->allowsExpertCapability(
+                    $assignment,
+                    $runtime,
+                    $capability,
+                    $assignment->organization,
+                    $enterprise,
+                )) {
+                    throw new AuthorizationException("The Agent is not authorized to use capability [{$capability}] through Expert [{$slug}].");
+                }
             }
 
             $experts[] = $runtime;

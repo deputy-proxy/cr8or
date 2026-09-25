@@ -70,7 +70,7 @@ function testExpertRuntimeClass(): string
 
         public function capabilities(): array
         {
-            return ['analysis.read'];
+            return ['work.item.create'];
         }
 
         public function requiredContext(): array
@@ -196,6 +196,11 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
         ->forRuntimeClass(testExpertRuntimeClass())
         ->create(['slug' => 'analyst']);
 
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+    ]);
+
     $provider = new FakeModelProvider(function ($request) {
         expect($request->context['experts']['results'][0]['expert'])->toBe('Analyst')
             ->and($request->context['experts']['results'][0]['result'])->toBe([
@@ -224,6 +229,25 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
     ))->execute($actor, $assignment, 'Analyze.', expertSlugs: [$expert->slug]);
 
     expect($result->succeeded())->toBeTrue();
+});
+
+it('denies an Expert whose declared capability is not permitted by the Agent assignment', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+
+    $expert = ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'unauthorized-analyst']);
+
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Provider must not be called.'));
+
+    expect(fn () => (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute($actor, $assignment, 'Analyze.', expertSlugs: [$expert->slug]))
+        ->toThrow(AuthorizationException::class, 'not authorized to use capability [work.item.create]');
 });
 
 it('re-authorizes a state-changing capability and requires approval when configured', function () {

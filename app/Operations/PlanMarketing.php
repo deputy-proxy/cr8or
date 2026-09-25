@@ -27,6 +27,9 @@ final class PlanMarketing implements Operation
             'marketing',
             'marketing.plan',
             $input['target_context'] ?? [],
+            $input['agent_assignment_id'] ?? null,
+            $input['agent_execution_id'] ?? null,
+            $input['approval_request_id'] ?? null,
         );
     }
 }

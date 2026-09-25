@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
@@ -14,6 +15,44 @@ use App\Models\User;
 class AgentCapabilityAuthorizer
 {
     public function __construct(private readonly CapabilityRegistry $capabilities) {}
+
+    /**
+     * Authorize a Capability requested through an Expert runtime.
+     *
+     * The Expert may declare a Capability, but that declaration never grants
+     * authority. The Agent assignment permission remains the authoritative
+     * authorization boundary.
+     *
+     * @param  array<string, mixed>  $targetContext
+     */
+    public function allowsExpertCapability(
+        AgentAssignment $assignment,
+        Expert $expert,
+        string $capability,
+        ?Organization $organization = null,
+        ?Enterprise $enterprise = null,
+        ?User $actor = null,
+        ?ApprovalRequest $approval = null,
+        ?AgentExecution $execution = null,
+        array $targetContext = [],
+        ?AgentDelegation $delegation = null,
+    ): bool {
+        if (! in_array($capability, $expert->capabilities(), true)) {
+            return false;
+        }
+
+        return $this->allows(
+            $assignment,
+            $capability,
+            $organization,
+            $enterprise,
+            $actor,
+            $approval,
+            $execution,
+            $targetContext,
+            $delegation,
+        );
+    }
 
     /** @param array<string, mixed> $targetContext */
     public function allows(
