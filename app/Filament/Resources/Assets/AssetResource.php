@@ -27,6 +27,12 @@ class AssetResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Media';
+
+    protected static ?string $navigationLabel = 'Assets';
+
+    protected static ?int $navigationSort = 10;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
