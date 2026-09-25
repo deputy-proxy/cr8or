@@ -105,3 +105,28 @@ A typical discovery-first workflow is:
 
 Discovery tools use the same Laravel policy and organization/enterprise authorization boundaries as the application. They do not grant mutation authority and do not bypass application services or policies.
 
+
+## Domain and lifecycle action surface
+
+The governed mutation surface now covers the core planning, content, work, and integration context needed by Agents:
+
+| Domain | Actions |
+| --- | --- |
+| Planning | `create-objective`, `update-objective`, existing `create-strategy`, `update-strategy` |
+| Campaigns | `create-campaign`, `update-campaign`, `transition-campaign` |
+| Content series | `create-content-series`, `update-content-series`, `transition-content-series` |
+| Audiences | `create-audience`, `update-audience`, `archive-audience` |
+| Channels | `create-channel`, `update-channel`, `archive-channel` |
+| Social accounts | `list-social-accounts`, `get-social-account`, `connect-social-account`, `update-social-account`, `disconnect-social-account` |
+| Projects | `list-projects`, `get-project`, `create-project`, `update-project` |
+| Existing content lifecycle | `create-content-item`, `update-content-item`, `submit-content-for-review`, `mark-content-publication-ready`, `publish-content`, `request-approval` |
+
+Campaign creation is intentionally bound to the existing `MarketingStrategy` relationship in the current domain model. Marketing strategies are therefore discoverable through `list-marketing-strategies` and `get-marketing-strategy`; the MCP layer does not invent a second strategy persistence model.
+
+Project and objective relationships remain discoverable through `list/get` actions for goals, KPIs, plans, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
+
+Social-account actions expose provider metadata and external identifiers only. They never accept, return, log, or mutate raw OAuth tokens or credentials. `connect-social-account` registers an already-authorized account context; provider-specific OAuth/token exchange remains an integration concern.
+
+Lifecycle actions use the domain model transition methods where those transitions exist. They do not permit arbitrary status writes to bypass the model's transition rules. Human approval remains a separate governed step; MCP mutation authority does not imply approval authority.
+
+All state-changing actions continue through the existing authorization boundary and application/domain services. The MCP layer remains a transport and validation boundary rather than a second business-rule implementation.
