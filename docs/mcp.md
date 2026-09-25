@@ -104,3 +104,4 @@ A typical discovery-first workflow is:
 5. Discover related work, content, execution, or approval records as required.
 
 Discovery tools use the same Laravel policy and organization/enterprise authorization boundaries as the application. They do not grant mutation authority and do not bypass application services or policies.
+
