@@ -376,3 +376,107 @@ it('creates approval requests only for enabled Agent assignments', function () {
         ])
         ->assertHasErrors();
 });
+
+it('registers the foundational discovery tool surface', function () {
+    $user = \App\Models\User::factory()->create();
+    $organization = \App\Models\Organization::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $user->id,
+        'organization_id' => $organization->id,
+    ]);
+    $user = \App\Models\User::factory()->create();
+    $organization = \App\Models\Organization::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $user->id,
+        'organization_id' => $organization->id,
+    ]);
+    $toolClasses = [
+        \App\Mcp\Tools\ListEnterpriseTool::class, \App\Mcp\Tools\GetEnterpriseTool::class,
+        \App\Mcp\Tools\ListObjectiveTool::class, \App\Mcp\Tools\GetObjectiveTool::class,
+        \App\Mcp\Tools\ListStrategyTool::class, \App\Mcp\Tools\GetStrategyTool::class,
+        \App\Mcp\Tools\ListWorkItemTool::class, \App\Mcp\Tools\GetWorkItemTool::class,
+        \App\Mcp\Tools\ListAgentDescriptorTool::class, \App\Mcp\Tools\GetAgentDescriptorTool::class,
+        \App\Mcp\Tools\ListExpertDescriptorTool::class, \App\Mcp\Tools\GetExpertDescriptorTool::class,
+        \App\Mcp\Tools\ListCapabilitiesTool::class, \App\Mcp\Tools\GetCapabilityTool::class,
+        \App\Mcp\Tools\ListCampaignTool::class, \App\Mcp\Tools\GetCampaignTool::class,
+        \App\Mcp\Tools\ListContentSeriesTool::class, \App\Mcp\Tools\GetContentSeriesTool::class,
+        \App\Mcp\Tools\ListContentItemTool::class, \App\Mcp\Tools\GetContentItemTool::class,
+        \App\Mcp\Tools\ListAudienceTool::class, \App\Mcp\Tools\GetAudienceTool::class,
+        \App\Mcp\Tools\ListChannelTool::class, \App\Mcp\Tools\GetChannelTool::class,
+        \App\Mcp\Tools\ListExecutionTool::class, \App\Mcp\Tools\GetExecutionTool::class,
+        \App\Mcp\Tools\ListApprovalRequestTool::class, \App\Mcp\Tools\GetApprovalRequestTool::class,
+    ];
+
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tools()
+        ->assertRegistered($toolClasses);
+});
+
+it('lists and gets strategy resources with filtering pagination and organization isolation', function () {
+    $user = \App\Models\User::factory()->create();
+    $organization = \App\Models\Organization::factory()->create();
+    \App\Models\Membership::factory()->create([
+        'user_id' => $user->id,
+        'organization_id' => $organization->id,
+        'role' => \App\Enums\MembershipRole::Member,
+    ]);
+    $enterprise = \App\Models\Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $objective = \App\Models\Objective::factory()->create(['enterprise_id' => $enterprise->id]);
+    \App\Models\Strategy::factory()->create(['objective_id' => $objective->id, 'name' => 'Discoverable strategy']);
+    \App\Models\Strategy::factory()->create(['objective_id' => $objective->id, 'name' => 'Other strategy']);
+
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tool(\App\Mcp\Tools\ListStrategyTool::class, [
+            'search' => 'Discoverable',
+            'objective_id' => $objective->id,
+            'per_page' => 1,
+            'page' => 1,
+        ])
+        ->assertOk()
+        ->assertSee(['Discoverable strategy', '"total":1', '"last_page":1']);
+
+    $strategy = \App\Models\Strategy::query()->where('name', 'Discoverable strategy')->firstOrFail();
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tool(\App\Mcp\Tools\GetStrategyTool::class, ['id' => $strategy->id])
+        ->assertOk()
+        ->assertSee('Discoverable strategy');
+
+    $foreignOrganization = \App\Models\Organization::factory()->create();
+    $foreignEnterprise = \App\Models\Enterprise::factory()->create(['organization_id' => $foreignOrganization->id]);
+    $foreignObjective = \App\Models\Objective::factory()->create(['enterprise_id' => $foreignEnterprise->id]);
+    $foreignStrategy = \App\Models\Strategy::factory()->create(['objective_id' => $foreignObjective->id]);
+
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tool(\App\Mcp\Tools\GetStrategyTool::class, ['id' => $foreignStrategy->id])
+        ->assertHasErrors();
+});
+
+it('discovers runtime capabilities through enabled descriptors', function () {
+    $user = \App\Models\User::factory()->create();
+    $organization = \App\Models\Organization::factory()->create();
+    \App\Models\Membership::factory()->create([
+        'user_id' => $user->id,
+        'organization_id' => $organization->id,
+        'role' => \App\Enums\MembershipRole::Member,
+    ]);
+    \App\Models\AgentDescriptor::factory()->create([
+        'slug' => 'operations',
+        'runtime_class' => \App\Agents\OperationsAgent::class,
+        'enabled' => true,
+    ]);
+    \App\Models\ExpertDescriptor::factory()->create([
+        'slug' => 'operations',
+        'runtime_class' => \App\Experts\OperationsExpert::class,
+        'enabled' => true,
+    ]);
+
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tool(\App\Mcp\Tools\ListCapabilitiesTool::class, ['search' => 'work.'])
+        ->assertOk()
+        ->assertSee(['work.create', 'work.update']);
+
+    \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
+        ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.create'])
+        ->assertOk()
+        ->assertSee('work.create');
+});

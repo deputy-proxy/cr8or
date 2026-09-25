@@ -73,3 +73,35 @@ An AgentExecution records its correlation identifier, provider and external prov
 ### Financial context
 
 Phase 6.5 financial context is exposed through the existing authorization-aware Agent application context assembler rather than as a separate MCP financial resource. It is Enterprise-scoped, authorization-checked before assembly, and exposes derived/intentional context without unrestricted financial record access. A dedicated financial MCP resource is deferred unless a later product requirement establishes a distinct MCP contract.
+
+## Discovery tools
+
+The foundational read/discovery layer exposes bounded, authorization-aware list/get tools for:
+
+| Domain | Tools |
+| --- | --- |
+| Organization | `list-enterprises`, `get-enterprise` |
+| Strategy | `list-objectives`, `get-objective`, `list-strategies`, `get-strategy` |
+| Work | `list-work-items`, `get-work-item` |
+| Intelligence | `list-agents`, `get-agent`, `list-experts`, `get-expert`, `list-capabilities`, `get-capability` |
+| Content | `list-campaigns`, `get-campaign`, `list-content-series`, `get-content-series`, `list-content-items`, `get-content-item`, `list-audiences`, `get-audience`, `list-channels`, `get-channel` |
+| Operations | `list-executions`, `get-execution`, `list-approval-requests`, `get-approval-request` |
+
+List tools return `result.items` plus a bounded `pagination` object containing `page`, `per_page`, `total`, and `last_page`. They accept `per_page` (1-50), `page`, and, where applicable, enterprise, status, parent-resource, and name/title/slug search filters. All list queries are scoped to organizations accessible to the authenticated actor before pagination.
+
+Get tools return a single `result` object and first resolve the requested record inside the actor's authorized organization/enterprise scope, followed by the resource policy's `view` authorization.
+
+Agent and Expert descriptors use their existing policy boundary. Capability discovery is runtime-derived rather than backed by a persistent Capability model: a capability identifier is the stable capability string exposed by enabled Agent/Expert runtimes, and `get-capability` accepts that string as its `id`. This avoids inventing a second persistent source of truth for runtime capability metadata.
+
+Discovery responses expose stable identifiers, human-readable names/titles where the underlying resource has them, relevant status and parent identifiers, and timestamps. They do not return raw Eloquent models or persistence internals.
+
+A typical discovery-first workflow is:
+
+1. `list-enterprises`
+2. `list-objectives` with the enterprise scope
+3. `create-strategy` using the discovered objective id
+4. `get-strategy` using the resulting strategy id
+5. Discover related work, content, execution, or approval records as required.
+
+Discovery tools use the same Laravel policy and organization/enterprise authorization boundaries as the application. They do not grant mutation authority and do not bypass application services or policies.
+
