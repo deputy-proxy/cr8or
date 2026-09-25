@@ -24,6 +24,12 @@ class MembershipResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+
+    protected static ?string $navigationLabel = 'Memberships';
+
+    protected static ?int $navigationSort = 30;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('user_id')->relationship('user', 'name')->searchable()->preload()->required(), Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(), Select::make('role')->options(\App\Enums\MembershipRole::class)->required()]);
