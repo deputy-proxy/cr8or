@@ -667,7 +667,16 @@ Capabilities may be reused by multiple Agents or Experts. They are not owned exc
 
 ## Workflow Composition
 
-A Workflow is a business-level composition of governed Capabilities and Operations that produces a business outcome. Workflow, Operation, Execution and Job are distinct concepts. CR8OR should use the existing Agent, Expert, Capability and Operation primitives for real workflows rather than introducing a generic workflow engine prematurely. n8n remains an optional external automation/execution capability and never becomes authoritative CR8OR business state.
+A Workflow is a business-level composition of governed Capabilities and Operations that produces a business outcome. It is not itself an executable Operation, a runtime Execution attempt, or an asynchronous Job. The current repository models these concerns separately:
+
+- **Workflow** — the business-level composition and its business context. A Workflow may contain multiple Jobs.
+- **Operation** — the concrete executable business operation associated with a Capability. Operations remain the governed execution boundary for application behavior.
+- **Job** — an asynchronous execution mechanism used when a workflow step needs background processing. A Job belongs to a Workflow and can be retried without becoming the business Workflow itself.
+- **Execution** — a runtime attempt/result record for a Job, including historical context needed to interpret what happened.
+
+The current implementation uses this model for concrete lifecycle-backed work such as media generation and rendering. It does not introduce a generic workflow engine. Reporting keeps workflow failures separate from failed operations/execution records so the concepts are not treated as interchangeable.
+
+CR8OR should use the existing Agent, Expert, Capability and Operation primitives for real workflows rather than introducing a generic workflow engine prematurely. n8n remains an optional external automation/execution capability and never becomes authoritative CR8OR business state.
 
 ## Public Trust Model
 
