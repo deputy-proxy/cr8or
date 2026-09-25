@@ -64,7 +64,6 @@ class ProjectResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListProjects::route('/'), 'create' => CreateProject::route('/create'), 'edit' => EditProject::route('/{record}/edit')];

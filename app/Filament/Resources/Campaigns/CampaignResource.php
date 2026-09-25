@@ -80,7 +80,6 @@ class CampaignResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListCampaigns::route('/'), 'create' => CreateCampaign::route('/create'), 'edit' => EditCampaign::route('/{record}/edit')];

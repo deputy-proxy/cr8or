@@ -54,7 +54,6 @@ class AudienceResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListAudiences::route('/'), 'create' => CreateAudience::route('/create'), 'edit' => EditAudience::route('/{record}/edit')];

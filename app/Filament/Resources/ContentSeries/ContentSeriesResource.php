@@ -78,7 +78,6 @@ class ContentSeriesResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListContentSeries::route('/'), 'create' => CreateContentSeries::route('/create'), 'edit' => EditContentSeries::route('/{record}/edit')];

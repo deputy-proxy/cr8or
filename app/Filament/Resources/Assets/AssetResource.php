@@ -73,7 +73,6 @@ class AssetResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListAssets::route('/'), 'create' => CreateAsset::route('/create'), 'edit' => EditAsset::route('/{record}/edit')];

@@ -52,7 +52,6 @@ class GoalResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     public static function getPages(): array
     {
         return ['index' => ListGoals::route('/'), 'create' => CreateGoal::route('/create'), 'edit' => EditGoal::route('/{record}/edit')];

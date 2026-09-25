@@ -61,7 +61,6 @@ class DependencyResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-
     /** @return Builder<Enterprise> */
     protected static function authorizedOrganizationEnterpriseIds(): Builder
     {
