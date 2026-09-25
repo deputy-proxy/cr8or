@@ -76,6 +76,16 @@ Capabilities:
 - resolve to an explicit Operation;
 - remain authoritative in runtime PHP rather than a duplicate editable persistence record.
 
+### Capability availability, permission and approval
+
+These are separate concepts and must not be collapsed into a single Expert or Agent declaration:
+
+1. **Availability** means an Agent or Expert runtime declares or exposes a Capability as part of its implemented responsibility. The same Capability may be exposed by multiple Experts or Agents.
+2. **Permission** is the server-side authorization granted to an Agent assignment for a Capability within an organization and applicable Enterprise scope. A runtime declaration never creates permission.
+3. **Approval** is an independent governance decision required when the applicable permission is configured as approval-sensitive. A valid Capability permission does not satisfy a required approval.
+
+For Agent-backed Expert execution, CR8OR verifies both sides of the boundary: the Expert must actually declare the requested Capability, and the Agent assignment must have an explicit permission for that Capability. Cross-organization and cross-Enterprise scope checks remain part of the same authorization path. MCP-backed Expert execution uses the same server-side authorization boundary.
+
 ### Operation
 
 An **Operation** is the concrete executable business operation associated with a Capability, represented by an explicit PascalCase runtime class such as `CreateContentItem`.

@@ -7,12 +7,12 @@ use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\Gate;
 
 final class ExpertCapabilityService
 {
     public function __construct(
         private readonly McpContextAssembler $contextAssembler,
+        private readonly McpCapabilityAuthorizer $authorization,
     ) {}
 
     /**
@@ -25,8 +25,19 @@ final class ExpertCapabilityService
         string $expertSlug,
         string $capability,
         array $targetContext = [],
+        ?int $assignmentId = null,
+        ?int $executionId = null,
+        ?int $approvalId = null,
     ): array {
-        Gate::forUser($actor)->authorize('view', $enterprise);
+        $this->authorization->authorizeCapability(
+            $actor,
+            $capability,
+            $enterprise,
+            $assignmentId,
+            $executionId,
+            $approvalId,
+            ['enterprise_id' => $enterprise->getKey(), ...$targetContext],
+        );
 
         $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail();
 

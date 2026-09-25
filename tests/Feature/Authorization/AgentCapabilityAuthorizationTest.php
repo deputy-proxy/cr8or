@@ -1,5 +1,7 @@
 <?php
 
+use App\Experts\OperationsExpert;
+use App\Experts\ProductExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentPermission;
 use App\Models\Enterprise;
@@ -133,5 +135,68 @@ it('does not inherit expert capabilities during delegation', function () {
     expect(app(AgentCapabilityAuthorizer::class)->allows(
         $assignment,
         'finance.report.generate',
+    ))->toBeFalse();
+});
+
+it('reuses one capability across multiple Experts without duplicating capability definitions', function () {
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment,
+        'capability' => 'work.item.create',
+    ]);
+
+    $authorizer = app(AgentCapabilityAuthorizer::class);
+
+    expect($authorizer->allowsExpertCapability(
+        $assignment,
+        new OperationsExpert,
+        'work.item.create',
+        $organization,
+        $enterprise,
+    ))->toBeTrue()
+        ->and($authorizer->allowsExpertCapability(
+            $assignment,
+            new ProductExpert,
+            'work.item.create',
+            $organization,
+            $enterprise,
+        ))->toBeTrue();
+});
+
+it('denies an Expert capability declaration without Agent permission', function () {
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+
+    expect(app(AgentCapabilityAuthorizer::class)->allowsExpertCapability(
+        $assignment,
+        new OperationsExpert,
+        'work.item.create',
+        $organization,
+        $enterprise,
+    ))->toBeFalse();
+});
+
+it('keeps Expert approval requirements independent from capability declaration', function () {
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+
+    AgentPermission::factory()->requiresApproval()->create([
+        'agent_assignment_id' => $assignment,
+        'capability' => 'work.item.create',
+    ]);
+
+    $authorizer = app(AgentCapabilityAuthorizer::class);
+
+    expect($authorizer->allowsExpertCapability(
+        $assignment,
+        new OperationsExpert,
+        'work.item.create',
+        $organization,
+        $enterprise,
     ))->toBeFalse();
 });

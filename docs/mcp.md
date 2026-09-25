@@ -59,6 +59,14 @@ The remote MCP entry point is registered at /mcp through Laravel MCP and protect
 
 Authorization is enforced by CR8OR server-side for the relevant actor, organization and capability/resource. MCP visibility is never the security boundary.
 
+Capability authorization has three independent dimensions:
+
+- **Availability:** the Agent or Expert runtime declares the Capability it can use. This is runtime metadata, not authority.
+- **Permission:** the Agent assignment has an explicit server-side permission for the Capability in the applicable organization and Enterprise scope.
+- **Approval:** a separate approval decision is required when that permission is configured to require approval. Approval never follows merely from Capability availability or permission.
+
+An Expert declaration without Agent permission is denied. An Agent permission for a Capability not declared by the requested Expert is also denied. Multiple Experts may declare the same reusable Capability without creating duplicate permission records or Capability definitions.
+
 ## Invocation Boundary
 
 MCP Tool request → authentication → Capability authorization → validation → Operation → application/domain service → persistence/events/jobs → result
