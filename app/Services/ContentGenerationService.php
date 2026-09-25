@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
@@ -13,12 +14,12 @@ final class ContentGenerationService
     public function __construct(
         private readonly AgentExecutionService $executions,
         private readonly AgentCapabilityAuthorizer $capabilities,
-        private readonly ContentItemService $content,
+        private readonly CapabilityRegistry $registry,
     ) {}
 
     /**
-     * @param  array<string, mixed>  $attributes
-     * @param  array<string, mixed>  $modelOptions
+     * @param array<string, mixed> $attributes
+     * @param array<string, mixed> $modelOptions
      */
     public function generate(
         User $actor,
@@ -49,11 +50,16 @@ final class ContentGenerationService
             throw new AuthorizationException('The Agent is not authorized for content creation.');
         }
 
-        return $this->content->create($actor, $enterprise, array_merge($attributes, [
+        /** @var ContentItem $item */
+        $item = $this->registry->operation('content.create')->execute($actor, [
+            'enterprise' => $enterprise,
+            ...$attributes,
             'body' => $result->modelResult->text,
             'agent_execution_id' => $result->execution->getKey(),
             'agent_decision_id' => $result->decision?->getKey(),
-        ]));
+        ]);
+
+        return $item;
     }
 
     /** @param array<string, mixed> $modelOptions */
@@ -85,10 +91,16 @@ final class ContentGenerationService
             throw new AuthorizationException('The Agent is not authorized for content revision.');
         }
 
-        return $this->content->update($actor, $item, [
-            'body' => $result->modelResult->text,
-            'agent_execution_id' => $result->execution->getKey(),
-            'agent_decision_id' => $result->decision?->getKey(),
+        /** @var ContentItem $updated */
+        $updated = $this->registry->operation('content.update')->execute($actor, [
+            'content_item' => $item,
+            'attributes' => [
+                'body' => $result->modelResult->text,
+                'agent_execution_id' => $result->execution->getKey(),
+                'agent_decision_id' => $result->decision?->getKey(),
+            ],
         ]);
+
+        return $updated;
     }
 }
