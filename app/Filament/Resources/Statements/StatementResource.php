@@ -27,6 +27,12 @@ class StatementResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Statements';
+
+    protected static ?int $navigationSort = 150;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
