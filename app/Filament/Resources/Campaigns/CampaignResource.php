@@ -1,1 +1,92 @@
-{"stdout":"<?php\n\nnamespace App\\Filament\\Resources\\Campaigns;\n\nuse App\\Filament\\Resources\\Campaigns\\Pages\\CreateCampaign;\nuse App\\Filament\\Resources\\Campaigns\\Pages\\EditCampaign;\nuse App\\Filament\\Resources\\Campaigns\\Pages\\ListCampaigns;\nuse App\\Filament\\Resources\\Concerns\\ScopesPhaseOneRecords;\nuse App\\Models\\Campaign;\nuse App\\Models\\User;\nuse App\\Services\\DomainResourceService;\nuse BackedEnum;\nuse Filament\\Actions\\Action;\nuse Filament\\Actions\\DeleteAction;\nuse Filament\\Actions\\EditAction;\nuse Filament\\Forms\\Components\\Select;\nuse Filament\\Forms\\Components\\Textarea;\nuse Filament\\Forms\\Components\\TextInput;\nuse Filament\\Resources\\Resource;\nuse Filament\\Schemas\\Schema;\nuse Filament\\Support\\Icons\\Heroicon;\nuse Filament\\Tables\\Columns\\TextColumn;\nuse Filament\\Tables\\Table;\nuse Illuminate\\Database\\Eloquent\\Builder;\n\nclass CampaignResource extends Resource\n{\n    use ScopesPhaseOneRecords;\n\n    protected static ?string $model = Campaign::class;\n\n    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;\n\n    protected static string|\\UnitEnum|null $navigationGroup = 'Content';\n\n    protected static ?string $navigationLabel = 'Campaigns';\n\n    protected static ?int $navigationSort = 10;\n\n    public static function form(Schema $schema): Schema\n    {\n        return $schema->components([\n            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),\n            Select::make('marketing_strategy_id')->relationship('marketingStrategy', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),\n            TextInput::make('name')->required()->maxLength(255),\n            Textarea::make('description')->rows(4),\n            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused', 'completed' => 'Completed', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?Campaign $record): bool => $record !== null)->dehydrated(false),\n        ]);\n    }\n\n    public static function table(Table $table): Table\n    {\n        return $table->columns([\n            TextColumn::make('name')->searchable()->sortable(),\n            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),\n            TextColumn::make('marketingStrategy.name')->label('Strategy')->searchable(),\n            TextColumn::make('status')->badge()->sortable(),\n        ])->recordActions([\n            EditAction::make(),\n            Action::make('transition')->label('Change status')->form([\n                Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused', 'completed' => 'Completed', 'archived' => 'Archived'])->required(),\n            ])->action(function (Campaign $record, array $data): void {\n                $actor = auth()->user();\n                if (! $actor instanceof User) {\n                    abort(403);\n                }\n                app(DomainResourceService::class)->transitionCampaign($actor, $record, $data['status']);\n            }),\n            DeleteAction::make(),\n        ]);\n    }\n\n    public static function getEloquentQuery(): Builder\n    {\n        return parent::getEloquentQuery()->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));\n    }\n\n    public static function canViewAny(): bool\n    {\n        return auth()->check() && static::authorizedOrganizationIds()->exists();\n    }\n\n    public static function canCreate(): bool\n    {\n        return auth()->check() && static::canManageAnyEnterprise();\n    }\n\n    public static function getPages(): array\n    {\n        return ['index' => ListCampaigns::route('/'), 'create' => CreateCampaign::route('/create'), 'edit' => EditCampaign::route('/{record}/edit')];\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Filament\Resources\Campaigns;
+
+use App\Filament\Resources\Campaigns\Pages\CreateCampaign;
+use App\Filament\Resources\Campaigns\Pages\EditCampaign;
+use App\Filament\Resources\Campaigns\Pages\ListCampaigns;
+use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Models\Campaign;
+use App\Models\User;
+use App\Services\DomainResourceService;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class CampaignResource extends Resource
+{
+    use ScopesPhaseOneRecords;
+
+    protected static ?string $model = Campaign::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
+    protected static ?string $navigationLabel = 'Campaigns';
+
+    protected static ?int $navigationSort = 10;
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('marketing_strategy_id')->relationship('marketingStrategy', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            TextInput::make('name')->required()->maxLength(255),
+            Textarea::make('description')->rows(4),
+            Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused', 'completed' => 'Completed', 'archived' => 'Archived'])->default('draft')->required()->disabled(fn (?Campaign $record): bool => $record !== null)->dehydrated(false),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('marketingStrategy.name')->label('Strategy')->searchable(),
+            TextColumn::make('status')->badge()->sortable(),
+        ])->recordActions([
+            EditAction::make(),
+            Action::make('transition')->label('Change status')->form([
+                Select::make('status')->options(['draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused', 'completed' => 'Completed', 'archived' => 'Archived'])->required(),
+            ])->action(function (Campaign $record, array $data): void {
+                $actor = auth()->user();
+                if (! $actor instanceof User) {
+                    abort(403);
+                }
+                app(DomainResourceService::class)->transitionCampaign($actor, $record, $data['status']);
+            }),
+            DeleteAction::make(),
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && static::authorizedOrganizationIds()->exists();
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->check() && static::canManageAnyEnterprise();
+    }
+
+    public static function getPages(): array
+    {
+        return ['index' => ListCampaigns::route('/'), 'create' => CreateCampaign::route('/create'), 'edit' => EditCampaign::route('/{record}/edit')];
+    }
+}
