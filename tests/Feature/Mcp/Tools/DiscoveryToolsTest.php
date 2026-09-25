@@ -175,3 +175,4 @@ it('discovers runtime capabilities without introducing a persistent capability m
         ->assertSee(['work.create']);
 });
 // End of discovery tool coverage.
+
