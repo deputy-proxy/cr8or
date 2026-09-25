@@ -33,9 +33,9 @@ final class AgentExecutionService
     ) {}
 
     /**
-     * @param array<string, mixed> $targetContext
-     * @param list<string> $expertSlugs
-     * @param array<string, mixed> $modelOptions
+     * @param  array<string, mixed>  $targetContext
+     * @param  list<string>  $expertSlugs
+     * @param  array<string, mixed>  $modelOptions
      */
     public function execute(
         User $actor,
@@ -170,8 +170,8 @@ final class AgentExecutionService
     }
 
     /**
-     * @param array<string, mixed> $context
-     * @param list<string> $expertSlugs
+     * @param  array<string, mixed>  $context
+     * @param  list<string>  $expertSlugs
      * @return array<string, mixed>
      */
     private function coordinateExperts(Agent $agent, array $context, array $expertSlugs): array
@@ -250,7 +250,7 @@ final class AgentExecutionService
     }
 
     /**
-     * @param array<string, mixed> $targetContext
+     * @param  array<string, mixed>  $targetContext
      * @return list<array<string, mixed>>
      */
     private function authorizeCapabilityRequests(
