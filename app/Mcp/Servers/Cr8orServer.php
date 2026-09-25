@@ -6,6 +6,7 @@ use App\Mcp\Resources\EnterpriseContextResource;
 use App\Mcp\Resources\KnowledgeContextResource;
 use App\Mcp\Resources\StrategyContextResource;
 use App\Mcp\Resources\WorkContextResource;
+use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
@@ -19,7 +20,9 @@ use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetApprovalRequestTool;
 use App\Mcp\Tools\GetAudienceTool;
@@ -63,6 +66,7 @@ use App\Mcp\Tools\ListSocialAccountTool;
 use App\Mcp\Tools\ListStrategyTool;
 use App\Mcp\Tools\ListWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
+use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
@@ -164,6 +168,10 @@ class Cr8orServer extends Server
         MarkContentPublicationReadyTool::class,
         PublishContentTool::class,
         RequestApprovalTool::class,
+        DelegateAgentTool::class,
+        AnalyzeBusinessContextTool::class,
+        PlanMarketingTool::class,
+        GenerateFinancialReportTool::class,
     ];
 
     protected array $resources = [

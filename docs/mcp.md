@@ -23,10 +23,20 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | submit-content-for-review | content.review | Move draft content into the governed review state. |
 | mark-content-publication-ready | content.publication_ready | Mark approved content publication-ready only with matching server-side approval. |
 | request-approval | N/A | Create an auditable approval request for an Agent capability and exact target context. |
+| delegate-agent | `agent.delegate` | Delegate governed work between same-Enterprise Agent assignments through `AgentDelegationService`. |
+| analyze-business-context | `business.analysis` | Run Business Analysis Expert methodology against authorized Enterprise, Strategy, Work and Financial context. |
+| plan-marketing | `marketing.plan` | Run Marketing Expert planning methodology against authorized Enterprise, Strategy and Knowledge context. |
+| generate-financial-report | `finance.execute` | Generate a historical, Enterprise-scoped financial report through `FinancialReportingService`; no generic financial CRUD is exposed. |
 
 For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer.
 
 If the Agent permission requires approval, the mutation must also supply a valid approval_request_id whose organization, enterprise, assignment, execution, actor, capability and normalized target context match the current operation.
+
+### Agent and Expert action boundary
+
+The current runtime capability graph is derived from the PHP Agent/Expert classes rather than a persistent Capability model. `delegate-agent` reuses `AgentDelegationService` and its existing approval, organization/Enterprise, correlation and idempotency controls. `analyze-business-context` and `plan-marketing` use `ExpertCapabilityService` to validate the enabled Expert runtime, assemble only the Expert's declared context and invoke its methodology. `generate-financial-report` uses `FinancialReportingService` and the existing FinancialReport policy boundary.
+
+Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
 
 ## Authentication Boundary
 

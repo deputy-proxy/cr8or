@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\Gate;
 class McpCapabilityAuthorizer
 {
     /**
+     * Authorize a capability that may be invoked by a human or an Agent-backed MCP call.
+     *
      * @param  array<string, mixed>  $targetContext
-     * @param  array{0: string, 1: mixed}  $humanAbility
      */
-    public function authorizeMutation(
+    public function authorizeCapability(
         User $actor,
         string $capability,
         Enterprise $enterprise,
@@ -25,27 +26,27 @@ class McpCapabilityAuthorizer
         ?int $executionId,
         ?int $approvalId,
         array $targetContext,
-        array $humanAbility,
     ): void {
         if (($assignmentId === null) !== ($executionId === null)) {
-            throw new AuthorizationException('Agent-backed MCP mutations require both an assignment and execution context.');
+            throw new AuthorizationException('Agent-backed MCP capabilities require both an assignment and execution context.');
         }
 
         if ($assignmentId === null) {
-            Gate::forUser($actor)->authorize($humanAbility[0], $humanAbility[1]);
+            Gate::forUser($actor)->authorize('view', $enterprise);
 
             return;
         }
 
         $assignment = AgentAssignment::query()
-            ->with('agentDescriptor')
+            ->with(['agentDescriptor', 'organization', 'enterprise'])
             ->findOrFail($assignmentId);
 
         Gate::forUser($actor)->authorize('view', $assignment);
 
         $execution = AgentExecution::query()->findOrFail($executionId);
 
-        if ($execution->actor_id !== $actor->getKey()
+        if (
+            $execution->actor_id !== $actor->getKey()
             || $execution->agent_assignment_id !== $assignment->getKey()
             || $execution->organization_id !== $assignment->organization_id
             || $execution->enterprise_id !== $assignment->enterprise_id
@@ -72,6 +73,41 @@ class McpCapabilityAuthorizer
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @param  array{0: string, 1: mixed}  $humanAbility
+     */
+    public function authorizeMutation(
+        User $actor,
+        string $capability,
+        Enterprise $enterprise,
+        ?int $assignmentId,
+        ?int $executionId,
+        ?int $approvalId,
+        array $targetContext,
+        array $humanAbility,
+    ): void {
+        if (($assignmentId === null) !== ($executionId === null)) {
+            throw new AuthorizationException('Agent-backed MCP mutations require both an assignment and execution context.');
+        }
+
+        if ($assignmentId === null) {
+            Gate::forUser($actor)->authorize($humanAbility[0], $humanAbility[1]);
+
+            return;
+        }
+
+        $this->authorizeCapability(
+            $actor,
+            $capability,
+            $enterprise,
+            $assignmentId,
+            $executionId,
+            $approvalId,
+            $targetContext,
+        );
+    }
+
     public function authorizeApprovalRequest(
         User $actor,
         AgentAssignment $assignment,
@@ -94,7 +130,8 @@ class McpCapabilityAuthorizer
             return;
         }
 
-        if ($execution->actor_id !== $actor->getKey()
+        if (
+            $execution->actor_id !== $actor->getKey()
             || $execution->agent_assignment_id !== $assignment->getKey()
             || $execution->organization_id !== $assignment->organization_id
             || $execution->enterprise_id !== $assignment->enterprise_id
