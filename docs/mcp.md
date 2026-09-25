@@ -45,7 +45,7 @@ For mutation tools, a human MCP call uses the existing Laravel policy for the ta
 
 If the Agent permission requires approval, the mutation must also supply a valid approval_request_id whose organization, enterprise, assignment, execution, actor, capability and normalized target context match the current operation.
 
-### Agent and Expert action boundary
+### Agent and Expert capability boundary
 
 The current runtime capability graph is derived from the PHP Agent/Expert classes and the governed MCP registry rather than a persistent Capability model. Governed mutation Tools resolve through `CapabilityRegistry` to exactly one Capability and Operation before execution; specialized analysis, planning, delegation and Finance Tools retain their existing application-service boundaries.
 
@@ -137,7 +137,7 @@ A typical discovery-first workflow is:
 Discovery tools use the same Laravel policy and organization/enterprise authorization boundaries as the application. They do not grant mutation authority and do not bypass application services or policies.
 
 
-## Domain and lifecycle action surface
+## Domain and lifecycle operation surface
 
 The governed mutation surface now covers the core planning, content, work, and integration context needed by Agents:
 
@@ -155,10 +155,10 @@ The governed mutation surface now covers the core planning, content, work, and i
 
 Campaign creation is intentionally bound to the existing `MarketingStrategy` relationship in the current domain model. Marketing strategies are therefore discoverable through `list-marketing-strategies` and `get-marketing-strategy`; the MCP layer does not invent a second strategy persistence model.
 
-Project and objective relationships remain discoverable through `list/get` actions for goals, KPIs, plans, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
+Project and objective relationships remain discoverable through `list/get` Tools for goals, KPIs, plans, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
 
-Social-account actions expose provider metadata and external identifiers only. They never accept, return, log, or mutate raw OAuth tokens or credentials. `connect-social-account` registers an already-authorized account context; provider-specific OAuth/token exchange remains an integration concern.
+Social-account Tools expose provider metadata and external identifiers only. They never accept, return, log, or mutate raw OAuth tokens or credentials. `connect-social-account` registers an already-authorized account context; provider-specific OAuth/token exchange remains an integration concern.
 
-Lifecycle actions use the domain model transition methods where those transitions exist. They do not permit arbitrary status writes to bypass the model's transition rules. Human approval remains a separate governed step; MCP mutation authority does not imply approval authority.
+Lifecycle Operations use the domain model transition methods where those transitions exist. They do not permit arbitrary status writes to bypass the model's transition rules. Human approval remains a separate governed step; MCP mutation authority does not imply approval authority.
 
-All state-changing actions continue through the existing authorization boundary and application/domain services. The MCP layer remains a transport and validation boundary rather than a second business-rule implementation.
+All state-changing Operations continue through the existing authorization boundary and application/domain services. The MCP layer remains a transport and validation boundary rather than a second business-rule implementation.

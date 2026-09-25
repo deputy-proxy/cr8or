@@ -452,7 +452,13 @@ The architectural relationship is:
     Expert PHP class
       |
       v
-    Functions / Application Services
+    Capability
+      |
+      v
+    Operation
+      |
+      v
+    Application Service
 
 The descriptor must never become a second source of truth for runtime behavior. Changing the implementation's authoritative metadata or behavior belongs in PHP code, tests and CI, not in an arbitrary editable glossary field.
 
@@ -583,7 +589,7 @@ An Agent must never gain authority merely because an AI model can technically ca
 
 ## Core Business Lifecycle
 
-The operational lifecycle of an AI-assisted business action is:
+The operational lifecycle of an AI-assisted business operation is:
 
 **Enterprise Context**
 ↓
@@ -844,7 +850,7 @@ Establish the Agent and Expert runtime architecture, persistent descriptors, gov
 - Agent and Expert metadata contracts.
 - Read-only Filament Agent/Expert catalog and glossary.
 - Agent instructions and runtime configuration.
-- Capabilities and Functions.
+- Capabilities and Operations.
 - Agent permissions and authority.
 - Agent assignments.
 - Agent execution records.
@@ -859,7 +865,7 @@ Establish the Agent and Expert runtime architecture, persistent descriptors, gov
 - AgentDescriptor and ExpertDescriptor records register runtime classes and support discovery, glossary presentation, and persistent governance.
 - Runtime PHP classes are authoritative for identity, description, responsibilities, capabilities, required context, methodology, and executable behavior.
 - Filament displays runtime metadata read-only rather than maintaining a second editable copy.
-- Functions and application/domain services provide concrete capabilities.
+- Capabilities define governed authority; Operations provide concrete executable business operations; application/domain services implement or coordinate their business behavior.
 - Eloquent models persist business state and governance/execution records.
 - MCP exposes authorized capabilities to AI clients without duplicating business logic.
 - Agents and Experts do not receive direct database access merely because they are AI runtime components.
@@ -934,7 +940,7 @@ Expose CR8OR as a controlled AI operating interface and introduce the governed A
 - Agent and Expert execution runtime.
 - Model/provider adapter layer.
 - Agent context assembly and execution context management.
-- Tool and Function invocation through application/domain services.
+- Tool → Capability → Operation invocation through application/domain services.
 - Agent and Expert execution lifecycle and traceability.
 - Agent decisions and execution results.
 - MCP auditability.
@@ -951,7 +957,7 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 - Phase 2 defines and governs Agent/Expert runtime components, descriptors, assignments, permissions and historical execution/decision records.
 - Phase 3 provides the structured enterprise context, strategy, knowledge and work state that execution can reason over.
 - Phase 4 connects those foundations to an actual AI execution runtime.
-- AI models reason within explicit Agent/Expert authority and receive capabilities through controlled Functions, application services and MCP tools.
+- AI models reason within explicit Agent/Expert authority and request capabilities through governed Operations, application services and MCP Tools.
 - Agents and Experts must not receive direct database access or bypass CR8OR authorization.
 - Model/provider integration must remain replaceable so that changing an AI provider does not change authoritative business state.
 - `AgentExecution` and related records provide persistent traceability around actual runtime execution rather than becoming an alternative execution engine.
@@ -964,7 +970,7 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 - Authorized Agents and Experts can execute through the CR8OR runtime.
 - AI model/provider calls are isolated behind explicit runtime contracts.
 - Agent and Expert execution context is assembled from authorized CR8OR state.
-- Tool and Function calls are authorization-checked and auditable.
+- Tool → Capability → Operation calls are authorization-checked and auditable.
 - MCP cannot bypass authorization.
 - Execution failures and provider failures produce explicit, traceable outcomes.
 - Agent execution and decision records preserve the required historical context.
@@ -1466,4 +1472,4 @@ The current runtime capability graph is exposed through governed MCP Tools. Runt
 | `strategy.create` / `strategy.update` | Product Agent | `CreateStrategy` / `UpdateStrategy` | `create-strategy` / `update-strategy` | state-changing |
 | `work.item.create` / `work.item.update` | Product / Operations Agents | `CreateWorkItem` / `UpdateWorkItem` | `create-work-item` / `update-work-item` | state-changing |
 
-Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance action is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain action exists.
+Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance Operation is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain Operation exists.

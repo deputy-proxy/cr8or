@@ -10,7 +10,7 @@ Business intent, configuration, knowledge, planning, or maintainable business st
 
 **Version records:** KnowledgeVersion is create-only. It preserves a new version rather than providing unrestricted update/delete semantics.
 
-## B. Controlled human/domain actions
+## B. Controlled human/domain operations
 
 Consequential state changes use an application/domain path rather than arbitrary field mutation.
 
@@ -30,7 +30,7 @@ Execution, provenance, result, generated-observation, or historical records are 
 
 **Models:** AgentDecision, AgentDelegation, AgentExecution, AssetVersion, BusinessHealthResult, Execution, ExternalResource, FinancialReport, GenerationJob, GenerationRequest, IntegrationJob, Job, MediaMetadata, PublicationResult, PublicationSchedule, PublishingJob, RenderJob, RenderOutput, RenderRequest, Transformation, Workflow.
 
-ApprovalRequest is a controlled exception: it is historically preserved, but `approve` and `reject` are explicit domain actions.
+ApprovalRequest is a controlled exception: it is historically preserved, but `approve` and `reject` are explicit domain Operations.
 
 ## Filament rules
 
@@ -43,7 +43,7 @@ ApprovalRequest is a controlled exception: it is historically preserved, but `ap
 
 ## MCP rules
 
-MCP Tools represent business operations through the governed Capability → Operation boundary, not database-table CRUD. Discovery/get/list actions are appropriate for all classes. Create/update actions exist only where the business record is legitimately maintainable. Lifecycle actions use existing domain/application transitions. Approval actions use the approval service. Social-account actions do not expose raw credentials. Operational, provenance, result, and historical records do not receive generic update/delete actions.
+MCP Tools represent business operations through the governed Capability → Operation boundary, not database-table CRUD. Discovery/get/list Tools are appropriate for all classes. Create/update actions exist only where the business record is legitimately maintainable. Lifecycle Operations use existing domain/application transitions. Approval Operations use the approval service. Social-account Tools do not expose raw credentials. Operational, provenance, result, and historical records do not receive generic update/delete actions.
 
 ## Authorization and integrity
 

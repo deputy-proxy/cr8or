@@ -115,14 +115,6 @@ Application and domain services implement or coordinate the business behavior re
 
 Durable instructions governing an Agent's role, constraints, priorities and operating context. Instructions influence reasoning but are never a substitute for authorization.
 
-### Capability
-
-A named business operation that an authorized actor may request. Capabilities are application-facing boundaries, not arbitrary model functions.
-
-### Tool
-
-An access mechanism through which a capability may be invoked, such as an MCP tool. A Tool does not grant authority by itself.
-
 ### Permission
 
 An explicit server-side authorization allowing an actor or Agent to perform or request a defined operation within an applicable organization and scope.
@@ -267,7 +259,7 @@ The runtime PHP classes are authoritative for Agent and Expert capability declar
 
 Finance was audited separately from the generic CRUD surface. The current Finance domain has governed policies and a concrete `FinancialReportingService`; therefore the Agent-facing `finance.report.generate` capability is exposed through `generate-financial-report`. Generic mutation of financial history is intentionally not exposed as a single Agent operation. Financial accounts, transactions, statements, invoices, expenses, revenue, periods, budgets and categories remain governed by their existing model/policy boundaries until a dedicated application/domain action exists for an Agent-facing use case.
 
-Analysis and planning actions are non-mutating at the business-state level. They assemble only authorized context, verify the requested Expert runtime is enabled and declares the capability, and invoke the Expert methodology. State-changing capabilities continue through their existing application/domain services and approval boundaries.
+Analysis and planning Operations are non-mutating at the business-state level. They assemble only authorized context, verify the requested Expert runtime is enabled and declares the capability, and invoke the Expert methodology. State-changing capabilities continue through their existing application/domain services and approval boundaries.
 
 ## Phase 7 Administration Boundary
 
