@@ -46,4 +46,3 @@ class GetExecutionTool extends DiscoveryGetTool
         return $query->whereIn('organization_id', $organizationIds);
     }
 }
-
