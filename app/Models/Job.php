@@ -12,6 +12,10 @@ use Illuminate\Support\Carbon;
 use LogicException;
 
 #[Fillable(['workflow_id', 'name', 'idempotency_key', 'attempts', 'status', 'started_at', 'completed_at', 'failure_reason'])]
+/**
+ * An asynchronous execution mechanism belonging to a Workflow, distinct from the
+ * business-level Workflow and its runtime Execution records.
+ */
 class Job extends Model
 {
     protected $table = 'workflow_jobs';
