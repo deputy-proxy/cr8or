@@ -36,7 +36,7 @@ class ScriptResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('content_item_id')->relationship('contentItem', 'title', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), TextInput::make('title')->required()->maxLength(255), Textarea::make('body')->required()->rows(10)]);
+        return $schema->components([Select::make('content_item_id')->relationship('contentItem', 'title')->searchable()->preload()->required(), TextInput::make('title')->required()->maxLength(255), Textarea::make('body')->required()->rows(10)]);
     }
 
     public static function table(Table $table): Table

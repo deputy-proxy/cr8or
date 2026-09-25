@@ -35,8 +35,8 @@ class TaskResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
-            Select::make('project_id')->relationship('project', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('project_id')->relationship('project', 'name')->searchable()->preload(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
             Select::make('status')->options(['todo' => 'To do', 'in_progress' => 'In progress', 'done' => 'Done'])->required(),

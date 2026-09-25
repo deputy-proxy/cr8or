@@ -34,8 +34,8 @@ class BusinessHealthResultResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedEnterpriseIds()))->searchable()->preload(),
-            Select::make('financial_report_id')->relationship('financialReport', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload(),
+            Select::make('financial_report_id')->relationship('financialReport', 'name')->searchable()->preload(),
             TextInput::make('health_status'),
             Textarea::make('metrics')->rows(4),
             Textarea::make('source_snapshot')->rows(4),

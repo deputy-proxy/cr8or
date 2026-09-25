@@ -36,8 +36,8 @@ class IntegrationConnectionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(),
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('organization_id')->relationship('organization', 'name')->searchable()->preload()->required(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
             TextInput::make('provider')->maxLength(255),
             TextInput::make('external_account_id')->maxLength(255),
             TextInput::make('credential_reference')->required()->maxLength(255),

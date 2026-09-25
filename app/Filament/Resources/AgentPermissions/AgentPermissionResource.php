@@ -36,7 +36,7 @@ class AgentPermissionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('agent_assignment_id')->relationship('agentAssignment', 'id', fn (Builder $q) => $q->whereIn('organization_id', static::manageableOrganizationIds()))->searchable()->preload()->required(),
+            Select::make('agent_assignment_id')->relationship('agentAssignment', 'id')->searchable()->preload()->required(),
             TextInput::make('capability')->required()->maxLength(255),
             Toggle::make('requires_approval')->required(),
         ]);

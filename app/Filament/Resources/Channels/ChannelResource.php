@@ -35,7 +35,7 @@ class ChannelResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableEnterpriseIds()))->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('type')->required()->maxLength(100), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
+        return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('type')->required()->maxLength(100), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
     }
 
     public static function table(Table $table): Table

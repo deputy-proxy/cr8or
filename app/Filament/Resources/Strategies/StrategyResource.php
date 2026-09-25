@@ -35,7 +35,7 @@ class StrategyResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('objective_id')->relationship('objective', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload()->required(),
+            Select::make('objective_id')->relationship('objective', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);

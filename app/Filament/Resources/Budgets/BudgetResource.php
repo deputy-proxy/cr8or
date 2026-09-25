@@ -34,10 +34,10 @@ class BudgetResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
-            Select::make('financial_period_id')->relationship('financialPeriod', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
-            Select::make('financial_account_id')->relationship('financialAccount', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
-            Select::make('transaction_category_id')->relationship('category', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->disabledOn('edit'),
+            Select::make('financial_period_id')->relationship('financialPeriod', 'name')->searchable()->preload()->disabledOn('edit'),
+            Select::make('financial_account_id')->relationship('financialAccount', 'name')->searchable()->preload()->disabledOn('edit'),
+            Select::make('transaction_category_id')->relationship('category', 'name')->searchable()->preload()->disabledOn('edit'),
             TextInput::make('name'),
             TextInput::make('planned_amount'),
             TextInput::make('currency'),

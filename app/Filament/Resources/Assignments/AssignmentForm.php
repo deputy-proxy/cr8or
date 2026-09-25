@@ -21,7 +21,7 @@ class AssignmentForm
     {
         return $schema->components([
             Select::make('enterprise_id')
-                ->relationship('enterprise', 'name', fn (Builder $query) => $query->whereIn('id', self::manageableEnterpriseIds()))
+                ->relationship('enterprise', 'name')
                 ->searchable()
                 ->preload()
                 ->required(),
