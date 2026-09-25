@@ -2,12 +2,12 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\FinancialAccount;
 use App\Models\FinancialPeriod;
 use App\Models\TransactionCategory;
 use App\Models\User;
-use App\Services\FinancialReportingService;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -20,7 +20,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('generate-financial-report')]
 #[Description('Generate a historical, Enterprise-scoped financial report through the governed Finance capability.')]
-final class GenerateFinancialReportTool extends AuthorizedTool
+final class GenerateFinancialReportTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -35,12 +35,9 @@ final class GenerateFinancialReportTool extends AuthorizedTool
         ];
     }
 
-    public function handle(
-        Request $request,
-        McpCapabilityAuthorizer $authorization,
-        FinancialReportingService $reports,
-    ): Response|ResponseFactory {
-        return $this->executeWithErrors($request, 'mcp.finance.report.generate', function () use ($request, $authorization, $reports) {
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
+    {
+        return $this->executeWithErrors($request, 'mcp.finance.report.generate', function () use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'financial_period_id' => ['required', 'integer', 'min:1', 'exists:financial_periods,id'],
@@ -84,7 +81,7 @@ final class GenerateFinancialReportTool extends AuthorizedTool
 
             $authorization->authorizeMutation(
                 $actor,
-                'finance.report.generate',
+                $this->capability($registry),
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -98,7 +95,13 @@ final class GenerateFinancialReportTool extends AuthorizedTool
                 ['createForEnterprise', [$enterprise]],
             );
 
-            $report = $reports->generate($actor, $enterprise, $period, $account, $category);
+            $report = $this->executeCapability($registry, $actor, [
+                'enterprise' => $enterprise,
+                'financial_period' => $period,
+                'financial_account' => $account,
+                'transaction_category' => $category,
+                ...$validated,
+            ]);
 
             return Response::structured([
                 'success' => true,
