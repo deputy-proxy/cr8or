@@ -27,6 +27,12 @@ class DecisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Decisions';
+
+    protected static ?int $navigationSort = 70;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
