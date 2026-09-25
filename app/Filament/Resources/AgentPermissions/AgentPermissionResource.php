@@ -66,6 +66,11 @@ class AgentPermissionResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
+    public static function canCreate(): bool
+    {
+        return static::canCreateForCurrentUser(static::getModel());
+    }
+
     public static function getPages(): array
     {
         return [
