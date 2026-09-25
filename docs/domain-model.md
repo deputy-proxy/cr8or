@@ -40,7 +40,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Define executable Agents and Experts and the persistent records required to register, assign, authorize and audit them.
 
-**Runtime components:** Agent PHP classes, Expert PHP classes, Functions / application services.
+**Runtime components:** Agent PHP classes, Expert PHP classes, Capabilities, Operations and application/domain services.
 
 **Persistent entities:** AgentDescriptor, ExpertDescriptor, Agent Instruction, Agent Permission, Agent Assignment, Agent Execution, Agent Decision, Agent Memory / Context Reference.
 
