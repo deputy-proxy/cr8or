@@ -14,6 +14,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 
 | Tool | Capability | Purpose |
 | --- | --- | --- |
+| create-enterprise | enterprise.create | Create an Enterprise under an organization where the authenticated actor has Enterprise creation authority. |
 | create-work-item | work.create | Create a work item under an authorized enterprise. |
 | update-work-item | work.update | Update an existing work item without changing enterprise ownership. |
 | create-strategy | strategy.create | Create a strategy under an authorized objective. |
@@ -122,6 +123,7 @@ The governed mutation surface now covers the core planning, content, work, and i
 
 | Domain | Actions |
 | --- | --- |
+| Organization | `create-enterprise` |
 | Planning | `create-objective`, `update-objective`, existing `create-strategy`, `update-strategy` |
 | Campaigns | `create-campaign`, `update-campaign`, `transition-campaign` |
 | Content series | `create-content-series`, `update-content-series`, `transition-content-series` |
