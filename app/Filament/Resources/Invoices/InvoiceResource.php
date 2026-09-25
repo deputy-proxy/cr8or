@@ -26,6 +26,12 @@ class InvoiceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Invoices';
+
+    protected static ?int $navigationSort = 170;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
