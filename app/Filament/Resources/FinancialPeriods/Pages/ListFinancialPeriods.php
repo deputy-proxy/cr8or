@@ -13,7 +13,7 @@ class ListFinancialPeriods extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label('New'),
+            CreateAction::make(),
         ];
     }
 }

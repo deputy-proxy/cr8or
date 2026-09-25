@@ -51,10 +51,6 @@ class KpiResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-    public static function canCreate(): bool
-    {
-        return auth()->check() && static::canManageAnyEnterprise();
-    }
 
     public static function getPages(): array
     {

@@ -33,7 +33,7 @@ class EnterpriseResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('slug')->required()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
+        return $schema->components([Select::make('organization_id')->relationship('organization', 'name', modifyQueryUsing: fn (Builder $query) => $query->whereIn('id', static::manageableOrganizationIds()))->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('slug')->required()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
     }
 
     public static function table(Table $table): Table
@@ -51,10 +51,6 @@ class EnterpriseResource extends Resource
         return auth()->check() && static::authorizedOrganizationIds()->exists();
     }
 
-    public static function canCreate(): bool
-    {
-        return static::canCreateForCurrentUser(static::getModel());
-    }
 
     public static function getPages(): array
     {

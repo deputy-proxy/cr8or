@@ -50,10 +50,6 @@ class OrganizationResource extends Resource
         return auth()->check();
     }
 
-    public static function canCreate(): bool
-    {
-        return auth()->check();
-    }
 
     public static function getPages(): array
     {
