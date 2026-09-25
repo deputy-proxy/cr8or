@@ -2,6 +2,18 @@
 
 MCP is the controlled AI-facing interface to CR8OR capabilities. It exposes authorized context and operations without becoming a duplicate application or domain layer.
 
+## Canonical Capability → Operation → Tool naming
+
+CR8OR deliberately separates the business authority, executable operation and MCP interface:
+
+| Concept | Naming convention | Example |
+|---|---|---|
+| Capability | hierarchical dot notation | `marketing.content.create` |
+| Operation | PascalCase | `CreateContentItem` |
+| Tool | kebab-case | `create-content-item` |
+
+A Tool does not grant authority. A Capability declaration does not grant permission. Authorization is evaluated server-side before the Operation executes.
+
 ## Resources vs Tools
 
 Resources provide authorized contextual information to an AI client and should represent useful business context rather than raw database structure.
@@ -12,22 +24,22 @@ Tools request explicit capabilities that may change state or initiate execution.
 
 The state-changing catalogue is intentionally limited to implemented, server-authorized capabilities:
 
-| Tool | Capability | Purpose |
+| Tool | Capability | Operation | Purpose |
 | --- | --- | --- |
-| create-enterprise | enterprise.create | Create an Enterprise under an organization where the authenticated actor has Enterprise creation authority. |
-| create-work-item | work.create | Create a work item under an authorized enterprise. |
-| update-work-item | work.update | Update an existing work item without changing enterprise ownership. |
-| create-strategy | strategy.create | Create a strategy under an authorized objective. |
-| update-strategy | strategy.update | Update an existing strategy without changing objective ownership. |
-| create-content-item | content.create | Create draft Content Item state under an authorized enterprise. |
-| update-content-item | content.update | Revise draft or in-review Content Item state. |
-| submit-content-for-review | content.review | Move draft content into the governed review state. |
-| mark-content-publication-ready | content.publication_ready | Mark approved content publication-ready only with matching server-side approval. |
-| request-approval | N/A | Create an auditable approval request for an Agent capability and exact target context. |
-| delegate-agent | `agent.delegate` | Delegate governed work between same-Enterprise Agent assignments through `AgentDelegationService`. |
-| analyze-business-context | `business.analysis` | Run Business Analysis Expert methodology against authorized Enterprise, Strategy, Work and Financial context. |
-| plan-marketing | `marketing.plan` | Run Marketing Expert planning methodology against authorized Enterprise, Strategy and Knowledge context. |
-| generate-financial-report | `finance.execute` | Generate a historical, Enterprise-scoped financial report through `FinancialReportingService`; no generic financial CRUD is exposed. |
+| create-enterprise | enterprise.create | CreateEnterprise | Create an Enterprise under an organization where the authenticated actor has Enterprise creation authority. |
+| create-work-item | work.item.create | CreateWorkItem | Create a work item under an authorized enterprise. |
+| update-work-item | work.item.update | UpdateWorkItem | Update an existing work item without changing enterprise ownership. |
+| create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
+| update-strategy | strategy.update | UpdateStrategy | Update an existing strategy without changing objective ownership. |
+| create-content-item | marketing.content.create | CreateContentItem | Create draft Content Item state under an authorized enterprise. |
+| update-content-item | marketing.content.update | UpdateContentItem | Revise draft or in-review Content Item state. |
+| submit-content-for-review | marketing.content.review | SubmitContentForReview | Move draft content into the governed review state. |
+| mark-content-publication-ready | marketing.content.publication-ready | MarkContentPublicationReady | Mark approved content publication-ready only with matching server-side approval. |
+| request-approval | governance.approval.request | RequestApproval | Create an auditable approval request for an Agent capability and exact target context. |
+| delegate-agent | `agent.delegate` | DelegateAgent | Delegate governed work between same-Enterprise Agent assignments through `AgentDelegationService`. |
+| analyze-business-context | `business.analysis` | AnalyzeBusinessContext | Run Business Analysis Expert methodology against authorized Enterprise, Strategy, Work and Financial context. |
+| plan-marketing | `marketing.plan` | PlanMarketing | Run Marketing Expert planning methodology against authorized Enterprise, Strategy and Knowledge context. |
+| generate-financial-report | `finance.report.generate` | GenerateFinancialReport | Generate a historical, Enterprise-scoped financial report through `FinancialReportingService`; no generic financial CRUD is exposed. |
 
 For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer.
 
@@ -49,7 +61,7 @@ Authorization is enforced by CR8OR server-side for the relevant actor, organizat
 
 ## Invocation Boundary
 
-MCP request → authentication → authorization → validation → application/domain service → persistence/events/jobs → result
+MCP Tool request → authentication → Capability authorization → validation → Operation → application/domain service → persistence/events/jobs → result
 
 MCP handlers must not implement business rules that belong in application/domain services.
 
@@ -121,7 +133,7 @@ Discovery tools use the same Laravel policy and organization/enterprise authoriz
 
 The governed mutation surface now covers the core planning, content, work, and integration context needed by Agents:
 
-| Domain | Actions |
+| Domain | Tools / Operations |
 | --- | --- |
 | Organization | `create-enterprise` |
 | Planning | `create-objective`, `update-objective`, existing `create-strategy`, `update-strategy` |
