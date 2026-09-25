@@ -25,6 +25,12 @@ class BudgetResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Budgets';
+
+    protected static ?int $navigationSort = 80;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
