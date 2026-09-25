@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
 #[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'status'])]
+/**
+ * A business-level composition of governed work. It is distinct from an Operation,
+ * a runtime Execution attempt, and an asynchronous Job.
+ */
 class Workflow extends Model
 {
     /** @use HasFactory<WorkflowFactory> */
