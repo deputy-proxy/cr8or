@@ -17,3 +17,4 @@ class ListAssets extends ListRecords
         ];
     }
 }
+

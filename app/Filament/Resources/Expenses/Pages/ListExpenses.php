@@ -17,3 +17,4 @@ class ListExpenses extends ListRecords
         ];
     }
 }
+

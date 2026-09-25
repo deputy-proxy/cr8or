@@ -17,3 +17,4 @@ class ListTransactions extends ListRecords
         ];
     }
 }
+

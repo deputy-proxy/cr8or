@@ -17,3 +17,4 @@ class ListDependencies extends ListRecords
         ];
     }
 }
+

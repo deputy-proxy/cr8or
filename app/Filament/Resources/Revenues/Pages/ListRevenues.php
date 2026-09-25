@@ -17,3 +17,4 @@ class ListRevenues extends ListRecords
         ];
     }
 }
+

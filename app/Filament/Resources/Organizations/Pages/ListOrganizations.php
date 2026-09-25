@@ -17,3 +17,4 @@ class ListOrganizations extends ListRecords
         ];
     }
 }
+

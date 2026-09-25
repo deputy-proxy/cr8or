@@ -17,3 +17,4 @@ class ListPartners extends ListRecords
         ];
     }
 }
+

@@ -17,3 +17,4 @@ class ListGoals extends ListRecords
         ];
     }
 }
+

@@ -61,3 +61,4 @@ it('registers a create action for every human CRUD resource with a create page',
             ->and($actions[0])->toBeInstanceOf(CreateAction::class);
     }
 });
+

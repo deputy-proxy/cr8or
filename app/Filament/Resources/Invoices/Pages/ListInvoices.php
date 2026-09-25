@@ -17,3 +17,4 @@ class ListInvoices extends ListRecords
         ];
     }
 }
+

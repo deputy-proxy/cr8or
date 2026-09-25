@@ -17,3 +17,4 @@ class ListMemberships extends ListRecords
         ];
     }
 }
+
