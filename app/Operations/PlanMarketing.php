@@ -9,7 +9,9 @@ use App\Services\ExpertCapabilityService;
 
 final class PlanMarketing implements Operation
 {
-    public function __construct(private readonly ExpertCapabilityService $experts) {}
+    public function __construct(
+        private readonly ExpertCapabilityService $experts,
+    ) {}
 
     /**
      * @param array<string, mixed> $input
