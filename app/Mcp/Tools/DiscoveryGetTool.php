@@ -70,4 +70,3 @@ abstract class DiscoveryGetTool extends AuthorizedTool
         return $result;
     }
 }
-
