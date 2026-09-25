@@ -78,7 +78,8 @@ final class MultiAgentBusinessReportingService
                 ApprovalRequest::STATUS_REJECTED,
             ]),
             'agent_activity' => $this->agentActivity($executions, $delegations),
-            'failed_operations' => $this->failedOperations($executions, $delegations, $workflows),
+            'failed_operations' => $this->failedOperations($executions, $delegations),
+            'failed_workflows' => $this->failedWorkflows($workflows),
             'approval_outcomes' => $this->approvalOutcomes($approvals),
             'business_results' => [
                 'financial_reports' => $financialReportResults,
@@ -167,10 +168,9 @@ final class MultiAgentBusinessReportingService
     /**
      * @param  iterable<int, AgentExecution>  $executions
      * @param  iterable<int, AgentDelegation>  $delegations
-     * @param  iterable<int, Workflow>  $workflows
      * @return list<array<string, mixed>>
      */
-    private function failedOperations(iterable $executions, iterable $delegations, iterable $workflows): array
+    private function failedOperations(iterable $executions, iterable $delegations): array
     {
         $operations = [];
 
@@ -208,26 +208,35 @@ final class MultiAgentBusinessReportingService
             ];
         }
 
+        usort($operations, static fn (array $left, array $right): int => [$left['type'], $left['id']] <=> [$right['type'], $right['id']]);
+
+        return $operations;
+    }
+
+    /**
+     * @param  iterable<int, Workflow>  $workflows
+     * @return list<array<string, mixed>>
+     */
+    private function failedWorkflows(iterable $workflows): array
+    {
+        $failed = [];
+
         foreach ($workflows as $workflow) {
             if ($workflow->status !== Workflow::STATUS_FAILED) {
                 continue;
             }
 
-            $operations[] = [
-                'type' => 'workflow',
+            $failed[] = [
                 'id' => $workflow->getKey(),
-                'agent_slug' => null,
                 'status' => Workflow::STATUS_FAILED,
-                'failure_reason' => null,
+                'name' => $workflow->name,
                 'completed_at' => $workflow->updated_at === null
                     ? null
                     : Carbon::parse((string) $workflow->updated_at)->toISOString(),
             ];
         }
 
-        usort($operations, static fn (array $left, array $right): int => [$left['type'], $left['id']] <=> [$right['type'], $right['id']]);
-
-        return $operations;
+        return $failed;
     }
 
     /**

@@ -51,7 +51,7 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
     ]);
     $failedExecution->fail('Provider unavailable')->save();
 
-    Workflow::factory()->create([
+    $failedWorkflow = Workflow::factory()->create([
         'enterprise_id' => $enterprise,
         'status' => Workflow::STATUS_FAILED,
     ]);
@@ -115,7 +115,12 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
         'approved' => 1,
         'rejected' => 1,
         'total' => 2,
-    ])->and($report['failed_operations'])->toHaveCount(2)
+    ])->and($report['failed_operations'])->toHaveCount(1)
+        ->and($report['failed_workflows'])->toHaveCount(1)
+        ->and($report['failed_workflows'][0])->toMatchArray([
+            'id' => $failedWorkflow->getKey(),
+            'status' => Workflow::STATUS_FAILED,
+        ])
         ->and($report['approval_outcomes'][0])->toMatchArray([
             'status' => ApprovalRequest::STATUS_APPROVED,
             'capability' => $approved->capability,

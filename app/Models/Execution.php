@@ -27,6 +27,10 @@ use LogicException;
     'completed_at',
     'failure_reason',
 ])]
+/**
+ * A runtime attempt/result record for a Workflow Job, distinct from both the Job
+ * and the business-level Workflow.
+ */
 class Execution extends Model
 {
     /** @use HasFactory<ExecutionFactory> */
