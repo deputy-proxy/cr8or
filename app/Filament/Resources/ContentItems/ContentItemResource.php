@@ -7,8 +7,10 @@ use App\Filament\Resources\ContentItems\Pages\CreateContentItem;
 use App\Filament\Resources\ContentItems\Pages\EditContentItem;
 use App\Filament\Resources\ContentItems\Pages\ListContentItems;
 use App\Models\ContentItem;
+use App\Models\User;
+use App\Services\ContentItemService;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -42,13 +44,42 @@ class ContentItemResource extends Resource
             Select::make('content_series_id')->relationship('contentSeries', 'name', fn (Builder $q) => $q->whereHas('campaign', fn (Builder $c) => $c->whereIn('enterprise_id', static::manageableEnterpriseIds())))->searchable()->preload(),
             Select::make('channel_id')->relationship('channel', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
             Select::make('audience_id')->relationship('audience', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::manageableEnterpriseIds()))->searchable()->preload(),
-            TextInput::make('title')->required()->maxLength(255), Textarea::make('body')->rows(10),
+            TextInput::make('title')->required()->maxLength(255),
+            Textarea::make('body')->rows(10),
         ]);
     }
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('title')->searchable()->sortable(), TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('campaign.name')->label('Campaign')->searchable(), TextColumn::make('contentSeries.name')->label('Series')->searchable(), TextColumn::make('status')->badge()->sortable()])->recordActions([EditAction::make(), DeleteAction::make()]);
+        return $table->columns([
+            TextColumn::make('title')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('campaign.name')->label('Campaign')->searchable(),
+            TextColumn::make('contentSeries.name')->label('Series')->searchable(),
+            TextColumn::make('status')->badge()->sortable(),
+        ])->recordActions([
+            EditAction::make(),
+            Action::make('submit_for_review')
+                ->label('Submit for review')
+                ->visible(fn (ContentItem $record): bool => $record->status === ContentItem::STATUS_DRAFT)
+                ->action(function (ContentItem $record): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        abort(403);
+                    }
+                    app(ContentItemService::class)->submitForReview($actor, $record);
+                }),
+            Action::make('approve')
+                ->label('Approve')
+                ->visible(fn (ContentItem $record): bool => $record->status === ContentItem::STATUS_IN_REVIEW)
+                ->action(function (ContentItem $record): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        abort(403);
+                    }
+                    app(ContentItemService::class)->approve($actor, $record);
+                }),
+        ]);
     }
 
     public static function getEloquentQuery(): Builder
