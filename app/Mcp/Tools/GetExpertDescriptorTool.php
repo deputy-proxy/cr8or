@@ -40,3 +40,4 @@ class GetExpertDescriptorTool extends DiscoveryGetTool
         return $query;
     }
 }
+
