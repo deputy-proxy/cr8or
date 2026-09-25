@@ -35,7 +35,7 @@ class FinancialPeriodResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
+            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
             TextInput::make('name')->disabledOn('edit'),
             DatePicker::make('period_start')->disabledOn('edit'),
             DatePicker::make('period_end')->disabledOn('edit'),

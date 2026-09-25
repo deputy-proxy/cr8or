@@ -37,7 +37,7 @@ class StatementResource extends Resource
     {
         return $schema->components([
             Select::make('organization_id')->relationship('organization', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedOrganizationIds()))->searchable()->preload()->disabledOn('edit'),
-            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
+            Select::make('enterprise_id')->relationship('enterprise', 'name', fn (Builder $q) => $q->whereIn('id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
             Select::make('financial_account_id')->relationship('financialAccount', 'name', fn (Builder $q) => $q->whereIn('enterprise_id', static::authorizedEnterpriseIds()))->searchable()->preload()->disabledOn('edit'),
             TextInput::make('source')->disabledOn('edit'),
             TextInput::make('source_reference')->disabledOn('edit'),
