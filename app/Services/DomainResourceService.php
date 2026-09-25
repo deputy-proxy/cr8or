@@ -12,16 +12,30 @@ use App\Models\Initiative;
 use App\Models\Kpi;
 use App\Models\MarketingStrategy;
 use App\Models\Objective;
+use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Project;
 use App\Models\SocialAccount;
 use App\Models\Strategy;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use LogicException;
 
 final class DomainResourceService
 {
+    /** @param array<string, mixed> $attributes */
+    public function createEnterprise(User $actor, Organization $organization, array $attributes): Enterprise
+    {
+        Gate::forUser($actor)->authorize('createForOrganization', [Enterprise::class, $organization]);
+
+        return $organization->enterprises()->create([
+            'name' => $attributes['name'],
+            'slug' => $attributes['slug'] ?? Str::slug($attributes['name']),
+            'status' => $attributes['status'] ?? 'active',
+        ]);
+    }
+
     /** @param array<string, mixed> $attributes */
     public function createObjective(User $actor, Enterprise $enterprise, array $attributes): Objective
     {
