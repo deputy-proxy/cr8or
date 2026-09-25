@@ -41,4 +41,3 @@ class GetEnterpriseTool extends DiscoveryGetTool
         return $query->whereIn('organization_id', $organizationIds);
     }
 }
-
