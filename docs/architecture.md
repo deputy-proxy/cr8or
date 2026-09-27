@@ -127,3 +127,13 @@ Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInv
 `ExpertInvocationService` resolves the Expert identity from the authoritative `ExpertDescriptor` registry and runtime class, verifies that the Expert is declared by the receiving Agent, verifies required context, and re-validates each declared Capability through the existing Agent assignment permission and approval boundary. It does not grant authority or execute Capabilities.
 
 The result separates reasoning output, requested Capability Requests, decisions, recommendations, execution metadata and normalized failure state. Every successful result carries the parent `AgentExecution` identifier and correlation identity. Authorization failures preserve the existing authorization exception semantics; reasoning failures are represented as a failed invocation result so the parent Agent execution can record the failure.
+
+## Knowledge Retrieval and AI Context Boundary
+
+Phase 9 adds a governed retrieval layer beneath the canonical Agent context pipeline. KnowledgeRetrievalService is the application boundary: it authorizes the requested Enterprise before provider execution and re-validates returned Knowledge provenance afterward. Lexical, semantic and hybrid providers implement the same provider-neutral contract.
+
+Search representations are derived state. KnowledgeIndexRecord owns representation lifecycle, KnowledgeIndexUnit owns normalized searchable content, and KnowledgeEmbedding owns semantic representation data. None is authoritative business Knowledge.
+
+RetrievedKnowledgeContextProvider exposes retrieval to AgentContextBuilder only as the separate retrieved_knowledge section. Result limits and a deterministic serialized-size token estimate bound that section independently, so retrieved evidence cannot silently displace required Enterprise, Strategy, Work, Decision or Memory context.
+
+Retrieval observability records structural diagnostics through the application boundary and excludes retrieved content from logs. Advanced ingestion, provider expansion, learned ranking and autonomous retrieval optimization remain deferred.
