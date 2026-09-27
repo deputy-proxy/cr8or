@@ -2,6 +2,7 @@
 
 use App\Agents\Agent;
 use App\Experts\Expert;
+use App\Experts\ExpertDefinition;
 
 it('exposes authoritative runtime metadata and coordinates experts', function () {
     $agent = new class extends Agent
@@ -20,34 +21,16 @@ it('exposes authoritative runtime metadata and coordinates experts', function ()
 
     $expert = new class extends Expert
     {
-        public function name(): string
+        public function definition(): ExpertDefinition
         {
-            return 'Copywriting';
-        }
-
-        public function description(): string
-        {
-            return 'Creates copy.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['write copy'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['copy.draft'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['brand'];
-        }
-
-        public function methodology(): string
-        {
-            return 'Audience-first copywriting.';
+            return new ExpertDefinition(
+                name: 'Copywriting',
+                description: 'Creates copy.',
+                responsibilities: ['write copy'],
+                methodology: 'Audience-first copywriting.',
+                requiredContext: ['brand'],
+                capabilities: ['copy.draft'],
+            );
         }
 
         public function analyze(array $context): array
@@ -61,6 +44,7 @@ it('exposes authoritative runtime metadata and coordinates experts', function ()
         ->and($agent->responsibilities())->toBe(['route requests', 'coordinate experts'])
         ->and($agent->capabilities())->toBe(['marketing.plan'])
         ->and($agent->requiredContext())->toBe(['enterprise'])
+        ->and($expert->definition())->toBeInstanceOf(ExpertDefinition::class)
         ->and($agent->coordinate(['topic' => 'CR8OR'], [$expert]))->toBe([
             'agent' => 'Marketing',
             'results' => [
