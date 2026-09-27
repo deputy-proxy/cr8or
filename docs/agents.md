@@ -433,3 +433,11 @@ Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInv
 Expert identity is runtime-derived from the enabled `ExpertDescriptor`. Invocation is denied unless the Expert is declared by the receiving Agent. The Expert's required context must be present in the authorized context supplied by the parent execution. Declared Capabilities are resolved through the existing `CapabilityRegistry` and re-authorized through the Agent assignment; approval requirements remain enforced by the existing authorization boundary.
 
 The result distinguishes reasoning output, requested Capabilities, decisions, recommendations, execution metadata and normalized failure state. Expert invocation does not execute Capabilities, grant authority or create a second governance path. The parent `AgentExecution` remains the authoritative execution and audit record, with correlation identity preserved across the invocation boundary.
+
+## Phase 9 Knowledge Retrieval Context
+
+Agents may explicitly request retrieved_knowledge through the canonical AgentContextBuilder. The request must supply a query or objective and is bounded by server-side result and context budgets. Retrieved items retain source, document, version and reference provenance after budgeting.
+
+Knowledge retrieval is not an Agent authority mechanism. Authorization is applied before provider execution and provenance is re-authorized against authoritative Knowledge afterward. Search indexes and embeddings are derived representations and never replace authoritative Knowledge records.
+
+The retrieval section is independent from Enterprise, Strategy, Work, Decision and Memory sections. Deterministic truncation degrades only retrieved Knowledge when its budget is exhausted. Retrieval failures are observable separately from Agent reasoning failures.
