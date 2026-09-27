@@ -40,6 +40,7 @@ it('defines the production Marketing Agent runtime contract', function (): void 
         ])
         ->and($agent->capabilities())->toBe([
             'marketing.plan',
+            'marketing.strategy.create',
             'marketing.content.create',
             'marketing.content.update',
             'marketing.content.review',
