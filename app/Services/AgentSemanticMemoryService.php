@@ -3,13 +3,13 @@
 namespace App\Services;
 
 use App\Models\AgentDescriptor;
+use App\Models\AgentExecution;
 use App\Models\AgentSemanticMemory;
 use App\Models\Enterprise;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 
 final class AgentSemanticMemoryService
@@ -18,11 +18,11 @@ final class AgentSemanticMemoryService
 
     private const MAX_LIMIT = 100;
 
-    /**
-     * Store one durable Agent-learned statement inside one Enterprise scope.
-     *
-     * @param  array<string, mixed>  $provenance
-     */
+    public function __construct(
+        private readonly AgentMemoryPolicy $policy,
+    ) {}
+
+    /** @param array<string, mixed> $provenance */
     public function remember(
         User $actor,
         Enterprise $enterprise,
@@ -32,7 +32,10 @@ final class AgentSemanticMemoryService
         array $provenance,
         string $status = AgentSemanticMemory::STATUS_ACTIVE,
     ): AgentSemanticMemory {
-        $this->authorizeAgentScope($actor, $enterprise, $agent);
+        $this->policy->authorizeRead($actor, $enterprise, $agent);
+        $execution = $this->executionFromProvenance($provenance);
+        $this->policy->authorizeSemanticWrite($actor, $execution);
+        $this->validateExecutionScope($enterprise, $agent, $execution);
         $this->validateContent($statement, $confidence, $provenance);
 
         return AgentSemanticMemory::query()->create([
@@ -61,7 +64,8 @@ final class AgentSemanticMemoryService
         array $provenance,
         string $status = AgentSemanticMemory::STATUS_ACTIVE,
     ): AgentSemanticMemory {
-        Gate::forUser($actor)->authorize('view', $memory->enterprise);
+        $execution = $this->executionFromProvenance($provenance);
+        $this->policy->authorizeSemanticUpdate($actor, $memory, $execution);
         $this->validateContent($statement, $confidence, $provenance);
 
         $memory->statement = trim($statement);
@@ -73,9 +77,7 @@ final class AgentSemanticMemoryService
         return $memory->refresh();
     }
 
-    /**
-     * Mark two scoped memories as an explicit contradiction while preserving both.
-     */
+    /** Mark two scoped memories as an explicit contradiction while preserving both. */
     public function recordConflict(
         User $actor,
         AgentSemanticMemory $memory,
@@ -85,8 +87,10 @@ final class AgentSemanticMemoryService
             throw new InvalidArgumentException('An Agent semantic memory cannot conflict with itself.');
         }
 
-        Gate::forUser($actor)->authorize('view', $memory->enterprise);
-        Gate::forUser($actor)->authorize('view', $conflictingMemory->enterprise);
+        $memoryExecution = $this->executionFromProvenance($memory->provenance);
+        $conflictingExecution = $this->executionFromProvenance($conflictingMemory->provenance);
+        $this->policy->authorizeSemanticUpdate($actor, $memory, $memoryExecution);
+        $this->policy->authorizeSemanticUpdate($actor, $conflictingMemory, $conflictingExecution);
 
         if (
             $memory->organization_id !== $conflictingMemory->organization_id
@@ -117,11 +121,7 @@ final class AgentSemanticMemoryService
         });
     }
 
-    /**
-     * Retrieve bounded semantic memory for one authorized Enterprise and Agent.
-     *
-     * @return Collection<int, AgentSemanticMemory>
-     */
+    /** @return Collection<int, AgentSemanticMemory> */
     public function retrieve(
         User $actor,
         Enterprise $enterprise,
@@ -129,7 +129,7 @@ final class AgentSemanticMemoryService
         ?string $status = null,
         int $limit = self::DEFAULT_LIMIT,
     ): Collection {
-        $this->authorizeAgentScope($actor, $enterprise, $agent);
+        $this->policy->authorizeRead($actor, $enterprise, $agent);
 
         if ($status !== null && ! in_array($status, [
             AgentSemanticMemory::STATUS_ACTIVE,
@@ -173,12 +173,38 @@ final class AgentSemanticMemoryService
         }
     }
 
-    private function authorizeAgentScope(User $actor, Enterprise $enterprise, AgentDescriptor $agent): void
+    /** @param array<string, mixed> $provenance */
+    private function executionFromProvenance(array $provenance): AgentExecution
     {
-        Gate::forUser($actor)->authorize('view', $enterprise);
+        if (
+            ($provenance['source_type'] ?? null) !== AgentExecution::class
+            || ! is_int($provenance['source_id'] ?? null)
+        ) {
+            throw new InvalidArgumentException('Agent semantic memory writes require Agent execution provenance.');
+        }
 
-        if (! $agent->exists) {
-            throw new AuthorizationException('Agent semantic memory requires an existing Agent descriptor.');
+        $execution = AgentExecution::query()->find($provenance['source_id']);
+
+        if (! $execution instanceof AgentExecution) {
+            throw new InvalidArgumentException('Agent semantic memory provenance references an unknown Agent execution.');
+        }
+
+        return $execution;
+    }
+
+    private function validateExecutionScope(
+        Enterprise $enterprise,
+        AgentDescriptor $agent,
+        AgentExecution $execution,
+    ): void {
+        if (
+            $execution->organization_id !== $enterprise->organization_id
+            || $execution->enterprise_id !== $enterprise->getKey()
+            || $execution->agent_descriptor_id !== $agent->getKey()
+        ) {
+            throw new AuthorizationException(
+                'Agent semantic memory provenance must remain within the current Agent Enterprise scope.',
+            );
         }
     }
 }
