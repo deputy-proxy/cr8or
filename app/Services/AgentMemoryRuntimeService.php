@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\AI\Data\ModelResult;
+use App\Events\MemoryRecorded;
 use App\Models\AgentDecision;
 use App\Models\AgentExecution;
 use App\Models\AgentSemanticMemory;
@@ -54,7 +55,7 @@ final class AgentMemoryRuntimeService
                 continue;
             }
 
-            $this->memory->recordEpisodic(
+            $memoryRecord = $this->memory->recordEpisodic(
                 actor: $actor,
                 execution: $execution,
                 objective: $candidate['objective'],
@@ -64,6 +65,12 @@ final class AgentMemoryRuntimeService
                 topic: $candidate['topic'] ?? null,
                 provenance: $this->provenance($execution, $decision, $candidate, 'episodic'),
             );
+            app(AgentExecutionEventService::class)->dispatch(MemoryRecorded::class, $execution, provenance: [
+                'memory_type' => 'episodic',
+                'memory_id' => $memoryRecord->getKey(),
+            ], data: [
+                'memory_type' => 'episodic',
+            ]);
         }
 
         if ($execution->status !== AgentExecution::STATUS_COMPLETED) {
@@ -98,7 +105,7 @@ final class AgentMemoryRuntimeService
                     $existing->setVersionActor($actor);
                     $existing->save();
 
-                    $this->memory->rememberSemantic(
+                    $memoryRecord = $this->memory->rememberSemantic(
                         actor: $actor,
                         enterprise: $enterprise,
                         agent: $agent,
@@ -106,6 +113,12 @@ final class AgentMemoryRuntimeService
                         confidence: $candidate['confidence'],
                         provenance: $provenance,
                     );
+                    app(AgentExecutionEventService::class)->dispatch(MemoryRecorded::class, $execution, provenance: [
+                        'memory_type' => 'semantic',
+                        'memory_id' => $memoryRecord->getKey(),
+                    ], data: [
+                        'memory_type' => 'semantic',
+                    ]);
 
                     continue;
                 }
@@ -123,7 +136,7 @@ final class AgentMemoryRuntimeService
                 continue;
             }
 
-            $this->memory->rememberSemantic(
+            $memoryRecord = $this->memory->rememberSemantic(
                 actor: $actor,
                 enterprise: $enterprise,
                 agent: $agent,
@@ -131,6 +144,12 @@ final class AgentMemoryRuntimeService
                 confidence: $candidate['confidence'],
                 provenance: $provenance,
             );
+            app(AgentExecutionEventService::class)->dispatch(MemoryRecorded::class, $execution, provenance: [
+                'memory_type' => 'semantic',
+                'memory_id' => $memoryRecord->getKey(),
+            ], data: [
+                'memory_type' => 'semantic',
+            ]);
         }
     }
 
