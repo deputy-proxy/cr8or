@@ -45,9 +45,12 @@ function registeredExpertRuntimes(): array
 {
     return [
         'business-analysis' => \App\Experts\BusinessAnalysisExpert::class,
+        'copywriting' => \App\Experts\CopywritingExpert::class,
         'marketing' => \App\Experts\MarketingExpert::class,
         'finance' => \App\Experts\FinanceExpert::class,
         'product' => \App\Experts\ProductExpert::class,
+        'seo' => \App\Experts\SeoExpert::class,
+        'strategy' => \App\Experts\StrategyExpert::class,
         'operations' => \App\Experts\OperationsExpert::class,
     ];
 }

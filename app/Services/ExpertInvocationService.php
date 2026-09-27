@@ -99,7 +99,12 @@ final class ExpertInvocationService
                 }
             }
 
-            $reasoningOutput = $runtime->analyze(array_merge($request->authorizedContext, [
+            $expertContext = array_intersect_key(
+                $request->authorizedContext,
+                array_fill_keys($runtime->requiredContext(), true),
+            );
+
+            $reasoningOutput = $runtime->analyze(array_merge($expertContext, [
                 'invocation' => [
                     'business_objective' => $request->businessObjective,
                     'expected_reasoning_output' => $request->expectedReasoningOutput,
@@ -129,6 +134,7 @@ final class ExpertInvocationService
                 recommendations: $recommendations,
                 metadata: [
                     'required_context' => $runtime->requiredContext(),
+                    'authorized_context' => array_keys($expertContext),
                     'declared_capabilities' => $runtime->capabilities(),
                     'responsibilities' => $runtime->responsibilities(),
                     'methodology' => $runtime->methodology(),

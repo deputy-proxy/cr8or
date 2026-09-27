@@ -121,6 +121,22 @@ The runtime relationship is:
 
 Expert capability declarations describe available expertise only. They do not grant execution authority. When an Expert is coordinated by an Agent, the existing execution boundary continues to verify the Expert declaration and the Agent assignment's explicit Capability permission before execution.
 
+### Governed Expert Coordination
+
+Phase 8.16 extends the Marketing Agent runtime with explicit Expert routing metadata. A Marketing execution can select a deterministic routing key, which resolves to the declared Expert set for that responsibility. The current Marketing catalog distinguishes:
+
+- Marketing Expert: audience, positioning and campaign opportunity analysis;
+- Strategy Expert: strategy alignment and strategic trade-offs;
+- Copywriting Expert: messaging and content-language recommendations;
+- SEO Expert: search-intent and discoverability analysis.
+
+Expert routing is runtime metadata, not permission. Every routed Expert must still resolve to an enabled ExpertDescriptor, belong to the receiving Agent's declared Expert composition and pass the existing Agent assignment and Capability authorization boundary.
+
+Expert context is specialized at invocation time. An Expert receives only the context categories declared by its ExpertDefinition::requiredContext(), plus the explicit invocation envelope. The parent Agent execution remains the source of the correlation identity and execution scope. Capability requests produced by an Expert use the canonical CapabilityRequest contract and inherit the parent Agent assignment, execution and correlation context.
+
+Experts remain advisory reasoning components. They do not gain authority by being selected, and they cannot bypass the Agent → Capability → Operation → application-service boundary.
+
+
 ### Canonical Agent Execution Contract
 
 Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for Agent execution. `App\Data\AgentExecutionRequest` carries the actor, Agent assignment, prompt, authorized target context, selected Expert slugs, correlation identity and optional delegation context. Provider-specific options remain opaque to the contract and are consumed only by the infrastructure-facing execution service.

@@ -16,6 +16,7 @@ final readonly class AgentDefinition
      * @param  array<string, list<string>>  $capabilityMap
      * @param  list<string>  $capabilityGaps
      * @param  list<string>  $approvalSensitiveCapabilities
+     * @param  array<string, list<string>>  $expertRouting
      */
     public function __construct(
         public string $name,
@@ -30,6 +31,7 @@ final readonly class AgentDefinition
         public array $capabilityMap = [],
         public array $capabilityGaps = [],
         public array $approvalSensitiveCapabilities = [],
+        public array $expertRouting = [],
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Agent identity must define a name.');
@@ -75,6 +77,20 @@ final readonly class AgentDefinition
                 }
             }
         }
+
+        foreach ($expertRouting as $routingKey => $routedExperts) {
+            if ($routingKey === '' || $routedExperts === []) {
+                throw new InvalidArgumentException("Agent [{$name}] contains an invalid Expert routing declaration.");
+            }
+
+            foreach ($routedExperts as $expert) {
+                if ($expert === '' || ! in_array($expert, $experts, true)) {
+                    throw new InvalidArgumentException(
+                        "Agent [{$name}] routes to an Expert that is not declared by the Agent.",
+                    );
+                }
+            }
+        }
     }
 
     public function version(): string
@@ -92,7 +108,7 @@ final readonly class AgentDefinition
             'capabilityMap' => $this->capabilityMap,
             'capabilityGaps' => $this->capabilityGaps,
             'approvalSensitiveCapabilities' => $this->approvalSensitiveCapabilities,
+            'expertRouting' => $this->expertRouting,
         ], JSON_THROW_ON_ERROR));
     }
 }
-

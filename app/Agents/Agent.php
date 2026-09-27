@@ -3,6 +3,7 @@
 namespace App\Agents;
 
 use App\Experts\Expert;
+use InvalidArgumentException;
 
 abstract class Agent
 {
@@ -77,6 +78,24 @@ abstract class Agent
         return $this->definition()->approvalSensitiveCapabilities;
     }
 
+    /** @return array<string, list<string>> */
+    final public function expertRouting(): array
+    {
+        return $this->definition()->expertRouting;
+    }
+
+    /** @return list<string> */
+    final public function expertsFor(string $routingKey): array
+    {
+        if (! isset($this->expertRouting()[$routingKey])) {
+            throw new InvalidArgumentException(
+                "Agent [{$this->name()}] has no Expert routing for [{$routingKey}].",
+            );
+        }
+
+        return $this->expertRouting()[$routingKey];
+    }
+
     final public function definitionVersion(): string
     {
         return $this->definition()->version();
@@ -107,4 +126,3 @@ abstract class Agent
         return $this->execute($context, $experts);
     }
 }
-
