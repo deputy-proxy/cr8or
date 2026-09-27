@@ -45,6 +45,30 @@ class AgentEpisodicMemory extends Model
         'provenance',
     ];
 
+    /** @return array<string, mixed> */
+    public function provenanceMetadata(): array
+    {
+        $metadata = [
+            'source_type' => $this->provenance['source_type'] ?? null,
+            'source_id' => $this->provenance['source_id'] ?? null,
+        ];
+
+        if (($metadata['source_type'] ?? null) === AgentExecution::class && is_int($metadata['source_id'] ?? null)) {
+            $execution = AgentExecution::query()->find($metadata['source_id']);
+
+            if ($execution instanceof AgentExecution) {
+                $metadata['historical_agent'] = [
+                    'descriptor_id' => $execution->agent_descriptor_id,
+                    'slug' => $execution->agent_slug,
+                    'runtime_class' => $execution->agent_runtime_class,
+                    'definition_version' => $execution->agent_definition_version,
+                ];
+            }
+        }
+
+        return $metadata;
+    }
+
     protected static function booted(): void
     {
         static::saving(function (AgentEpisodicMemory $memory): void {

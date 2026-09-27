@@ -38,7 +38,7 @@ final class AgentSemanticMemoryService
         $this->validateExecutionScope($enterprise, $agent, $execution);
         $this->validateContent($statement, $confidence, $provenance);
 
-        return AgentSemanticMemory::query()->create([
+        $memory = new AgentSemanticMemory([
             'organization_id' => $enterprise->organization_id,
             'enterprise_id' => $enterprise->getKey(),
             'agent_descriptor_id' => $agent->getKey(),
@@ -48,6 +48,9 @@ final class AgentSemanticMemoryService
             'conflict_memory_ids' => null,
             'provenance' => $provenance,
         ]);
+        $memory->setVersionActor($actor)->save();
+
+        return $memory;
     }
 
     /**
@@ -72,6 +75,7 @@ final class AgentSemanticMemoryService
         $memory->confidence = $confidence;
         $memory->status = $status;
         $memory->provenance = $provenance;
+        $memory->setVersionActor($actor);
         $memory->save();
 
         return $memory->refresh();

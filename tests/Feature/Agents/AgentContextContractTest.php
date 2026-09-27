@@ -251,6 +251,9 @@ it('includes governed Agent memory when explicitly requested by the Agent contex
     expect($context->has('memory'))->toBeTrue()
         ->and($context->section('memory')?->data['episodic'])->toHaveCount(1)
         ->and($context->section('memory')?->data['semantic'])->toHaveCount(1)
+        ->and($context->section('memory')?->data['episodic'][0]['provenance']['source_type'])->toBe(App\Models\AgentExecution::class)
+        ->and($context->section('memory')?->data['semantic'][0]['provenance']['source_type'])->toBe(App\Models\AgentExecution::class)
+        ->and($context->section('memory')?->data['semantic'][0]['provenance'])->toHaveKey('historical_agent')
         ->and($context->metadata()['memory'])->toMatchArray([
             'source' => App\Services\Context\Providers\MemoryContextProvider::class,
             'scope' => [
