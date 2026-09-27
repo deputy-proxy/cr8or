@@ -359,7 +359,7 @@ The runtime PHP classes are authoritative for Agent and Expert capability declar
 | Runtime | Capability | Operation | Tool | Context | Execution boundary |
 | --- | --- | --- | --- | --- |
 | CEO / Orchestration | `agent.delegate` | `DelegateAgent` | `delegate-agent` | source/target Agent scope | `AgentDelegationService` + `AgentExecutionService` |
-| Marketing Agent / Marketing Expert | `marketing.plan` | `PlanMarketing` | `plan-marketing` | Enterprise, Strategy, Knowledge | `ExpertCapabilityService` + `MarketingExpert` |
+| Marketing Agent / Marketing Expert | `marketing.plan` | `PlanMarketing` | `plan-marketing` | Enterprise, Strategy, Work, Knowledge, Decisions, execution history | `ExpertCapabilityService` + `MarketingExpert` |
 | Finance Agent / Finance Expert | `finance.report.generate` | `GenerateFinancialReport` | `generate-financial-report` | Enterprise + financial period/account/category | `FinancialReportingService` |
 | Business Analysis Expert | `business.analysis` | `analyze-business-context` | Enterprise, Strategy, Work, Financial | `ExpertCapabilityService` + `BusinessAnalysisExpert` |
 | Marketing Agent | `marketing.content.create` | `create-content-item` | Enterprise + content context | `ContentItemService` |
