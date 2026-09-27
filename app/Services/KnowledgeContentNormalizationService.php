@@ -110,7 +110,7 @@ final class KnowledgeContentNormalizationService
                 $bodyLines[] = trim($line);
             }
 
-            $body = trim(implode("\n", array_filter($bodyLines, static fn (string $line): bool => $line !== ''));
+            $body = trim(implode("\n", array_filter($bodyLines, static fn (string $line): bool => $line !== '')));
 
             if ($body === '') {
                 continue;
