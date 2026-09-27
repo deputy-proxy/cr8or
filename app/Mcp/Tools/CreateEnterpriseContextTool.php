@@ -41,6 +41,7 @@ class CreateEnterpriseContextTool extends DomainMutationTool
         ];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function enterprise(array $validated): Enterprise
     {
         return Enterprise::query()->findOrFail((int) $validated['enterprise_id']);
@@ -48,6 +49,7 @@ class CreateEnterpriseContextTool extends DomainMutationTool
 
     /** @param array<string, mixed> $validated */
     /** @return array<string, mixed> */
+    // @phpstan-ignore missingType.iterableValue
     protected static function targetContext(array $validated, ?Model $target = null): array
     {
         return ['enterprise_id' => $validated['enterprise_id']];
@@ -55,11 +57,13 @@ class CreateEnterpriseContextTool extends DomainMutationTool
 
     /** @param array<string, mixed> $validated */
     /** @return array{0: string, 1: mixed} */
+    // @phpstan-ignore missingType.iterableValue
     protected static function humanAbility(array $validated, ?Model $target = null): array
     {
         return ['createForEnterprise', [EnterpriseContext::class, static::enterprise($validated)]];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function mutate(User $actor, DomainResourceService $domain, array $validated, ?Model $target = null): Model
     {
         return $domain->createEnterpriseContext($actor, static::enterprise($validated), $validated);
