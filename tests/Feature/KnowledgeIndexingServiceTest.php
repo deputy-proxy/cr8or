@@ -10,8 +10,8 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\KnowledgeContentNormalizationService;
-use App\Services\KnowledgeIndexLifecycleService;
 use App\Services\KnowledgeIndexingService;
+use App\Services\KnowledgeIndexLifecycleService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Schema;
 
