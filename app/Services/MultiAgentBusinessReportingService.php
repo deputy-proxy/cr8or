@@ -57,7 +57,7 @@ final class MultiAgentBusinessReportingService
             'execution_summary' => $this->statusSummary($executions->pluck('status')->all(), [
                 AgentExecution::STATUS_REQUESTED,
                 AgentExecution::STATUS_EXECUTING,
-                AgentExecution::STATUS_SUCCEEDED,
+                'succeeded',
                 AgentExecution::STATUS_FAILED,
             ]),
             'delegation_summary' => $this->statusSummary($delegations->pluck('status')->all(), [
@@ -100,6 +100,9 @@ final class MultiAgentBusinessReportingService
 
         foreach ($statuses as $status) {
             $status = (string) $status;
+            if (in_array('succeeded', $knownStatuses, true) && $status === AgentExecution::STATUS_COMPLETED) {
+                $status = 'succeeded';
+            }
             if (array_key_exists($status, $summary)) {
                 $summary[$status]++;
             }
