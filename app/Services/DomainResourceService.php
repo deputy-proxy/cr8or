@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentSeries;
 use App\Models\Enterprise;
+use App\Models\EnterpriseContext;
 use App\Models\Goal;
 use App\Models\Initiative;
 use App\Models\Kpi;
@@ -33,6 +34,21 @@ final class DomainResourceService
             'name' => $attributes['name'],
             'slug' => $attributes['slug'] ?? Str::slug($attributes['name']),
             'status' => $attributes['status'] ?? 'active',
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function createEnterpriseContext(User $actor, Enterprise $enterprise, array $attributes): EnterpriseContext
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [EnterpriseContext::class, $enterprise]);
+
+        return $enterprise->context()->create([
+            'description' => $attributes['description'] ?? null,
+            'industry' => $attributes['industry'] ?? null,
+            'business_model' => $attributes['business_model'] ?? null,
+            'target_market' => $attributes['target_market'] ?? null,
+            'geography' => $attributes['geography'] ?? null,
+            'additional_context' => $attributes['additional_context'] ?? null,
         ]);
     }
 
