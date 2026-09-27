@@ -16,6 +16,7 @@ use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\User;
+use App\Models\WorkItem;
 use App\Services\AgentExecutionService;
 use App\Services\McpContextAssembler;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -451,4 +452,207 @@ it('pauses and resumes the same Agent execution from durable state', function ()
         ->and($resumed->execution->current_step)->toBe(2)
         ->and($resumed->execution->steps()->count())->toBe(2)
         ->and($calls)->toBe(2);
+});
+
+it('executes a governed capability and feeds its result into the next reasoning step', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+    ]);
+
+    $calls = 0;
+
+    $provider = new FakeModelProvider(function ($request) use (&$calls, $enterprise) {
+        $calls++;
+
+        if ($calls === 1) {
+            return new \App\AI\Data\ModelResult(
+                text: 'Create the work item.',
+                structured: [
+                    'answer' => 'Create the work item.',
+                    'decision_title' => '',
+                    'decision_summary' => '',
+                    'decision_rationale' => '',
+                    'capability_requests' => [
+                        json_encode([
+                            'capability' => 'work.item.create',
+                            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                            'input_payload' => [
+                                'name' => 'Governed capability result',
+                                'status' => 'todo',
+                            ],
+                        ], JSON_THROW_ON_ERROR),
+                    ],
+                    'termination' => 'continue',
+                    'next_step' => 'Use the operation result to finish the task.',
+                ],
+                provider: 'fake',
+                model: 'test',
+                invocationId: 'capability-step-1',
+                correlationId: $request->correlationId,
+            );
+        }
+
+        expect($request->context['previous_result']['capability_results'])->toHaveCount(1)
+            ->and($request->context['previous_result']['capability_results'][0]['status'])->toBe('executed')
+            ->and($request->context['previous_result']['capability_results'][0]['capability'])->toBe('work.item.create')
+            ->and($request->context['previous_result']['capability_results'][0]['result']['name'])->toBe('Governed capability result');
+
+        return new \App\AI\Data\ModelResult(
+            text: 'Task completed from the governed operation result.',
+            structured: [
+                'answer' => 'Task completed from the governed operation result.',
+                'decision_title' => 'Work item created',
+                'decision_summary' => 'The governed operation created the requested work item.',
+                'decision_rationale' => 'The second reasoning step consumed the persisted capability result.',
+                'capability_requests' => [],
+                'termination' => 'completed',
+                'termination_reason' => 'capability_result_consumed',
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'capability-step-2',
+            correlationId: $request->correlationId,
+        );
+    });
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Create and then verify a governed work item.',
+        correlationId: 'capability-result-loop',
+        options: ['max_steps' => 3],
+    ));
+
+    $item = WorkItem::query()->where('enterprise_id', $enterprise->getKey())->first();
+
+    expect($calls)->toBe(2)
+        ->and($result->succeeded())->toBeTrue()
+        ->and($result->execution->current_step)->toBe(2)
+        ->and($item)->not->toBeNull()
+        ->and($item->name)->toBe('Governed capability result')
+        ->and($result->execution->last_result['capability_results'][0]['provenance']['operation'])
+        ->toBe(\App\Operations\CreateWorkItem::class);
+});
+
+it('pauses for capability approval, resumes, and executes only after approval', function () {
+    $actor = User::factory()->create();
+    $approver = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+
+    Membership::factory()->admin()->create([
+        'user_id' => $approver->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+        'requires_approval' => true,
+    ]);
+
+    $calls = 0;
+
+    $provider = new FakeModelProvider(function ($request) use (&$calls, $enterprise) {
+        $calls++;
+
+        if ($calls === 1) {
+            return new \App\AI\Data\ModelResult(
+                text: 'Approval required.',
+                structured: [
+                    'answer' => 'Approval required.',
+                    'decision_title' => 'Create work item',
+                    'decision_summary' => 'Human approval is required.',
+                    'decision_rationale' => 'The assigned capability is approval-sensitive.',
+                    'capability_requests' => [
+                        json_encode([
+                            'capability' => 'work.item.create',
+                            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                            'input_payload' => ['name' => 'Approved work item'],
+                        ], JSON_THROW_ON_ERROR),
+                    ],
+                    'termination' => 'continue',
+                    'next_step' => 'Resume after approval.',
+                ],
+                provider: 'fake',
+                model: 'test',
+                invocationId: 'approval-step-1',
+                correlationId: $request->correlationId,
+            );
+        }
+
+        $approval = ApprovalRequest::query()
+            ->where('agent_execution_id', $request->context['execution_id'])
+            ->where('capability', 'work.item.create')
+            ->firstOrFail();
+
+        expect($approval->status)->toBe(ApprovalRequest::STATUS_APPROVED);
+
+        return new \App\AI\Data\ModelResult(
+            text: 'Approved operation completed.',
+            structured: [
+                'answer' => 'Approved operation completed.',
+                'decision_title' => 'Work item created',
+                'decision_summary' => 'The approved work item was created.',
+                'decision_rationale' => 'The operation ran only after approval.',
+                'capability_requests' => [
+                    json_encode([
+                        'capability' => 'work.item.create',
+                        'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                        'input_payload' => ['name' => 'Approved work item'],
+                        'approval_request_id' => $approval->getKey(),
+                    ], JSON_THROW_ON_ERROR),
+                ],
+                'termination' => 'completed',
+                'termination_reason' => 'approved_capability_executed',
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'approval-step-2',
+            correlationId: $request->correlationId,
+        );
+    });
+
+    $service = new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    );
+
+    $waiting = $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Create an approved work item.',
+        correlationId: 'approval-loop',
+    ));
+
+    $approval = ApprovalRequest::query()
+        ->where('agent_execution_id', $waiting->execution->getKey())
+        ->firstOrFail();
+
+    expect($waiting->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL)
+        ->and($approval->status)->toBe(ApprovalRequest::STATUS_PENDING)
+        ->and(WorkItem::query()->where('name', 'Approved work item')->exists())->toBeFalse();
+
+    app(\App\Services\ApprovalRequestService::class)->approve(
+        $approval,
+        $approver,
+        'Approved by the authorized human.',
+    );
+
+    $resumed = $service->resume($waiting->execution->refresh(), $actor);
+
+    expect($calls)->toBe(2)
+        ->and($resumed->succeeded())->toBeTrue()
+        ->and(WorkItem::query()->where('name', 'Approved work item')->exists())->toBeTrue()
+        ->and($approval->refresh()->consumed_agent_execution_id)->toBe($waiting->execution->getKey());
 });

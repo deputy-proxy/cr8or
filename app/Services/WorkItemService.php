@@ -16,7 +16,7 @@ class WorkItemService
             'project_id' => $this->projectId($enterprise, $attributes['project_id'] ?? null),
             'name' => $attributes['name'],
             'description' => $attributes['description'] ?? null,
-            'status' => $attributes['status'] ?? null,
+            'status' => $attributes['status'] ?? 'todo',
         ]);
     }
 
