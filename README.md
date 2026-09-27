@@ -1135,6 +1135,94 @@ Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generaliz
 
 Phase 7.5 adds the minimum business-level multi-Agent report. It is Enterprise-scoped and derived from authoritative AgentExecution, AgentDecision, AgentDelegation, ApprovalRequest, Workflow and existing financial/business-health results. Report generation is read-only, failed operations remain failures, and historical Agent identity comes from the execution/delegation snapshots already maintained by CR8OR. A generalized reporting engine, forecasting and analytics platform remain deferred.
 
+### Phase 8 — Agent Runtime, Context & Memory
+
+**Status: In Progress — Phase 8.1–8.24**
+
+**Objective**
+
+Turn the existing governed Agent/Expert infrastructure into a production-ready Agent operating runtime with canonical execution contracts, authorized business context, a first production business Agent and persistent Agent memory.
+
+**Scope**
+
+- Canonical Agent runtime structure.
+- Canonical Expert runtime structure.
+- Agent execution contract.
+- Agent context contract.
+- Expert invocation contract.
+- Capability Request contract.
+- Runtime contract tests.
+- Enterprise, Strategy, Work, Knowledge, decision and execution-history context assembly.
+- Composable Agent context builder.
+- Marketing Agent runtime.
+- Marketing Agent instructions and Capability map.
+- Marketing Expert coordination.
+- End-to-end Marketing Agent execution tests.
+- Agent episodic memory.
+- Agent semantic memory.
+- Governed Agent memory retrieval and write policy.
+- Agent memory provenance and auditability.
+- Agent memory integration into the canonical context pipeline.
+- Phase 8 documentation and final implementation audit.
+
+**Architecture boundary**
+
+Phase 8 builds on the completed governance and execution foundations from Phases 2, 4 and 7. It does not replace those boundaries.
+
+- Agents orchestrate and make decisions; Experts provide specialized reasoning.
+- Agent and Expert runtime metadata remains authoritative in PHP.
+- Agent execution remains governed through Capability Requests and the Capability → Operation → Application Service boundary.
+- Context assembly reads authorized CR8OR state and does not become a second business-state store.
+- Agent memory is distinct from authoritative business Knowledge and business records.
+- Memory may reference authoritative records but must not silently replace or contradict them.
+- Organization and Enterprise isolation remains mandatory for context and memory.
+- Provider-specific behavior remains behind the existing model-provider boundary.
+- A generalized workflow engine, generalized policy language, reporting engine, forecasting platform and autonomous self-modifying Agent system remain outside Phase 8.
+
+**Phase 8 Implementation Sequence**
+
+| Issue | Scope |
+|---|---|
+| Phase 8.1 | Establish Canonical Agent Runtime Structure |
+| Phase 8.2 | Establish Canonical Expert Runtime Structure |
+| Phase 8.3 | Establish Agent Execution Contract |
+| Phase 8.4 | Establish Agent Context Contract |
+| Phase 8.5 | Establish Expert Invocation Contract |
+| Phase 8.6 | Establish Capability Request Contract |
+| Phase 8.7 | Add Agent and Expert Runtime Contract Tests |
+| Phase 8.8 | Implement Enterprise Context Assembly |
+| Phase 8.9 | Implement Strategy Context Assembly |
+| Phase 8.10 | Implement Work Context Assembly |
+| Phase 8.11 | Implement Knowledge Context Assembly |
+| Phase 8.12 | Implement Decision and Execution History Context |
+| Phase 8.13 | Implement Composable Agent Context Builder |
+| Phase 8.14 | Implement Marketing Agent Runtime |
+| Phase 8.15 | Implement Marketing Agent Instructions and Capability Map |
+| Phase 8.16 | Implement Marketing Expert Coordination |
+| Phase 8.17 | Implement Marketing Agent End-to-End Execution Tests |
+| Phase 8.18 | Implement Agent Episodic Memory |
+| Phase 8.19 | Implement Agent Semantic Memory |
+| Phase 8.20 | Implement Agent Memory Retrieval and Write Policy |
+| Phase 8.21 | Add Agent Memory Provenance and Auditability |
+| Phase 8.22 | Integrate Agent Memory into Canonical Context Pipeline |
+| Phase 8.23 | Complete Phase 8 Agent Runtime and Context Documentation |
+| Phase 8.24 | Complete Agent Runtime and Context Audit |
+
+**Completion Criteria**
+
+- Agent and Expert runtime contracts are canonical and tested.
+- Agents can assemble authorized, bounded and traceable business context.
+- Experts can be invoked through the governed Agent execution boundary.
+- Capability Requests resolve through existing authorization, approval and Capability → Operation semantics.
+- Marketing Agent can complete a representative end-to-end governed execution using the canonical runtime.
+- Agent memory is persistent, scoped, governed and traceable.
+- Agent memory remains distinct from authoritative business state and Knowledge.
+- Organization and Enterprise isolation remains enforced.
+- README and applicable technical specifications accurately describe the implemented Phase 8 state.
+- Full local validation passes.
+- Actual GitHub Actions CI is green.
+- Phase 8 is marked complete only after the Phase 8.24 audit succeeds.
+
 ### Phase 7 Administration Boundary
 
 Phase 7.6 exposes the implemented multi-Agent operational state through the existing Filament administration foundation. Agent delegation history and the business-level collaboration report are available through organization-scoped, server-authorized views. Existing Agent/Expert descriptors, executions, decisions, approvals and workflow records remain read-only where their historical semantics require it. Runtime Agent/Expert metadata remains authoritative in PHP and is displayed read-only. The administration surface is an operational view over CR8OR-owned state, not a second authorization or business-logic layer.
@@ -1179,7 +1267,7 @@ Current context assembly is enterprise-scoped and authorization-aware, but it do
 
 ## Current Reconciliation
 
-The repository has completed the Phase 1 implementation and audit, the verified Phase 2 Agent/Expert governance slice, the Phase 3 Strategy/Knowledge/Work implementation and audit, the Phase 4 MCP Core implementation and audit, the Phase 5 Marketing/Media/Publishing implementation and audit, and the Phase 6 Finance & Business Operations implementation and audit. Deferred capabilities remain explicitly identified rather than being represented as complete. Phases 4-6 should therefore be treated as closed, not as backlogs of missing MCP, AI-runtime, Marketing, Media, Publishing or Finance implementation work.
+The repository has completed Phases 1-7 within their defined boundaries and has entered Phase 8 implementation. Deferred capabilities remain explicitly identified rather than being represented as complete. Phase 8 extends the existing Agent/Expert runtime foundation rather than reopening completed governance or MCP phases.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
@@ -1191,6 +1279,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
 | Phase 7 — Multi-Agent Business Operations | **Complete** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting, Phase 7.6 administration and Phase 7.7 final audit are implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside Phase 7. |
+| Phase 8 — Agent Runtime, Context & Memory | **In Progress** | Phase 8.1–8.7 establish the canonical Agent/Expert runtime and execution contracts; Phase 8.8–8.13 build authorized context assembly; Phase 8.14–8.17 implement and verify the Marketing Agent; Phase 8.18–8.22 implement governed Agent memory; Phase 8.23 reconciles documentation; Phase 8.24 performs the final audit. |
 
 ### Reconciliation Rules
 
@@ -1205,7 +1294,7 @@ The repository has completed the Phase 1 implementation and audit, the verified 
 
 ## Existing Implementation Milestones
 
-The repository is no longer a foundation-only greenfield baseline. Phases 0 through 7 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations is complete, with delegation, core Agent/Expert runtimes, governed workflow traceability, delegated approvals, business-level reporting and administration implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside the completed scope.
+The repository is no longer a foundation-only greenfield baseline. Phases 0 through 7 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations is complete, with delegation, core Agent/Expert runtimes, governed workflow traceability, delegated approvals, business-level reporting and administration implemented and audited within their defined boundaries. Phase 8 is the current implementation phase, focused on production Agent runtime contracts, authorized context assembly, the Marketing Agent and governed Agent memory. Deferred generalized workflow-engine, policy-language, reporting/forecasting and other capabilities remain outside the completed scope.
 
 Future technical milestones will be recorded here and mapped to the corresponding product phase.
 
