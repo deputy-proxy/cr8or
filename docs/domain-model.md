@@ -98,6 +98,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 9.3 implementation:** `KnowledgeContentNormalizationService` converts supported Knowledge documents and versioned items into deterministic bounded `KnowledgeNormalizedUnit` values. Canonicalization normalizes line endings/whitespace, preserves heading paths and reference metadata, bounds large content by deterministic word-aware character limits, and carries Enterprise/source/document/item/version provenance. Empty content produces no units, and changed authoritative versions produce different version identity. The normalization layer contains no ranking, embedding or generated-summary behavior.
 
+**Verified Phase 9.4 implementation:** `KnowledgeIndexingService` is the governed application boundary that persists normalized searchable units, coordinates the indexing lifecycle, records non-content-bearing failure state and supports idempotent reindexing. Searchable unit content lives only in the representation layer and remains tied to Enterprise, Knowledge Item and authoritative version identity; lifecycle records remain responsible for indexed/stale/failed/removed state.
+
 **Deferred:** Retrieval/indexing implementation.
 
 ## Strategy
