@@ -20,29 +20,9 @@ function executionFailureAgentClass(): string
 {
     return get_class(new class extends Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Failure Test Agent';
-        }
-
-        public function description(): string
-        {
-            return 'Exercises failure handling.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['test'];
-        }
-
-        public function capabilities(): array
-        {
-            return [];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise', 'knowledge', 'strategy', 'work'];
+            return new \App\Agents\AgentDefinition(name: 'Failure Test Agent', description: 'Exercises failure handling.', responsibilities: ['test'], instructions: 'Exercise failure handling without granting authority.', experts: [], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: []);
         }
     });
 }
