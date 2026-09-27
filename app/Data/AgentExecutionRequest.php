@@ -25,6 +25,7 @@ final readonly class AgentExecutionRequest
         public ?AgentDelegation $delegation = null,
         public ?string $expertRoutingKey = null,
         public ?string $idempotencyKey = null,
+        public bool $allowWorkerRetry = false,
     ) {
         if (trim($this->prompt) === '') {
             throw new InvalidArgumentException('An Agent execution prompt is required.');
