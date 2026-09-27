@@ -40,6 +40,12 @@ class KnowledgeItem extends Model
         return $this->belongsTo(KnowledgeContext::class, 'knowledge_context_id');
     }
 
+    /** @return HasMany<KnowledgeIndexRecord, $this> */
+    public function indexRecords(): HasMany
+    {
+        return $this->hasMany(KnowledgeIndexRecord::class);
+    }
+
     /** @return HasMany<KnowledgeVersion, $this> */
     public function versions(): HasMany
     {
