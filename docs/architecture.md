@@ -99,7 +99,7 @@ Capability requests produced during Agent or Expert reasoning are represented by
 
 `App\Data\AgentContext` is the canonical provider-neutral contract for current Agent execution context. It separates context into named sections and carries source, organization/Enterprise scope and optional relevance metadata without exposing persistence models to the model provider. The canonical section order is Enterprise, Enterprise Context, Strategy, Work, Knowledge, Decisions, execution history and instructions.
 
-`McpContextAssembler` enforces Enterprise authorization before assembling context. Its existing MCP resource methods remain compatible with their response payloads, while Agent execution and Expert capability execution consume the canonical contract and serialize only the current context data at the runtime boundary.
+`McpContextAssembler` enforces Enterprise authorization before assembling context. Its existing MCP resource methods remain compatible with their response payloads, while Agent execution and Expert capability execution consume the canonical contract and serialize only the current context data at the runtime boundary.\n`EnterpriseContextAssembler` is the application boundary for Enterprise context assembly. It authorizes the Enterprise first and serializes Enterprise identity, Enterprise Context, current Goals/KPIs, Products, Customers and Partners into the canonical Agent context without exposing Eloquent models.
 
 Persistent Agent memory is deliberately outside `AgentContext`. Context represents the current authorized execution; memory is durable state with its own governance and is not implicitly included or treated as business authority.
 
