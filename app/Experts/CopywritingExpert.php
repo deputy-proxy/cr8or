@@ -22,13 +22,10 @@ final class CopywritingExpert extends Expert
 
     public function analyze(array $context): array
     {
-        $result = [
-            'focus' => 'copywriting',
-            'available_context' => array_keys($context),
-        ];
+        $capabilityRequests = [];
 
         if (isset($context['enterprise']['enterprise']['id'])) {
-            $result['capability_requests'] = [[
+            $capabilityRequests[] = [
                 'capability' => 'marketing.content.create',
                 'target_context' => [
                     'enterprise_id' => $context['enterprise']['enterprise']['id'],
@@ -36,9 +33,20 @@ final class CopywritingExpert extends Expert
                 'input_payload' => [
                     'source' => 'copywriting-expert',
                 ],
-            ]];
+            ];
         }
 
-        return $result;
+        return $this->structuredReasoning(
+            $context,
+            'copywriting',
+            'Analyze messaging clarity and recommend content language improvements without publishing content.',
+            [
+                [
+                    'action' => 'develop messaging recommendations',
+                    'rationale' => 'Use authorized knowledge and enterprise context.',
+                ],
+            ],
+            $capabilityRequests,
+        );
     }
 }
