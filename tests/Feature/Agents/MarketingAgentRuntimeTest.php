@@ -51,7 +51,7 @@ it('defines the production Marketing Agent runtime contract', function (): void 
         ->and($agent->decisionBoundaries())->toHaveCount(8)
         ->and($agent->expectedOutputs())->toHaveCount(3)
         ->and($agent->capabilityMap())->toMatchArray([
-            'plan marketing activity' => ['marketing.plan'],
+            'plan marketing activity' => ['marketing.plan', 'marketing.strategy.create'],
             'coordinate marketing expertise' => ['marketing.plan', 'marketing.content.review'],
         ])
         ->and($agent->capabilityGaps())->toContain('marketing.campaign.performance-analysis')
