@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use LogicException;
 
@@ -136,6 +137,12 @@ class AgentExecution extends Model
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    /** @return HasMany<AgentEpisodicMemory, $this> */
+    public function episodicMemories(): HasMany
+    {
+        return $this->hasMany(AgentEpisodicMemory::class, 'execution_id');
     }
 
     /** @return array<string, string> */
