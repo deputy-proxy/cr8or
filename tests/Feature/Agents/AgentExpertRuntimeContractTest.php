@@ -20,6 +20,9 @@ use App\Models\User;
 use App\Services\ExpertInvocationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use InvalidArgumentException;
+use Tests\Support\Agents\RuntimeContractInvalidExpert;
+use Tests\Support\Agents\RuntimeContractTestAgent;
+use Tests\Support\Agents\RuntimeContractTestExpert;
 
 uses()->group('agent-expert-runtime-contract');
 
@@ -235,69 +238,6 @@ it('invokes every registered Agent-to-Expert pairing through the canonical Exper
             ->and($result->reasoningOutput)->toBeArray();
     }
 });
-
-final class RuntimeContractTestAgent extends Agent
-{
-    public function definition(): AgentDefinition
-    {
-        return new AgentDefinition(
-            name: 'Runtime Contract Agent',
-            description: 'Exercises invalid runtime contract behavior.',
-            responsibilities: ['validate'],
-            instructions: 'Validate runtime contract behavior.',
-            experts: ['runtime-contract-expert'],
-            requiredContext: ['enterprise'],
-            capabilities: [],
-        );
-    }
-}
-
-final class RuntimeContractTestExpert extends Expert
-{
-    public function definition(): ExpertDefinition
-    {
-        return new ExpertDefinition(
-            name: 'Runtime Contract Expert',
-            description: 'Exercises the Capability Request contract.',
-            responsibilities: ['request'],
-            methodology: 'Return one governed Capability request.',
-            requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
-        );
-    }
-
-    public function analyze(array $context): array
-    {
-        return [
-            'answer' => 'Contract request.',
-            'capability_requests' => [[
-                'capability' => 'work.item.create',
-                'target_context' => ['enterprise_id' => $context['enterprise']['enterprise']['id']],
-                'input_payload' => ['name' => 'Contract work item'],
-            ]],
-        ];
-    }
-}
-
-final class RuntimeContractInvalidExpert extends Expert
-{
-    public function definition(): ExpertDefinition
-    {
-        return new ExpertDefinition(
-            name: 'Invalid Contract Expert',
-            description: 'Returns an invalid Capability request.',
-            responsibilities: ['request'],
-            methodology: 'Return invalid output.',
-            requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
-        );
-    }
-
-    public function analyze(array $context): array
-    {
-        return ['capability_requests' => [['input_payload' => []]]];
-    }
-}
 
 it('propagates the canonical correlation and Capability Request through Expert execution', function (): void {
     [$actor, $enterprise, $assignment, $execution] = runtimeContractExecution('operations', 'operations');
