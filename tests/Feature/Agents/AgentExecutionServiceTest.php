@@ -350,3 +350,105 @@ it('does not persist a decision when the model did not produce a decision', func
     expect($result->decision)->toBeNull()
         ->and(AgentDecision::query()->count())->toBe(0);
 });
+it('persists bounded multi-step Agent execution state and terminates explicitly', function () {
+    $actor = User::factory()->create();
+    $assignment = governedAssignment($actor);
+    $calls = 0;
+
+    $provider = new FakeModelProvider(function ($request) use (&$calls) {
+        $calls++;
+
+        return new \App\AI\Data\ModelResult(
+            text: 'Step '.$calls,
+            structured: [
+                'answer' => 'Step '.$calls,
+                'decision_title' => '',
+                'decision_summary' => '',
+                'decision_rationale' => '',
+                'termination' => $calls === 2 ? 'completed' : 'continue',
+                'next_step' => $calls === 1 ? 'Perform the second step.' : null,
+                'termination_reason' => $calls === 2 ? 'task_complete' : null,
+                'capability_requests' => [],
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'fake-'.$calls,
+            correlationId: $request->correlationId,
+        );
+    });
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Run two steps.',
+        options: ['max_steps' => 3],
+        correlationId: 'multi-step-test',
+    ));
+
+    expect($result->succeeded())->toBeTrue()
+        ->and($result->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($result->execution->current_step)->toBe(2)
+        ->and($result->execution->state_reason)->toBe('task_complete')
+        ->and($result->execution->steps()->count())->toBe(2)
+        ->and($result->execution->steps()->pluck('status')->all())->toBe([
+            \App\Models\AgentExecutionStep::STATUS_COMPLETED,
+            \App\Models\AgentExecutionStep::STATUS_COMPLETED,
+        ])
+        ->and($calls)->toBe(2);
+});
+
+it('pauses and resumes the same Agent execution from durable state', function () {
+    $actor = User::factory()->create();
+    $assignment = governedAssignment($actor);
+    $calls = 0;
+
+    $provider = new FakeModelProvider(function ($request) use (&$calls) {
+        $calls++;
+
+        return new \App\AI\Data\ModelResult(
+            text: 'Response '.$calls,
+            structured: [
+                'answer' => 'Response '.$calls,
+                'decision_title' => '',
+                'decision_summary' => '',
+                'decision_rationale' => '',
+                'termination' => $calls === 1 ? 'waiting_for_input' : 'completed',
+                'termination_reason' => $calls === 1 ? 'Need user input.' : 'resumed_complete',
+                'next_step' => $calls === 1 ? 'Continue after input.' : null,
+                'capability_requests' => [],
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'resume-'.$calls,
+            correlationId: $request->correlationId,
+        );
+    });
+
+    $service = new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    );
+
+    $first = $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Wait for input.',
+        correlationId: 'resume-test',
+    ));
+
+    expect($first->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_INPUT)
+        ->and($first->execution->current_step)->toBe(1);
+
+    $resumed = $service->resume($first->execution, $actor);
+
+    expect($resumed->succeeded())->toBeTrue()
+        ->and($resumed->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($resumed->execution->current_step)->toBe(2)
+        ->and($resumed->execution->steps()->count())->toBe(2)
+        ->and($calls)->toBe(2);
+});

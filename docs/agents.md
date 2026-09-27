@@ -441,3 +441,10 @@ Agents may explicitly request retrieved_knowledge through the canonical AgentCon
 Knowledge retrieval is not an Agent authority mechanism. Authorization is applied before provider execution and provenance is re-authorized against authoritative Knowledge afterward. Search indexes and embeddings are derived representations and never replace authoritative Knowledge records.
 
 The retrieval section is independent from Enterprise, Strategy, Work, Decision and Memory sections. Deterministic truncation degrades only retrieved Knowledge when its budget is exhausted. Retrieval failures are observable separately from Agent reasoning failures.
+### Phase 10.1 durable Agent execution loop
+
+`AgentExecutionService` now treats an Agent run as one durable, bounded execution rather than a single provider call. `AgentExecution` persists the execution request, context snapshot, current step, maximum step bound, next-step intent, latest structured result, idempotency key and resumable lifecycle state. Each reasoning iteration is represented by an `AgentExecutionStep` with its own sequence, input context, structured output, capability requests, correlation identity and idempotency key.
+
+The lifecycle supports requested → reasoning → executing and explicit terminal or resumable states for waiting for input, waiting for approval, delegated work, paused work, completed, failed and cancelled executions. Structured model output may explicitly terminate the execution or request another bounded reasoning step. The execution service exposes `resume()` for resumable states and reuses the persisted execution rather than creating a second execution record.
+
+Execution context is captured once for the durable run and each subsequent reasoning step receives the prior structured result and bounded step history. Capability requests continue to pass through the existing authorization boundary; actual Capability → Operation execution remains the responsibility of the later governed execution-loop phase.

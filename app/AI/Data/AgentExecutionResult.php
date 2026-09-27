@@ -20,6 +20,6 @@ final readonly class AgentExecutionResult
 
     public function succeeded(): bool
     {
-        return $this->execution->status === AgentExecution::STATUS_SUCCEEDED;
+        return in_array($this->execution->status, [AgentExecution::STATUS_COMPLETED, AgentExecution::STATUS_SUCCEEDED], true);
     }
 }
