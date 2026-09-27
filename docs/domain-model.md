@@ -72,7 +72,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Deferred:** Generalized reporting engines, forecasting, analytics platforms, visualization and cross-enterprise reporting.
 
-**Deferred:** Agent memory implementation, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 8.18 implementation:** `AgentEpisodicMemory` stores bounded summaries of explicit meaningful Agent experiences. Each record is Organization/Enterprise scoped, references the authoritative `AgentExecution`, preserves provenance, and is retrieved through an authorization-aware deterministic boundary. Episodic memory does not replace or duplicate the authoritative execution record.
+
+**Deferred:** Semantic Agent memory, governed generalized memory retrieval/write policy, memory auditability beyond the source provenance stored here, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 
