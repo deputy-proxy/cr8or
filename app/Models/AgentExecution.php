@@ -33,6 +33,17 @@ use LogicException;
  * @property string|null $provider
  * @property string|null $external_execution_id
  * @property string|null $failure_code
+ * @property int $max_steps
+ * @property int $current_step
+ * @property string|null $prompt
+ * @property array<string, mixed>|null $target_context
+ * @property list<string>|null $expert_slugs
+ * @property array<string, mixed>|null $model_options
+ * @property array<string, mixed>|null $execution_context
+ * @property array<string, mixed>|null $last_result
+ * @property string|null $next_step
+ * @property string|null $state_reason
+ * @property string|null $idempotency_key
  */
 #[Fillable([
     'organization_id',
@@ -55,6 +66,17 @@ use LogicException;
     'provider',
     'external_execution_id',
     'failure_code',
+    'max_steps',
+    'current_step',
+    'prompt',
+    'target_context',
+    'expert_slugs',
+    'model_options',
+    'execution_context',
+    'last_result',
+    'next_step',
+    'state_reason',
+    'idempotency_key',
 ])]
 class AgentExecution extends Model
 {
@@ -63,18 +85,38 @@ class AgentExecution extends Model
 
     public const STATUS_REQUESTED = 'requested';
 
+    public const STATUS_REASONING = 'reasoning';
+
+    public const STATUS_WAITING_FOR_INPUT = 'waiting_for_input';
+
+    public const STATUS_WAITING_FOR_APPROVAL = 'waiting_for_approval';
+
     public const STATUS_EXECUTING = 'executing';
 
-    public const STATUS_SUCCEEDED = 'succeeded';
+    public const STATUS_DELEGATED = 'delegated';
+
+    public const STATUS_PAUSED = 'paused';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_SUCCEEDED = self::STATUS_COMPLETED;
 
     public const STATUS_FAILED = 'failed';
+
+    public const STATUS_CANCELLED = 'cancelled';
 
     /** @var list<string> */
     private const STATUSES = [
         self::STATUS_REQUESTED,
+        self::STATUS_REASONING,
+        self::STATUS_WAITING_FOR_INPUT,
+        self::STATUS_WAITING_FOR_APPROVAL,
         self::STATUS_EXECUTING,
-        self::STATUS_SUCCEEDED,
+        self::STATUS_DELEGATED,
+        self::STATUS_PAUSED,
+        self::STATUS_COMPLETED,
         self::STATUS_FAILED,
+        self::STATUS_CANCELLED,
     ];
 
     /** @var list<string> */
@@ -139,6 +181,12 @@ class AgentExecution extends Model
         return $this->belongsTo(User::class, 'actor_id');
     }
 
+    /** @return HasMany<AgentExecutionStep, $this> */
+    public function steps(): HasMany
+    {
+        return $this->hasMany(AgentExecutionStep::class, 'agent_execution_id');
+    }
+
     /** @return HasMany<AgentEpisodicMemory, $this> */
     public function episodicMemories(): HasMany
     {
@@ -152,21 +200,71 @@ class AgentExecution extends Model
             'requested_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'target_context' => 'array',
+            'expert_slugs' => 'array',
+            'model_options' => 'array',
+            'execution_context' => 'array',
+            'last_result' => 'array',
         ];
     }
 
     public function start(): static
     {
-        $this->transitionTo(self::STATUS_EXECUTING);
+        $this->transitionTo(self::STATUS_REASONING);
 
         return $this;
     }
 
+    public function beginReasoning(): static
+    {
+        return $this->transitionTo(self::STATUS_REASONING);
+    }
+
+    public function waitForInput(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_WAITING_FOR_INPUT);
+    }
+
+    public function waitForApproval(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_WAITING_FOR_APPROVAL);
+    }
+
+    public function markDelegated(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_DELEGATED);
+    }
+
+    public function pause(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_PAUSED);
+    }
+
+    public function complete(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_COMPLETED);
+    }
+
     public function succeed(): static
     {
-        $this->transitionTo(self::STATUS_SUCCEEDED);
+        return $this->transitionTo(self::STATUS_SUCCEEDED);
+    }
 
-        return $this;
+    public function cancel(?string $reason = null): static
+    {
+        $this->state_reason = $reason;
+
+        return $this->transitionTo(self::STATUS_CANCELLED);
     }
 
     public function fail(?string $reason = null): static
@@ -184,9 +282,40 @@ class AgentExecution extends Model
         }
 
         $allowed = match ($this->status) {
-            self::STATUS_REQUESTED => [self::STATUS_EXECUTING, self::STATUS_FAILED],
-            self::STATUS_EXECUTING => [self::STATUS_SUCCEEDED, self::STATUS_FAILED],
-            self::STATUS_SUCCEEDED, self::STATUS_FAILED => [],
+            self::STATUS_REQUESTED => [self::STATUS_REASONING, self::STATUS_FAILED, self::STATUS_CANCELLED],
+            self::STATUS_REASONING => [
+                self::STATUS_REASONING,
+                self::STATUS_WAITING_FOR_INPUT,
+                self::STATUS_WAITING_FOR_APPROVAL,
+                self::STATUS_EXECUTING,
+                self::STATUS_DELEGATED,
+                self::STATUS_PAUSED,
+                self::STATUS_COMPLETED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+            ],
+            self::STATUS_WAITING_FOR_INPUT,
+            self::STATUS_WAITING_FOR_APPROVAL,
+            self::STATUS_DELEGATED,
+            self::STATUS_PAUSED => [
+                self::STATUS_REASONING,
+                self::STATUS_EXECUTING,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+            ],
+            self::STATUS_EXECUTING => [
+                self::STATUS_REASONING,
+                self::STATUS_WAITING_FOR_INPUT,
+                self::STATUS_WAITING_FOR_APPROVAL,
+                self::STATUS_DELEGATED,
+                self::STATUS_PAUSED,
+                self::STATUS_COMPLETED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+            ],
+            self::STATUS_COMPLETED,
+            self::STATUS_FAILED,
+            self::STATUS_CANCELLED => [],
             default => throw new LogicException('Agent execution has no valid lifecycle state.'),
         };
 
@@ -200,11 +329,11 @@ class AgentExecution extends Model
 
         $this->status = $status;
 
-        if ($status === self::STATUS_EXECUTING) {
+        if (in_array($status, [self::STATUS_REASONING, self::STATUS_EXECUTING], true)) {
             $this->started_at ??= Carbon::now();
         }
 
-        if (in_array($status, [self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
+        if (in_array($status, [self::STATUS_COMPLETED, self::STATUS_SUCCEEDED, self::STATUS_FAILED, self::STATUS_CANCELLED], true)) {
             $this->completed_at ??= Carbon::now();
         }
 
@@ -217,12 +346,12 @@ class AgentExecution extends Model
             throw new LogicException("Invalid Agent execution status [{$this->status}].");
         }
 
-        if ($this->exists && $this->getRawOriginal('status') === self::STATUS_FAILED && $this->status === self::STATUS_SUCCEEDED) {
+        if ($this->exists && in_array($this->getRawOriginal('status'), [self::STATUS_FAILED, self::STATUS_CANCELLED], true) && $this->status === self::STATUS_COMPLETED) {
             throw new LogicException('A failed Agent execution cannot be represented as succeeded.');
         }
 
-        if ($this->status === self::STATUS_SUCCEEDED && $this->failure_reason !== null) {
-            throw new LogicException('A succeeded Agent execution cannot have a failure reason.');
+        if ($this->status === self::STATUS_COMPLETED && $this->failure_reason !== null) {
+            throw new LogicException('A completed Agent execution cannot have a failure reason.');
         }
 
         if ($this->status === self::STATUS_FAILED && $this->failure_reason === null) {
