@@ -92,6 +92,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Transient model context is not the authoritative knowledge store.
 
+**Verified Phase 9.1 implementation:** KnowledgeRetrievalRequest, KnowledgeRetrievalResult and KnowledgeRetrievalResultItem define the canonical provider-neutral retrieval contract. KnowledgeRetrievalService authorizes the actor against the requested Enterprise before invoking the provider boundary, preserves correlation identity and requires bounded retrieval inputs. Retrieval results carry Knowledge Item, Source, Document, Context, Reference and Version provenance metadata. Storage, indexing and retrieval algorithms remain behind KnowledgeRetrievalProvider and are implemented by later Phase 9 work.
+
 **Deferred:** Retrieval/indexing implementation.
 
 ## Strategy
