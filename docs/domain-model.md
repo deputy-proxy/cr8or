@@ -96,6 +96,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 9.2 implementation:** `KnowledgeIndexRecord` is a lifecycle ledger for searchable representations. Each record preserves Enterprise, source, document, Knowledge Item and authoritative version identity plus representation key and lifecycle status (`pending`, `indexed`, `stale`, `failed`, `removed`). `KnowledgeIndexLifecycleService` authorizes every lifecycle operation, deterministically requeues current versions, stales superseded representations, records failures and prevents stale/removed representations from returning to indexed state. The lifecycle model intentionally stores no authoritative Knowledge content.
 
+**Verified Phase 9.3 implementation:** `KnowledgeContentNormalizationService` converts supported Knowledge documents and versioned items into deterministic bounded `KnowledgeNormalizedUnit` values. Canonicalization normalizes line endings/whitespace, preserves heading paths and reference metadata, bounds large content by deterministic word-aware character limits, and carries Enterprise/source/document/item/version provenance. Empty content produces no units, and changed authoritative versions produce different version identity. The normalization layer contains no ranking, embedding or generated-summary behavior.
+
 **Deferred:** Retrieval/indexing implementation.
 
 ## Strategy
