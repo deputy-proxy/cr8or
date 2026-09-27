@@ -10,6 +10,7 @@ use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
 use App\AI\ReasoningOutputValidator;
 use App\Capabilities\CapabilityRegistry;
+use App\Data\AgentDelegationRequest;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
 use App\Data\ExpertInvocationRequest;
@@ -177,6 +178,12 @@ final class AgentExecutionService
             throw new AuthorizationException('The configured Agent execution runtime is invalid.');
         }
 
+        if ($execution->status === AgentExecution::STATUS_DELEGATED) {
+            if (! $this->refreshDelegatedResults($execution)) {
+                return $this->resultFromExecution($execution);
+            }
+        }
+
         return $this->run(
             $execution,
             $actor,
@@ -328,6 +335,9 @@ final class AgentExecutionService
                 $previousCapabilityResults = is_array($execution->last_result['capability_results'] ?? null)
                     ? $execution->last_result['capability_results']
                     : [];
+                $previousDelegationResults = is_array($execution->last_result['delegation_results'] ?? null)
+                    ? $execution->last_result['delegation_results']
+                    : [];
 
                 $execution->provider = $modelResult->provider;
                 $execution->external_execution_id = $modelResult->invocationId;
@@ -348,15 +358,23 @@ final class AgentExecutionService
                     $execution,
                     $modelResult,
                     $targetContext,
-                    $delegation,
                 );
 
                 $capabilityResults = $this->executeCapabilityRequests(
                     $authorizedRequests,
                 );
 
+                $delegationResults = $this->executeDelegationRequests(
+                    $actor,
+                    $assignment,
+                    $execution,
+                    $modelResult,
+                    $targetContext,
+                );
+
                 $execution->last_result = array_merge($execution->last_result ?? [], [
                     'capability_results' => array_merge($previousCapabilityResults, $capabilityResults),
+                    'delegation_results' => array_merge($previousDelegationResults, $delegationResults),
                 ]);
 
                 $decision = $this->persistDecision($execution, $modelResult);
@@ -376,16 +394,57 @@ final class AgentExecutionService
                     static fn (array $result): bool => ($result['status'] ?? null) === 'waiting',
                 );
 
+                $delegationWait = collect($delegationResults)->first(
+                    static fn (array $result): bool => in_array($result['execution_status'] ?? null, [
+                        AgentExecution::STATUS_WAITING_FOR_INPUT,
+                        AgentExecution::STATUS_WAITING_FOR_APPROVAL,
+                        AgentExecution::STATUS_DELEGATED,
+                        AgentExecution::STATUS_PAUSED,
+                    ], true),
+                );
+
                 if (is_array($approvalWait)) {
                     $reason = 'Approval required for capability ['.($approvalWait['capability'] ?? 'unknown').'].';
                     $step->output = array_merge($step->output ?? [], [
                         'capability_results' => $capabilityResults,
+                        'delegation_results' => $delegationResults,
                     ]);
                     $step->wait($reason)->save();
                     $execution->state_reason = $reason;
                     $execution->waitForApproval($reason)->save();
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if (is_array($delegationWait)) {
+                    $reason = 'Delegated Agent execution requires completion before the parent can continue.';
+                    $step->output = array_merge($step->output ?? [], [
+                        'delegation_results' => $delegationResults,
+                    ]);
+                    $step->wait($reason)->save();
+                    $execution->markDelegated($reason)->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if ($delegationResults !== [] && $termination['status'] === AgentExecution::STATUS_DELEGATED) {
+                    $execution->next_step = $termination['next_step'] ?? 'Continue the current task using the delegated results.';
+                    $step->output = array_merge($step->output ?? [], [
+                        'delegation_results' => $delegationResults,
+                    ]);
+                    $step->complete()->save();
+                    $execution->save();
+
+                    if ($sequence >= $execution->max_steps) {
+                        $execution->complete('max_steps_reached')->save();
+                        $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
+
+                        return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                    }
+
+                    $execution->beginReasoning()->save();
+
+                    continue;
                 }
 
                 if ($termination['status'] === AgentExecution::STATUS_WAITING_FOR_INPUT) {
@@ -777,6 +836,174 @@ final class AgentExecutionService
         }
 
         return $authorized;
+    }
+
+    private function refreshDelegatedResults(AgentExecution $execution): bool
+    {
+        $delegations = AgentDelegation::query()
+            ->where('parent_agent_execution_id', $execution->getKey())
+            ->with('targetAgentExecution')
+            ->orderBy('id')
+            ->get();
+
+        if ($delegations->isEmpty()) {
+            return true;
+        }
+
+        $results = [];
+
+        foreach ($delegations as $delegation) {
+            $child = $delegation->targetAgentExecution;
+
+            if ($child === null) {
+                return false;
+            }
+
+            if ($child->status === AgentExecution::STATUS_FAILED) {
+                $execution->fail('Delegated Agent execution failed.')->save();
+
+                return false;
+            }
+
+            if (! in_array($child->status, [AgentExecution::STATUS_COMPLETED, AgentExecution::STATUS_SUCCEEDED], true)) {
+                return false;
+            }
+
+            $results[] = [
+                'delegation_id' => $delegation->getKey(),
+                'target_agent' => $delegation->target_agent_slug,
+                'capability' => $delegation->capability,
+                'status' => $delegation->status,
+                'correlation_id' => $delegation->correlation_id,
+                'execution_id' => $child->getKey(),
+                'execution_status' => $child->status,
+                'result' => is_array($child->last_result) ? $child->last_result : null,
+                'provenance' => [
+                    'parent_execution_id' => $execution->getKey(),
+                    'delegation_id' => $delegation->getKey(),
+                    'source_assignment_id' => $delegation->source_agent_assignment_id,
+                    'target_assignment_id' => $delegation->target_agent_assignment_id,
+                    'capability' => $delegation->capability,
+                    'correlation_id' => $delegation->correlation_id,
+                ],
+            ];
+        }
+
+        $lastResult = is_array($execution->last_result) ? $execution->last_result : [];
+        $execution->last_result = array_merge($lastResult, ['delegation_results' => $results]);
+        $execution->save();
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @return list<array<string, mixed>>
+     */
+    private function executeDelegationRequests(
+        User $actor,
+        AgentAssignment $assignment,
+        AgentExecution $execution,
+        ModelResult $result,
+        array $targetContext,
+    ): array {
+        $requests = $result->structured['delegation_requests'] ?? [];
+
+        if (! is_array($requests) || $requests === []) {
+            return [];
+        }
+
+        $delegations = app(AgentDelegationService::class);
+        $results = [];
+
+        foreach ($requests as $encodedRequest) {
+            if (is_string($encodedRequest)) {
+                $encodedRequest = json_decode($encodedRequest, true);
+            }
+
+            if (! is_array($encodedRequest)) {
+                throw new AuthorizationException('The model returned an invalid delegation request.');
+            }
+
+            $targetAgentSlug = $encodedRequest['target_agent_slug'] ?? null;
+            $capability = $encodedRequest['capability'] ?? null;
+            $prompt = $encodedRequest['prompt'] ?? $encodedRequest['objective'] ?? null;
+            $requestedContext = $encodedRequest['target_context'] ?? $targetContext;
+            $contextRequirements = $encodedRequest['context_requirements'] ?? [];
+            $idempotencyKey = $encodedRequest['idempotency_key'] ?? null;
+
+            if (! is_string($targetAgentSlug) || trim($targetAgentSlug) === '') {
+                throw new AuthorizationException('The model returned a delegation request without a target Agent.');
+            }
+
+            if (! is_string($capability) || trim($capability) === '') {
+                throw new AuthorizationException('The model returned a delegation request without a target capability.');
+            }
+
+            if (! is_string($prompt) || trim($prompt) === '') {
+                throw new AuthorizationException('The model returned a delegation request without an objective.');
+            }
+
+            if (! is_array($requestedContext)) {
+                throw new AuthorizationException('The model returned invalid delegated target context.');
+            }
+
+            if (! is_array($contextRequirements) || array_filter($contextRequirements, static fn (mixed $item): bool => ! is_string($item) || trim($item) === '') !== []) {
+                throw new AuthorizationException('The model returned invalid delegated context requirements.');
+            }
+
+            if (! is_string($idempotencyKey) || trim($idempotencyKey) === '') {
+                throw new AuthorizationException('The model returned a delegation request without an idempotency key.');
+            }
+
+            $sourceApproval = isset($encodedRequest['source_approval_request_id'])
+                ? ApprovalRequest::query()->find((int) $encodedRequest['source_approval_request_id'])
+                : null;
+            $targetApproval = isset($encodedRequest['target_approval_request_id'])
+                ? ApprovalRequest::query()->find((int) $encodedRequest['target_approval_request_id'])
+                : null;
+
+            $response = $delegations->delegate(new AgentDelegationRequest(
+                actor: $actor,
+                sourceAssignment: $assignment,
+                targetAgentSlug: trim($targetAgentSlug),
+                capability: trim($capability),
+                prompt: trim($prompt),
+                targetContext: $requestedContext,
+                contextRequirements: array_values($contextRequirements),
+                sourceApproval: $sourceApproval,
+                targetApproval: $targetApproval,
+                correlationId: isset($encodedRequest['correlation_id']) && is_string($encodedRequest['correlation_id'])
+                    ? $encodedRequest['correlation_id']
+                    : $execution->correlation_id,
+                idempotencyKey: trim($idempotencyKey),
+                parentExecution: $execution,
+            ));
+
+            $childExecution = $response->execution;
+            $childResult = $childExecution?->last_result;
+
+            $results[] = [
+                'delegation_id' => $response->delegation->getKey(),
+                'target_agent' => $response->targetDescriptor->slug,
+                'capability' => $response->capability,
+                'status' => $response->delegation->status,
+                'correlation_id' => $response->correlationId,
+                'execution_id' => $childExecution?->getKey(),
+                'execution_status' => $childExecution?->status,
+                'result' => is_array($childResult) ? $childResult : null,
+                'provenance' => [
+                    'parent_execution_id' => $execution->getKey(),
+                    'delegation_id' => $response->delegation->getKey(),
+                    'source_assignment_id' => $assignment->getKey(),
+                    'target_assignment_id' => $response->targetAssignment->getKey(),
+                    'capability' => $response->capability,
+                    'correlation_id' => $response->correlationId,
+                ],
+            ];
+        }
+
+        return $results;
     }
 
     /**
