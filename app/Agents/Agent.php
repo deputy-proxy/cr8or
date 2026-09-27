@@ -1,1 +1,74 @@
-{"stdout":"<?php\n\nnamespace App\\Agents;\n\nuse App\\Experts\\Expert;\n\nabstract class Agent\n{\n    abstract public function definition(): AgentDefinition;\n\n    final public function name(): string\n    {\n        return $this->definition()->name;\n    }\n\n    final public function description(): string\n    {\n        return $this->definition()->description;\n    }\n\n    /** @return list<string> */\n    final public function responsibilities(): array\n    {\n        return $this->definition()->responsibilities;\n    }\n\n    final public function instructions(): string\n    {\n        return $this->definition()->instructions;\n    }\n\n    /** @return list<string> */\n    final public function experts(): array\n    {\n        return $this->definition()->experts;\n    }\n\n    /** @return list<string> */\n    final public function requiredContext(): array\n    {\n        return $this->definition()->requiredContext;\n    }\n\n    /** @return list<string> */\n    final public function capabilities(): array\n    {\n        return $this->definition()->capabilities;\n    }\n\n    /**\n     * @param  array<string, mixed>  $context\n     * @param  iterable<Expert>  $experts\n     * @return array<string, mixed>\n     */\n    public function execute(array $context, iterable $experts): array\n    {\n        $results = [];\n        foreach ($experts as $expert) {\n            $results[] = ['expert' => $expert->name(), 'result' => $expert->analyze($context)];\n        }\n\n        return ['agent' => $this->name(), 'results' => $results];\n    }\n\n    /**\n     * @param  array<string, mixed>  $context\n     * @param  iterable<Expert>  $experts\n     * @return array<string, mixed>\n     */\n    public function coordinate(array $context, iterable $experts): array\n    {\n        return $this->execute($context, $experts);\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Agents;
+
+use App\Experts\Expert;
+
+abstract class Agent
+{
+    abstract public function definition(): AgentDefinition;
+
+    final public function name(): string
+    {
+        return $this->definition()->name;
+    }
+
+    final public function description(): string
+    {
+        return $this->definition()->description;
+    }
+
+    /** @return list<string> */
+    final public function responsibilities(): array
+    {
+        return $this->definition()->responsibilities;
+    }
+
+    final public function instructions(): string
+    {
+        return $this->definition()->instructions;
+    }
+
+    /** @return list<string> */
+    final public function experts(): array
+    {
+        return $this->definition()->experts;
+    }
+
+    /** @return list<string> */
+    final public function requiredContext(): array
+    {
+        return $this->definition()->requiredContext;
+    }
+
+    /** @return list<string> */
+    final public function capabilities(): array
+    {
+        return $this->definition()->capabilities;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  iterable<Expert>  $experts
+     * @return array<string, mixed>
+     */
+    public function execute(array $context, iterable $experts): array
+    {
+        $results = [];
+        foreach ($experts as $expert) {
+            $results[] = ['expert' => $expert->name(), 'result' => $expert->analyze($context)];
+        }
+
+        return ['agent' => $this->name(), 'results' => $results];
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  iterable<Expert>  $experts
+     * @return array<string, mixed>
+     */
+    public function coordinate(array $context, iterable $experts): array
+    {
+        return $this->execute($context, $experts);
+    }
+}
