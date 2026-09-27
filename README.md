@@ -1135,6 +1135,18 @@ Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generaliz
 
 Phase 7.5 adds the minimum business-level multi-Agent report. It is Enterprise-scoped and derived from authoritative AgentExecution, AgentDecision, AgentDelegation, ApprovalRequest, Workflow and existing financial/business-health results. Report generation is read-only, failed operations remain failures, and historical Agent identity comes from the execution/delegation snapshots already maintained by CR8OR. A generalized reporting engine, forecasting and analytics platform remain deferred.
 
+### Phase 7 Administration Boundary
+
+Phase 7.6 exposes the implemented multi-Agent operational state through the existing Filament administration foundation. Agent delegation history and the business-level collaboration report are available through organization-scoped, server-authorized views. Existing Agent/Expert descriptors, executions, decisions, approvals and workflow records remain read-only where their historical semantics require it. Runtime Agent/Expert metadata remains authoritative in PHP and is displayed read-only. The administration surface is an operational view over CR8OR-owned state, not a second authorization or business-logic layer.
+
+### Workflow / Job / Execution Boundary
+
+The current Workflow, Job and Execution models provide CR8OR-owned lifecycle, idempotency and execution tracking. They are the authoritative execution-history layer for implemented workflows, not a generalized workflow engine. Full workflow-engine semantics remain deferred.
+
+### Events and Jobs
+
+Events and Jobs remain CR8OR application mechanisms for meaningful state-change communication and asynchronous application work. The current repository contains execution/lifecycle contracts and tracking infrastructure, while substantial concrete asynchronous workflows are introduced only where the corresponding domain capability requires them. n8n is not the primary CR8OR orchestration layer. It may be connected later through MCP by an Automatiser Expert when appropriate.
+
 ### Phase 8 — Agent Runtime, Context & Memory
 
 **Status: In Progress — Phase 8.1–8.24**
@@ -1222,18 +1234,6 @@ Phase 8 builds on the completed governance and execution foundations from Phases
 - Full local validation passes.
 - Actual GitHub Actions CI is green.
 - Phase 8 is marked complete only after the Phase 8.24 audit succeeds.
-
-### Phase 7 Administration Boundary
-
-Phase 7.6 exposes the implemented multi-Agent operational state through the existing Filament administration foundation. Agent delegation history and the business-level collaboration report are available through organization-scoped, server-authorized views. Existing Agent/Expert descriptors, executions, decisions, approvals and workflow records remain read-only where their historical semantics require it. Runtime Agent/Expert metadata remains authoritative in PHP and is displayed read-only. The administration surface is an operational view over CR8OR-owned state, not a second authorization or business-logic layer.
-
-### Workflow / Job / Execution Boundary
-
-The current Workflow, Job and Execution models provide CR8OR-owned lifecycle, idempotency and execution tracking. They are the authoritative execution-history layer for implemented workflows, not a generalized workflow engine. Full workflow-engine semantics remain deferred.
-
-### Events and Jobs
-
-Events and Jobs remain CR8OR application mechanisms for meaningful state-change communication and asynchronous application work. The current repository contains execution/lifecycle contracts and tracking infrastructure, while substantial concrete asynchronous workflows are introduced only where the corresponding domain capability requires them. n8n is not the primary CR8OR orchestration layer. It may be connected later through MCP by an Automatiser Expert when appropriate.
 
 ## MCP Surface: Current Implementation
 
