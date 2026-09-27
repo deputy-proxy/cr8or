@@ -103,6 +103,8 @@ Capability requests produced during Agent or Expert reasoning are represented by
 
 Persistent Agent memory is deliberately outside `AgentContext`. Context represents the current authorized execution; memory is durable state with its own governance and is not implicitly included or treated as business authority.
 
+The Work context section is assembled by `WorkContextAssembler` after Enterprise authorization. It exposes bounded Projects, Tasks, Work Items, Milestones, relevant Assignments and Dependencies, plus bounded current Workflow/Job/Execution status. Task parent/child relationships and work references remain explicit, while execution state is presented as runtime status rather than business Work state. Historical Job/Execution logs are not exposed through this context boundary.
+
 ## Execution Error and Correlation Contract
 
 MCP and Agent execution use a small shared error taxonomy rather than a generalized workflow/error engine. Correlation begins at the MCP HTTP/request boundary and is propagated to AgentExecution, ApprovalRequest and provider invocation metadata where applicable.
