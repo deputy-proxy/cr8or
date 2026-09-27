@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Data\AgentExecutionRequest;
+use App\Events\AgentExecutionFailed;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\User;
@@ -108,5 +109,9 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
 
         $execution->failure_code = $isTimeout ? 'timeout' : 'queue_failed';
         $execution->fail($message)->save();
+        app(\App\Services\AgentExecutionEventService::class)->dispatch(AgentExecutionFailed::class, $execution, data: [
+            'failure_code' => $execution->failure_code,
+            'retryable' => false,
+        ]);
     }
 }
