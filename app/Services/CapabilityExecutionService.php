@@ -109,6 +109,7 @@ final class CapabilityExecutionService
                 'approval' => $request->approval,
                 'approval_request_id' => $request->approval?->getKey(),
                 'correlation_id' => $request->resolvedCorrelationId(),
+                'idempotency_key' => $request->idempotencyKey,
                 'delegation' => $request->delegation,
                 'content_item' => null,
                 'social_account' => null,
