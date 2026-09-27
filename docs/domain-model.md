@@ -108,6 +108,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 9.8 implementation:** `KnowledgeRetrievalProvenanceService` rehydrates retrieved Knowledge Items from the authoritative Enterprise scope, re-applies Knowledge authorization, fills source/document/version/reference metadata from authoritative records when providers omit it, and marks whether returned version identity is current. Provider results pointing outside the requested Enterprise are rejected. Provenance normalization remains separate from generated interpretation and publication.
 
+**Verified Phase 9.9 implementation:** The canonical `KnowledgeRetrievalService` applies provenance normalization after every provider result, so Enterprise scope and Knowledge authorization are enforced after provider execution as well as before it. Security regression coverage verifies unauthorized Enterprise requests, provider-supplied foreign Knowledge IDs and hybrid provider fixtures. Provider implementations cannot bypass the authoritative Knowledge boundary by returning fabricated or cross-Enterprise identifiers.
+
 **Verified Phase 9.5 implementation:** `KnowledgeLexicalRetrievalProvider` implements deterministic lexical retrieval over current indexed representations. Candidate filtering is Enterprise-scoped and limited to indexed lifecycle records before scoring; results are bounded by the canonical retrieval request, carry source/document/version/reference metadata, and return deterministic empty results for empty/unmatched queries. Authorization remains enforced by `KnowledgeRetrievalService` before provider execution. Semantic and model-based ranking remain outside this boundary.
 
 **Deferred:** Retrieval/indexing implementation.
