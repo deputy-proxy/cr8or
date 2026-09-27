@@ -2,6 +2,10 @@
 
 use App\Data\AgentContext;
 use App\Data\AgentContextSection;
+use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
+use App\Models\AgentEpisodicMemory;
+use App\Models\AgentSemanticMemory;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
 use App\Models\Membership;
@@ -207,4 +211,73 @@ it('rejects an unsupported runtime context requirement', function () {
         $enterprise,
         ['not_registered'],
     ))->toThrow(InvalidArgumentException::class);
+});
+
+it('includes governed Agent memory when explicitly requested by the Agent context', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+    $agent = AgentDescriptor::factory()->create();
+    $assignment = AgentAssignment::factory()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $organization->getKey(),
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+    ]);
+
+    AgentEpisodicMemory::factory()->forAgent($agent, $enterprise)->create([
+        'topic' => 'campaigns',
+    ]);
+    AgentSemanticMemory::factory()->forAgent($agent, $enterprise)->create([
+        'statement' => 'Campaign reporting is reviewed weekly.',
+    ]);
+
+    $context = app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['memory'],
+        [],
+        $assignment,
+    );
+
+    expect($context->has('memory'))->toBeTrue()
+        ->and($context->section('memory')?->data['episodic'])->toHaveCount(1)
+        ->and($context->section('memory')?->data['semantic'])->toHaveCount(1)
+        ->and($context->metadata()['memory'])->toMatchArray([
+            'source' => App\Services\Context\Providers\MemoryContextProvider::class,
+            'scope' => [
+                'organization_id' => $organization->getKey(),
+                'enterprise_id' => $enterprise->getKey(),
+                'agent_assignment_id' => $assignment->getKey(),
+                'agent_descriptor_id' => $agent->getKey(),
+            ],
+        ]);
+});
+
+it('denies the memory context requirement without the current Agent assignment', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    expect(fn () => app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['memory'],
+    ))->toThrow(AuthorizationException::class);
 });
