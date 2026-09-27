@@ -15,6 +15,7 @@ use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\DomainMutationTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
@@ -84,6 +85,13 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
     foreach ($definitions as $definition) {
         expect($registry->operationForTool($definition->toolClass))->toBeInstanceOf(App\Contracts\Operation::class);
     }
+});
+
+it('does not expose generic capability or operation fallbacks on DomainMutationTool', function () {
+    $reflection = new ReflectionClass(DomainMutationTool::class);
+
+    expect($reflection->hasMethod('capability'))->toBeFalse()
+        ->and($reflection->hasMethod('operation'))->toBeFalse();
 });
 
 it('does not allow the generic mutation capability to authorize an Agent-backed domain mutation', function () {

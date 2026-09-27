@@ -46,7 +46,9 @@ abstract class DomainMutationTool extends AuthorizedTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $capabilities) {
+        $definition = $capabilities->forTool(static::class);
+
+        return $this->executeWithErrors($request, $definition->operation, function () use ($request, $authorization, $definition) {
             $validated = $request->validate(static::rules());
             $actor = $request->user();
 
@@ -57,8 +59,6 @@ abstract class DomainMutationTool extends AuthorizedTool
             $target = static::target($validated);
             $enterprise = static::enterprise($validated);
             $humanAbility = static::humanAbility($validated, $target);
-
-            $definition = $capabilities->forTool(static::class);
 
             $authorization->authorizeMutation(
                 $actor,
@@ -71,17 +71,12 @@ abstract class DomainMutationTool extends AuthorizedTool
                 $humanAbility,
             );
 
-            if ($definition->operation !== $capabilities->forTool(static::class)->operation) {
-                throw new \LogicException('MCP capability operation mapping is inconsistent.');
-            }
-
-            $record = $capabilities->operationForTool(static::class)->execute($actor, $validated);
+            $record = app($definition->operation)->execute($actor, $validated);
 
             return Response::structured(['success' => true, 'result' => static::result($record)]);
         });
     }
 
-    /** @param array<string, mixed> $validated */
     /** @param array<string, mixed> $validated */
     public static function executeMutation(User $actor, array $validated): Model
     {
@@ -94,15 +89,5 @@ abstract class DomainMutationTool extends AuthorizedTool
     protected static function target(array $validated): ?Model
     {
         return null;
-    }
-
-    protected static function capability(): string
-    {
-        return static::operation();
-    }
-
-    protected static function operation(): string
-    {
-        return 'mcp.domain.mutation';
     }
 }
