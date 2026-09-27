@@ -93,11 +93,13 @@ final class AgentExecutionService
             );
         }
 
+        $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt);
+
         $context = $this->contextAssembler->forAgent(
             $actor,
             $enterprise,
             $agent->requiredContext(),
-            $request->targetContext,
+            $executionTargetContext,
             $assignment,
         );
 
@@ -120,7 +122,7 @@ final class AgentExecutionService
             'max_steps' => $this->maxSteps($request->options),
             'current_step' => 0,
             'prompt' => $request->prompt,
-            'target_context' => $request->targetContext,
+            'target_context' => $executionTargetContext,
             'expert_slugs' => $expertSlugs,
             'model_options' => $request->options,
             'execution_context' => $context->toArray(),
@@ -134,7 +136,7 @@ final class AgentExecutionService
             $enterprise,
             $expertSlugs,
             $request->prompt,
-            $request->targetContext,
+            $executionTargetContext,
             $request->options,
             $request->delegation,
             $correlationId,
@@ -451,6 +453,32 @@ final class AgentExecutionService
             'next_step' => isset($structured['next_step']) && is_string($structured['next_step']) ? trim($structured['next_step']) : null,
             'reason' => isset($structured['termination_reason']) && is_string($structured['termination_reason']) ? trim($structured['termination_reason']) : null,
         ];
+    }
+
+    /** @param array<string, mixed> $options */
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @return array<string, mixed>
+     */
+    private function executionTargetContext(Agent $agent, array $targetContext, string $prompt): array
+    {
+        if (! array_intersect(['knowledge', 'retrieved_knowledge'], $agent->requiredContext())) {
+            return $targetContext;
+        }
+
+        if (isset($targetContext['retrieved_knowledge'])) {
+            return $targetContext;
+        }
+
+        $targetContext['retrieved_knowledge'] = [
+            'query' => $prompt,
+            'objective' => $prompt,
+            'mode' => 'hybrid',
+            'limit' => 5,
+            'budget' => 1200,
+        ];
+
+        return $targetContext;
     }
 
     /** @param array<string, mixed> $options */
