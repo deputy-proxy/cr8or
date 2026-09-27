@@ -3,62 +3,82 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
-use App\Mcp\Concerns\ExecutesCapabilities;
 use App\Models\Enterprise;
+use App\Models\MarketingStrategy;
 use App\Models\User;
-use Illuminate\Support\Facades\Validator;
-use Laravel\Mcp\Server\Request;
-use Laravel\Mcp\Server\Response;
-use Laravel\Mcp\Server\Tool;
+use App\Services\McpCapabilityAuthorizer;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
+use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Attributes\Name;
 
-final class CreateMarketingStrategyTool extends Tool
+#[Name('create-marketing-strategy')]
+#[Description('Create a marketing strategy under an authorized enterprise through the governed CR8OR marketing strategy capability.')]
+class CreateMarketingStrategyTool extends GovernedCapabilityTool
 {
-    use ExecutesCapabilities;
-
-    protected string $name = 'create-marketing-strategy';
-
-    protected string $description = 'Create a marketing strategy under an authorized enterprise through the governed CR8OR marketing strategy capability.';
-
-    public function handle(Request $request): Response
+    public function schema(JsonSchema $schema): array
     {
-        return $this->executeWithErrors($request, 'mcp.marketing.strategy.create', function (Request $request) {
-            $validated = Validator::make($request->all(), [
-                'enterprise_id' => ['required', 'integer', 'exists:enterprises,id'],
+        return [
+            'enterprise_id' => $schema->integer()->min(1)->description('Target enterprise id.')->required(),
+            'name' => $schema->string()->min(1)->max(255)->description('Marketing strategy name.')->required(),
+            'description' => $schema->string()->max(10000)->description('Optional strategy description.'),
+            'agent_assignment_id' => $schema->integer()->min(1)->description('Required with agent_execution_id for an Agent-backed invocation.'),
+            'agent_execution_id' => $schema->integer()->min(1)->description('Required with agent_assignment_id for an Agent-backed invocation.'),
+            'approval_request_id' => $schema->integer()->min(1)->description('Approved request required when the Agent capability requires approval.'),
+        ];
+    }
+
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
+    {
+        return $this->executeWithErrors($request, 'mcp.marketing.strategy.create', function () use ($request, $authorization, $registry) {
+            $validated = $request->validate([
+                'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
                 'description' => ['nullable', 'string', 'max:10000'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
                 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
-            ])->validate();
+            ]);
 
-            $actor = $this->authenticatedUser($request);
+            $actor = $request->user();
+
+            if (! $actor instanceof User) {
+                throw new AuthenticationException;
+            }
+
             $enterprise = Enterprise::query()->findOrFail((int) $validated['enterprise_id']);
 
-            $strategy = $this->executeCapability(
-                app(CapabilityRegistry::class),
+            $authorization->authorizeMutation(
                 $actor,
-                ['enterprise' => $enterprise, ...$validated],
-                'marketing.strategy.create'
+                $this->capability($registry),
+                $enterprise,
+                $validated['agent_assignment_id'] ?? null,
+                $validated['agent_execution_id'] ?? null,
+                $validated['approval_request_id'] ?? null,
+                ['enterprise_id' => $enterprise->getKey()],
+                ['create', [MarketingStrategy::class, $enterprise]],
             );
 
-            return $this->successResponse([
-                'id' => $strategy->id,
-                'enterprise_id' => $strategy->enterprise_id,
-                'name' => $strategy->name,
-                'description' => $strategy->description,
-                'status' => $strategy->status,
+            /** @var MarketingStrategy $strategy */
+            $strategy = $this->executeCapability(
+                $registry,
+                $actor,
+                ['enterprise' => $enterprise, ...$validated],
+            );
+
+            return Response::structured([
+                'success' => true,
+                'result' => [
+                    'id' => $strategy->getKey(),
+                    'enterprise_id' => $strategy->enterprise_id,
+                    'name' => $strategy->name,
+                    'description' => $strategy->description,
+                    'status' => $strategy->status,
+                ],
             ]);
         });
-    }
-
-    private function authenticatedUser(Request $request): User
-    {
-        $user = $request->user();
-
-        if (! $user instanceof User) {
-            abort(401, 'Authentication required.');
-        }
-
-        return $user;
     }
 }
