@@ -21,7 +21,7 @@ use LogicException;
  * @property string|null $intent
  * @property array<string, mixed>|null $input_context
  * @property array<string, mixed>|null $output
- * @property list<array<string, mixed>>|null $capability_requests
+ * @property array<array<string, mixed>>|null $capability_requests
  * @property string|null $failure_reason
  * @property string|null $failure_code
  * @property string|null $correlation_id

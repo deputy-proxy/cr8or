@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\AI\Contracts\ExecutionError;
+use App\AI\ReasoningOutputValidator;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\CapabilityRequest;
 use App\Data\ExpertInvocationRequest;
@@ -110,6 +111,7 @@ final class ExpertInvocationService
                     'expected_reasoning_output' => $request->expectedReasoningOutput,
                 ],
             ]));
+            $reasoningOutput = ReasoningOutputValidator::normalizeExpert($reasoningOutput);
 
             $requestedCapabilities = $this->requestedCapabilities(
                 $reasoningOutput,

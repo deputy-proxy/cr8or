@@ -18,9 +18,11 @@ final class BusinessAnalysisExpert extends Expert
 
     public function analyze(array $context): array
     {
-        return [
-            'focus' => 'business analysis',
-            'available_context' => array_keys($context),
-        ];
+        return $this->structuredReasoning(
+            $context,
+            'business analysis',
+            'Analyze authorized enterprise context, dependencies, and decision inputs.',
+            [['action' => 'surface decision inputs', 'rationale' => 'Use only authorized enterprise evidence.']],
+        );
     }
 }

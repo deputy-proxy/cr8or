@@ -34,9 +34,44 @@ abstract class Expert
         return $this->definition()->requiredContext;
     }
 
+    /** @return array<string, mixed> */
+    final public function reasoningOutputSchema(): array
+    {
+        return $this->definition()->reasoningOutputSchema;
+    }
+
     final public function methodology(): string
     {
         return $this->definition()->methodology;
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  list<array<string, mixed>>  $recommendations
+     * @param  list<array<string, mixed>>  $capabilityRequests
+     * @return array<string, mixed>
+     */
+    final protected function structuredReasoning(
+        array $context,
+        string $focus,
+        string $analysis,
+        array $recommendations = [],
+        array $capabilityRequests = [],
+    ): array {
+        return [
+            'focus' => $focus,
+            'answer' => $analysis,
+            'analysis' => $analysis,
+            'recommendations' => $recommendations,
+            'evidence_references' => array_keys($context),
+            'missing_information' => [],
+            'uncertainty' => [
+                'level' => 'medium',
+                'notes' => 'Reasoning is bounded by the authorized execution context.',
+            ],
+            'available_context' => array_keys($context),
+            'capability_requests' => $capabilityRequests,
+        ];
     }
 
     /**
