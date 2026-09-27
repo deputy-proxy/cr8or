@@ -3,22 +3,20 @@
 namespace App\Services;
 
 use App\Data\AgentContext;
-use App\Data\AgentContextSection;
 use App\Models\AgentAssignment;
 use App\Models\Enterprise;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
-use InvalidArgumentException;
 
-class McpContextAssembler
+final class McpContextAssembler
 {
-    private const STRATEGY_CONTEXT_LIMIT = 100;
-
     public function __construct(
+        private readonly AgentContextBuilder $contextBuilder,
         private readonly EnterpriseContextAssembler $enterpriseContextAssembler,
-        private readonly WorkContextAssembler $workContextAssembler,
+        private readonly StrategyContextAssembler $strategyContextAssembler,
         private readonly KnowledgeContextAssembler $knowledgeContextAssembler,
-        private readonly HistoricalContextAssembler $historicalContextAssembler,
+        private readonly WorkContextAssembler $workContextAssembler,
+        private readonly FinancialReportingService $financialReportingService,
     ) {}
 
     /**
@@ -27,38 +25,20 @@ class McpContextAssembler
      * @param  list<string>  $requiredContext
      * @param  array<string, mixed>  $targetContext
      */
-    public function forAgent(User $user, Enterprise $enterprise, array $requiredContext, array $targetContext = [], ?AgentAssignment $assignment = null): AgentContext
-    {
-        Gate::forUser($user)->authorize('view', $enterprise);
-
-        $context = $this->enterpriseContextAssembler->assemble($user, $enterprise);
-        $scope = $this->scope($enterprise);
-
-        foreach ($requiredContext as $requirement) {
-            if ($requirement === 'enterprise' || $requirement === 'enterprise_context') {
-                continue;
-            }
-
-            $context = match ($requirement) {
-                'knowledge' => $context->withSection($this->knowledgeSection($user, $enterprise, $scope)),
-                'strategy' => $context->withSection($this->strategySection($user, $enterprise, $scope)),
-                'work' => $context->withSection($this->workSection($user, $enterprise, $scope)),
-                'decisions' => $context->withSection($this->historicalContextAssembler->decisions($user, $enterprise, $targetContext)),
-                'execution_history' => $context->withSection($this->historicalContextAssembler->executionHistory($user, $enterprise, $assignment)),
-                'financial' => $context->withSection(new AgentContextSection(
-                    name: 'financial',
-                    data: $this->financial($user, $enterprise->getKey()),
-                    source: FinancialReportingService::class,
-                    scope: $scope,
-                    relevance: 'Agent-declared context requirement',
-                )),
-                default => throw new InvalidArgumentException(
-                    "Agent requires unsupported context category [{$requirement}].",
-                ),
-            };
-        }
-
-        return $context;
+    public function forAgent(
+        User $user,
+        Enterprise $enterprise,
+        array $requiredContext,
+        array $targetContext = [],
+        ?AgentAssignment $assignment = null,
+    ): AgentContext {
+        return $this->contextBuilder->build(
+            $user,
+            $enterprise,
+            $requiredContext,
+            $targetContext,
+            $assignment,
+        );
     }
 
     /** @return array<string, mixed> */
@@ -78,7 +58,7 @@ class McpContextAssembler
     {
         $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
 
-        return $this->strategyData($enterprise);
+        return $this->strategyContextAssembler->assemble($user, $enterprise);
     }
 
     /** @return array<string, mixed> */
@@ -94,7 +74,7 @@ class McpContextAssembler
     {
         $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
 
-        return app(FinancialReportingService::class)->context($enterprise);
+        return $this->financialReportingService->context($enterprise);
     }
 
     /** @return array<string, mixed> */
@@ -112,165 +92,5 @@ class McpContextAssembler
         Gate::forUser($user)->authorize('view', $enterprise);
 
         return $enterprise;
-    }
-
-    /** @param array{organization_id: int|string, enterprise_id: int|string} $scope */
-    private function strategySection(User $user, Enterprise $enterprise, array $scope): AgentContextSection
-    {
-        $authorized = $this->authorizedEnterprise($user, $enterprise->getKey());
-
-        return new AgentContextSection(
-            name: 'strategy',
-            data: $this->strategyData($authorized),
-            source: 'Enterprise::objectives()->strategies()->plans()->initiatives()',
-            scope: $scope,
-            relevance: 'Agent-declared context requirement',
-        );
-    }
-
-    /** @param array{organization_id: int|string, enterprise_id: int|string} $scope */
-    private function knowledgeSection(User $user, Enterprise $enterprise, array $scope): AgentContextSection
-    {
-        $authorized = $this->authorizedEnterprise($user, $enterprise->getKey());
-
-        return new AgentContextSection(
-            name: 'knowledge',
-            data: $this->knowledgeContextAssembler->assemble($user, $authorized),
-            source: KnowledgeContextAssembler::class,
-            scope: $scope,
-            relevance: 'Agent-declared context requirement',
-        );
-    }
-
-    /** @param array{organization_id: int|string, enterprise_id: int|string} $scope */
-    private function workSection(User $user, Enterprise $enterprise, array $scope): AgentContextSection
-    {
-        $authorized = $this->authorizedEnterprise($user, $enterprise->getKey());
-
-        return new AgentContextSection(
-            name: 'work',
-            data: $this->workContextAssembler->assemble($user, $authorized),
-            source: WorkContextAssembler::class,
-            scope: $scope,
-            relevance: 'Agent-declared context requirement',
-        );
-    }
-
-    /** @return array<string, mixed> */
-    private function strategyData(Enterprise $enterprise): array
-    {
-        $goals = $enterprise->goals()
-            ->orderBy('id')
-            ->limit(self::STRATEGY_CONTEXT_LIMIT)
-            ->get();
-
-        $kpis = $enterprise->kpis()
-            ->orderBy('id')
-            ->limit(self::STRATEGY_CONTEXT_LIMIT)
-            ->get();
-
-        $goalById = $goals->keyBy('id');
-        $kpiById = $kpis->keyBy('id');
-
-        $objectives = $enterprise->objectives()
-            ->orderBy('id')
-            ->limit(self::STRATEGY_CONTEXT_LIMIT)
-            ->get()
-            ->map(function ($objective) use ($goalById, $kpiById) {
-                $goal = $goalById->get($objective->goal_id);
-                $kpi = $kpiById->get($objective->kpi_id);
-
-                return [
-                    'id' => $objective->getKey(),
-                    'name' => $objective->name,
-                    'description' => $objective->description,
-                    'goal' => $goal === null ? null : [
-                        'id' => $goal->getKey(),
-                        'name' => $goal->name,
-                        'description' => $goal->description,
-                        'status' => $goal->status,
-                    ],
-                    'kpi' => $kpi === null ? null : [
-                        'id' => $kpi->getKey(),
-                        'name' => $kpi->name,
-                        'definition' => $kpi->definition,
-                        'unit' => $kpi->unit,
-                        'target_value' => $kpi->target_value,
-                        'current_value' => $kpi->current_value,
-                        'status' => $kpi->status,
-                    ],
-                    'strategies' => $objective->strategies()
-                        ->orderBy('id')
-                        ->limit(self::STRATEGY_CONTEXT_LIMIT)
-                        ->get()
-                        ->map(fn ($strategy) => [
-                            'id' => $strategy->getKey(),
-                            'name' => $strategy->name,
-                            'description' => $strategy->description,
-                            'plans' => $strategy->plans()
-                                ->orderBy('id')
-                                ->limit(self::STRATEGY_CONTEXT_LIMIT)
-                                ->get()
-                                ->map(fn ($plan) => [
-                                    'id' => $plan->getKey(),
-                                    'name' => $plan->name,
-                                    'description' => $plan->description,
-                                    'initiatives' => $plan->initiatives()
-                                        ->orderBy('id')
-                                        ->limit(self::STRATEGY_CONTEXT_LIMIT)
-                                        ->get()
-                                        ->map(fn ($initiative) => [
-                                            'id' => $initiative->getKey(),
-                                            'name' => $initiative->name,
-                                            'description' => $initiative->description,
-                                        ])
-                                        ->all(),
-                                ])
-                                ->all(),
-                        ])
-                        ->all(),
-                ];
-            })
-            ->all();
-
-        return [
-            'enterprise' => $this->enterpriseIdentity($enterprise),
-            'goals' => $goals->map(fn ($goal) => [
-                'id' => $goal->getKey(),
-                'name' => $goal->name,
-                'description' => $goal->description,
-                'status' => $goal->status,
-            ])->all(),
-            'kpis' => $kpis->map(fn ($kpi) => [
-                'id' => $kpi->getKey(),
-                'name' => $kpi->name,
-                'definition' => $kpi->definition,
-                'unit' => $kpi->unit,
-                'target_value' => $kpi->target_value,
-                'current_value' => $kpi->current_value,
-                'status' => $kpi->status,
-            ])->all(),
-            'objectives' => $objectives,
-        ];
-    }
-
-    /** @return array{id: int|string, name: string, slug: string, status: string} */
-    private function enterpriseIdentity(Enterprise $enterprise): array
-    {
-        return [
-            'id' => $enterprise->getKey(),
-            'name' => $enterprise->name,
-            'slug' => $enterprise->slug,
-            'status' => $enterprise->status,
-        ];
-    }
-
-    /** @return array{organization_id: int|string, enterprise_id: int|string} */
-    private function scope(Enterprise $enterprise): array
-    {
-        return [
-            'organization_id' => $enterprise->organization_id,
-            'enterprise_id' => $enterprise->getKey(),
-        ];
     }
 }
