@@ -25,6 +25,7 @@ class UpdateContentSeriesTool extends DomainMutationTool
         return ['content_series_id' => ['required', 'integer', 'min:1', 'exists:content_series,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'description' => ['sometimes', 'nullable', 'string', 'max:10000'], 'status' => ['sometimes', 'string', 'min:1', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function target(array $validated): ?Model
     {
         return ContentSeries::query()->with('campaign.enterprise')->findOrFail((int) $validated['content_series_id']);

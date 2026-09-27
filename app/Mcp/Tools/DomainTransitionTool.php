@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\DomainResourceService;
@@ -38,9 +39,9 @@ abstract class DomainTransitionTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $domain) {
+        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $capabilities) {
             $validated = $request->validate([
                 'id' => ['required', 'integer', 'min:1'],
                 'status' => ['required', 'string', 'min:1', 'max:100'],
@@ -57,9 +58,11 @@ abstract class DomainTransitionTool extends AuthorizedTool
             $target = static::model($validated);
             $enterprise = static::enterprise($target);
 
+            $definition = $capabilities->forTool(static::class);
+
             $authorization->authorizeMutation(
                 $actor,
-                static::capability(),
+                $definition->key,
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -68,13 +71,21 @@ abstract class DomainTransitionTool extends AuthorizedTool
                 ['update', $target],
             );
 
-            $record = static::transition($actor, $domain, $target, $validated['status']);
+            $record = $capabilities->operationForTool(static::class)->execute($actor, $validated);
 
             return Response::structured([
                 'success' => true,
                 'result' => ['id' => $record->getKey(), 'status' => $record->getAttribute('status')],
             ]);
         });
+    }
+
+    /** @param array<string, mixed> $validated */
+    public static function executeTransition(User $actor, array $validated): Model
+    {
+        $target = static::model($validated);
+
+        return static::transition($actor, app(DomainResourceService::class), $target, (string) $validated['status']);
     }
 
     protected static function capability(): string

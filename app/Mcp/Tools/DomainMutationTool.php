@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\DomainResourceService;
@@ -43,9 +44,9 @@ abstract class DomainMutationTool extends AuthorizedTool
         return static::schemaFields($schema);
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $domain) {
+        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $capabilities) {
             $validated = $request->validate(static::rules());
             $actor = $request->user();
 
@@ -57,9 +58,11 @@ abstract class DomainMutationTool extends AuthorizedTool
             $enterprise = static::enterprise($validated);
             $humanAbility = static::humanAbility($validated, $target);
 
+            $definition = $capabilities->forTool(static::class);
+
             $authorization->authorizeMutation(
                 $actor,
-                static::capability(),
+                $definition->key,
                 $enterprise,
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
@@ -68,10 +71,23 @@ abstract class DomainMutationTool extends AuthorizedTool
                 $humanAbility,
             );
 
-            $record = static::mutate($actor, $domain, $validated, $target);
+            if ($definition->operation !== $capabilities->forTool(static::class)->operation) {
+                throw new \LogicException('MCP capability operation mapping is inconsistent.');
+            }
+
+            $record = $capabilities->operationForTool(static::class)->execute($actor, $validated);
 
             return Response::structured(['success' => true, 'result' => static::result($record)]);
         });
+    }
+
+    /** @param array<string, mixed> $validated */
+    /** @param array<string, mixed> $validated */
+    public static function executeMutation(User $actor, array $validated): Model
+    {
+        $target = static::target($validated);
+
+        return static::mutate($actor, app(DomainResourceService::class), $validated, $target);
     }
 
     /** @param array<string, mixed> $validated */

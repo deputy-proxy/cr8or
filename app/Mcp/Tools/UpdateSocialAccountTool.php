@@ -25,6 +25,7 @@ class UpdateSocialAccountTool extends DomainMutationTool
         return ['social_account_id' => ['required', 'integer', 'min:1', 'exists:social_accounts,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'channel_id' => ['sometimes', 'integer', 'min:1', 'exists:channels,id'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function target(array $validated): ?Model
     {
         return SocialAccount::query()->with('enterprise')->findOrFail((int) $validated['social_account_id']);

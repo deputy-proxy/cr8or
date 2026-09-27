@@ -2,8 +2,10 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
+use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Services\ApprovalRequestService;
 use App\Services\McpCapabilityAuthorizer;
@@ -29,9 +31,9 @@ class RequestApprovalTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ApprovalRequestService $approvals): Response|ResponseFactory
+    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ApprovalRequestService $approvals, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.approval.request', function (string $correlationId) use ($request, $authorization, $approvals) {
+        return $this->executeWithErrors($request, 'mcp.approval.request', function (string $correlationId) use ($request, $authorization, $capabilities) {
             $validated = $request->validate([
                 'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
@@ -61,14 +63,12 @@ class RequestApprovalTool extends AuthorizedTool
                 $validated['capability'],
             );
 
-            $approval = $approvals->request(
-                $actor,
-                $validated['capability'],
-                $assignment,
-                $execution,
-                $targetContext,
-                $correlationId,
-            );
+            $capabilities->forTool(static::class);
+            $approval = $capabilities->operationForTool(static::class)->execute($actor, [
+                ...$validated,
+                'correlation_id' => $correlationId,
+                'target_context' => $targetContext,
+            ]);
 
             return Response::structured([
                 'success' => true,
@@ -87,5 +87,23 @@ class RequestApprovalTool extends AuthorizedTool
                 ],
             ]);
         });
+    }
+
+    /** @param array<string, mixed> $validated */
+    public static function executeOperation(User $actor, array $validated): ApprovalRequest
+    {
+        $assignment = AgentAssignment::query()->with('agentDescriptor')->findOrFail((int) $validated['agent_assignment_id']);
+        $execution = isset($validated['agent_execution_id'])
+            ? AgentExecution::query()->findOrFail((int) $validated['agent_execution_id'])
+            : null;
+
+        return app(ApprovalRequestService::class)->request(
+            $actor,
+            (string) $validated['capability'],
+            $assignment,
+            $execution,
+            $validated['target_context'] ?? [],
+            isset($validated['correlation_id']) ? (string) $validated['correlation_id'] : null,
+        );
     }
 }

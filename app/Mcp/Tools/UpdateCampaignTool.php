@@ -25,6 +25,7 @@ class UpdateCampaignTool extends DomainMutationTool
         return ['campaign_id' => ['required', 'integer', 'min:1', 'exists:campaigns,id'], 'marketing_strategy_id' => ['sometimes', 'integer', 'min:1', 'exists:marketing_strategies,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'description' => ['sometimes', 'nullable', 'string', 'max:10000'], 'status' => ['sometimes', 'string', 'min:1', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function target(array $validated): ?Model
     {
         return Campaign::query()->with('enterprise')->findOrFail((int) $validated['campaign_id']);

@@ -40,4 +40,4 @@ Capability discovery remains derived from enabled runtime Agent and Expert decla
 
 ## Scope
 
-The registry covers the governed Agent-facing Capability surface. Generic human CRUD and lifecycle MCP Tools remain outside this mapping until they become governed Agent Capabilities with an explicit Operation contract.
+The registry covers every state-changing MCP Tool. Human authorization still uses the target domain Policy, while Agent-backed authorization additionally requires the Tool's explicit Capability permission. The generic `mcp.domain.mutation` and `mcp.domain.transition` capabilities are not registered and cannot be used as Agent authority.

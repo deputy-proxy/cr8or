@@ -35,6 +35,7 @@ class ArchiveMarketingStrategyTool extends DomainMutationTool
         ];
     }
 
+    /** @param array<string, mixed> $validated */
     protected static function target(array $validated): ?Model
     {
         return MarketingStrategy::query()->with('enterprise')->findOrFail((int) $validated['marketing_strategy_id']);
