@@ -8,6 +8,7 @@ use App\AI\Contracts\ModelProvider;
 use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
+use App\AI\ReasoningOutputValidator;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
@@ -301,12 +302,23 @@ final class AgentExecutionService
                     provider: isset($modelOptions['provider']) ? (string) $modelOptions['provider'] : null,
                     model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,
                     timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,
-                    structuredOutputSchema: $this->outputSchema(),
+                    structuredOutputSchema: $this->outputSchema($agent),
                     correlationId: $correlationId,
                 );
 
                 $execution->transitionTo(AgentExecution::STATUS_EXECUTING)->save();
                 $modelResult = $this->provider->generate($modelRequest);
+                $structured = $modelResult->structured ?? ['answer' => $modelResult->text];
+
+                $modelResult = new ModelResult(
+                    text: $modelResult->text,
+                    structured: ReasoningOutputValidator::normalizeAgent($structured),
+                    provider: $modelResult->provider,
+                    model: $modelResult->model,
+                    invocationId: $modelResult->invocationId,
+                    usage: $modelResult->usage,
+                    correlationId: $modelResult->correlationId,
+                );
 
                 $execution->provider = $modelResult->provider;
                 $execution->external_execution_id = $modelResult->invocationId;
@@ -571,35 +583,9 @@ final class AgentExecutionService
     }
 
     /** @return array<string, mixed> */
-    private function outputSchema(): array
+    private function outputSchema(Agent $agent): array
     {
-        return [
-            'type' => 'object',
-            'properties' => [
-                'answer' => ['type' => 'string'],
-                'decision_title' => ['type' => 'string'],
-                'decision_summary' => ['type' => 'string'],
-                'decision_rationale' => ['type' => 'string'],
-                'termination' => ['type' => 'string', 'enum' => ['continue', 'completed', 'waiting_for_input', 'waiting_for_approval', 'delegated', 'paused']],
-                'termination_reason' => ['type' => 'string'],
-                'next_step' => ['type' => 'string'],
-                'capability_requests' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'capability' => ['type' => 'string'],
-                            'target_context' => ['type' => 'object'],
-                            'input_payload' => ['type' => 'object'],
-                            'approval_request_id' => ['type' => 'integer'],
-                            'correlation_id' => ['type' => 'string'],
-                            'idempotency_key' => ['type' => 'string'],
-                        ],
-                        'required' => ['capability'],
-                    ],
-                ],
-            ],
-        ];
+        return $agent->reasoningOutputSchema();
     }
 
     /**
@@ -626,13 +612,17 @@ final class AgentExecutionService
         $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);
 
         foreach ($requests as $encodedRequest) {
-            if (! is_string($encodedRequest)) {
-                throw new AuthorizationException('The model returned an invalid capability request.');
+            if (is_string($encodedRequest)) {
+                $request = json_decode($encodedRequest, true);
+
+                if (! is_array($request)) {
+                    throw new AuthorizationException('The model returned an invalid capability request.');
+                }
+            } else {
+                $request = $encodedRequest;
             }
 
-            $request = json_decode($encodedRequest, true);
-
-            if (! is_array($request) || ! isset($request['capability']) || ! is_string($request['capability'])) {
+            if (! isset($request['capability']) || ! is_string($request['capability'])) {
                 throw new AuthorizationException('The model returned an invalid capability request.');
             }
 
