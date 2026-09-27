@@ -12,6 +12,7 @@ use App\Services\Context\Providers\EnterpriseContextProvider;
 use App\Services\Context\Providers\ExecutionHistoryContextProvider;
 use App\Services\Context\Providers\FinancialContextProvider;
 use App\Services\Context\Providers\KnowledgeContextProvider;
+use App\Services\Context\Providers\MemoryContextProvider;
 use App\Services\Context\Providers\StrategyContextProvider;
 use App\Services\Context\Providers\WorkContextProvider;
 use InvalidArgumentException;
@@ -26,11 +27,12 @@ final class AgentContextBuilder
         StrategyContextProvider $strategy,
         WorkContextProvider $work,
         KnowledgeContextProvider $knowledge,
+        MemoryContextProvider $memory,
         DecisionContextProvider $decisions,
         ExecutionHistoryContextProvider $executionHistory,
         FinancialContextProvider $financial,
     ) {
-        foreach ([$enterprise, $strategy, $work, $knowledge, $decisions, $executionHistory, $financial] as $provider) {
+        foreach ([$enterprise, $strategy, $work, $knowledge, $memory, $decisions, $executionHistory, $financial] as $provider) {
             foreach ($provider->requirements() as $requirement) {
                 if (isset($this->providers[$requirement]) && $this->providers[$requirement] !== $provider) {
                     throw new InvalidArgumentException("Multiple Agent context providers registered for [{$requirement}].");
