@@ -12,6 +12,8 @@ use App\Contracts\MediaGenerator;
 use App\Contracts\MediaRenderer;
 use App\Contracts\MediaStorage;
 use App\Contracts\PublishingProvider;
+use App\Events\AgentExecutionEvent;
+use App\Listeners\RecordAgentExecutionEvent;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\KnowledgeHybridRetrievalProvider;
 use App\Services\KnowledgeLexicalRetrievalProvider;
@@ -20,6 +22,7 @@ use App\Services\R2MediaStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passport\Passport;
@@ -79,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         Passport::authorizationView('mcp.authorize');
 
         $this->configureDefaults();
+        Event::listen(AgentExecutionEvent::class, [RecordAgentExecutionEvent::class, 'handle']);
     }
 
     /**
