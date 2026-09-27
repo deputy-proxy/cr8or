@@ -123,3 +123,15 @@ it('keeps the lifecycle model separate from authoritative Knowledge content', fu
             'status',
         );
 });
+
+it('keeps sibling chunks indexed when the same authoritative version is indexed', function (): void {
+    [$user, $enterprise] = knowledgeIndexActor();
+    $item = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+    KnowledgeVersion::factory()->create(['enterprise_id' => $enterprise, 'knowledge_item_id' => $item, 'version' => 1, 'content' => 'chunk one chunk two']);
+
+    $first = app(KnowledgeIndexLifecycleService::class)->requestIndex($user, $item, 'chunk-0001');
+    $second = app(KnowledgeIndexLifecycleService::class)->requestIndex($user, $item, 'chunk-0002');
+
+    expect($first->refresh()->status->value)->toBe('pending')
+        ->and($second->refresh()->status->value)->toBe('pending');
+});
