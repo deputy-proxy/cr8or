@@ -149,7 +149,7 @@ Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for
         v
     AgentExecution / AgentDecision / audit
 
-Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` rather than loose arrays. The contract contains the Capability identifier, target context and approval reference while the existing `CapabilityRegistry` and authorization services remain authoritative for resolution and permission. Later Capability Request contract work may extend this DTO without changing the Agent execution boundary.
+Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` as the canonical provider-neutral request contract. The contract carries the Capability identifier, target context, operation input payload, Agent assignment and execution identity, optional Expert identity, approval reference, correlation identity, idempotency key and delegated execution context. The request is scoped to its Agent execution and does not grant authority. `CapabilityRegistry` remains authoritative for Capability availability and Operation resolution, while `AgentCapabilityAuthorizer` remains authoritative for server-side permission and approval checks.
 
 ### Canonical Agent Context Contract
 
