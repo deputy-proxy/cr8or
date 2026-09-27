@@ -33,6 +33,9 @@ use LogicException;
  * @property string|null $provider
  * @property string|null $external_execution_id
  * @property string|null $failure_code
+ * @property string|null $failure_category
+ * @property int $retry_count
+ * @property int $max_retries
  * @property int $max_steps
  * @property int $current_step
  * @property string|null $prompt
@@ -66,6 +69,9 @@ use LogicException;
     'provider',
     'external_execution_id',
     'failure_code',
+    'failure_category',
+    'retry_count',
+    'max_retries',
     'max_steps',
     'current_step',
     'prompt',

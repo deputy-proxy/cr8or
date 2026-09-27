@@ -8,6 +8,7 @@ use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\User;
 use App\Services\AgentExecutionService;
+use App\Services\AgentFailurePolicy;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,12 +22,12 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
+    public int $tries = AgentFailurePolicy::MAX_RETRIES;
 
     public int $timeout = 120;
 
     /** @var list<int> */
-    public array $backoff = [10, 30];
+    public array $backoff = [10, 30, 60];
 
     public int $uniqueFor = 3600;
 
@@ -44,7 +45,15 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
         return 'agent-execution:'.$this->executionId;
     }
 
-    /** @return list<WithoutOverlapping> */
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        $policy = app(AgentFailurePolicy::class);
+
+        return array_map($policy->backoff(...), range(1, $this->tries));
+    }
+
+    /** @return array<int, WithoutOverlapping> */
     public function middleware(): array
     {
         return [new WithoutOverlapping($this->uniqueId())->expireAfter($this->timeout * 2)];
@@ -108,10 +117,13 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
             || str_contains(strtolower($message), 'timeout');
 
         $execution->failure_code = $isTimeout ? 'timeout' : 'queue_failed';
+        $execution->failure_category = 'external_service_failed';
         $execution->fail($message)->save();
         app(\App\Services\AgentExecutionEventService::class)->dispatch(AgentExecutionFailed::class, $execution, data: [
+            'failure_category' => $execution->failure_category,
             'failure_code' => $execution->failure_code,
             'retryable' => false,
+            'retry_count' => $execution->retry_count,
         ]);
     }
 }
