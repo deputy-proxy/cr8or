@@ -59,7 +59,13 @@ final class KnowledgeIndexLifecycleService
 
         KnowledgeIndexRecord::query()
             ->where('knowledge_item_id', $item->getKey())
+            ->where('unit_key', $unitKey)
             ->whereKeyNot($record->getKey())
+            ->when(
+                $versionId === null,
+                static fn ($query) => $query->whereNotNull('knowledge_version_id'),
+                static fn ($query) => $query->where('knowledge_version_id', '!=', $versionId),
+            )
             ->get()
             ->each(function (KnowledgeIndexRecord $previous): void {
                 if ($previous->getRawOriginal('status') === KnowledgeIndexStatus::REMOVED->value) {
