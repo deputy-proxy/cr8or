@@ -5,8 +5,8 @@ namespace App\Operations;
 use App\Contracts\Operation;
 use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
-use App\Services\DomainResourceService;
 use App\Models\User;
+use App\Services\DomainResourceService;
 
 final class CreateMarketingStrategy implements Operation
 {
