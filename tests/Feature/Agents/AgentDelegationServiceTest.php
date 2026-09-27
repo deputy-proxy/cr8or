@@ -19,29 +19,9 @@ function delegationSourceRuntimeClass(): string
 {
     return get_class(new class extends \App\Agents\Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Source Delegation Agent';
-        }
-
-        public function description(): string
-        {
-            return 'Originates governed delegated enterprise work.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['delegate'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['agent.delegate'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
+            return new \App\Agents\AgentDefinition(name: 'Source Delegation Agent', description: 'Originates governed delegated enterprise work.', responsibilities: ['delegate'], instructions: 'Delegate governed enterprise work without bypassing authorization.', experts: [], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
         }
     });
 }
@@ -50,29 +30,9 @@ function delegationTargetRuntimeClass(): string
 {
     return get_class(new class extends \App\Agents\Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Target Delegation Agent';
-        }
-
-        public function description(): string
-        {
-            return 'Receives governed delegated enterprise work.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['execute'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['work.item.create'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
+            return new \App\Agents\AgentDefinition(name: 'Target Delegation Agent', description: 'Receives governed delegated enterprise work.', responsibilities: ['execute'], instructions: 'Execute delegated enterprise work only within governed boundaries.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
         }
     });
 }
@@ -81,29 +41,9 @@ function delegationCrossScopeRuntimeClass(): string
 {
     return get_class(new class extends \App\Agents\Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Cross Scope Delegation Agent';
-        }
-
-        public function description(): string
-        {
-            return 'Used to verify delegation scope boundaries.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['execute'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['work.item.create'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
+            return new \App\Agents\AgentDefinition(name: 'Cross Scope Delegation Agent', description: 'Used to verify delegation scope boundaries.', responsibilities: ['execute'], instructions: 'Execute only within the authorized enterprise scope.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
         }
     });
 }
