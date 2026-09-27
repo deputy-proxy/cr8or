@@ -67,7 +67,7 @@ class CreateWorkItemTool extends GovernedCapabilityTool
                     'enterprise_id' => $enterprise->getKey(),
                     'project_id' => $validated['project_id'] ?? null,
                 ],
-                ['create', [WorkItem::class, $enterprise]],
+                ['createForEnterprise', [WorkItem::class, $enterprise]],
             );
 
             $workItem = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);

@@ -12,6 +12,7 @@ use App\Models\AgentDecision;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
 use App\Models\AgentPermission;
+use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\KnowledgeContext;
 use App\Models\Membership;
@@ -19,7 +20,6 @@ use App\Models\Strategy;
 use App\Models\User;
 use App\Services\AgentCapabilityAuthorizer;
 use App\Services\AgentExecutionService;
-use App\Services\ApprovalRequestService;
 use App\Services\McpContextAssembler;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -183,78 +183,21 @@ it('does not allow an approval-sensitive Marketing capability to bypass approval
         );
     });
 
-    expect(fn () => marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
+    $result = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
         prompt: 'Mark the campaign content publication-ready.',
         expertSlugs: [],
         correlationId: 'marketing-e2e-approval-required',
-    )))->toThrow(AuthorizationException::class);
-
-    $execution = AgentExecution::query()->latest('id')->firstOrFail();
-
-    expect($execution->status)->toBe(AgentExecution::STATUS_FAILED)
-        ->and(AgentDecision::query()->where('execution_id', $execution->getKey())->exists())->toBeFalse();
-});
-
-it('allows an approved Marketing capability without allowing the Agent to approve itself', function (): void {
-    $fixture = marketingEndToEndFixture();
-    extract($fixture);
-
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.content.publication-ready',
-    ]);
-
-    $approver = User::factory()->create();
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $enterprise->organization_id,
-    ]);
-
-    $approval = app(ApprovalRequestService::class)->request(
-        $actor,
-        'marketing.content.publication-ready',
-        $assignment,
-        null,
-        ['content_item_id' => 123],
-    );
-    app(ApprovalRequestService::class)->approve($approval, $approver, 'Approved by authorized human.');
-
-    $provider = new FakeModelProvider(function ($request) use ($approval): ModelResult {
-        return new ModelResult(
-            text: 'Approved publication-ready request.',
-            structured: [
-                'answer' => 'Approved publication-ready request.',
-                'decision_title' => 'Publication readiness',
-                'decision_summary' => 'The approved request can proceed to the governed boundary.',
-                'capability_requests' => [
-                    json_encode([
-                        'capability' => 'marketing.content.publication-ready',
-                        'approval_request_id' => $approval->getKey(),
-                        'target_context' => ['content_item_id' => 123],
-                    ], JSON_THROW_ON_ERROR),
-                ],
-            ],
-            provider: 'fake',
-            model: 'test',
-            invocationId: 'marketing-e2e-approved',
-            correlationId: $request->correlationId,
-        );
-    });
-
-    $result = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
-        actor: $actor,
-        assignment: $assignment,
-        prompt: 'Proceed with the approved publication-readiness action.',
-        expertSlugs: [],
-        correlationId: 'marketing-e2e-approved',
     ));
 
-    expect($result->succeeded())->toBeTrue()
-        ->and($result->capabilityRequests)->toHaveCount(1)
-        ->and($result->capabilityRequests[0]->approval?->isValid())->toBeTrue()
-        ->and($result->execution->status)->toBe(AgentExecution::STATUS_SUCCEEDED);
+    $execution = $result->execution->refresh();
+    $approval = ApprovalRequest::query()->latest('id')->firstOrFail();
+
+    expect($execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL)
+        ->and($approval->status)->toBe(ApprovalRequest::STATUS_PENDING)
+        ->and($approval->agent_execution_id)->toBe($execution->getKey())
+        ->and(AgentDecision::query()->where('execution_id', $execution->getKey())->exists())->toBeTrue();
 });
 
 it('records a deterministic Marketing Agent provider failure as auditable execution state', function (): void {

@@ -35,6 +35,7 @@ final class AgentExecutionService
         private readonly ?CapabilityRegistry $capabilities = null,
         private readonly ?ExpertInvocationService $expertInvocations = null,
         private readonly ?AgentMemoryRuntimeService $memoryRuntime = null,
+        private readonly ?CapabilityExecutionService $capabilityExecution = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -324,6 +325,10 @@ final class AgentExecutionService
                     correlationId: $modelResult->correlationId,
                 );
 
+                $previousCapabilityResults = is_array($execution->last_result['capability_results'] ?? null)
+                    ? $execution->last_result['capability_results']
+                    : [];
+
                 $execution->provider = $modelResult->provider;
                 $execution->external_execution_id = $modelResult->invocationId;
                 $execution->last_result = [
@@ -346,6 +351,14 @@ final class AgentExecutionService
                     $delegation,
                 );
 
+                $capabilityResults = $this->executeCapabilityRequests(
+                    $authorizedRequests,
+                );
+
+                $execution->last_result = array_merge($execution->last_result ?? [], [
+                    'capability_results' => array_merge($previousCapabilityResults, $capabilityResults),
+                ]);
+
                 $decision = $this->persistDecision($execution, $modelResult);
                 $lastDecision = $decision;
                 $lastResult = $modelResult;
@@ -358,6 +371,22 @@ final class AgentExecutionService
                     fn (CapabilityRequest $request): array => $request->toArray(),
                     $authorizedRequests,
                 );
+
+                $approvalWait = collect($capabilityResults)->first(
+                    static fn (array $result): bool => ($result['status'] ?? null) === 'waiting',
+                );
+
+                if (is_array($approvalWait)) {
+                    $reason = 'Approval required for capability ['.($approvalWait['capability'] ?? 'unknown').'].';
+                    $step->output = array_merge($step->output ?? [], [
+                        'capability_results' => $capabilityResults,
+                    ]);
+                    $step->wait($reason)->save();
+                    $execution->state_reason = $reason;
+                    $execution->waitForApproval($reason)->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
 
                 if ($termination['status'] === AgentExecution::STATUS_WAITING_FOR_INPUT) {
                     $step->wait($termination['reason'])->save();
@@ -730,14 +759,44 @@ final class AgentExecutionService
                 delegation: $delegation,
             );
 
-            if (! $this->capabilityAuthorizer->allowsRequest($capabilityRequest)) {
+            $permission = $assignment->permissions()
+                ->where('capability', $capability)
+                ->first();
+
+            if ($permission === null) {
                 throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
+            }
+
+            if (! $permission->requires_approval || $approval !== null) {
+                if (! $this->capabilityAuthorizer->allowsRequest($capabilityRequest)) {
+                    throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
+                }
             }
 
             $authorized[] = $capabilityRequest;
         }
 
         return $authorized;
+    }
+
+    /**
+     * @param  list<CapabilityRequest>  $requests
+     * @return list<array<string, mixed>>
+     */
+    private function executeCapabilityRequests(array $requests): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+
+        $executor = $this->capabilityExecution ?? app(CapabilityExecutionService::class);
+        $results = [];
+
+        foreach ($requests as $request) {
+            $results[] = $executor->execute($request);
+        }
+
+        return $results;
     }
 
     private function persistDecision(AgentExecution $execution, ModelResult $result): ?AgentDecision
