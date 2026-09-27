@@ -13,6 +13,7 @@ final readonly class AgentContext
         'strategy',
         'work',
         'knowledge',
+        'memory',
         'decisions',
         'execution_history',
         'instructions',
@@ -61,11 +62,7 @@ final readonly class AgentContext
         return $ordered;
     }
 
-    /**
-     * Add or replace one current-execution context section.
-     *
-     * Persistent Agent memory is intentionally not part of this contract.
-     */
+    /** Add or replace one current-execution context section. */
     public function withSection(AgentContextSection $section): self
     {
         return new self([
@@ -101,9 +98,7 @@ final readonly class AgentContext
         return $context;
     }
 
-    /**
-     * @return array<string, array<string, mixed>>
-     */
+    /** @return array<string, array<string, mixed>> */
     public function metadata(): array
     {
         $metadata = [];
