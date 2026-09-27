@@ -78,6 +78,8 @@ final class AgentExecutionService
             $actor,
             $enterprise,
             $agent->requiredContext(),
+            $targetContext,
+            $assignment,
         );
 
         $contextData = $context->toArray();
