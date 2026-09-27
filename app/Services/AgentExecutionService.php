@@ -724,8 +724,26 @@ final class AgentExecutionService
         } catch (Throwable $exception) {
             if (in_array($execution->status, [AgentExecution::STATUS_REASONING, AgentExecution::STATUS_EXECUTING], true)) {
                 $error = ExecutionError::from($exception);
+                $failurePolicy = app(AgentFailurePolicy::class);
+                $classification = $failurePolicy->classify($error);
+                $execution->failure_category = $classification['category']->value;
+                $execution->failure_code = $error->code;
 
-                if ($allowWorkerRetry && $error->retryable) {
+                if ($allowWorkerRetry && $classification['retryable']) {
+                    $execution->retry_count = min($execution->retry_count + 1, $execution->max_retries);
+                    $execution->state_reason = $error->message;
+                    $execution->save();
+
+                    if ($execution->retry_count >= $execution->max_retries) {
+                        $execution->fail('Retry limit reached: '.$error->message)->save();
+                        $events->dispatch(AgentExecutionFailed::class, $execution, data: [
+                            'failure_category' => $classification['category']->value,
+                            'failure_code' => $error->code,
+                            'retryable' => false,
+                            'retry_count' => $execution->retry_count,
+                        ]);
+                        throw new \RuntimeException('Agent execution retry limit reached.');
+                    }
                     $execution->state_reason = $error->message;
                     $execution->save();
 
@@ -742,11 +760,12 @@ final class AgentExecutionService
                     throw $exception;
                 }
 
-                $execution->failure_code = $error->code;
                 $execution->fail($error->message)->save();
                 $events->dispatch(AgentExecutionFailed::class, $execution, data: [
+                    'failure_category' => $classification['category']->value,
                     'failure_code' => $error->code,
-                    'retryable' => $error->retryable,
+                    'retryable' => false,
+                    'retry_count' => $execution->retry_count,
                 ]);
                 $this->consolidateMemory($memoryRuntime, $actor, $execution, $lastResult, $lastDecision, $correlation);
 
