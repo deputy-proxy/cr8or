@@ -16,6 +16,7 @@ class McpContextAssembler
     public function __construct(
         private readonly EnterpriseContextAssembler $enterpriseContextAssembler,
         private readonly WorkContextAssembler $workContextAssembler,
+        private readonly KnowledgeContextAssembler $knowledgeContextAssembler,
     ) {}
 
     /**
@@ -80,7 +81,7 @@ class McpContextAssembler
     {
         $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
 
-        return $this->knowledgeData($enterprise);
+        return $this->knowledgeContextAssembler->assemble($user, $enterprise);
     }
 
     /** @return array<string, mixed> */
@@ -129,8 +130,8 @@ class McpContextAssembler
 
         return new AgentContextSection(
             name: 'knowledge',
-            data: $this->knowledgeData($authorized),
-            source: 'Enterprise::knowledgeContexts()/knowledgeItems()',
+            data: $this->knowledgeContextAssembler->assemble($user, $authorized),
+            source: KnowledgeContextAssembler::class,
             scope: $scope,
             relevance: 'Agent-declared context requirement',
         );
@@ -245,35 +246,6 @@ class McpContextAssembler
                 'status' => $kpi->status,
             ])->all(),
             'objectives' => $objectives,
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function knowledgeData(Enterprise $enterprise): array
-    {
-        return [
-            'enterprise' => $this->enterpriseIdentity($enterprise),
-            'contexts' => $enterprise->knowledgeContexts()
-                ->orderBy('id')
-                ->get()
-                ->map(fn ($context) => [
-                    'id' => $context->getKey(),
-                    'name' => $context->name,
-                    'type' => $context->type,
-                    'description' => $context->description,
-                    'data' => $context->data,
-                ])
-                ->all(),
-            'items' => $enterprise->knowledgeItems()
-                ->orderBy('id')
-                ->get()
-                ->map(fn ($item) => [
-                    'id' => $item->getKey(),
-                    'title' => $item->title,
-                    'type' => $item->type,
-                    'summary' => $item->summary,
-                ])
-                ->all(),
         ];
     }
 

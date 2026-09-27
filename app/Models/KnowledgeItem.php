@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['enterprise_id', 'knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id', 'title', 'type', 'summary'])]
 class KnowledgeItem extends Model
@@ -43,6 +44,12 @@ class KnowledgeItem extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(KnowledgeVersion::class);
+    }
+
+    /** @return HasOne<KnowledgeVersion, $this> */
+    public function latestVersion(): HasOne
+    {
+        return $this->hasOne(KnowledgeVersion::class)->latestOfMany('version');
     }
 
     /** @return HasMany<KnowledgeReference, $this> */
