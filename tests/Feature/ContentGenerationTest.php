@@ -23,29 +23,9 @@ function contentAgentRuntimeClass(): string
 {
     return get_class(new class extends Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Content Agent';
-        }
-
-        public function description(): string
-        {
-            return 'Creates governed enterprise content.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['content'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['marketing.content.create', 'marketing.content.update'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
+            return new \App\Agents\AgentDefinition(name: 'Content Agent', description: 'Creates governed enterprise content.', responsibilities: ['content'], instructions: 'Create governed enterprise content as a draft within authorized boundaries.', experts: [], requiredContext: ['enterprise'], capabilities: ['marketing.content.create', 'marketing.content.update']);
         }
     });
 }
