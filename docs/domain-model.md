@@ -100,6 +100,10 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 9.4 implementation:** `KnowledgeIndexingService` is the governed application boundary that persists normalized searchable units, coordinates the indexing lifecycle, records non-content-bearing failure state and supports idempotent reindexing. Searchable unit content lives only in the representation layer and remains tied to Enterprise, Knowledge Item and authoritative version identity; lifecycle records remain responsible for indexed/stale/failed/removed state.
 
+**Verified Phase 9.5 implementation:** `KnowledgeLexicalRetrievalProvider` implements deterministic lexical retrieval over current indexed representations. Candidate filtering is Enterprise-scoped and limited to indexed lifecycle records before scoring; results are bounded by the canonical retrieval request, carry source/document/version/reference metadata, and return deterministic empty results for empty/unmatched queries. Authorization remains enforced by `KnowledgeRetrievalService` before provider execution. Semantic and model-based ranking remain outside this boundary.
+
+**Verified Phase 9.5 implementation:** `KnowledgeLexicalRetrievalProvider` implements deterministic lexical retrieval over current indexed representations. Candidate filtering is Enterprise-scoped and limited to indexed lifecycle records before scoring; results are bounded by the canonical retrieval request, carry source/document/version/reference metadata, and return deterministic empty results for empty/unmatched queries. Authorization remains enforced by `KnowledgeRetrievalService` before provider execution. Semantic and model-based ranking remain outside this boundary.
+
 **Deferred:** Retrieval/indexing implementation.
 
 ## Strategy
