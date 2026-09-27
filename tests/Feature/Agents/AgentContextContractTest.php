@@ -150,3 +150,61 @@ it('does not require optional context sections to be present', function () {
         ->and($context->has('decisions'))->toBeFalse()
         ->and($context->has('execution_history'))->toBeFalse();
 });
+
+it('composes explicitly requested providers in canonical order regardless of requirement order', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $context = app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['execution_history', 'work', 'strategy', 'knowledge', 'decisions', 'enterprise_context'],
+    );
+
+    expect(array_map(
+        fn (AgentContextSection $section) => $section->name,
+        $context->sections(),
+    ))->toBe([
+        'enterprise',
+        'enterprise_context',
+        'strategy',
+        'work',
+        'knowledge',
+        'decisions',
+        'execution_history',
+    ])
+        ->and($context->metadata()['strategy']['source'])->toBe(
+            App\Services\Context\Providers\StrategyContextProvider::class,
+        )
+        ->and($context->metadata()['execution_history']['relevance'])
+        ->toContain('Enterprise execution history');
+});
+
+it('rejects an unsupported runtime context requirement', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    expect(fn () => app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['not_registered'],
+    ))->toThrow(InvalidArgumentException::class);
+});
