@@ -24,6 +24,7 @@ final readonly class AgentExecutionRequest
         public ?string $correlationId = null,
         public ?AgentDelegation $delegation = null,
         public ?string $expertRoutingKey = null,
+        public ?string $idempotencyKey = null,
     ) {
         if (trim($this->prompt) === '') {
             throw new InvalidArgumentException('An Agent execution prompt is required.');
@@ -41,6 +42,10 @@ final readonly class AgentExecutionRequest
 
         if ($this->expertRoutingKey !== null && $this->expertSlugs !== []) {
             throw new InvalidArgumentException('Agent execution must use either Expert routing metadata or explicit Expert identifiers, not both.');
+        }
+
+        if ($this->idempotencyKey !== null && trim($this->idempotencyKey) === '') {
+            throw new InvalidArgumentException('Agent execution idempotency keys must be non-empty strings.');
         }
     }
 }
