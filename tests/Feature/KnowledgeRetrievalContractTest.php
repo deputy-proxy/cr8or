@@ -5,6 +5,7 @@ use App\Data\KnowledgeRetrievalRequest;
 use App\Data\KnowledgeRetrievalResult;
 use App\Data\KnowledgeRetrievalResultItem;
 use App\Models\Enterprise;
+use App\Models\KnowledgeItem;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
@@ -24,13 +25,15 @@ it('retrieves authorized knowledge through the provider-neutral contract', funct
     {
         public function retrieve(KnowledgeRetrievalRequest $request): KnowledgeRetrievalResult
         {
+            $knowledgeItem = KnowledgeItem::factory()->create(['enterprise_id' => $request->enterprise]);
+
             return new KnowledgeRetrievalResult(
                 status: 'succeeded',
                 correlationId: $request->correlationId ?? 'generated-correlation',
                 candidateCount: 1,
                 items: [
                     new KnowledgeRetrievalResultItem(
-                        knowledgeItemId: 42,
+                        knowledgeItemId: $knowledgeItem->getKey(),
                         title: 'Approval threshold',
                         summary: 'Approval is required above the configured threshold.',
                         relevance: 0.92,
