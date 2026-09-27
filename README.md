@@ -654,7 +654,9 @@ CR8OR uses a governed operating methodology that keeps AI reasoning separate fro
 6. **Record the outcome** — execution, decision, approval, delegation and external-result records preserve the context needed for historical interpretation.
 7. **Report from authoritative state** — derived reports read CR8OR-owned records and do not replace the underlying business state.
 
-This methodology is intentionally narrower than a generalized workflow engine, policy language, reporting platform or Agent-memory system. Those capabilities remain separately scoped and deferred where not implemented.### CR8OR Operating Model
+This methodology remains narrower than a generalized workflow engine, policy language or reporting platform. Phase 8 provides governed Agent memory primitives, while generalized workflow-engine semantics, policy-language infrastructure, reporting/forecasting and autonomous self-modifying Agent behavior remain outside the implemented scope.
+
+### CR8OR Operating Model
 
 CR8OR separates four responsibilities:
 
@@ -726,7 +728,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phases 0 through 7**, from Foundation & Architecture through Multi-Agent Business Operations. Phases 0-7 have been implemented and audited within their defined boundaries. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. Phase 7 adds governed Agent delegation, concrete business Agent/Expert runtimes, cross-Agent traceability, delegated approvals, business-level reporting and administration. Deferred capabilities remain explicitly identified in the roadmap. Phase 4 establishes the protected MCP boundary, authorized context resources, governed capability tools, provider-neutral AI execution infrastructure, Agent/Expert execution governance, and execution observability. It does not claim a complete catalog of business-specific Agents or Experts. Later product capabilities remain intentionally deferred to their roadmap phases.
+The repository has completed **Phases 0 through 7** within their audited boundaries and has implemented Phase 8.1–8.22. Phase 8 establishes the canonical Agent/Expert runtime contracts, authorized composable context, the Marketing Agent runtime, governed Expert coordination, and persistent Agent memory with retrieval, write policy, provenance, auditability and explicit context integration. Phase 8.23 reconciles the documentation; Phase 8.24 remains the final implementation audit. Deferred capabilities remain explicitly identified in the roadmap.
 
 ### Implemented
 
@@ -788,7 +790,7 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Future Roadmap / Deferred Capabilities
 
-Phase 7 is complete within its defined scope. The remaining roadmap consists of capabilities intentionally deferred from the completed phases, including generalized Knowledge Retrieval / AI Context Infrastructure, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, Agent memory capabilities beyond the implemented Phase 8.18-8.19 foundations, and broader cross-service integrations.
+Phase 7 is complete within its defined scope. Phase 8.1–8.22 are implemented and reconciled; the final Phase 8 audit remains. The remaining deferred roadmap includes generalized Knowledge Retrieval / AI Context Infrastructure beyond the current bounded context providers, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, autonomous self-modifying Agent behavior, and broader cross-service integrations.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 or Phase 7 completion gap.
 
@@ -1149,7 +1151,7 @@ Events and Jobs remain CR8OR application mechanisms for meaningful state-change 
 
 ### Phase 8 — Agent Runtime, Context & Memory
 
-**Status: In Progress — Phase 8.1–8.24**
+**Status: Implemented through Phase 8.22 — Phase 8.23 documentation reconciliation; Phase 8.24 audit pending**
 
 **Objective**
 
@@ -1267,7 +1269,7 @@ Current context assembly is enterprise-scoped and authorization-aware, but it do
 
 ## Current Reconciliation
 
-The repository has completed Phases 1-7 within their defined boundaries and has entered Phase 8 implementation. Deferred capabilities remain explicitly identified rather than being represented as complete. Phase 8 extends the existing Agent/Expert runtime foundation rather than reopening completed governance or MCP phases.
+The repository has completed Phases 1-7 within their defined boundaries and has implemented Phase 8.1–8.22. Phase 8 extends the existing Agent/Expert runtime foundation rather than reopening completed governance or MCP phases. Phase 8.24 remains the final audit gate. Deferred capabilities remain explicitly identified rather than being represented as complete.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
@@ -1279,7 +1281,7 @@ The repository has completed Phases 1-7 within their defined boundaries and has 
 | Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
 | Phase 7 — Multi-Agent Business Operations | **Complete** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting, Phase 7.6 administration and Phase 7.7 final audit are implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside Phase 7. |
-| Phase 8 — Agent Runtime, Context & Memory | **In Progress** | Phase 8.1–8.7 establish the canonical Agent/Expert runtime and execution contracts; Phase 8.8–8.13 build authorized context assembly; Phase 8.14–8.17 implement and verify the Marketing Agent; Phase 8.18–8.22 implement governed Agent memory; Phase 8.23 reconciles documentation; Phase 8.24 performs the final audit. |
+| Phase 8 — Agent Runtime, Context & Memory | **Implemented through 8.22; audit pending** | Phase 8.1–8.7 establish the canonical Agent/Expert runtime and execution contracts; Phase 8.8–8.13 build authorized context assembly; Phase 8.14–8.17 implement and verify the Marketing Agent; Phase 8.18–8.22 implement governed Agent memory and integrate it into the context pipeline; Phase 8.23 reconciles documentation; Phase 8.24 performs the final audit. |
 
 ### Reconciliation Rules
 

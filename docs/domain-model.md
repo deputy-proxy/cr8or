@@ -76,7 +76,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 8.19 implementation:** `AgentSemanticMemory` stores durable learned statements scoped to an Organization, Enterprise and Agent descriptor. Each memory has explicit confidence/status, authoritative source provenance, immutable creation/update versions and explicit conflict references. `AgentSemanticMemoryService` authorizes Enterprise/Agent access, bounds retrieval, preserves prior versions on updates and marks contradictory memories as disputed without deleting either statement. Semantic memory remains distinct from Knowledge and authoritative business state.
 
-**Deferred:** Governed generalized memory retrieval/write policy, memory auditability beyond the stored semantic-memory history/provenance, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 8.20–8.22 implementation:** `AgentMemoryPolicy` centralizes authorization and terminal-execution rules for memory reads/writes; `AgentMemoryService` provides one governed retrieval/write boundary over episodic and semantic memory; retrieval limits are bounded server-side. `MemoryContextProvider` makes memory an explicit, assignment-scoped context requirement with topic/relevance filters and a bounded combined budget. Memory provenance exposes the authoritative source execution and historical Agent identity without replacing execution history.
+
+**Deferred:** Generalized cross-Agent workflow orchestration, broader policy language, generalized retrieval/indexing beyond the bounded memory/context providers, and detailed future execution/provider schemas.
 
 ## Knowledge
 
