@@ -6,10 +6,16 @@ use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\LaravelAiProvider;
 use App\Contracts\CanvaClient as CanvaClientContract;
 use App\Contracts\CredentialResolver;
+use App\Contracts\KnowledgeEmbeddingProvider;
+use App\Contracts\KnowledgeRetrievalProvider;
 use App\Contracts\MediaGenerator;
 use App\Contracts\MediaRenderer;
 use App\Contracts\MediaStorage;
 use App\Contracts\PublishingProvider;
+use App\Services\DeterministicKnowledgeEmbeddingProvider;
+use App\Services\KnowledgeHybridRetrievalProvider;
+use App\Services\KnowledgeLexicalRetrievalProvider;
+use App\Services\KnowledgeSemanticRetrievalProvider;
 use App\Services\R2MediaStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -26,6 +32,13 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ModelProvider::class, LaravelAiProvider::class);
+        $this->app->singleton(KnowledgeEmbeddingProvider::class, DeterministicKnowledgeEmbeddingProvider::class);
+        $this->app->singleton(KnowledgeRetrievalProvider::class, function ($app): KnowledgeRetrievalProvider {
+            return new KnowledgeHybridRetrievalProvider(
+                new KnowledgeLexicalRetrievalProvider,
+                new KnowledgeSemanticRetrievalProvider($app->make(KnowledgeEmbeddingProvider::class)),
+            );
+        });
         $this->app->bind(MediaStorage::class, R2MediaStorage::class);
         $this->app->singleton(PublishingProvider::class, function ($app): PublishingProvider {
             return $app->environment('testing')
