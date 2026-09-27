@@ -9,7 +9,6 @@ use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
 use App\Capabilities\CapabilityRegistry;
-use App\Data\AgentContextSection;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
 use App\Data\ExpertInvocationRequest;
@@ -17,6 +16,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
+use App\Models\AgentExecutionStep;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\User;
@@ -39,16 +39,7 @@ final class AgentExecutionService
     {
         $actor = $request->actor;
         $assignment = $request->assignment;
-        $prompt = $request->prompt;
-        $targetContext = $request->targetContext;
-        $expertSlugs = $request->expertSlugs;
-        $modelOptions = $request->options;
-        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
-        $correlationId = $correlation->resolve($request->correlationId);
-
         $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);
-
-        $delegation = $request->delegation;
 
         Gate::forUser($actor)->authorize('view', $assignment);
 
@@ -57,36 +48,57 @@ final class AgentExecutionService
         }
 
         $enterprise = $assignment->enterprise;
-
-        if (! $enterprise instanceof Enterprise) {
+        if (! $enterprise instanceof Enterprise || $enterprise->organization_id !== $assignment->organization_id) {
             throw new AuthorizationException('Agent execution requires an enterprise-scoped assignment.');
         }
 
-        if ($enterprise->organization_id !== $assignment->organization_id) {
-            throw new AuthorizationException('The Agent assignment enterprise does not belong to its organization.');
-        }
-
         $descriptor = $assignment->agentDescriptor;
-        $runtimeClass = $descriptor->resolveRuntimeClass();
-        $agent = app($runtimeClass);
-
+        $agent = app($descriptor->resolveRuntimeClass());
         if (! $agent instanceof Agent) {
             throw new AuthorizationException('The configured Agent runtime is invalid.');
         }
 
-        if ($request->expertRoutingKey !== null) {
-            $expertSlugs = $agent->expertsFor($request->expertRoutingKey);
+        $expertSlugs = $request->expertRoutingKey !== null
+            ? $agent->expertsFor($request->expertRoutingKey)
+            : $request->expertSlugs;
+
+        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
+        $correlationId = $correlation->resolve($request->correlationId);
+        $idempotencyKey = $request->idempotencyKey ?? hash('sha256', implode('|', [$assignment->getKey(), $correlationId, $request->prompt]));
+
+        $existing = AgentExecution::query()
+            ->where('organization_id', $assignment->organization_id)
+            ->where('idempotency_key', $idempotencyKey)
+            ->first();
+
+        if ($existing !== null) {
+            if (in_array($existing->status, [AgentExecution::STATUS_COMPLETED, AgentExecution::STATUS_FAILED, AgentExecution::STATUS_CANCELLED], true)) {
+                return $this->resultFromExecution($existing);
+            }
+
+            return $this->run(
+                $existing,
+                $actor,
+                $assignment,
+                $agent,
+                $enterprise,
+                is_array($existing->expert_slugs) ? $existing->expert_slugs : $expertSlugs,
+                (string) $existing->prompt,
+                is_array($existing->target_context) ? $existing->target_context : [],
+                is_array($existing->model_options) ? $existing->model_options : [],
+                $request->delegation,
+                (string) ($existing->correlation_id ?? $correlationId),
+                is_array($existing->execution_context) ? $existing->execution_context : [],
+            );
         }
 
         $context = $this->contextAssembler->forAgent(
             $actor,
             $enterprise,
             $agent->requiredContext(),
-            $targetContext,
+            $request->targetContext,
             $assignment,
         );
-
-        $contextData = $context->toArray();
 
         $execution = AgentExecution::query()->create([
             'organization_id' => $assignment->organization_id,
@@ -101,41 +113,173 @@ final class AgentExecutionService
             'agent_definition_version' => $agent->definitionVersion(),
             'actor_name' => $actor->name,
             'correlation_id' => $correlationId,
+            'idempotency_key' => $idempotencyKey,
             'status' => AgentExecution::STATUS_REQUESTED,
             'requested_at' => now(),
+            'max_steps' => $this->maxSteps($request->options),
+            'current_step' => 0,
+            'prompt' => $request->prompt,
+            'target_context' => $request->targetContext,
+            'expert_slugs' => $expertSlugs,
+            'model_options' => $request->options,
+            'execution_context' => $context->toArray(),
         ]);
 
+        return $this->run(
+            $execution,
+            $actor,
+            $assignment,
+            $agent,
+            $enterprise,
+            $expertSlugs,
+            $request->prompt,
+            $request->targetContext,
+            $request->options,
+            $request->delegation,
+            $correlationId,
+            $context->toArray(),
+        );
+    }
+
+    public function resume(AgentExecution $execution, User $actor): AgentExecutionResult
+    {
+        $execution->loadMissing(['agentAssignment.agentDescriptor', 'agentAssignment.organization', 'agentAssignment.enterprise']);
+        $assignment = $execution->agentAssignment;
+
+        if (! $assignment instanceof AgentAssignment) {
+            throw new AuthorizationException('Agent execution cannot be resumed without its Agent assignment.');
+        }
+
+        Gate::forUser($actor)->authorize('view', $assignment);
+
+        if ($execution->actor_id !== $actor->getKey()) {
+            throw new AuthorizationException('Only the execution actor may resume this Agent execution.');
+        }
+
+        if (! in_array($execution->status, [
+            AgentExecution::STATUS_WAITING_FOR_INPUT,
+            AgentExecution::STATUS_WAITING_FOR_APPROVAL,
+            AgentExecution::STATUS_DELEGATED,
+            AgentExecution::STATUS_PAUSED,
+        ], true)) {
+            return $this->resultFromExecution($execution);
+        }
+
+        $enterprise = $assignment->enterprise;
+        $agent = app($assignment->agentDescriptor->resolveRuntimeClass());
+
+        if (! $enterprise instanceof Enterprise || ! $agent instanceof Agent) {
+            throw new AuthorizationException('The configured Agent execution runtime is invalid.');
+        }
+
+        return $this->run(
+            $execution,
+            $actor,
+            $assignment,
+            $agent,
+            $enterprise,
+            is_array($execution->expert_slugs) ? $execution->expert_slugs : [],
+            (string) $execution->prompt,
+            is_array($execution->target_context) ? $execution->target_context : [],
+            is_array($execution->model_options) ? $execution->model_options : [],
+            null,
+            (string) $execution->correlation_id,
+            is_array($execution->execution_context) ? $execution->execution_context : [],
+        );
+    }
+
+    /**
+     * @param  list<string>  $expertSlugs
+     * @param  array<string, mixed>  $targetContext
+     * @param  array<string, mixed>  $modelOptions
+     * @param  array<string, mixed>  $contextData
+     */
+    private function run(
+        AgentExecution $execution,
+        User $actor,
+        AgentAssignment $assignment,
+        Agent $agent,
+        Enterprise $enterprise,
+        array $expertSlugs,
+        string $prompt,
+        array $targetContext,
+        array $modelOptions,
+        ?AgentDelegation $delegation,
+        string $correlationId,
+        array $contextData,
+    ): AgentExecutionResult {
+        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
+        $lastResult = null;
+        $lastDecision = null;
+        $authorizedRequests = [];
+        $step = null;
+
         try {
-            $execution->start()->save();
+            if ($execution->status === AgentExecution::STATUS_REQUESTED) {
+                $execution->start()->save();
+            } elseif ($execution->status !== AgentExecution::STATUS_REASONING) {
+                $execution->beginReasoning()->save();
+            }
 
-            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $actor, $execution, $prompt, $targetContext);
+            while ($execution->current_step < $execution->max_steps) {
+                $sequence = $execution->current_step + 1;
 
-            $contextData = $context->withSection(new AgentContextSection(
-                name: 'instructions',
-                data: [
-                    'agent' => [
-                        'name' => $agent->name(),
-                        'instructions' => $agent->instructions(),
+                $step = AgentExecutionStep::query()->firstOrCreate(
+                    ['agent_execution_id' => $execution->getKey(), 'sequence' => $sequence],
+                    [
+                        'organization_id' => $execution->organization_id,
+                        'enterprise_id' => $execution->enterprise_id,
+                        'status' => AgentExecutionStep::STATUS_PENDING,
+                        'type' => AgentExecutionStep::TYPE_REASONING,
+                        'correlation_id' => $correlationId,
+                        'idempotency_key' => $execution->idempotency_key.':'.$sequence,
                     ],
-                    'experts' => $expertResults['instructions'] ?? [],
-                ],
-                source: get_class($agent),
-                scope: [
-                    'organization_id' => $assignment->organization_id,
-                    'enterprise_id' => $enterprise->getKey(),
-                    'agent_assignment_id' => $assignment->getKey(),
-                ],
-                relevance: 'Agent and Expert runtime instructions',
-            ))->toArray();
+                );
 
-            $request = new ModelRequest(
-                prompt: $prompt,
-                instructions: implode('
-', [$agent->instructions(), $this->instructions($agent, $expertResults)]),
-                context: array_merge($contextData, [
+                if ($step->status === AgentExecutionStep::STATUS_COMPLETED) {
+                    $execution->current_step = $sequence;
+                    $execution->save();
+
+                    continue;
+                }
+
+                $step->intent = $execution->next_step ?? ($sequence === 1 ? $prompt : 'Continue the current task using the prior structured result.');
+                $step->input_context = $this->stepContext($execution, $contextData);
+                $step->start()->save();
+                $execution->current_step = $sequence;
+                $execution->beginReasoning()->save();
+
+                $expertResults = $this->coordinateExperts(
+                    $agent,
+                    $contextData,
+                    $expertSlugs,
+                    $assignment,
+                    $actor,
+                    $execution,
+                    $step->intent,
+                    $targetContext,
+                );
+
+                $stepContext = array_merge($contextData, [
                     'execution_id' => $execution->getKey(),
+                    'step' => $sequence,
+                    'max_steps' => $execution->max_steps,
+                    'previous_result' => $execution->last_result,
+                    'next_step' => $execution->next_step,
+                    'execution_history' => $execution->steps()->orderBy('sequence')->get()->map(
+                        fn (AgentExecutionStep $item): array => [
+                            'sequence' => $item->sequence,
+                            'status' => $item->status,
+                            'intent' => $item->intent,
+                            'output' => $item->output,
+                        ],
+                    )->all(),
+                    'instructions' => [
+                        'agent' => ['name' => $agent->name(), 'instructions' => $agent->instructions()],
+                        'experts' => $expertResults['instructions'] ?? [],
+                    ],
                     'agent' => [
-                        'slug' => $descriptor->slug,
+                        'slug' => $assignment->agentDescriptor->slug,
                         'name' => $agent->name(),
                         'responsibilities' => $agent->responsibilities(),
                         'capabilities' => $agent->capabilities(),
@@ -148,55 +292,200 @@ final class AgentExecutionService
                     ],
                     'experts' => $expertResults,
                     'target_context' => $targetContext,
-                ]),
-                provider: isset($modelOptions['provider']) ? (string) $modelOptions['provider'] : null,
-                model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,
-                timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,
-                structuredOutputSchema: $this->outputSchema(),
-                correlationId: $correlationId,
-            );
+                ]);
 
-            $modelResult = $this->provider->generate($request);
-            $execution->provider = $modelResult->provider;
-            $execution->external_execution_id = $modelResult->invocationId;
-            $execution->save();
-            $capabilityRequests = $this->authorizeCapabilityRequests(
-                $actor,
-                $assignment,
-                $enterprise,
-                $execution,
-                $modelResult,
-                $targetContext,
-                $delegation,
-            );
+                $modelRequest = new ModelRequest(
+                    prompt: $step->intent,
+                    instructions: implode("\n", [$agent->instructions(), $this->instructions($agent, $expertResults)]),
+                    context: $stepContext,
+                    provider: isset($modelOptions['provider']) ? (string) $modelOptions['provider'] : null,
+                    model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,
+                    timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,
+                    structuredOutputSchema: $this->outputSchema(),
+                    correlationId: $correlationId,
+                );
 
-            $decision = $this->persistDecision($execution, $modelResult);
+                $execution->transitionTo(AgentExecution::STATUS_EXECUTING)->save();
+                $modelResult = $this->provider->generate($modelRequest);
 
-            $execution->succeed()->save();
+                $execution->provider = $modelResult->provider;
+                $execution->external_execution_id = $modelResult->invocationId;
+                $execution->last_result = [
+                    'text' => $modelResult->text,
+                    'structured' => $modelResult->structured,
+                    'provider' => $modelResult->provider,
+                    'model' => $modelResult->model,
+                    'invocation_id' => $modelResult->invocationId,
+                    'usage' => $modelResult->usage,
+                    'correlation_id' => $modelResult->correlationId,
+                ];
 
-            return new AgentExecutionResult(
-                execution: $execution->refresh(),
-                modelResult: $modelResult,
-                decision: $decision,
-                capabilityRequests: $capabilityRequests,
-            );
+                $authorizedRequests = $this->authorizeCapabilityRequests(
+                    $actor,
+                    $assignment,
+                    $enterprise,
+                    $execution,
+                    $modelResult,
+                    $targetContext,
+                    $delegation,
+                );
+
+                $decision = $this->persistDecision($execution, $modelResult);
+                $lastDecision = $decision;
+                $lastResult = $modelResult;
+
+                $termination = $this->termination($modelResult);
+                $execution->next_step = $termination['next_step'];
+                $execution->state_reason = $termination['reason'];
+                $step->output = $modelResult->structured;
+                $step->capability_requests = array_map(
+                    fn (CapabilityRequest $request): array => $request->toArray(),
+                    $authorizedRequests,
+                );
+
+                if ($termination['status'] === AgentExecution::STATUS_WAITING_FOR_INPUT) {
+                    $step->wait($termination['reason'])->save();
+                    $execution->waitForInput($termination['reason'])->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if ($termination['status'] === AgentExecution::STATUS_WAITING_FOR_APPROVAL) {
+                    $step->wait($termination['reason'])->save();
+                    $execution->waitForApproval($termination['reason'])->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if ($termination['status'] === AgentExecution::STATUS_DELEGATED) {
+                    $step->wait($termination['reason'])->save();
+                    $execution->markDelegated($termination['reason'])->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if ($termination['status'] === AgentExecution::STATUS_PAUSED) {
+                    $step->wait($termination['reason'])->save();
+                    $execution->pause($termination['reason'])->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                $step->complete()->save();
+                $execution->save();
+
+                if ($termination['status'] === AgentExecution::STATUS_COMPLETED) {
+                    $execution->complete($termination['reason'])->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                if ($sequence >= $execution->max_steps) {
+                    $execution->complete('max_steps_reached')->save();
+
+                    return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
+                }
+
+                $execution->next_step = $termination['next_step'] ?? 'Continue the current task.';
+                $execution->beginReasoning()->save();
+            }
+
+            $execution->complete('max_steps_reached')->save();
+
+            return new AgentExecutionResult($execution->refresh(), $lastResult, $lastDecision, $authorizedRequests);
         } catch (Throwable $exception) {
-            if ($execution->status === AgentExecution::STATUS_EXECUTING) {
+            if (in_array($execution->status, [AgentExecution::STATUS_REASONING, AgentExecution::STATUS_EXECUTING], true)) {
                 $error = ExecutionError::from($exception);
                 $execution->failure_code = $error->code;
                 $execution->fail($error->message)->save();
+
+                if ($step instanceof AgentExecutionStep && $step->status === AgentExecutionStep::STATUS_RUNNING) {
+                    $step->fail($error->message, $error->code)->save();
+                }
+
                 $correlation->logFailure('agent.execute', $execution->correlation_id ?? $correlationId, $error, [
                     'actor_id' => $execution->actor_id,
                     'organization_id' => $execution->organization_id,
                     'enterprise_id' => $execution->enterprise_id,
                     'agent_assignment_id' => $execution->agent_assignment_id,
                     'execution_id' => $execution->getKey(),
+                    'step' => $execution->current_step,
                     'provider' => $execution->provider,
                 ]);
             }
 
             throw $exception;
         }
+    }
+
+    /** @return array{status: string, next_step: ?string, reason: ?string} */
+    private function termination(ModelResult $result): array
+    {
+        $structured = $result->structured ?? [];
+        $termination = $structured['termination'] ?? 'completed';
+
+        $status = match ($termination) {
+            'continue' => AgentExecution::STATUS_REASONING,
+            'waiting_for_input' => AgentExecution::STATUS_WAITING_FOR_INPUT,
+            'waiting_for_approval' => AgentExecution::STATUS_WAITING_FOR_APPROVAL,
+            'delegated' => AgentExecution::STATUS_DELEGATED,
+            'paused' => AgentExecution::STATUS_PAUSED,
+            'completed' => AgentExecution::STATUS_COMPLETED,
+            default => throw new AuthorizationException("The model returned an invalid execution termination state [{$termination}]."),
+        };
+
+        return [
+            'status' => $status,
+            'next_step' => isset($structured['next_step']) && is_string($structured['next_step']) ? trim($structured['next_step']) : null,
+            'reason' => isset($structured['termination_reason']) && is_string($structured['termination_reason']) ? trim($structured['termination_reason']) : null,
+        ];
+    }
+
+    /** @param array<string, mixed> $options */
+    private function maxSteps(array $options): int
+    {
+        $value = $options['max_steps'] ?? 5;
+
+        if (! is_int($value) || $value < 1) {
+            throw new AuthorizationException('Agent execution max_steps must be a positive integer.');
+        }
+
+        return min($value, 10);
+    }
+
+    /**
+     * @param  array<string, mixed>  $contextData
+     * @return array<string, mixed>
+     */
+    private function stepContext(AgentExecution $execution, array $contextData): array
+    {
+        return array_merge($contextData, [
+            'execution_id' => $execution->getKey(),
+            'step' => $execution->current_step + 1,
+            'previous_result' => $execution->last_result,
+            'next_step' => $execution->next_step,
+        ]);
+    }
+
+    private function resultFromExecution(AgentExecution $execution): AgentExecutionResult
+    {
+        $stored = is_array($execution->last_result) ? $execution->last_result : null;
+        $modelResult = $stored === null ? null : new ModelResult(
+            text: (string) ($stored['text'] ?? ''),
+            structured: isset($stored['structured']) && is_array($stored['structured']) ? $stored['structured'] : null,
+            provider: (string) ($stored['provider'] ?? $execution->provider ?? 'unknown'),
+            model: (string) ($stored['model'] ?? 'unknown'),
+            invocationId: (string) ($stored['invocation_id'] ?? $execution->external_execution_id ?? $execution->getKey()),
+            usage: isset($stored['usage']) && is_array($stored['usage']) ? $stored['usage'] : [],
+            correlationId: isset($stored['correlation_id']) && is_string($stored['correlation_id']) ? $stored['correlation_id'] : $execution->correlation_id,
+        );
+
+        return new AgentExecutionResult(
+            execution: $execution->refresh(),
+            modelResult: $modelResult,
+            decision: AgentDecision::query()->where('execution_id', $execution->getKey())->latest('id')->first(),
+            capabilityRequests: [],
+        );
     }
 
     /**
@@ -291,6 +580,9 @@ final class AgentExecutionService
                 'decision_title' => ['type' => 'string'],
                 'decision_summary' => ['type' => 'string'],
                 'decision_rationale' => ['type' => 'string'],
+                'termination' => ['type' => 'string', 'enum' => ['continue', 'completed', 'waiting_for_input', 'waiting_for_approval', 'delegated', 'paused']],
+                'termination_reason' => ['type' => 'string'],
+                'next_step' => ['type' => 'string'],
                 'capability_requests' => [
                     'type' => 'array',
                     'items' => [
