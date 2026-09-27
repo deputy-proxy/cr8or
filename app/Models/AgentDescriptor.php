@@ -39,6 +39,12 @@ class AgentDescriptor extends Model
         ];
     }
 
+    /** @return HasMany<AgentSemanticMemory, $this> */
+    public function semanticMemories(): HasMany
+    {
+        return $this->hasMany(AgentSemanticMemory::class);
+    }
+
     /** @return HasMany<AgentAssignment, $this> */
     public function assignments(): HasMany
     {
