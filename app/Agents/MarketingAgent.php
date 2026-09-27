@@ -61,4 +61,3 @@ final class MarketingAgent extends Agent
         );
     }
 }
-\n

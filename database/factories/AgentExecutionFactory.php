@@ -80,4 +80,3 @@ class AgentExecutionFactory extends Factory
         return $this->state(['status' => AgentExecution::STATUS_EXECUTING, 'started_at' => now()]);
     }
 }
-\n
