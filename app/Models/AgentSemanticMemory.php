@@ -29,6 +29,8 @@ class AgentSemanticMemory extends Model
     /** @use HasFactory<AgentSemanticMemoryFactory> */
     use HasFactory;
 
+    private ?int $versionActorId = null;
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_DISPUTED = 'disputed';
@@ -51,6 +53,37 @@ class AgentSemanticMemory extends Model
         'enterprise_id',
         'agent_descriptor_id',
     ];
+
+    public function setVersionActor(?User $actor): static
+    {
+        $this->versionActorId = $actor?->getKey();
+
+        return $this;
+    }
+
+    /** @return array<string, mixed> */
+    public function provenanceMetadata(): array
+    {
+        $metadata = [
+            'source_type' => $this->provenance['source_type'] ?? null,
+            'source_id' => $this->provenance['source_id'] ?? null,
+        ];
+
+        if (($metadata['source_type'] ?? null) === AgentExecution::class && is_int($metadata['source_id'] ?? null)) {
+            $execution = AgentExecution::query()->find($metadata['source_id']);
+
+            if ($execution instanceof AgentExecution) {
+                $metadata['historical_agent'] = [
+                    'descriptor_id' => $execution->agent_descriptor_id,
+                    'slug' => $execution->agent_slug,
+                    'runtime_class' => $execution->agent_runtime_class,
+                    'definition_version' => $execution->agent_definition_version,
+                ];
+            }
+        }
+
+        return $metadata;
+    }
 
     protected static function booted(): void
     {
@@ -112,19 +145,23 @@ class AgentSemanticMemory extends Model
 
     private function recordVersion(string $changeType): void
     {
-        $this->versions()->create([
-            'organization_id' => $this->organization_id,
-            'enterprise_id' => $this->enterprise_id,
-            'agent_descriptor_id' => $this->agent_descriptor_id,
-            'statement' => $this->statement,
-            'confidence' => $this->confidence,
-            'status' => $this->status,
-            'conflict_memory_ids' => $this->conflict_memory_ids,
-            'provenance' => $this->provenance,
-            'change_type' => $changeType,
-            'changed_by_user_id' => null,
-            'recorded_at' => now(),
-        ]);
+        try {
+            $this->versions()->create([
+                'organization_id' => $this->organization_id,
+                'enterprise_id' => $this->enterprise_id,
+                'agent_descriptor_id' => $this->agent_descriptor_id,
+                'statement' => $this->statement,
+                'confidence' => $this->confidence,
+                'status' => $this->status,
+                'conflict_memory_ids' => $this->conflict_memory_ids,
+                'provenance' => $this->provenance,
+                'change_type' => $changeType,
+                'changed_by_user_id' => $this->versionActorId,
+                'recorded_at' => now(),
+            ]);
+        } finally {
+            $this->versionActorId = null;
+        }
     }
 
     private function validateState(): void

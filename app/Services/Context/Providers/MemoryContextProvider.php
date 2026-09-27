@@ -56,10 +56,20 @@ final class MemoryContextProvider implements AgentContextProvider
             name: 'memory',
             data: [
                 'episodic' => $memory['episodic']->map(
-                    static fn ($item): array => $item->toArray(),
+                    static function ($item): array {
+                        $data = $item->toArray();
+                        $data['provenance'] = $item->provenanceMetadata();
+
+                        return $data;
+                    },
                 )->all(),
                 'semantic' => $memory['semantic']->map(
-                    static fn ($item): array => $item->toArray(),
+                    static function ($item): array {
+                        $data = $item->toArray();
+                        $data['provenance'] = $item->provenanceMetadata();
+
+                        return $data;
+                    },
                 )->all(),
             ],
             source: self::class,

@@ -38,7 +38,8 @@ it('creates semantic memory with scoped provenance and creation history', functi
             'source_id' => $execution->getKey(),
         ])
         ->and($memory->versions)->toHaveCount(1)
-        ->and($memory->versions->first()->change_type)->toBe('created');
+        ->and($memory->versions->first()->change_type)->toBe('created')
+        ->and($memory->versions->first()->changed_by_user_id)->toBe($user->getKey());
 });
 
 it('updates semantic memory without destroying its prior version', function () {
@@ -66,7 +67,47 @@ it('updates semantic memory without destroying its prior version', function () {
             'Short copy is preferred.',
             'Short copy with a direct CTA is preferred.',
         ])
-        ->and($memory->versions()->orderBy('id')->pluck('change_type')->all())->toBe(['created', 'updated']);
+        ->and($memory->versions()->orderBy('id')->pluck('change_type')->all())->toBe(['created', 'updated'])
+        ->and($memory->versions()->orderBy('id')->pluck('changed_by_user_id')->all())->toBe([$user->getKey(), $user->getKey()]);
+});
+
+it('preserves historical Agent identity when the current descriptor changes', function () {
+    $user = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
+    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create([
+        'status' => AgentExecution::STATUS_SUCCEEDED,
+        'completed_at' => now(),
+        'agent_slug' => 'historical-agent',
+        'agent_runtime_class' => MarketingAgent::class,
+        'agent_definition_version' => '1.0.0',
+    ]);
+    $agent = AgentDescriptor::query()->findOrFail($execution->agent_descriptor_id);
+
+    $memory = app(AgentSemanticMemoryService::class)->remember(
+        $user,
+        $enterprise,
+        $agent,
+        'The enterprise prefers concise campaign copy.',
+        0.85,
+        ['source_type' => AgentExecution::class, 'source_id' => $execution->getKey()],
+    );
+
+    $agent->update(['slug' => 'current-agent']);
+    $execution->refresh();
+    $memory->refresh();
+
+    expect($execution->agent_slug)->toBe('historical-agent')
+        ->and($memory->provenanceMetadata())->toMatchArray([
+            'source_type' => AgentExecution::class,
+            'source_id' => $execution->getKey(),
+            'historical_agent' => [
+                'descriptor_id' => $execution->agent_descriptor_id,
+                'slug' => 'historical-agent',
+                'runtime_class' => MarketingAgent::class,
+                'definition_version' => '1.0.0',
+            ],
+        ]);
 });
 
 it('marks conflicting memories as disputed while preserving both statements and histories', function () {
