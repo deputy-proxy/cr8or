@@ -94,6 +94,16 @@ final class RetrievedKnowledgeContextProvider implements AgentContextProvider
                     'estimated_tokens' => $used,
                     'truncated' => count($items) < count($result->items),
                 ],
+                'sufficiency' => [
+                    'status' => $items === [] ? 'insufficient' : 'sufficient',
+                    'reason' => $items === []
+                        ? (count($result->items) === 0 ? 'no_relevant_results' : 'budget_excluded_results')
+                        : null,
+                ],
+                'retrieval' => [
+                    'correlation_id' => $result->correlationId,
+                    'metadata' => $result->metadata,
+                ],
             ],
             source: self::class,
             scope: [
