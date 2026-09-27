@@ -74,6 +74,10 @@ final class AgentExecutionService
             throw new AuthorizationException('The configured Agent runtime is invalid.');
         }
 
+        if ($request->expertRoutingKey !== null) {
+            $expertSlugs = $agent->expertsFor($request->expertRoutingKey);
+        }
+
         $context = $this->contextAssembler->forAgent(
             $actor,
             $enterprise,

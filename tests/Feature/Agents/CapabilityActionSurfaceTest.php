@@ -8,10 +8,13 @@ use App\Agents\ProductAgent;
 use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\FakeModelProvider;
 use App\Experts\BusinessAnalysisExpert;
+use App\Experts\CopywritingExpert;
 use App\Experts\FinanceExpert;
 use App\Experts\MarketingExpert;
 use App\Experts\OperationsExpert;
 use App\Experts\ProductExpert;
+use App\Experts\SeoExpert;
+use App\Experts\StrategyExpert;
 use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\DelegateAgentTool;
@@ -86,9 +89,12 @@ it('maps every current Expert capability to an executable governed expert action
     $experts = [
         BusinessAnalysisExpert::class => 'business.analysis',
         MarketingExpert::class => 'marketing.plan',
+        CopywritingExpert::class => 'marketing.content.create',
         FinanceExpert::class => 'finance.report.generate',
         OperationsExpert::class => 'work.item.create',
         ProductExpert::class => 'strategy.create',
+        SeoExpert::class => 'marketing.content.review',
+        StrategyExpert::class => 'strategy.create',
     ];
 
     $descriptors = ExpertDescriptor::query()->get()->keyBy('runtime_class');

@@ -7,12 +7,15 @@ use App\Agents\MarketingAgent;
 use App\Agents\OperationsAgent;
 use App\Agents\ProductAgent;
 use App\Experts\BusinessAnalysisExpert;
+use App\Experts\CopywritingExpert;
 use App\Experts\Expert;
 use App\Experts\ExpertDefinition;
 use App\Experts\FinanceExpert;
 use App\Experts\MarketingExpert;
 use App\Experts\OperationsExpert;
 use App\Experts\ProductExpert;
+use App\Experts\SeoExpert;
+use App\Experts\StrategyExpert;
 use App\Models\AgentDescriptor;
 use App\Models\ExpertDescriptor;
 use InvalidArgumentException;
@@ -67,9 +70,12 @@ it('implements the five roadmap Agent roles with authoritative runtime metadata'
 it('registers the minimum domain Experts through the existing descriptor registry', function () {
     $experts = [
         'business-analysis' => BusinessAnalysisExpert::class,
+        'copywriting' => CopywritingExpert::class,
         'marketing' => MarketingExpert::class,
         'finance' => FinanceExpert::class,
         'product' => ProductExpert::class,
+        'seo' => SeoExpert::class,
+        'strategy' => StrategyExpert::class,
         'operations' => OperationsExpert::class,
     ];
 

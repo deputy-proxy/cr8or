@@ -23,6 +23,7 @@ final readonly class AgentExecutionRequest
         public array $options = [],
         public ?string $correlationId = null,
         public ?AgentDelegation $delegation = null,
+        public ?string $expertRoutingKey = null,
     ) {
         if (trim($this->prompt) === '') {
             throw new InvalidArgumentException('An Agent execution prompt is required.');
@@ -32,6 +33,14 @@ final readonly class AgentExecutionRequest
             if (trim($slug) === '') {
                 throw new InvalidArgumentException('Agent execution Expert identifiers must be non-empty strings.');
             }
+        }
+
+        if ($this->expertRoutingKey !== null && trim($this->expertRoutingKey) === '') {
+            throw new InvalidArgumentException('Agent execution Expert routing keys must be non-empty strings.');
+        }
+
+        if ($this->expertRoutingKey !== null && $this->expertSlugs !== []) {
+            throw new InvalidArgumentException('Agent execution must use either Expert routing metadata or explicit Expert identifiers, not both.');
         }
     }
 }

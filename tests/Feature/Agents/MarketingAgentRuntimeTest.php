@@ -29,7 +29,7 @@ it('defines the production Marketing Agent runtime contract', function (): void 
     $agent = app(MarketingAgent::class);
 
     expect($agent->name())->toBe('Marketing')
-        ->and($agent->experts())->toBe(['marketing'])
+        ->and($agent->experts())->toBe(['marketing', 'strategy', 'copywriting', 'seo'])
         ->and($agent->requiredContext())->toBe([
             'enterprise',
             'strategy',
@@ -47,7 +47,7 @@ it('defines the production Marketing Agent runtime contract', function (): void 
         ])
         ->and($agent->instructions())
         ->toContain('Request human approval whenever the selected Capability is approval-sensitive')
-        ->and($agent->decisionBoundaries())->toHaveCount(4)
+        ->and($agent->decisionBoundaries())->toHaveCount(8)
         ->and($agent->expectedOutputs())->toHaveCount(3)
         ->and($agent->capabilityMap())->toMatchArray([
             'plan marketing activity' => ['marketing.plan'],
@@ -55,6 +55,12 @@ it('defines the production Marketing Agent runtime contract', function (): void 
         ])
         ->and($agent->capabilityGaps())->toContain('marketing.campaign.performance-analysis')
         ->and($agent->approvalSensitiveCapabilities())->toBe(['marketing.content.publication-ready'])
+        ->and($agent->expertRouting())->toMatchArray([
+            'plan marketing activity' => ['marketing', 'strategy'],
+            'coordinate marketing expertise' => ['marketing', 'strategy', 'copywriting', 'seo'],
+            'coordinate campaign and content work' => ['copywriting', 'seo'],
+            'protect content governance' => ['seo', 'copywriting'],
+        ])
         ->and($agent->definitionVersion())->toMatch('/^[a-f0-9]{64}$/');
 
     $registry = app(CapabilityRegistry::class);
@@ -109,15 +115,8 @@ it('executes through the canonical Agent contract with authorized context, Exper
         ])
             ->and($request->context['agent']['slug'])->toBe('marketing')
             ->and($request->context['experts']['results'][0]['expert'])->toBe('Marketing')
-            ->and($request->context['experts']['results'][0]['result']['available_context'])->toContain(
-                'enterprise',
-                'strategy',
-                'work',
-                'knowledge',
-                'decisions',
-                'execution_history',
-                'invocation',
-            );
+            ->and($request->context['experts']['results'][0]['result']['available_context'])
+            ->toBe(['enterprise', 'strategy', 'knowledge', 'invocation']);
 
         return new ModelResult(
             text: 'Marketing plan prepared.',
