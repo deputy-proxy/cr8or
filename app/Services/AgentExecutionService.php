@@ -12,14 +12,13 @@ use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentContextSection;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
-use App\Experts\Expert;
+use App\Data\ExpertInvocationRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
-use App\Models\ExpertDescriptor;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +32,7 @@ final class AgentExecutionService
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
         private readonly ?ExecutionCorrelationService $correlation = null,
         private readonly ?CapabilityRegistry $capabilities = null,
+        private readonly ?ExpertInvocationService $expertInvocations = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -101,7 +101,7 @@ final class AgentExecutionService
         try {
             $execution->start()->save();
 
-            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $enterprise);
+            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $actor, $execution, $prompt, $targetContext);
 
             $contextData = $context->withSection(new AgentContextSection(
                 name: 'instructions',
@@ -189,6 +189,7 @@ final class AgentExecutionService
     /**
      * @param  array<string, mixed>  $context
      * @param  list<string>  $expertSlugs
+     * @param  array<string, mixed>  $targetContext
      * @return array<string, mixed>
      */
     private function coordinateExperts(
@@ -196,61 +197,55 @@ final class AgentExecutionService
         array $context,
         array $expertSlugs,
         AgentAssignment $assignment,
-        Enterprise $enterprise,
+        User $actor,
+        AgentExecution $execution,
+        string $businessObjective,
+        array $targetContext,
     ): array {
         if ($expertSlugs === []) {
             return [];
         }
 
-        $descriptors = ExpertDescriptor::query()->whereIn('slug', $expertSlugs)->get()->keyBy('slug');
-
-        if ($descriptors->count() !== count(array_unique($expertSlugs))) {
-            throw new AuthorizationException('One or more requested Experts could not be resolved.');
-        }
-
-        $experts = [];
+        $invocations = $this->expertInvocations ?? app(ExpertInvocationService::class);
+        $results = [];
+        $instructions = [];
 
         foreach ($expertSlugs as $slug) {
-            /** @var ExpertDescriptor $descriptor */
-            $descriptor = $descriptors->get($slug);
+            $invocation = $invocations->invoke(new ExpertInvocationRequest(
+                actor: $actor,
+                assignment: $assignment,
+                execution: $execution,
+                agent: $agent,
+                expertSlug: $slug,
+                businessObjective: $businessObjective,
+                authorizedContext: $context,
+                expectedReasoningOutput: 'Provide specialized reasoning that informs the parent Agent decision without executing business operations.',
+                targetContext: $targetContext,
+                correlationId: $execution->correlation_id,
+            ));
 
-            if (! $descriptor->enabled) {
-                throw new AuthorizationException("Expert [{$slug}] is disabled.");
+            if ($invocation->failed()) {
+                throw new \RuntimeException($invocation->failure->message ?? 'Expert invocation failed.');
             }
 
-            $runtime = app($descriptor->resolveRuntimeClass());
+            $results[] = [
+                'expert' => $invocation->expertName,
+                'result' => $invocation->reasoningOutput,
+                'invocation' => $invocation->toArray(),
+            ];
 
-            if (! $runtime instanceof Expert) {
-                throw new AuthorizationException("Expert [{$slug}] has an invalid runtime.");
-            }
-
-            foreach ($runtime->capabilities() as $capability) {
-                if (! $this->capabilityAuthorizer->allowsExpertCapability(
-                    $assignment,
-                    $runtime,
-                    $capability,
-                    $assignment->organization,
-                    $enterprise,
-                )) {
-                    throw new AuthorizationException("The Agent is not authorized to use capability [{$capability}] through Expert [{$slug}].");
-                }
-            }
-
-            $experts[] = $runtime;
+            $instructions[] = [
+                'name' => $invocation->expertName,
+                'responsibilities' => $agent->responsibilities(),
+                'methodology' => $invocation->metadata['methodology'] ?? 'Specialized reasoning within the authorized Agent context.',
+            ];
         }
 
-        /** @var array<string, mixed> $result */
-        $result = $agent->execute($context, $experts);
-        $result['instructions'] = array_map(
-            fn (Expert $expert): array => [
-                'name' => $expert->name(),
-                'responsibilities' => $expert->responsibilities(),
-                'methodology' => $expert->methodology(),
-            ],
-            $experts,
-        );
-
-        return $result;
+        return [
+            'agent' => $agent->name(),
+            'results' => $results,
+            'instructions' => $instructions,
+        ];
     }
 
     /** @param array<string, mixed> $expertResults */

@@ -384,3 +384,10 @@ The following remain intentionally deferred:
 - Agent memory implementation;
 - generalized cross-Agent workflow orchestration beyond the governed delegation traceability boundary;
 - broader capability catalogue and general policy language;
+### Canonical Expert Invocation Contract
+
+Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInvocationResult` with `ExpertInvocationService` as the canonical Agent-to-Expert application boundary. The request is explicitly scoped to the receiving Agent assignment and parent `AgentExecution` and carries the business objective, authorized context, expected reasoning output, target context and correlation identity.
+
+Expert identity is runtime-derived from the enabled `ExpertDescriptor`. Invocation is denied unless the Expert is declared by the receiving Agent. The Expert's required context must be present in the authorized context supplied by the parent execution. Declared Capabilities are resolved through the existing `CapabilityRegistry` and re-authorized through the Agent assignment; approval requirements remain enforced by the existing authorization boundary.
+
+The result distinguishes reasoning output, requested Capabilities, decisions, recommendations, execution metadata and normalized failure state. Expert invocation does not execute Capabilities, grant authority or create a second governance path. The parent `AgentExecution` remains the authoritative execution and audit record, with correlation identity preserved across the invocation boundary.

@@ -112,3 +112,10 @@ AgentExecution remains the authoritative lifecycle record for Agent execution. I
 The Phase 7 delegation boundary uses AgentDelegationService and explicit request/response data contracts. It persists an auditable AgentDelegation record with source/target assignment references, organization/Enterprise scope, historical identity snapshots, actor, parent AgentExecution, correlation and idempotency data. The service re-checks source delegation and target capability authority, preserves approval requirements, invokes the existing AgentExecutionService for the receiving Agent, and links the resulting AgentExecution back to the delegation. This is traceability for governed delegation, not a second workflow engine.
 
 The existing Phase 3 Job/Execution idempotency model remains authoritative for background operations. MCP update tools marked idempotent rely on their existing replacement semantics; no second retry engine is introduced.
+## Expert Invocation Contract
+
+Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInvocationResult` as the canonical Agent-to-Expert runtime boundary. The request carries the actor, receiving Agent assignment, parent `AgentExecution`, runtime Agent, Expert identifier, business objective, authorized context, expected reasoning output, target context and correlation identity.
+
+`ExpertInvocationService` resolves the Expert identity from the authoritative `ExpertDescriptor` registry and runtime class, verifies that the Expert is declared by the receiving Agent, verifies required context, and re-validates each declared Capability through the existing Agent assignment permission and approval boundary. It does not grant authority or execute Capabilities.
+
+The result separates reasoning output, requested Capability Requests, decisions, recommendations, execution metadata and normalized failure state. Every successful result carries the parent `AgentExecution` identifier and correlation identity. Authorization failures preserve the existing authorization exception semantics; reasoning failures are represented as a failed invocation result so the parent Agent execution can record the failure.

@@ -26,7 +26,7 @@ function testAgentRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: [], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
+            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: ['analyst', 'unauthorized-analyst'], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
         }
     });
 }
