@@ -222,17 +222,33 @@ final class ExpertInvocationService
                 ));
             }
 
-            if (! $this->capabilityAuthorizer->allowsExpertCapability(
-                $request->assignment,
-                $runtime,
-                $capability,
-                $request->assignment->organization,
-                $request->assignment->enterprise,
-                $request->actor,
-                null,
-                $request->execution,
-                is_array($item['target_context'] ?? null) ? $item['target_context'] : $request->targetContext,
-            )) {
+            $targetContext = is_array($item['target_context'] ?? null)
+                ? $item['target_context']
+                : $request->targetContext;
+            $inputPayload = is_array($item['input_payload'] ?? null)
+                ? $item['input_payload']
+                : [];
+            $approval = isset($item['approval_request_id'])
+                ? \App\Models\ApprovalRequest::query()->find((int) $item['approval_request_id'])
+                : null;
+            $capabilityRequest = new CapabilityRequest(
+                capability: $capability,
+                assignment: $request->assignment,
+                execution: $request->execution,
+                actor: $request->actor,
+                targetContext: $targetContext,
+                inputPayload: $inputPayload,
+                expertSlug: $request->expertSlug,
+                approval: $approval,
+                correlationId: isset($item['correlation_id']) && is_string($item['correlation_id'])
+                    ? $item['correlation_id']
+                    : $request->correlationId,
+                idempotencyKey: isset($item['idempotency_key']) && is_string($item['idempotency_key'])
+                    ? $item['idempotency_key']
+                    : null,
+            );
+
+            if (! $this->capabilityAuthorizer->allowsRequest($capabilityRequest)) {
                 throw new AuthorizationException(sprintf(
                     'The Agent is not authorized to request capability [%s] through Expert [%s].',
                     $capability,
@@ -240,11 +256,7 @@ final class ExpertInvocationService
                 ));
             }
 
-            $requested[] = new CapabilityRequest(
-                capability: $capability,
-                targetContext: is_array($item['target_context'] ?? null) ? $item['target_context'] : $request->targetContext,
-                approvalRequestId: isset($item['approval_request_id']) ? (int) $item['approval_request_id'] : null,
-            );
+            $requested[] = $capabilityRequest;
         }
 
         return $requested;

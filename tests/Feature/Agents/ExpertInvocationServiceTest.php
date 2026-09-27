@@ -97,6 +97,7 @@ final class CapabilityContractTestExpert extends Expert
                 [
                     'capability' => 'work.item.create',
                     'target_context' => ['enterprise_id' => $context['enterprise']['enterprise']['id']],
+                    'input_payload' => ['name' => 'Requested work item'],
                 ],
             ],
         ];
@@ -266,5 +267,6 @@ it('returns governed Capability requests only when the Expert declares and the A
     expect($result->succeeded())->toBeTrue()
         ->and($result->requestedCapabilities)->toHaveCount(1)
         ->and($result->requestedCapabilities[0]->capability)->toBe('work.item.create')
-        ->and($result->requestedCapabilities[0]->targetContext)->toBe(['enterprise_id' => $enterprise->getKey()]);
+        ->and($result->requestedCapabilities[0]->targetContext)->toBe(['enterprise_id' => $enterprise->getKey()])
+        ->and($result->requestedCapabilities[0]->inputPayload)->toBe(['name' => 'Requested work item']);
 });

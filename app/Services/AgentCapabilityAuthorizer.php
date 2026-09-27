@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Data\CapabilityRequest;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
@@ -15,6 +16,24 @@ use App\Models\User;
 class AgentCapabilityAuthorizer
 {
     public function __construct(private readonly CapabilityRegistry $capabilities) {}
+
+    /**
+     * Authorize a Capability request through its canonical contract.
+     */
+    public function allowsRequest(CapabilityRequest $request): bool
+    {
+        return $this->allows(
+            $request->assignment,
+            $request->capability,
+            $request->assignment->organization,
+            $request->assignment->enterprise,
+            $request->actor,
+            $request->approval,
+            $request->execution,
+            $request->targetContext,
+            $request->delegation,
+        );
+    }
 
     /**
      * Authorize a Capability requested through an Expert runtime.

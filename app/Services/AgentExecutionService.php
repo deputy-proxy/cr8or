@@ -280,7 +280,18 @@ final class AgentExecutionService
                 'decision_rationale' => ['type' => 'string'],
                 'capability_requests' => [
                     'type' => 'array',
-                    'items' => ['type' => 'string'],
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'capability' => ['type' => 'string'],
+                            'target_context' => ['type' => 'object'],
+                            'input_payload' => ['type' => 'object'],
+                            'approval_request_id' => ['type' => 'integer'],
+                            'correlation_id' => ['type' => 'string'],
+                            'idempotency_key' => ['type' => 'string'],
+                        ],
+                        'required' => ['capability'],
+                    ],
                 ],
             ],
         ];
@@ -325,30 +336,34 @@ final class AgentExecutionService
             $requestContext = isset($request['target_context']) && is_array($request['target_context'])
                 ? $request['target_context']
                 : $targetContext;
-
+            $inputPayload = isset($request['input_payload']) && is_array($request['input_payload'])
+                ? $request['input_payload']
+                : [];
             $approval = isset($request['approval_request_id'])
                 ? ApprovalRequest::query()->find((int) $request['approval_request_id'])
                 : null;
+            $capabilityRequest = new CapabilityRequest(
+                capability: $capability,
+                assignment: $assignment,
+                execution: $execution,
+                actor: $actor,
+                targetContext: $requestContext,
+                inputPayload: $inputPayload,
+                approval: $approval,
+                correlationId: isset($request['correlation_id']) && is_string($request['correlation_id'])
+                    ? $request['correlation_id']
+                    : $execution->correlation_id,
+                idempotencyKey: isset($request['idempotency_key']) && is_string($request['idempotency_key'])
+                    ? $request['idempotency_key']
+                    : null,
+                delegation: $delegation,
+            );
 
-            if (! $this->capabilityAuthorizer->allows(
-                $assignment,
-                $capability,
-                $assignment->organization,
-                $enterprise,
-                $actor,
-                $approval,
-                $execution,
-                $requestContext,
-                $delegation,
-            )) {
+            if (! $this->capabilityAuthorizer->allowsRequest($capabilityRequest)) {
                 throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
             }
 
-            $authorized[] = new CapabilityRequest(
-                capability: $capability,
-                targetContext: $requestContext,
-                approvalRequestId: $approval?->getKey(),
-            );
+            $authorized[] = $capabilityRequest;
         }
 
         return $authorized;

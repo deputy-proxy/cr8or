@@ -91,7 +91,7 @@ This document establishes boundaries, not a final class hierarchy or database sc
 
 Phase 8.3 establishes `App\Data\AgentExecutionRequest` as the canonical provider-neutral and transport-neutral input to `AgentExecutionService`. It carries the actor, Agent assignment, prompt, authorized target context, optional Expert selection, correlation identity and delegation context. Provider-specific options remain behind the application service boundary.
 
-Capability requests produced during Agent reasoning are represented by `App\Data\CapabilityRequest`. CR8OR continues to resolve these through the existing Capability registry, server-side authorization and approval boundary. The contract does not grant authority and does not replace the existing Capability -> Operation -> application/domain service path.
+Capability requests produced during Agent or Expert reasoning are represented by `App\Data\CapabilityRequest`. The canonical contract carries the Capability identifier, target context, input payload, Agent assignment and execution identity, optional Expert identity, approval reference, correlation identity, idempotency key and delegated execution context. CR8OR resolves availability through the existing Capability registry and performs authorization before the existing Capability -> Operation -> application/domain service path. The contract itself never grants authority.
 
 `AgentExecutionResult` remains the execution result boundary and `AgentExecution` remains the authoritative persistent lifecycle record. Normalized `ExecutionError` and `ExecutionCorrelationService` semantics continue to govern failure and correlation.
 

@@ -253,6 +253,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
                     json_encode([
                         'capability' => 'work.item.create',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                        'input_payload' => ['name' => 'Requested work item'],
                         'approval_request_id' => $approval->getKey(),
                     ], JSON_THROW_ON_ERROR),
                 ],
@@ -275,6 +276,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
         ->and($result->capabilityRequests[0]->toArray())->toMatchArray([
             'capability' => 'work.item.create',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['name' => 'Requested work item'],
         ])
         ->and($result->succeeded())->toBeTrue();
 });
