@@ -87,6 +87,14 @@ Phase 7.6 uses Filament as an operational interface over CR8OR-owned multi-Agent
 
 This document establishes boundaries, not a final class hierarchy or database schema.
 
+## Agent Execution Contract
+
+Phase 8.3 establishes `App\Data\AgentExecutionRequest` as the canonical provider-neutral and transport-neutral input to `AgentExecutionService`. It carries the actor, Agent assignment, prompt, authorized target context, optional Expert selection, correlation identity and delegation context. Provider-specific options remain behind the application service boundary.
+
+Capability requests produced during Agent reasoning are represented by `App\Data\CapabilityRequest`. CR8OR continues to resolve these through the existing Capability registry, server-side authorization and approval boundary. The contract does not grant authority and does not replace the existing Capability -> Operation -> application/domain service path.
+
+`AgentExecutionResult` remains the execution result boundary and `AgentExecution` remains the authoritative persistent lifecycle record. Normalized `ExecutionError` and `ExecutionCorrelationService` semantics continue to govern failure and correlation.
+
 ## Execution Error and Correlation Contract
 
 MCP and Agent execution use a small shared error taxonomy rather than a generalized workflow/error engine. Correlation begins at the MCP HTTP/request boundary and is propagated to AgentExecution, ApprovalRequest and provider invocation metadata where applicable.

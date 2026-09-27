@@ -9,6 +9,8 @@ use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
 use App\Capabilities\CapabilityRegistry;
+use App\Data\AgentExecutionRequest;
+use App\Data\CapabilityRequest;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
@@ -32,27 +34,20 @@ final class AgentExecutionService
         private readonly ?CapabilityRegistry $capabilities = null,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $targetContext
-     * @param  list<string>  $expertSlugs
-     * @param  array<string, mixed>  $modelOptions
-     */
-    public function execute(
-        User $actor,
-        AgentAssignment $assignment,
-        string $prompt,
-        array $targetContext = [],
-        array $expertSlugs = [],
-        array $modelOptions = [],
-    ): AgentExecutionResult {
+    public function execute(AgentExecutionRequest $request): AgentExecutionResult
+    {
+        $actor = $request->actor;
+        $assignment = $request->assignment;
+        $prompt = $request->prompt;
+        $targetContext = $request->targetContext;
+        $expertSlugs = $request->expertSlugs;
+        $modelOptions = $request->options;
         $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
-        $correlationId = $correlation->resolve(isset($modelOptions['correlation_id']) ? (string) $modelOptions['correlation_id'] : null);
+        $correlationId = $correlation->resolve($request->correlationId);
 
         $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);
 
-        $delegation = isset($modelOptions['delegation_id'])
-            ? AgentDelegation::query()->find((int) $modelOptions['delegation_id'])
-            : null;
+        $delegation = $request->delegation;
 
         Gate::forUser($actor)->authorize('view', $assignment);
 
@@ -269,7 +264,7 @@ final class AgentExecutionService
 
     /**
      * @param  array<string, mixed>  $targetContext
-     * @return list<array<string, mixed>>
+     * @return list<CapabilityRequest>
      */
     private function authorizeCapabilityRequests(
         User $actor,
@@ -286,7 +281,7 @@ final class AgentExecutionService
             return [];
         }
 
-        /** @var list<array<string, mixed>> $authorized */
+        /** @var list<CapabilityRequest> $authorized */
         $authorized = [];
         $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);
 
@@ -325,12 +320,11 @@ final class AgentExecutionService
                 throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
             }
 
-            $authorized[] = [
-                'capability' => $capability,
-                'operation' => $definition->operation,
-                'target_context' => $requestContext,
-                'approval_request_id' => $approval?->getKey(),
-            ];
+            $authorized[] = new CapabilityRequest(
+                capability: $capability,
+                targetContext: $requestContext,
+                approvalRequestId: $approval?->getKey(),
+            );
         }
 
         return $authorized;

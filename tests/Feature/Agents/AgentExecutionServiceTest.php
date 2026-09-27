@@ -4,6 +4,8 @@ use App\Agents\Agent;
 use App\AI\Exceptions\ModelProviderException;
 use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\Providers\FakeModelProvider;
+use App\Data\AgentExecutionRequest;
+use App\Data\CapabilityRequest;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
@@ -104,7 +106,7 @@ it('executes an authorized Agent with only the requested enterprise domain conte
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Create a plan.', modelOptions: ['correlation_id' => 'agent-test-123']);
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Create a plan.', correlationId: 'agent-test-123'));
 
     expect($result->succeeded())->toBeTrue()
         ->and($result->execution->status)->toBe(AgentExecution::STATUS_SUCCEEDED)
@@ -126,7 +128,7 @@ it('denies disabled Agents and does not invoke the provider', function () {
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Run.'))
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Run.')))
         ->toThrow(AuthorizationException::class, 'Agent assignment is disabled.');
 });
 
@@ -145,7 +147,7 @@ it('denies cross-organization Agent execution', function () {
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Run.'))
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Run.')))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -188,7 +190,7 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Analyze.', expertSlugs: [$expert->slug]);
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Analyze.', expertSlugs: [$expert->slug]));
 
     expect($result->succeeded())->toBeTrue();
 });
@@ -208,7 +210,7 @@ it('denies an Expert whose declared capability is not permitted by the Agent ass
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Analyze.', expertSlugs: [$expert->slug]))
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Analyze.', expertSlugs: [$expert->slug])))
         ->toThrow(AuthorizationException::class, 'not authorized to use capability [work.item.create]');
 });
 
@@ -263,10 +265,15 @@ it('re-authorizes a state-changing capability and requires approval when configu
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Create work.');
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Create work.'));
 
     expect($result->capabilityRequests)->toHaveCount(1)
-        ->and($result->capabilityRequests[0]['capability'])->toBe('work.item.create')
+        ->and($result->capabilityRequests[0])->toBeInstanceOf(CapabilityRequest::class)
+        ->and($result->capabilityRequests[0]->capability)->toBe('work.item.create')
+        ->and($result->capabilityRequests[0]->toArray())->toMatchArray([
+            'capability' => 'work.item.create',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+        ])
         ->and($result->succeeded())->toBeTrue();
 });
 
@@ -280,7 +287,7 @@ it('fails the execution when the provider fails', function () {
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Run.'))
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Run.')))
         ->toThrow(RuntimeException::class, 'provider unavailable');
 
     $execution = AgentExecution::query()->latest('id')->first();
@@ -312,7 +319,7 @@ it('fails the execution when a model capability request is not authorized', func
         $provider,
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Execute finance.'))
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Execute finance.')))
         ->toThrow(AuthorizationException::class, 'not authorized for capability [finance.report.generate]');
 
     $execution = AgentExecution::query()->latest('id')->first();
@@ -334,7 +341,7 @@ it('does not persist a decision when the model did not produce a decision', func
         ]),
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
-    ))->execute($actor, $assignment, 'Explain.');
+    ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Explain.'));
 
     expect($result->decision)->toBeNull()
         ->and(AgentDecision::query()->count())->toBe(0);

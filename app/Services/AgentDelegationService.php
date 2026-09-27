@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\AgentDelegationRequest;
 use App\Data\AgentDelegationResponse;
+use App\Data\AgentExecutionRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
@@ -123,13 +124,14 @@ final class AgentDelegationService
         try {
             $delegation->start()->save();
 
-            $result = $this->executionService->execute(
-                $request->actor,
-                $target,
-                $request->prompt,
-                $request->targetContext,
-                modelOptions: ['correlation_id' => $correlationId, 'delegation_id' => $delegation->getKey()],
-            );
+            $result = $this->executionService->execute(new AgentExecutionRequest(
+                actor: $request->actor,
+                assignment: $target,
+                prompt: $request->prompt,
+                targetContext: $request->targetContext,
+                correlationId: $correlationId,
+                delegation: $delegation,
+            ));
 
             $delegation->target_agent_execution_id = $result->execution->getKey();
             $delegation->succeed()->save();
