@@ -106,6 +106,10 @@ An AgentExecution records its correlation identifier, provider and external prov
 
 Phase 6.5 financial context is exposed through the existing authorization-aware Agent application context assembler rather than as a separate MCP financial resource. It is Enterprise-scoped, authorization-checked before assembly, and exposes derived/intentional context without unrestricted financial record access. A dedicated financial MCP resource is deferred unless a later product requirement establishes a distinct MCP contract.
 
+## Agent runtime context and memory
+
+The canonical Agent context pipeline may include the explicit `memory` context requirement. Memory is not exposed as a standalone MCP mutation surface or independent source of authority. When an Agent execution requests memory context, CR8OR resolves it through `AgentContextBuilder` and `MemoryContextProvider`, which enforce the current Agent Enterprise assignment, organization/Enterprise scope, bounded retrieval and provenance metadata. Episodic and semantic memory remain derived Agent runtime records and do not replace Knowledge, business state or execution history.
+
 ## Discovery tools
 
 The foundational read/discovery layer exposes bounded, authorization-aware list/get tools for:

@@ -134,7 +134,7 @@ Expert routing is runtime metadata, not permission. Every routed Expert must sti
 
 Expert context is specialized at invocation time. An Expert receives only the context categories declared by its ExpertDefinition::requiredContext(), plus the explicit invocation envelope. The parent Agent execution remains the source of the correlation identity and execution scope. Capability requests produced by an Expert use the canonical CapabilityRequest contract and inherit the parent Agent assignment, execution and correlation context.
 
-Experts remain advisory reasoning components. They do not gain authority by being selected, and they cannot bypass the Agent → Capability → Operation → application-service boundary.
+Experts remain advisory reasoning components. They do not gain authority by being selected, and they cannot bypass the Agent → Expert → Capability → Operation → application-service boundary.
 
 
 ### Canonical Agent Execution Contract
@@ -177,7 +177,7 @@ Phase 8.4 establishes `App\Data\AgentContext` as the provider-neutral current-ex
 
 `HistoricalContextAssembler` supplies the Decisions and execution-history sections when explicitly requested by an Agent. Decision history is Enterprise-scoped and can be narrowed by the execution target context; execution history is bounded and, when an Agent assignment is available, scoped to that assignment plus its relevant delegations and approvals. Historical identity fields are read from the persisted snapshots on the records, and failed executions/delegations remain represented with their recorded failure state. Persistent Agent memory remains separate from this context contract.
 
-Current execution context and persistent Agent memory are separate concepts. `AgentContext` intentionally contains no memory section or memory persistence behavior. Phase 8.18 introduces `AgentEpisodicMemory` as a separate durable record and `AgentEpisodicMemoryService` as its explicit write/retrieval boundary; it is not implicitly included in current execution context. Phase 8.19 introduces `AgentSemanticMemory` and `AgentSemanticMemoryService` for durable learned statements. Semantic memory is scoped to the Agent's Enterprise, requires source provenance and bounded confidence/status, preserves creation/update history, and records contradictory memories explicitly as disputed rather than silently replacing either statement.
+Current execution context and persistent Agent memory remain distinct concepts. `AgentContext` does not persist memory itself, but Phase 8.22 adds `MemoryContextProvider` so memory is included only when an Agent explicitly requires the `memory` context category. Phase 8.18 implements `AgentEpisodicMemory` as a separate durable record and `AgentEpisodicMemoryService` as its explicit write/retrieval boundary. Phase 8.19 implements `AgentSemanticMemory` and `AgentSemanticMemoryService` for durable learned statements. Phase 8.20 adds the shared governed retrieval/write policy boundary, Phase 8.21 adds provenance and historical auditability, and Phase 8.22 integrates bounded memory retrieval into the canonical context pipeline. Semantic memory is scoped to the Agent's Enterprise, requires source provenance and bounded confidence/status, preserves creation/update history, and records contradictory memories explicitly as disputed rather than silently replacing either statement.
 
 Failures continue to use `ExecutionError` for normalized failure codes and human-readable reasons, while `ExecutionCorrelationService` provides the correlation identity. `AgentExecution` remains the authoritative persistent lifecycle record. No provider-specific request type, transport contract or generalized workflow engine is introduced.
 
@@ -396,14 +396,35 @@ Analysis and planning Operations are non-mutating at the business-state level. T
 
 Phase 7.6 exposes multi-Agent operational state through the existing Filament administration foundation. Delegation history and the derived collaboration report are organization-scoped and server-authorized. Existing execution, decision, approval and workflow records remain read-only where their historical semantics require it. Runtime Agent and Expert metadata remains code-authoritative and is displayed read-only; the administration layer does not grant runtime authority or replace application services.
 
+## Phase 8 Runtime Completion
+
+The Phase 8 runtime is implemented through the 8.22 memory-context integration boundary:
+
+- **8.1–8.2:** canonical immutable `AgentDefinition` and `ExpertDefinition` runtime structures.
+- **8.3:** `AgentExecutionRequest` and the canonical governed `AgentExecutionService` request boundary.
+- **8.4:** `AgentContext` and bounded `AgentContextSection` metadata.
+- **8.5:** `ExpertInvocationRequest` / `ExpertInvocationResult` and `ExpertInvocationService`.
+- **8.6:** `CapabilityRequest`, preserving Capability availability separately from authorization.
+- **8.7:** runtime contract regression coverage.
+- **8.8–8.13:** authorization-aware Enterprise, Strategy, Work, Knowledge, Decision, execution-history and composable context providers.
+- **8.14–8.17:** the Marketing Agent runtime, deterministic instructions/capability metadata, Expert coordination and end-to-end governed execution coverage.
+- **8.18:** explicit episodic memory with terminal-execution provenance and bounded Enterprise-scoped retrieval.
+- **8.19:** semantic memory with confidence/status, provenance, immutable version history and explicit conflict state.
+- **8.20:** centralized memory retrieval/write policy with bounded limits and terminal-execution requirements.
+- **8.21:** historical Agent identity and source provenance exposed without rewriting authoritative execution history.
+- **8.22:** explicit `memory` context requirement with assignment-scoped, budgeted episodic/semantic retrieval.
+
+Memory remains a derived Agent runtime concern. It does not replace Knowledge, current business state, or authoritative execution history.
+
 ## Deferred
 
 The following remain intentionally deferred:
 - generalized Agent governance/orchestration beyond the current execution service;
-- a broader execution context catalogue beyond Enterprise, Knowledge, Strategy and Work;
-- governed generalized Agent memory retrieval/write policy;
 - generalized cross-Agent workflow orchestration beyond the governed delegation traceability boundary;
 - broader capability catalogue and general policy language;
+- generalized Knowledge Retrieval / indexing beyond the implemented bounded context providers;
+- generalized reporting, forecasting and analytics engines;
+- autonomous self-modifying Agent behavior;
 ### Canonical Expert Invocation Contract
 
 Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInvocationResult` with `ExpertInvocationService` as the canonical Agent-to-Expert application boundary. The request is explicitly scoped to the receiving Agent assignment and parent `AgentExecution` and carries the business objective, authorized context, expected reasoning output, target context and correlation identity.
