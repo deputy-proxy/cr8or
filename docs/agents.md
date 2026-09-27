@@ -85,6 +85,40 @@ The runtime relationship is:
 
 Expert composition is declarative runtime metadata. It does not automatically grant or bypass Expert availability, Agent assignment, Capability permission or approval checks. Existing execution services remain responsible for resolving and governing actual Expert invocation.
 
+### Canonical Expert Runtime Structure
+
+Phase 8.2 establishes one canonical PHP structure for every Expert runtime. Each Expert implements an immutable ExpertDefinition containing:
+
+- identity (name);
+- runtime description;
+- responsibilities;
+- methodology;
+- required execution context;
+- declared Capabilities.
+
+The Expert base class exposes this definition through read-only runtime accessors. analyze() remains the canonical Expert reasoning entry point and applies the Expert methodology to authorized context.
+
+The definition is runtime authority only. It does not create Expert permission, Agent assignment authority, Capability permission or approval authority. Agent execution, Expert invocation and Capability authorization remain governed by the existing application services.
+
+The runtime relationship is:
+
+    ExpertDescriptor
+        |
+        | runtime_class
+        v
+    Expert
+        |
+        | ExpertDefinition
+        +-- identity / metadata
+        +-- responsibilities
+        +-- methodology
+        +-- required context
+        +-- declared Capabilities
+        |
+        +-- analyze()
+
+Expert capability declarations describe available expertise only. They do not grant execution authority. When an Expert is coordinated by an Agent, the existing execution boundary continues to verify the Expert declaration and the Agent assignment's explicit Capability permission before execution.
+
 ### Runtime Metadata Authority
 
 The runtime PHP class is authoritative for:

@@ -33,34 +33,16 @@ function testExpertRuntimeClass(): string
 {
     return get_class(new class extends Expert
     {
-        public function name(): string
+        public function definition(): \App\Experts\ExpertDefinition
         {
-            return 'Analyst';
-        }
-
-        public function description(): string
-        {
-            return 'Analyzes enterprise context.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['analyze'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['work.item.create'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
-        }
-
-        public function methodology(): string
-        {
-            return 'Evidence-first analysis.';
+            return new \App\Experts\ExpertDefinition(
+                name: 'Analyst',
+                description: 'Analyzes enterprise context.',
+                responsibilities: ['analyze'],
+                methodology: 'Evidence-first analysis.',
+                requiredContext: ['enterprise'],
+                capabilities: ['work.item.create'],
+            );
         }
 
         public function analyze(array $context): array

@@ -8,6 +8,7 @@ use App\Agents\OperationsAgent;
 use App\Agents\ProductAgent;
 use App\Experts\BusinessAnalysisExpert;
 use App\Experts\Expert;
+use App\Experts\ExpertDefinition;
 use App\Experts\FinanceExpert;
 use App\Experts\MarketingExpert;
 use App\Experts\OperationsExpert;
@@ -68,14 +69,24 @@ it('registers the minimum domain Experts through the existing descriptor registr
 
     foreach ($experts as $slug => $class) {
         $expert = app($class);
+        $definition = $expert->definition();
 
         expect($expert)->toBeInstanceOf(Expert::class)
+            ->and($definition)->toBeInstanceOf(ExpertDefinition::class)
+            ->and($definition->name)->toBe($expert->name())
+            ->and($definition->description)->toBe($expert->description())
+            ->and($definition->responsibilities)->toBe($expert->responsibilities())
+            ->and($definition->methodology)->toBe($expert->methodology())
+            ->and($definition->requiredContext)->toBe($expert->requiredContext())
+            ->and($definition->capabilities)->toBe($expert->capabilities())
             ->and($expert->name())->not->toBeEmpty()
             ->and($expert->description())->not->toBeEmpty()
             ->and($expert->responsibilities())->not->toBeEmpty()
             ->and($expert->capabilities())->not->toBeEmpty()
             ->and($expert->requiredContext())->not->toBeEmpty()
             ->and($expert->methodology())->not->toBeEmpty()
+            ->and(method_exists($expert, 'analyze'))->toBeTrue()
+            ->and(new ReflectionClass($class)->getParentClass()->getName())->toBe(Expert::class)
             ->and(ExpertDescriptor::query()->where('slug', $slug)->where('runtime_class', $class)->exists())->toBeTrue();
     }
 });
@@ -93,7 +104,8 @@ it('coordinates Experts without granting them authority', function () {
                     'focus' => 'marketing planning',
                     'available_context' => ['enterprise'],
                 ],
-            ]]]);
+            ]],
+        ]);
 });
 
 it('rejects invalid runtime descriptor classes', function () {

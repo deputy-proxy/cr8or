@@ -4,34 +4,16 @@ namespace App\Experts;
 
 final class BusinessAnalysisExpert extends Expert
 {
-    public function name(): string
+    public function definition(): ExpertDefinition
     {
-        return 'Business Analysis';
-    }
-
-    public function description(): string
-    {
-        return 'Analyzes enterprise context, priorities, work and financial signals without executing business operations.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['analyze enterprise context', 'identify dependencies', 'surface decision inputs'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['business.analysis'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'strategy', 'work', 'financial'];
-    }
-
-    public function methodology(): string
-    {
-        return 'Evidence-first analysis of authorized enterprise context.';
+        return new ExpertDefinition(
+            name: 'Business Analysis',
+            description: 'Analyzes enterprise context, priorities, work and financial signals without executing business operations.',
+            responsibilities: ['analyze enterprise context', 'identify dependencies', 'surface decision inputs'],
+            methodology: 'Evidence-first analysis of authorized enterprise context.',
+            requiredContext: ['enterprise', 'strategy', 'work', 'financial'],
+            capabilities: ['business.analysis'],
+        );
     }
 
     public function analyze(array $context): array

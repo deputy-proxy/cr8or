@@ -4,34 +4,16 @@ namespace App\Experts;
 
 final class FinanceExpert extends Expert
 {
-    public function name(): string
+    public function definition(): ExpertDefinition
     {
-        return 'Finance';
-    }
-
-    public function description(): string
-    {
-        return 'Applies financial analysis methodology to authorized enterprise financial context.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['analyze financial signals', 'identify financial risks', 'support financial decisions'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['finance.report.generate'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'financial'];
-    }
-
-    public function methodology(): string
-    {
-        return 'Evidence-first financial analysis with explicit separation of analysis and execution authority.';
+        return new ExpertDefinition(
+            name: 'Finance',
+            description: 'Applies financial analysis methodology to authorized enterprise financial context.',
+            responsibilities: ['analyze financial signals', 'identify financial risks', 'support financial decisions'],
+            methodology: 'Evidence-first financial analysis with explicit separation of analysis and execution authority.',
+            requiredContext: ['enterprise', 'financial'],
+            capabilities: ['finance.report.generate'],
+        );
     }
 
     public function analyze(array $context): array
