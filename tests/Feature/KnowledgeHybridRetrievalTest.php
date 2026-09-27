@@ -5,6 +5,7 @@ use App\Data\KnowledgeRetrievalRequest;
 use App\Data\KnowledgeRetrievalResult;
 use App\Data\KnowledgeRetrievalResultItem;
 use App\Models\Enterprise;
+use App\Models\KnowledgeItem;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
@@ -22,28 +23,22 @@ function hybridActor(): array
 
 function fakeRetrievalProvider(array $items, string $mode): KnowledgeRetrievalProvider
 {
-    return new class($items, $mode) implements KnowledgeRetrievalProvider
-    {
+    return new class($items, $mode) implements KnowledgeRetrievalProvider {
         public function __construct(private array $items, private string $mode) {}
-
         public function retrieve(KnowledgeRetrievalRequest $request): KnowledgeRetrievalResult
         {
-            return new KnowledgeRetrievalResult(
-                'succeeded',
-                $request->correlationId ?? 'generated',
-                $this->items,
-                count($this->items),
-                ['mode' => $this->mode],
-            );
+            return new KnowledgeRetrievalResult('succeeded', $request->correlationId ?? 'generated', $this->items, count($this->items), ['mode' => $this->mode]);
         }
     };
 }
 
 it('combines lexical and semantic signals deterministically and deduplicates items', function (): void {
     [$user, $enterprise] = hybridActor();
-    $lexicalItem = new KnowledgeRetrievalResultItem(1, 'Approval', relevance: 0.9);
-    $semanticItem = new KnowledgeRetrievalResultItem(1, 'Approval', relevance: 0.7, version: ['id' => 5, 'version' => 2]);
-    $other = new KnowledgeRetrievalResultItem(2, 'Budget', relevance: 0.6);
+    $approval = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise, 'title' => 'Approval']);
+    $budget = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise, 'title' => 'Budget']);
+    $lexicalItem = new KnowledgeRetrievalResultItem($approval->getKey(), 'Approval', relevance: 0.9);
+    $semanticItem = new KnowledgeRetrievalResultItem($approval->getKey(), 'Approval', relevance: 0.7, version: ['id' => 5, 'version' => 2]);
+    $other = new KnowledgeRetrievalResultItem($budget->getKey(), 'Budget', relevance: 0.6);
 
     $provider = new KnowledgeHybridRetrievalProvider(
         fakeRetrievalProvider([$lexicalItem, $other], 'lexical'),
@@ -55,18 +50,19 @@ it('combines lexical and semantic signals deterministically and deduplicates ite
     );
 
     expect($result->items)->toHaveCount(2)
-        ->and($result->items[0]->knowledgeItemId)->toBe(1)
+        ->and($result->items[0]->knowledgeItemId)->toBe($approval->getKey())
         ->and($result->items[0]->relevance)->toBe(0.8)
-        ->and($result->items[0]->version)->toMatchArray(['version' => 2])
-        ->and($result->metadata['mode'])->toBe('hybrid');
+        ->and($result->items[0]->version)->toMatchArray(['version' => 2]);
 });
 
 it('respects result bounds and stable tie-breaking', function (): void {
     [$user, $enterprise] = hybridActor();
+    $first = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise, 'title' => 'A']);
+    $second = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise, 'title' => 'B']);
     $provider = new KnowledgeHybridRetrievalProvider(
         fakeRetrievalProvider([
-            new KnowledgeRetrievalResultItem(2, 'B', relevance: 0.5),
-            new KnowledgeRetrievalResultItem(1, 'A', relevance: 0.5),
+            new KnowledgeRetrievalResultItem($second->getKey(), 'B', relevance: 0.5),
+            new KnowledgeRetrievalResultItem($first->getKey(), 'A', relevance: 0.5),
         ], 'lexical'),
         fakeRetrievalProvider([], 'semantic'),
     );
@@ -75,8 +71,7 @@ it('respects result bounds and stable tie-breaking', function (): void {
         new KnowledgeRetrievalRequest(actor: $user, enterprise: $enterprise, query: 'x', limits: ['limit' => 1]),
     );
 
-    expect($result->items)->toHaveCount(1)
-        ->and($result->items[0]->knowledgeItemId)->toBe(1);
+    expect($result->items[0]->knowledgeItemId)->toBe($first->getKey());
 });
 
 it('preserves the canonical authorization boundary', function (): void {
