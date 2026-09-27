@@ -58,7 +58,7 @@ it('does not record an event when meaningful content is missing', function () {
         'user_id' => $user,
         'organization_id' => $enterprise->organization_id,
     ]);
-    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create();
+    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create(['status' => AgentExecution::STATUS_SUCCEEDED, 'completed_at' => now()]);
 
     expect(fn () => app(AgentEpisodicMemoryService::class)->recordMeaningfulEvent(
         $user,
