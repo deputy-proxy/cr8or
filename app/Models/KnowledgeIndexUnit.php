@@ -22,6 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property list<array<string, mixed>>|null $references
  */
+/**
+ * @property list<array<string, mixed>>|null $references
+ */
 class KnowledgeIndexUnit extends Model
 {
     /** @return BelongsTo<Enterprise, $this> */
