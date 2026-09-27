@@ -62,6 +62,89 @@ final class AgentMemoryPolicy
         $this->authorizeExecutionScope($actor, $execution);
     }
 
+    /**
+     * Model output is only a candidate. It must explicitly request persistence,
+     * contain bounded meaningful fields, and stay inside the source execution scope.
+     *
+     * @param  array<string, mixed>  $candidate
+     */
+    public function allowsEpisodicCandidate(
+        AgentExecution $execution,
+        array $candidate,
+    ): bool {
+        if (($candidate['persist'] ?? false) !== true) {
+            return false;
+        }
+
+        if (! in_array($execution->status, [
+            AgentExecution::STATUS_SUCCEEDED,
+            AgentExecution::STATUS_FAILED,
+        ], true)) {
+            return false;
+        }
+
+        foreach (['objective', 'action', 'result', 'outcome'] as $field) {
+            if (! isset($candidate[$field]) || ! is_string($candidate[$field]) || trim($candidate[$field]) === '') {
+                return false;
+            }
+
+            if (mb_strlen(trim($candidate[$field])) > 2000) {
+                return false;
+            }
+        }
+
+        if (isset($candidate['topic']) && (! is_string($candidate['topic']) || mb_strlen(trim($candidate['topic'])) > 200)) {
+            return false;
+        }
+
+        if (isset($candidate['source_step']) && (! is_int($candidate['source_step']) || $candidate['source_step'] < 1)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Semantic memory requires an explicit persistence request and a high
+     * confidence threshold. Supersession remains governed by the existing
+     * semantic-memory authorization path.
+     *
+     * @param  array<string, mixed>  $candidate
+     */
+    public function allowsSemanticCandidate(
+        AgentExecution $execution,
+        array $candidate,
+        float $minimumConfidence,
+    ): bool {
+        if (($candidate['persist'] ?? false) !== true || $execution->status !== AgentExecution::STATUS_SUCCEEDED) {
+            return false;
+        }
+
+        if (! isset($candidate['statement'], $candidate['confidence'])
+            || ! is_string($candidate['statement'])
+            || trim($candidate['statement']) === ''
+            || mb_strlen(trim($candidate['statement'])) > 2000
+            || ! is_float($candidate['confidence']) && ! is_int($candidate['confidence'])
+        ) {
+            return false;
+        }
+
+        if ((float) $candidate['confidence'] < $minimumConfidence || (float) $candidate['confidence'] > 1) {
+            return false;
+        }
+
+        if (isset($candidate['supersedes_memory_id'])
+            && (! is_int($candidate['supersedes_memory_id']) || $candidate['supersedes_memory_id'] < 1)) {
+            return false;
+        }
+
+        if (isset($candidate['source_step']) && (! is_int($candidate['source_step']) || $candidate['source_step'] < 1)) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function authorizeSemanticUpdate(
         User $actor,
         AgentSemanticMemory $memory,

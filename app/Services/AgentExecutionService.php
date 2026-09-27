@@ -34,6 +34,7 @@ final class AgentExecutionService
         private readonly ?ExecutionCorrelationService $correlation = null,
         private readonly ?CapabilityRegistry $capabilities = null,
         private readonly ?ExpertInvocationService $expertInvocations = null,
+        private readonly ?AgentMemoryRuntimeService $memoryRuntime = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -98,7 +99,7 @@ final class AgentExecutionService
         $context = $this->contextAssembler->forAgent(
             $actor,
             $enterprise,
-            $agent->requiredContext(),
+            $this->requiredContext($agent),
             $executionTargetContext,
             $assignment,
         );
@@ -212,6 +213,7 @@ final class AgentExecutionService
         array $contextData,
     ): AgentExecutionResult {
         $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
+        $memoryRuntime = $this->memoryRuntime ?? app(AgentMemoryRuntimeService::class);
         $lastResult = null;
         $lastDecision = null;
         $authorizedRequests = [];
@@ -390,12 +392,14 @@ final class AgentExecutionService
 
                 if ($termination['status'] === AgentExecution::STATUS_COMPLETED) {
                     $execution->complete($termination['reason'])->save();
+                    $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
 
                 if ($sequence >= $execution->max_steps) {
                     $execution->complete('max_steps_reached')->save();
+                    $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
@@ -405,6 +409,7 @@ final class AgentExecutionService
             }
 
             $execution->complete('max_steps_reached')->save();
+            $this->consolidateMemory($memoryRuntime, $actor, $execution, $lastResult, $lastDecision, $correlation);
 
             return new AgentExecutionResult($execution->refresh(), $lastResult, $lastDecision, $authorizedRequests);
         } catch (Throwable $exception) {
@@ -412,6 +417,7 @@ final class AgentExecutionService
                 $error = ExecutionError::from($exception);
                 $execution->failure_code = $error->code;
                 $execution->fail($error->message)->save();
+                $this->consolidateMemory($memoryRuntime, $actor, $execution, $lastResult, $lastDecision, $correlation);
 
                 if ($step instanceof AgentExecutionStep && $step->status === AgentExecutionStep::STATUS_RUNNING) {
                     $step->fail($error->message, $error->code)->save();
@@ -460,22 +466,64 @@ final class AgentExecutionService
      * @param  array<string, mixed>  $targetContext
      * @return array<string, mixed>
      */
+    /** @return list<string> */
+    private function requiredContext(Agent $agent): array
+    {
+        return array_values(array_unique([
+            ...$agent->requiredContext(),
+            'memory',
+        ]));
+    }
+
+    private function consolidateMemory(
+        AgentMemoryRuntimeService $memoryRuntime,
+        User $actor,
+        AgentExecution $execution,
+        ?ModelResult $result,
+        ?AgentDecision $decision,
+        ExecutionCorrelationService $correlation,
+    ): void {
+        try {
+            $memoryRuntime->consolidate($actor, $execution, $result, $decision);
+        } catch (Throwable $memoryException) {
+            $correlation->logFailure(
+                'agent.memory.consolidate',
+                $execution->correlation_id ?? 'unknown',
+                ExecutionError::from($memoryException),
+                [
+                    'execution_id' => $execution->getKey(),
+                    'organization_id' => $execution->organization_id,
+                    'enterprise_id' => $execution->enterprise_id,
+                    'agent_descriptor_id' => $execution->agent_descriptor_id,
+                ],
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @return array<string, mixed>
+     */
     private function executionTargetContext(Agent $agent, array $targetContext, string $prompt): array
     {
-        if (! array_intersect(['knowledge', 'retrieved_knowledge'], $agent->requiredContext())) {
-            return $targetContext;
+        $requirements = $agent->requiredContext();
+
+        if (array_intersect(['knowledge', 'retrieved_knowledge'], $requirements) && ! isset($targetContext['retrieved_knowledge'])) {
+            $targetContext['retrieved_knowledge'] = [
+                'query' => $prompt,
+                'objective' => $prompt,
+                'mode' => 'hybrid',
+                'limit' => 5,
+                'budget' => 1200,
+            ];
         }
 
-        if (isset($targetContext['retrieved_knowledge'])) {
-            return $targetContext;
-        }
-
-        $targetContext['retrieved_knowledge'] = [
-            'query' => $prompt,
-            'objective' => $prompt,
-            'mode' => 'hybrid',
-            'limit' => 5,
-            'budget' => 1200,
+        $targetContext['memory'] ??= [
+            'topic' => $prompt,
+            'budget' => 20,
+            'episodic_limit' => 10,
+            'relevant_after' => now()->subDays(180)->toISOString(),
+            'semantic_limit' => 10,
         ];
 
         return $targetContext;

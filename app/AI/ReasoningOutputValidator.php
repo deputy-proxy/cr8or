@@ -21,6 +21,13 @@ final class ReasoningOutputValidator
                 'selected_experts' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'capability_requests' => ['type' => 'array'],
                 'delegation_requests' => ['type' => 'array'],
+                'memory' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'episodic' => ['type' => 'array'],
+                        'semantic' => ['type' => 'array'],
+                    ],
+                ],
                 'termination' => [
                     'type' => 'string',
                     'enum' => ['continue', 'completed', 'waiting_for_input', 'waiting_for_approval', 'delegated', 'paused'],
@@ -56,8 +63,6 @@ final class ReasoningOutputValidator
         ];
     }
 
-    /** @param array<string, mixed> $output */
-    /** @return array<string, mixed> */
     /**
      * @param  array<string, mixed>  $output
      * @return array<string, mixed>
@@ -72,6 +77,7 @@ final class ReasoningOutputValidator
         $output['selected_experts'] ??= [];
         $output['capability_requests'] ??= [];
         $output['delegation_requests'] ??= [];
+        $output['memory'] ??= [];
         $output['termination'] ??= 'completed';
         $output['termination_reason'] ??= '';
         $output['next_step'] ??= '';
@@ -79,8 +85,6 @@ final class ReasoningOutputValidator
         return self::validate($output, self::agentSchema());
     }
 
-    /** @param array<string, mixed> $output */
-    /** @return array<string, mixed> */
     /**
      * @param  array<string, mixed>  $output
      * @return array<string, mixed>
@@ -101,11 +105,6 @@ final class ReasoningOutputValidator
         return self::validate($output, self::expertSchema());
     }
 
-    /**
-     * @param  array<string, mixed>  $output
-     * @param  array<string, mixed>  $schema
-     */
-    /** @return array<string, mixed> */
     /**
      * @param  array<string, mixed>  $output
      * @param  array<string, mixed>  $schema
