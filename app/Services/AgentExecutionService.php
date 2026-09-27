@@ -107,7 +107,8 @@ final class AgentExecutionService
 
             $request = new ModelRequest(
                 prompt: $prompt,
-                instructions: $this->instructions($agent, $expertResults),
+                instructions: implode('
+', [$agent->instructions(), $this->instructions($agent, $expertResults)]),
                 context: array_merge($context, [
                     'execution_id' => $execution->getKey(),
                     'agent' => [
@@ -223,7 +224,7 @@ final class AgentExecutionService
         }
 
         /** @var array<string, mixed> $result */
-        $result = $agent->coordinate($context, $experts);
+        $result = $agent->execute($context, $experts);
 
         return $result;
     }
