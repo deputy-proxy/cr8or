@@ -4,20 +4,40 @@ namespace App\Experts;
 
 abstract class Expert
 {
-    abstract public function name(): string;
+    abstract public function definition(): ExpertDefinition;
 
-    abstract public function description(): string;
+    final public function name(): string
+    {
+        return $this->definition()->name;
+    }
+
+    final public function description(): string
+    {
+        return $this->definition()->description;
+    }
 
     /** @return list<string> */
-    abstract public function responsibilities(): array;
+    final public function responsibilities(): array
+    {
+        return $this->definition()->responsibilities;
+    }
 
     /** @return list<string> */
-    abstract public function capabilities(): array;
+    final public function capabilities(): array
+    {
+        return $this->definition()->capabilities;
+    }
 
     /** @return list<string> */
-    abstract public function requiredContext(): array;
+    final public function requiredContext(): array
+    {
+        return $this->definition()->requiredContext;
+    }
 
-    abstract public function methodology(): string;
+    final public function methodology(): string
+    {
+        return $this->definition()->methodology;
+    }
 
     /**
      * Apply the expert's methodology to authorized context.
