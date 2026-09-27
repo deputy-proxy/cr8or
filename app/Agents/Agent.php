@@ -96,6 +96,12 @@ abstract class Agent
         return $this->expertRouting()[$routingKey];
     }
 
+    /** @return array<string, mixed> */
+    final public function reasoningOutputSchema(): array
+    {
+        return $this->definition()->reasoningOutputSchema;
+    }
+
     final public function definitionVersion(): string
     {
         return $this->definition()->version();
