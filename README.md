@@ -756,7 +756,7 @@ The following capabilities were deliberately deferred from the completed Phase 4
 - Concrete production business Expert catalogues.
 - Agent-to-agent collaboration and multi-agent workflow orchestration.
 - Broader capability catalogues, policy language and reporting.
-- Generalized knowledge retrieval, indexing and vector infrastructure.
+- Generalized Knowledge ingestion and provider infrastructure beyond the bounded Phase 9 retrieval implementation.
 - AI planning and metric-calculation engines.
 - Full workflow-engine semantics.
 - Marketing, media and publishing domains inside CR8OR Core.
@@ -933,7 +933,7 @@ Give agents and humans a structured operating model for planning and execution.
 
 **Deferred**
 
-- Knowledge retrieval, indexing and vector infrastructure.
+- Advanced/generalized Knowledge ingestion, provider expansion and autonomous retrieval optimization remain deferred.
 - AI planning or metric-calculation engines.
 - Full workflow-engine semantics.
 - Concrete provider execution and external task-management integrations.
@@ -1234,6 +1234,37 @@ Phase 8 builds on the completed governance and execution foundations from Phases
 - Actual GitHub Actions CI is green.
 - Phase 8 is complete following the Phase 8.24 audit. See `docs/phase-8-audit.md` for the verification record.
 
+## Phase 9 — Knowledge Retrieval & AI Context
+
+**Status: Complete**
+
+Phase 9 establishes the bounded Knowledge Retrieval and AI Context infrastructure intentionally deferred from earlier Knowledge and Agent runtime phases.
+
+**Implemented**
+
+- Provider-neutral retrieval contracts and canonical authorization boundary.
+- Search representation lifecycle with pending/indexed/stale/failed/removed states.
+- Deterministic Knowledge normalization and bounded searchable units.
+- Idempotent indexing with multi-chunk lifecycle correctness.
+- Deterministic lexical retrieval.
+- Provider-neutral semantic embeddings and retrieval.
+- Deterministic hybrid lexical/semantic retrieval with deduplication and bounded ranking.
+- Authoritative provenance normalization and Enterprise isolation after provider execution.
+- Bounded retrieved_knowledge Agent context with explicit query/objective, result limits and deterministic token-budget degradation.
+- Retrieval observability with correlation, counts, latency and allow-listed provider metadata, without logging retrieved Knowledge content.
+- Permanent regression coverage for lexical, semantic, hybrid, authorization, provenance, context budgeting and observability.
+
+**Deferred**
+
+- Generalized ingestion pipelines and broad external source connectors.
+- Production embedding/vector-provider expansion beyond the current deterministic provider boundary.
+- Advanced learned ranking, reranking and autonomous retrieval optimization.
+- Generalized autonomous workflow orchestration.
+
+**Audit record**
+
+The final verification is recorded in docs/phase-9-audit.md.
+
 ## MCP Surface: Current Implementation
 
 The implemented MCP surface is broader than the original Phase 4 mutation subset. The MCP server currently registers discovery/read tools, domain mutation and lifecycle tools, governed Agent-facing Capability tools, approval tools, social-account tools, and context resources.
@@ -1274,11 +1305,11 @@ These two paths should not be conflated. The Capability Registry remains the aut
 
 ### MCP Context Limitations
 
-Current context assembly is enterprise-scoped and authorization-aware, but it does not yet provide generalized knowledge retrieval, ranking, indexing, semantic retrieval or token-budget optimization. Those capabilities remain part of the future Knowledge / AI context roadmap.
+Current context assembly is enterprise-scoped and authorization-aware and now supports bounded retrieved_knowledge through the canonical Agent context builder. Generalized ingestion, provider expansion, advanced ranking and autonomous retrieval optimization remain deferred.
 
 ## Current Reconciliation
 
-The repository has completed Phases 1-8 within their defined boundaries. Phase 8 extends the existing Agent/Expert runtime foundation rather than reopening completed governance or MCP phases. Deferred capabilities remain explicitly identified rather than being represented as complete.
+The repository has completed Phases 1-9 within their defined boundaries. Phase 9 extends the Agent/Expert runtime and Knowledge foundations without reopening completed governance, MCP or business-domain phases. Deferred capabilities remain explicitly identified rather than being represented as complete.
 
 | Original phase | Current status | Reconciliation |
 |---|---|---|
@@ -1291,6 +1322,7 @@ The repository has completed Phases 1-8 within their defined boundaries. Phase 8
 | Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
 | Phase 7 — Multi-Agent Business Operations | **Complete** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting, Phase 7.6 administration and Phase 7.7 final audit are implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside Phase 7. |
 | Phase 8 — Agent Runtime, Context & Memory | **Complete** | Phase 8.1–8.7 establish the canonical Agent/Expert runtime and execution contracts; Phase 8.8–8.13 build authorized context assembly; Phase 8.14–8.17 implement and verify the Marketing Agent; Phase 8.18–8.22 implement governed Agent memory and integrate it into the context pipeline; Phase 8.23 reconciles documentation; Phase 8.24 verifies the complete phase against its acceptance criteria and CI. |
+| Phase 9 — Knowledge Retrieval & AI Context | **Complete** | Phase 9.1–9.12 establish the provider-neutral retrieval contract, indexing lifecycle, normalization, searchable representations, lexical/semantic/hybrid retrieval, provenance, authorization/isolation, bounded Agent context retrieval, observability and final audit. Generalized ingestion, provider expansion, advanced ranking and autonomous retrieval optimization remain deferred. |
 
 ### Reconciliation Rules
 
