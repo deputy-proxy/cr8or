@@ -94,6 +94,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 9.1 implementation:** KnowledgeRetrievalRequest, KnowledgeRetrievalResult and KnowledgeRetrievalResultItem define the canonical provider-neutral retrieval contract. KnowledgeRetrievalService authorizes the actor against the requested Enterprise before invoking the provider boundary, preserves correlation identity and requires bounded retrieval inputs. Retrieval results carry Knowledge Item, Source, Document, Context, Reference and Version provenance metadata. Storage, indexing and retrieval algorithms remain behind KnowledgeRetrievalProvider and are implemented by later Phase 9 work.
 
+**Verified Phase 9.2 implementation:** `KnowledgeIndexRecord` is a lifecycle ledger for searchable representations. Each record preserves Enterprise, source, document, Knowledge Item and authoritative version identity plus representation key and lifecycle status (`pending`, `indexed`, `stale`, `failed`, `removed`). `KnowledgeIndexLifecycleService` authorizes every lifecycle operation, deterministically requeues current versions, stales superseded representations, records failures and prevents stale/removed representations from returning to indexed state. The lifecycle model intentionally stores no authoritative Knowledge content.
+
 **Deferred:** Retrieval/indexing implementation.
 
 ## Strategy
