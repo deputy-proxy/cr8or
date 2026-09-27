@@ -4,34 +4,16 @@ namespace App\Experts;
 
 final class OperationsExpert extends Expert
 {
-    public function name(): string
+    public function definition(): ExpertDefinition
     {
-        return 'Operations';
-    }
-
-    public function description(): string
-    {
-        return 'Applies operational planning methodology to authorized enterprise, strategy and work context.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['analyze operational constraints', 'identify delivery dependencies', 'support operational planning'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['work.item.create', 'work.item.update'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'work', 'strategy'];
-    }
-
-    public function methodology(): string
-    {
-        return 'Constraint-first operational analysis grounded in current authorized work.';
+        return new ExpertDefinition(
+            name: 'Operations',
+            description: 'Applies operational planning methodology to authorized enterprise, strategy and work context.',
+            responsibilities: ['analyze operational constraints', 'identify delivery dependencies', 'support operational planning'],
+            methodology: 'Constraint-first operational analysis grounded in current authorized work.',
+            requiredContext: ['enterprise', 'work', 'strategy'],
+            capabilities: ['work.item.create', 'work.item.update'],
+        );
     }
 
     public function analyze(array $context): array
