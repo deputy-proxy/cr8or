@@ -27,6 +27,7 @@ final class AgentExecutionEventService
             correlationId: $execution->correlation_id,
             provenance: $provenance,
             data: $data,
+            organizationId: (int) $execution->organization_id,
         ));
     }
 }
