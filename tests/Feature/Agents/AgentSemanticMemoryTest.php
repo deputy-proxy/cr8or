@@ -16,7 +16,7 @@ it('creates semantic memory with scoped provenance and creation history', functi
     $user = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     Membership::factory()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
-    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create();
+    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create(['status' => AgentExecution::STATUS_SUCCEEDED, 'completed_at' => now()]);
     $agent = AgentDescriptor::query()->findOrFail($execution->agent_descriptor_id);
 
     $memory = app(AgentSemanticMemoryService::class)->remember(
@@ -45,7 +45,7 @@ it('updates semantic memory without destroying its prior version', function () {
     $user = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     Membership::factory()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
-    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create();
+    $execution = AgentExecution::factory()->forEnterprise($enterprise)->create(['status' => AgentExecution::STATUS_SUCCEEDED, 'completed_at' => now()]);
     $agent = AgentDescriptor::query()->findOrFail($execution->agent_descriptor_id);
 
     $service = app(AgentSemanticMemoryService::class);
@@ -73,8 +73,8 @@ it('marks conflicting memories as disputed while preserving both statements and 
     $user = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     Membership::factory()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
-    $executionA = AgentExecution::factory()->forEnterprise($enterprise)->create();
-    $executionB = AgentExecution::factory()->forEnterprise($enterprise)->create();
+    $executionA = AgentExecution::factory()->forEnterprise($enterprise)->create(['status' => AgentExecution::STATUS_SUCCEEDED, 'completed_at' => now()]);
+    $executionB = AgentExecution::factory()->forEnterprise($enterprise)->create(['status' => AgentExecution::STATUS_SUCCEEDED, 'completed_at' => now()]);
     $agent = AgentDescriptor::query()->findOrFail($executionA->agent_descriptor_id);
 
     $service = app(AgentSemanticMemoryService::class);
