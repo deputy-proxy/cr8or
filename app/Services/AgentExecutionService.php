@@ -9,6 +9,7 @@ use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
 use App\Capabilities\CapabilityRegistry;
+use App\Data\AgentContextSection;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
 use App\Experts\Expert;
@@ -79,6 +80,8 @@ final class AgentExecutionService
             $agent->requiredContext(),
         );
 
+        $contextData = $context->toArray();
+
         $execution = AgentExecution::query()->create([
             'organization_id' => $assignment->organization_id,
             'enterprise_id' => $enterprise->getKey(),
@@ -98,13 +101,31 @@ final class AgentExecutionService
         try {
             $execution->start()->save();
 
-            $expertResults = $this->coordinateExperts($agent, $context, $expertSlugs, $assignment, $enterprise);
+            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $enterprise);
+
+            $contextData = $context->withSection(new AgentContextSection(
+                name: 'instructions',
+                data: [
+                    'agent' => [
+                        'name' => $agent->name(),
+                        'instructions' => $agent->instructions(),
+                    ],
+                    'experts' => $expertResults['instructions'] ?? [],
+                ],
+                source: get_class($agent),
+                scope: [
+                    'organization_id' => $assignment->organization_id,
+                    'enterprise_id' => $enterprise->getKey(),
+                    'agent_assignment_id' => $assignment->getKey(),
+                ],
+                relevance: 'Agent and Expert runtime instructions',
+            ))->toArray();
 
             $request = new ModelRequest(
                 prompt: $prompt,
                 instructions: implode('
 ', [$agent->instructions(), $this->instructions($agent, $expertResults)]),
-                context: array_merge($context, [
+                context: array_merge($contextData, [
                     'execution_id' => $execution->getKey(),
                     'agent' => [
                         'slug' => $descriptor->slug,
@@ -220,6 +241,14 @@ final class AgentExecutionService
 
         /** @var array<string, mixed> $result */
         $result = $agent->execute($context, $experts);
+        $result['instructions'] = array_map(
+            fn (Expert $expert): array => [
+                'name' => $expert->name(),
+                'responsibilities' => $expert->responsibilities(),
+                'methodology' => $expert->methodology(),
+            ],
+            $experts,
+        );
 
         return $result;
     }

@@ -151,6 +151,14 @@ Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for
 
 Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` rather than loose arrays. The contract contains the Capability identifier, target context and approval reference while the existing `CapabilityRegistry` and authorization services remain authoritative for resolution and permission. Later Capability Request contract work may extend this DTO without changing the Agent execution boundary.
 
+### Canonical Agent Context Contract
+
+Phase 8.4 establishes `App\Data\AgentContext` as the provider-neutral current-execution context contract. Context is represented by explicit `AgentContextSection` values for Enterprise identity, Enterprise Context, Strategy, Work, Knowledge, Decisions, execution history and runtime instructions. Sections carry source, organization/Enterprise scope and optional relevance metadata.
+
+`McpContextAssembler` remains the authorization-aware assembly boundary. It authorizes the Enterprise before creating the contract and each context source is serialized into bounded application data rather than exposing Eloquent models to the model provider. Existing Agent and Expert runtimes consume the contract through its compatibility payload serialization, so the execution boundary can adopt the canonical contract without changing provider interfaces.
+
+Current execution context and persistent Agent memory are separate concepts. `AgentContext` intentionally contains no memory section or memory persistence behavior. Memory may be introduced by a later governed context provider without changing the meaning of the current-execution contract.
+
 Failures continue to use `ExecutionError` for normalized failure codes and human-readable reasons, while `ExecutionCorrelationService` provides the correlation identity. `AgentExecution` remains the authoritative persistent lifecycle record. No provider-specific request type, transport contract or generalized workflow engine is introduced.
 
 ### Runtime Metadata Authority

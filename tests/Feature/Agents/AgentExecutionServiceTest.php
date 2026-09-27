@@ -169,7 +169,9 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
         expect($request->context['experts']['results'][0]['expert'])->toBe('Analyst')
             ->and($request->context['experts']['results'][0]['result'])->toBe([
                 'enterprise' => $request->context['enterprise']['enterprise']['slug'],
-            ]);
+            ])
+            ->and($request->context['instructions']['agent']['instructions'])->toContain('supplied authorized context')
+            ->and($request->context['instructions']['experts'][0]['methodology'])->toBe('Evidence-first analysis.');
 
         return new \App\AI\Data\ModelResult(
             text: 'Analyzed.',

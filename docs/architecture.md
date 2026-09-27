@@ -95,6 +95,14 @@ Capability requests produced during Agent reasoning are represented by `App\Data
 
 `AgentExecutionResult` remains the execution result boundary and `AgentExecution` remains the authoritative persistent lifecycle record. Normalized `ExecutionError` and `ExecutionCorrelationService` semantics continue to govern failure and correlation.
 
+## Agent Context Contract
+
+`App\Data\AgentContext` is the canonical provider-neutral contract for current Agent execution context. It separates context into named sections and carries source, organization/Enterprise scope and optional relevance metadata without exposing persistence models to the model provider. The canonical section order is Enterprise, Enterprise Context, Strategy, Work, Knowledge, Decisions, execution history and instructions.
+
+`McpContextAssembler` enforces Enterprise authorization before assembling context. Its existing MCP resource methods remain compatible with their response payloads, while Agent execution and Expert capability execution consume the canonical contract and serialize only the current context data at the runtime boundary.
+
+Persistent Agent memory is deliberately outside `AgentContext`. Context represents the current authorized execution; memory is durable state with its own governance and is not implicitly included or treated as business authority.
+
 ## Execution Error and Correlation Contract
 
 MCP and Agent execution use a small shared error taxonomy rather than a generalized workflow/error engine. Correlation begins at the MCP HTTP/request boundary and is propagated to AgentExecution, ApprovalRequest and provider invocation metadata where applicable.

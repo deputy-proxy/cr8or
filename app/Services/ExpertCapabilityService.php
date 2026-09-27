@@ -62,6 +62,7 @@ final class ExpertCapabilityService
             $enterprise,
             $runtime->requiredContext(),
         );
+        $contextData = $context->toArray();
 
         return [
             'expert' => [
@@ -71,8 +72,8 @@ final class ExpertCapabilityService
             ],
             'capability' => $capability,
             'target_context' => $targetContext,
-            'analysis' => $runtime->analyze($context),
-            'context_categories' => array_keys($context),
+            'analysis' => $runtime->analyze($contextData),
+            'context_categories' => array_keys($contextData),
         ];
     }
 }
