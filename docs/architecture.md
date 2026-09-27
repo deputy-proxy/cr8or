@@ -107,7 +107,7 @@ Each context provider is an independent authorization boundary. Providers author
 
 `HistoricalContextAssembler` is the application boundary for bounded historical context. It reads Decision, EnterpriseDecision and AgentDecision records within the authorized Enterprise, plus relevant AgentExecution, AgentDelegation and ApprovalRequest history. Retrieval is bounded and uses persisted historical identity snapshots rather than reconstructing identity from current mutable Agent or Enterprise metadata. It does not mutate historical records or introduce an event store.
 
-Persistent Agent memory is deliberately outside `AgentContext`. Context represents the current authorized execution; memory is durable state with its own governance and is not implicitly included or treated as business authority.
+Persistent Agent memory is deliberately outside `AgentContext`. Context represents the current authorized execution; memory is durable state with its own governance and is not implicitly included or treated as business authority. Phase 8.18 implements episodic memory as `AgentEpisodicMemory`, with explicit meaningful-event writes, Enterprise-scoped bounded retrieval and provenance back to the authoritative `AgentExecution`.
 
 The Work context section is assembled by `WorkContextAssembler` after Enterprise authorization. It exposes bounded Projects, Tasks, Work Items, Milestones, relevant Assignments and Dependencies, plus bounded current Workflow/Job/Execution status. Task parent/child relationships and work references remain explicit, while execution state is presented as runtime status rather than business Work state. Historical Job/Execution logs are not exposed through this context boundary.
 
