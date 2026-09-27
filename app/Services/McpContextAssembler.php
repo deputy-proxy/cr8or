@@ -15,6 +15,7 @@ class McpContextAssembler
 
     public function __construct(
         private readonly EnterpriseContextAssembler $enterpriseContextAssembler,
+        private readonly WorkContextAssembler $workContextAssembler,
     ) {}
 
     /**
@@ -95,7 +96,7 @@ class McpContextAssembler
     {
         $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
 
-        return $this->workData($enterprise);
+        return $this->workContextAssembler->assemble($user, $enterprise);
     }
 
     private function authorizedEnterprise(User $user, int $enterpriseId): Enterprise
@@ -142,8 +143,8 @@ class McpContextAssembler
 
         return new AgentContextSection(
             name: 'work',
-            data: $this->workData($authorized),
-            source: 'Enterprise::workItems()',
+            data: $this->workContextAssembler->assemble($user, $authorized),
+            source: WorkContextAssembler::class,
             scope: $scope,
             relevance: 'Agent-declared context requirement',
         );
@@ -271,29 +272,6 @@ class McpContextAssembler
                     'title' => $item->title,
                     'type' => $item->type,
                     'summary' => $item->summary,
-                ])
-                ->all(),
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function workData(Enterprise $enterprise): array
-    {
-        return [
-            'enterprise' => $this->enterpriseIdentity($enterprise),
-            'work_items' => $enterprise->workItems()
-                ->with('project')
-                ->orderBy('id')
-                ->get()
-                ->map(fn ($item) => [
-                    'id' => $item->getKey(),
-                    'name' => $item->name,
-                    'description' => $item->description,
-                    'status' => $item->status,
-                    'project' => $item->project === null ? null : [
-                        'id' => $item->project->getKey(),
-                        'name' => $item->project->name,
-                    ],
                 ])
                 ->all(),
         ];
