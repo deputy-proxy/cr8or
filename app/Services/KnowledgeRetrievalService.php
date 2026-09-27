@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Gate;
 
 final class KnowledgeRetrievalService
 {
+    private readonly KnowledgeRetrievalProvenanceService $provenance;
+
     public function __construct(
         private readonly KnowledgeRetrievalProvider $provider,
-    ) {}
+        ?KnowledgeRetrievalProvenanceService $provenance = null,
+    ) {
+        $this->provenance = $provenance ?? new KnowledgeRetrievalProvenanceService;
+    }
 
     public function retrieve(KnowledgeRetrievalRequest $request): KnowledgeRetrievalResult
     {
@@ -27,6 +32,6 @@ final class KnowledgeRetrievalService
             throw new \LogicException('Knowledge retrieval candidate count cannot be lower than returned result count.');
         }
 
-        return $result;
+        return $this->provenance->normalize($request->actor, $request->enterprise, $result);
     }
 }
