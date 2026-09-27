@@ -3,14 +3,13 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Mcp\Concerns\ExecutesCapabilities;
 use App\Models\Enterprise;
 use App\Models\User;
-use App\Operations\CreateMarketingStrategy;
-use App\Mcp\Concerns\ExecutesCapabilities;
-use Laravel\Mcp\Server\Tool;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Mcp\Server\Request;
 use Laravel\Mcp\Server\Response;
-use Illuminate\Support\Facades\Validator;
+use Laravel\Mcp\Server\Tool;
 
 final class CreateMarketingStrategyTool extends Tool
 {
