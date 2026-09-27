@@ -106,6 +106,12 @@ class Enterprise extends Model
         return $this->hasMany(AgentEpisodicMemory::class);
     }
 
+    /** @return HasMany<AgentSemanticMemory, $this> */
+    public function agentSemanticMemories(): HasMany
+    {
+        return $this->hasMany(AgentSemanticMemory::class);
+    }
+
     /** @return HasMany<KnowledgeSource, $this> */
     public function knowledgeSources(): HasMany
     {
