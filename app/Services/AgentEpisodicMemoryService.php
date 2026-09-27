@@ -18,6 +18,10 @@ final class AgentEpisodicMemoryService
 
     private const MAX_LIMIT = 50;
 
+    public function __construct(
+        private readonly AgentMemoryPolicy $policy,
+    ) {}
+
     /**
      * Record one explicit meaningful Agent experience.
      *
@@ -37,7 +41,7 @@ final class AgentEpisodicMemoryService
         ?Carbon $occurredAt = null,
         array $provenance = [],
     ): AgentEpisodicMemory {
-        Gate::forUser($actor)->authorize('view', $execution);
+        $this->policy->authorizeEpisodicWrite($actor, $execution);
 
         if ($execution->enterprise_id === null) {
             throw new AuthorizationException('Agent episodic memory requires an enterprise-scoped execution.');
@@ -90,10 +94,10 @@ final class AgentEpisodicMemoryService
         ?Carbon $relevantAfter = null,
         int $limit = self::DEFAULT_LIMIT,
     ): Collection {
-        Gate::forUser($actor)->authorize('view', $enterprise);
-
-        if ($agent !== null && ! $this->agentBelongsToEnterpriseScope($agent, $enterprise)) {
-            throw new AuthorizationException('Agent episodic memory Agent scope does not match the Enterprise.');
+        if ($agent !== null) {
+            $this->policy->authorizeRead($actor, $enterprise, $agent);
+        } else {
+            Gate::forUser($actor)->authorize('view', $enterprise);
         }
 
         $limit = max(1, min($limit, self::MAX_LIMIT));
@@ -137,14 +141,5 @@ final class AgentEpisodicMemoryService
         $value = $value === null ? null : trim($value);
 
         return $value === '' ? null : $value;
-    }
-
-    private function agentBelongsToEnterpriseScope(AgentDescriptor $agent, Enterprise $enterprise): bool
-    {
-        return AgentExecution::query()
-            ->where('organization_id', $enterprise->organization_id)
-            ->where('enterprise_id', $enterprise->getKey())
-            ->where('agent_descriptor_id', $agent->getKey())
-            ->exists();
     }
 }
