@@ -48,6 +48,7 @@ function capabilityActionMatrix(): array
         CeoAgent::class => ['agent.delegate' => DelegateAgentTool::class],
         MarketingAgent::class => [
             'marketing.plan' => PlanMarketingTool::class,
+            'marketing.strategy.create' => 'create-marketing-strategy',
             'marketing.content.create' => 'create-content-item',
             'marketing.content.update' => 'update-content-item',
             'marketing.content.review' => 'submit-content-for-review',

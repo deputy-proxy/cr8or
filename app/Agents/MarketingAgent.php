@@ -20,6 +20,7 @@ final class MarketingAgent extends Agent
             requiredContext: ['enterprise', 'strategy', 'work', 'knowledge', 'decisions', 'execution_history'],
             capabilities: [
                 'marketing.plan',
+                'marketing.strategy.create',
                 'marketing.content.create',
                 'marketing.content.update',
                 'marketing.content.review',
@@ -41,7 +42,7 @@ final class MarketingAgent extends Agent
                 'explicit identification of approval-sensitive work',
             ],
             capabilityMap: [
-                'plan marketing activity' => ['marketing.plan'],
+                'plan marketing activity' => ['marketing.plan', 'marketing.strategy.create'],
                 'coordinate marketing expertise' => ['marketing.plan', 'marketing.content.review'],
                 'coordinate campaign and content work' => [
                     'marketing.content.create',

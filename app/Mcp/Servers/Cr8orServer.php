@@ -18,6 +18,7 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
+use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -142,6 +143,7 @@ class Cr8orServer extends Server
         CreateObjectiveTool::class,
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
+        CreateMarketingStrategyTool::class,
         UpdateStrategyTool::class,
         CreateCampaignTool::class,
         UpdateCampaignTool::class,
