@@ -66,6 +66,8 @@ The Agent base class exposes this definition through read-only runtime accessors
 
 The definition is runtime authority only. It does not create Agent permission, Capability permission or approval authority. Agent assignments, Agent permissions, authorization services and approval services remain authoritative for governance.
 
+For the Marketing Agent, the runtime definition additionally identifies decision boundaries, expected outputs, a responsibility-to-Capability map, genuine Capability gaps and approval-sensitive Capabilities. These declarations describe the implemented runtime contract; they do not create permission or approval authority. Marketing execution history stores a deterministic definition version alongside the Agent runtime class so changes to these instructions and declarations remain identifiable when the existing execution snapshot is used for audit.
+
 The runtime relationship is:
 
     AgentDescriptor

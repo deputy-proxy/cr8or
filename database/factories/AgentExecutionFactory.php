@@ -33,6 +33,7 @@ class AgentExecutionFactory extends Factory
             'enterprise_name' => null,
             'agent_slug' => $descriptor->slug,
             'agent_runtime_class' => $descriptor->runtime_class,
+            'agent_definition_version' => null,
             'actor_name' => $actor->name,
             'status' => AgentExecution::STATUS_REQUESTED,
             'requested_at' => now(),

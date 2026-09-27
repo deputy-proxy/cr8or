@@ -21,6 +21,7 @@ use LogicException;
  * @property string|null $enterprise_name
  * @property string|null $agent_slug
  * @property string|null $agent_runtime_class
+ * @property string|null $agent_definition_version
  * @property string|null $actor_name
  * @property string $status
  * @property Carbon $requested_at
@@ -42,6 +43,7 @@ use LogicException;
     'enterprise_name',
     'agent_slug',
     'agent_runtime_class',
+    'agent_definition_version',
     'actor_name',
     'status',
     'requested_at',
@@ -85,6 +87,7 @@ class AgentExecution extends Model
         'enterprise_name',
         'agent_slug',
         'agent_runtime_class',
+        'agent_definition_version',
         'actor_name',
         'requested_at',
     ];

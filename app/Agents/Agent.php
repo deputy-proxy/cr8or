@@ -47,6 +47,41 @@ abstract class Agent
         return $this->definition()->capabilities;
     }
 
+    /** @return list<string> */
+    final public function decisionBoundaries(): array
+    {
+        return $this->definition()->decisionBoundaries;
+    }
+
+    /** @return list<string> */
+    final public function expectedOutputs(): array
+    {
+        return $this->definition()->expectedOutputs;
+    }
+
+    /** @return array<string, list<string>> */
+    final public function capabilityMap(): array
+    {
+        return $this->definition()->capabilityMap;
+    }
+
+    /** @return list<string> */
+    final public function capabilityGaps(): array
+    {
+        return $this->definition()->capabilityGaps;
+    }
+
+    /** @return list<string> */
+    final public function approvalSensitiveCapabilities(): array
+    {
+        return $this->definition()->approvalSensitiveCapabilities;
+    }
+
+    final public function definitionVersion(): string
+    {
+        return $this->definition()->version();
+    }
+
     /**
      * @param  array<string, mixed>  $context
      * @param  iterable<Expert>  $experts
@@ -72,3 +107,4 @@ abstract class Agent
         return $this->execute($context, $experts);
     }
 }
+
