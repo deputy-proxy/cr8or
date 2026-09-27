@@ -18,9 +18,16 @@ final class MarketingExpert extends Expert
 
     public function analyze(array $context): array
     {
-        return [
-            'focus' => 'marketing planning',
-            'available_context' => array_keys($context),
-        ];
+        return $this->structuredReasoning(
+            $context,
+            'marketing planning',
+            'Analyze audience, positioning, campaign opportunities, and content planning within authorized context.',
+            [
+                [
+                    'action' => 'align marketing activity',
+                    'rationale' => 'Use authorized strategy and knowledge evidence.',
+                ],
+            ],
+        );
     }
 }
