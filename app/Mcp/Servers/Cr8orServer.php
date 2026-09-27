@@ -21,6 +21,7 @@ use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
@@ -142,6 +143,7 @@ class Cr8orServer extends Server
         CreateObjectiveTool::class,
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
+        CreateMarketingStrategyTool::class,
         UpdateStrategyTool::class,
         CreateCampaignTool::class,
         UpdateCampaignTool::class,
