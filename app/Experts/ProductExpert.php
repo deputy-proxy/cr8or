@@ -4,34 +4,16 @@ namespace App\Experts;
 
 final class ProductExpert extends Expert
 {
-    public function name(): string
+    public function definition(): ExpertDefinition
     {
-        return 'Product';
-    }
-
-    public function description(): string
-    {
-        return 'Applies product planning methodology to authorized enterprise, strategy and work context.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['analyze product priorities', 'identify delivery trade-offs', 'support product planning'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'strategy', 'knowledge', 'work'];
-    }
-
-    public function methodology(): string
-    {
-        return 'Outcome-first product planning grounded in strategy and delivery evidence.';
+        return new ExpertDefinition(
+            name: 'Product',
+            description: 'Applies product planning methodology to authorized enterprise, strategy and work context.',
+            responsibilities: ['analyze product priorities', 'identify delivery trade-offs', 'support product planning'],
+            methodology: 'Outcome-first product planning grounded in strategy and delivery evidence.',
+            requiredContext: ['enterprise', 'strategy', 'knowledge', 'work'],
+            capabilities: ['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'],
+        );
     }
 
     public function analyze(array $context): array
