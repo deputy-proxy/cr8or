@@ -1,1 +1,42 @@
-<?php\n\nnamespace App\\Data;\n\nuse InvalidArgumentException;\n\nfinal readonly class AgentContextSection\n{\n    /**\n     * @param  array<string, mixed>  $scope\n     */\n    public function __construct(\n        public string $name,\n        public mixed $data,\n        public string $source,\n        public array $scope,\n        public ?string $relevance = null,\n    ) {\n        if ($this->name === '') {\n            throw new InvalidArgumentException('Agent context section name is required.');\n        }\n\n        if ($this->source === '') {\n            throw new InvalidArgumentException(\"Agent context section [{$this->name}] requires a source.\");\n        }\n    }\n\n    /**\n     * @return array<string, mixed>\n     */\n    public function toArray(): array\n    {\n        return [\n            'data' => $this->data,\n            'metadata' => [\n                'source' => $this->source,\n                'scope' => $this->scope,\n                'relevance' => $this->relevance,\n            ],\n        ];\n    }\n}\n
+<?php
+
+namespace App\Data;
+
+use InvalidArgumentException;
+
+final readonly class AgentContextSection
+{
+    /**
+     * @param  array<string, mixed>  $scope
+     */
+    public function __construct(
+        public string $name,
+        public mixed $data,
+        public string $source,
+        public array $scope,
+        public ?string $relevance = null,
+    ) {
+        if ($this->name === '') {
+            throw new InvalidArgumentException('Agent context section name is required.');
+        }
+
+        if ($this->source === '') {
+            throw new InvalidArgumentException("Agent context section [{$this->name}] requires a source.");
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return [
+            'data' => $this->data,
+            'metadata' => [
+                'source' => $this->source,
+                'scope' => $this->scope,
+                'relevance' => $this->relevance,
+            ],
+        ];
+    }
+}
