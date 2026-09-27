@@ -42,7 +42,9 @@ class AgentDescriptorResource extends Resource
             Toggle::make('enabled')->required(),
             Placeholder::make('runtime_name')->label('Runtime name')->content(fn (?AgentDescriptor $record): string => self::runtimeValue($record, 'name')),
             Placeholder::make('runtime_description')->label('Runtime description')->content(fn (?AgentDescriptor $record): string => self::runtimeValue($record, 'description')),
+            Placeholder::make('runtime_instructions')->label('Runtime instructions')->content(fn (?AgentDescriptor $record): string => self::runtimeValue($record, 'instructions')),
             Placeholder::make('runtime_responsibilities')->label('Responsibilities')->content(fn (?AgentDescriptor $record): string => self::runtimeList($record, 'responsibilities')),
+            Placeholder::make('runtime_experts')->label('Experts')->content(fn (?AgentDescriptor $record): string => self::runtimeList($record, 'experts')),
             Placeholder::make('runtime_capabilities')->label('Capabilities')->content(fn (?AgentDescriptor $record): string => self::runtimeList($record, 'capabilities')),
             Placeholder::make('runtime_required_context')->label('Required context')->content(fn (?AgentDescriptor $record): string => self::runtimeList($record, 'requiredContext')),
         ]);
