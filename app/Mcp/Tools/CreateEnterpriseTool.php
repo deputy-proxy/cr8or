@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Tools;
 
+use App\Capabilities\CapabilityRegistry;
+use App\Models\Enterprise;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\DomainResourceService;
@@ -27,9 +29,9 @@ class CreateEnterpriseTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, DomainResourceService $domain): Response|ResponseFactory
+    public function handle(Request $request, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'enterprise.create', function () use ($request, $domain) {
+        return $this->executeWithErrors($request, 'enterprise.create', function () use ($request, $capabilities) {
             $validated = $request->validate([
                 'organization_id' => ['required', 'integer', 'min:1', 'exists:organizations,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
@@ -44,7 +46,8 @@ class CreateEnterpriseTool extends AuthorizedTool
             }
 
             $organization = Organization::query()->findOrFail((int) $validated['organization_id']);
-            $enterprise = $domain->createEnterprise($actor, $organization, $validated);
+            $capabilities->forTool(static::class);
+            $enterprise = $capabilities->operationForTool(static::class)->execute($actor, $validated);
 
             return Response::structured([
                 'success' => true,
@@ -59,5 +62,13 @@ class CreateEnterpriseTool extends AuthorizedTool
                 ],
             ]);
         });
+    }
+
+    /** @param array<string, mixed> $validated */
+    public static function executeOperation(User $actor, array $validated): Enterprise
+    {
+        $organization = Organization::query()->findOrFail((int) $validated['organization_id']);
+
+        return app(DomainResourceService::class)->createEnterprise($actor, $organization, $validated);
     }
 }

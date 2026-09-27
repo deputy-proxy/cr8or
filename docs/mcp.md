@@ -36,13 +36,13 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | update-content-item | marketing.content.update | UpdateContentItem | Revise draft or in-review Content Item state. |
 | submit-content-for-review | marketing.content.review | SubmitContentForReview | Move draft content into the governed review state. |
 | mark-content-publication-ready | marketing.content.publication-ready | MarkContentPublicationReady | Mark approved content publication-ready only with matching server-side approval. |
-| request-approval | governance.approval.request | RequestApproval | Create an auditable approval request for an Agent capability and exact target context. |
+| request-approval | approval.request | ApprovalRequestCreate | Create an auditable approval request for an Agent capability and exact target context. |
 | delegate-agent | `agent.delegate` | DelegateAgent | Delegate governed work between same-Enterprise Agent assignments through `AgentDelegationService`. |
 | analyze-business-context | `business.analysis` | AnalyzeBusinessContext | Run Business Analysis Expert methodology against authorized Enterprise, Strategy, Work and Financial context. |
 | plan-marketing | `marketing.plan` | PlanMarketing | Run Marketing Expert planning methodology against authorized Enterprise, Strategy and Knowledge context. |
 | generate-financial-report | `finance.report.generate` | GenerateFinancialReport | Generate a historical, Enterprise-scoped financial report through `FinancialReportingService`; no generic financial CRUD is exposed. |
 
-For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer.
+For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR resolves the MCP Tool through `CapabilityRegistry` first, then verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer. Every state-changing MCP Tool has exactly one explicit Capability and one Operation. The legacy `mcp.domain.mutation` and `mcp.domain.transition` capabilities are intentionally absent from the registry and therefore cannot grant Agent authority.
 
 If the Agent permission requires approval, the mutation must also supply a valid approval_request_id whose organization, enterprise, assignment, execution, actor, capability and normalized target context match the current operation.
 

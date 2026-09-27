@@ -18,15 +18,38 @@ use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Operations\AnalyzeBusinessContext;
+use App\Operations\ApprovalRequestCreate;
+use App\Operations\CampaignLifecycle;
+use App\Operations\ContentSeriesLifecycle;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkItem;
 use App\Operations\DelegateAgent;
+use App\Operations\EnterpriseContextCreate;
+use App\Operations\EnterpriseCreate;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\MarkContentPublicationReady;
+use App\Operations\MarketingAudienceArchive;
+use App\Operations\MarketingAudienceCreate;
+use App\Operations\MarketingAudienceUpdate;
+use App\Operations\MarketingCampaignCreate;
+use App\Operations\MarketingCampaignUpdate;
+use App\Operations\MarketingChannelArchive;
+use App\Operations\MarketingChannelCreate;
+use App\Operations\MarketingChannelUpdate;
+use App\Operations\MarketingContentSeriesCreate;
+use App\Operations\MarketingContentSeriesUpdate;
+use App\Operations\MarketingStrategyArchive;
+use App\Operations\ObjectiveCreate;
+use App\Operations\ObjectiveUpdate;
 use App\Operations\PlanMarketing;
+use App\Operations\ProjectCreate;
+use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
+use App\Operations\SocialAccountConnect;
+use App\Operations\SocialAccountDisconnect;
+use App\Operations\SocialAccountUpdate;
 use App\Operations\SubmitContentForReview;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
@@ -249,6 +272,213 @@ final class CapabilityRegistry
                 ['work_item_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'work-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + WorkItem policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'enterprise.create',
+                EnterpriseCreate::class,
+                \App\Mcp\Tools\CreateEnterpriseTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'permission-dependent',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'approval.request',
+                ApprovalRequestCreate::class,
+                \App\Mcp\Tools\RequestApprovalTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'assignment authorization',
+                'required',
+            ),
+            $this->definition(
+                'marketing.audience.create',
+                MarketingAudienceCreate::class,
+                \App\Mcp\Tools\CreateAudienceTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.audience.update',
+                MarketingAudienceUpdate::class,
+                \App\Mcp\Tools\UpdateAudienceTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.audience.archive',
+                MarketingAudienceArchive::class,
+                \App\Mcp\Tools\ArchiveAudienceTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.campaign.create',
+                MarketingCampaignCreate::class,
+                \App\Mcp\Tools\CreateCampaignTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.campaign.update',
+                MarketingCampaignUpdate::class,
+                \App\Mcp\Tools\UpdateCampaignTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.campaign.lifecycle',
+                CampaignLifecycle::class,
+                \App\Mcp\Tools\TransitionCampaignTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.channel.create',
+                MarketingChannelCreate::class,
+                \App\Mcp\Tools\CreateChannelTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.channel.update',
+                MarketingChannelUpdate::class,
+                \App\Mcp\Tools\UpdateChannelTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.channel.archive',
+                MarketingChannelArchive::class,
+                \App\Mcp\Tools\ArchiveChannelTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.content-series.create',
+                MarketingContentSeriesCreate::class,
+                \App\Mcp\Tools\CreateContentSeriesTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.content-series.update',
+                MarketingContentSeriesUpdate::class,
+                \App\Mcp\Tools\UpdateContentSeriesTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.content-series.lifecycle',
+                ContentSeriesLifecycle::class,
+                \App\Mcp\Tools\TransitionContentSeriesTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'enterprise.context.create',
+                EnterpriseContextCreate::class,
+                \App\Mcp\Tools\CreateEnterpriseContextTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.objective.create',
+                ObjectiveCreate::class,
+                \App\Mcp\Tools\CreateObjectiveTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Objective policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.objective.update',
+                ObjectiveUpdate::class,
+                \App\Mcp\Tools\UpdateObjectiveTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Objective policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.project.create',
+                ProjectCreate::class,
+                \App\Mcp\Tools\CreateProjectTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Project policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.project.update',
+                ProjectUpdate::class,
+                \App\Mcp\Tools\UpdateProjectTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + Project policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.social-account.connect',
+                SocialAccountConnect::class,
+                \App\Mcp\Tools\ConnectSocialAccountTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.social-account.update',
+                SocialAccountUpdate::class,
+                \App\Mcp\Tools\UpdateSocialAccountTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.social-account.disconnect',
+                SocialAccountDisconnect::class,
+                \App\Mcp\Tools\DisconnectSocialAccountTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.strategy.archive',
+                MarketingStrategyArchive::class,
+                \App\Mcp\Tools\ArchiveMarketingStrategyTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
                 'permission-dependent',
             ),
         ];
