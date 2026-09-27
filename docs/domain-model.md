@@ -74,7 +74,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 8.18 implementation:** `AgentEpisodicMemory` stores bounded summaries of explicit meaningful Agent experiences. Each record is Organization/Enterprise scoped, references the authoritative `AgentExecution`, preserves provenance, and is retrieved through an authorization-aware deterministic boundary. Episodic memory does not replace or duplicate the authoritative execution record.
 
-**Deferred:** Semantic Agent memory, governed generalized memory retrieval/write policy, memory auditability beyond the source provenance stored here, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
+**Verified Phase 8.19 implementation:** `AgentSemanticMemory` stores durable learned statements scoped to an Organization, Enterprise and Agent descriptor. Each memory has explicit confidence/status, authoritative source provenance, immutable creation/update versions and explicit conflict references. `AgentSemanticMemoryService` authorizes Enterprise/Agent access, bounds retrieval, preserves prior versions on updates and marks contradictory memories as disputed without deleting either statement. Semantic memory remains distinct from Knowledge and authoritative business state.
+
+**Deferred:** Governed generalized memory retrieval/write policy, memory auditability beyond the stored semantic-memory history/provenance, generalized cross-Agent workflow orchestration, broader policy language and detailed future execution/provider schemas.
 
 ## Knowledge
 
