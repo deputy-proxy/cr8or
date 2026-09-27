@@ -14,6 +14,17 @@ use App\Data\AgentDelegationRequest;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
 use App\Data\ExpertInvocationRequest;
+use App\Events\AgentDelegated;
+use App\Events\AgentExecutionCompleted;
+use App\Events\AgentExecutionFailed;
+use App\Events\AgentExecutionPaused;
+use App\Events\AgentExecutionResumed;
+use App\Events\AgentExecutionStarted;
+use App\Events\AgentReasoningCompleted;
+use App\Events\CapabilityAuthorized;
+use App\Events\CapabilityRequested;
+use App\Events\ExpertInvoked;
+use App\Events\KnowledgeRetrieved;
 use App\Jobs\RunAgentExecutionJob;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
@@ -312,6 +323,10 @@ final class AgentExecutionService
             throw new AuthorizationException('The configured Agent execution runtime is invalid.');
         }
 
+        app(AgentExecutionEventService::class)->dispatch(AgentExecutionResumed::class, $execution, data: [
+            'status' => $execution->status,
+        ]);
+
         if ($execution->status === AgentExecution::STATUS_DELEGATED) {
             if (! $this->refreshDelegatedResults($execution)) {
                 return $this->resultFromExecution($execution);
@@ -362,9 +377,22 @@ final class AgentExecutionService
         $authorizedRequests = [];
         $step = null;
 
+        $events = app(AgentExecutionEventService::class);
+
         try {
+
             if ($execution->status === AgentExecution::STATUS_REQUESTED) {
                 $execution->start()->save();
+                $events->dispatch(AgentExecutionStarted::class, $execution, data: [
+                    'step' => 1,
+                ]);
+
+                if (isset($contextData['knowledge']) || isset($contextData['retrieved_knowledge'])) {
+                    $events->dispatch(KnowledgeRetrieved::class, $execution, data: [
+                        'knowledge_count' => is_array($contextData['knowledge']['items'] ?? null) ? count($contextData['knowledge']['items']) : 0,
+                        'retrieved_count' => is_array($contextData['retrieved_knowledge']['items'] ?? null) ? count($contextData['retrieved_knowledge']['items']) : 0,
+                    ]);
+                }
             } elseif ($execution->status !== AgentExecution::STATUS_REASONING) {
                 $execution->beginReasoning()->save();
             }
@@ -400,16 +428,22 @@ final class AgentExecutionService
                 $execution->current_step = $sequence;
                 $execution->beginReasoning()->save();
 
-                $expertResults = $this->coordinateExperts(
-                    $agent,
-                    $contextData,
-                    $expertSlugs,
-                    $assignment,
-                    $actor,
-                    $execution,
-                    $step->intent,
-                    $targetContext,
-                );
+                $persistedModel = $stepWasRunning && is_array($step->output['model_result'] ?? null)
+                    ? $step->output['model_result']
+                    : null;
+
+                $expertResults = $persistedModel === null
+                    ? $this->coordinateExperts(
+                        $agent,
+                        $contextData,
+                        $expertSlugs,
+                        $assignment,
+                        $actor,
+                        $execution,
+                        $step->intent,
+                        $targetContext,
+                    )
+                    : [];
 
                 $stepContext = array_merge($contextData, [
                     'execution_id' => $execution->getKey(),
@@ -499,6 +533,13 @@ final class AgentExecutionService
                     ],
                 ]);
                 $step->save();
+                $events->dispatch(AgentReasoningCompleted::class, $execution, data: [
+                    'step' => $sequence,
+                    'provider' => $modelResult->provider,
+                    'model' => $modelResult->model,
+                    'invocation_id' => $modelResult->invocationId,
+                    'usage' => $modelResult->usage,
+                ]);
 
                 $previousCapabilityResults = is_array($execution->last_result['capability_results'] ?? null)
                     ? $execution->last_result['capability_results']
@@ -613,6 +654,7 @@ final class AgentExecutionService
 
                     if ($sequence >= $execution->max_steps) {
                         $execution->complete('max_steps_reached')->save();
+                        $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => 'max_steps_reached']);
                         $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                         return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
@@ -647,6 +689,7 @@ final class AgentExecutionService
                 if ($termination['status'] === AgentExecution::STATUS_PAUSED) {
                     $step->wait($termination['reason'])->save();
                     $execution->pause($termination['reason'])->save();
+                    $events->dispatch(AgentExecutionPaused::class, $execution, data: ['reason' => $termination['reason']]);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
@@ -656,6 +699,7 @@ final class AgentExecutionService
 
                 if ($termination['status'] === AgentExecution::STATUS_COMPLETED) {
                     $execution->complete($termination['reason'])->save();
+                    $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => $termination['reason']]);
                     $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
@@ -663,6 +707,7 @@ final class AgentExecutionService
 
                 if ($sequence >= $execution->max_steps) {
                     $execution->complete('max_steps_reached')->save();
+                    $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => 'max_steps_reached']);
                     $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
@@ -699,6 +744,10 @@ final class AgentExecutionService
 
                 $execution->failure_code = $error->code;
                 $execution->fail($error->message)->save();
+                $events->dispatch(AgentExecutionFailed::class, $execution, data: [
+                    'failure_code' => $error->code,
+                    'retryable' => $error->retryable,
+                ]);
                 $this->consolidateMemory($memoryRuntime, $actor, $execution, $lastResult, $lastDecision, $correlation);
 
                 if ($step instanceof AgentExecutionStep && $step->status === AgentExecutionStep::STATUS_RUNNING) {
@@ -900,6 +949,13 @@ final class AgentExecutionService
                 throw new \RuntimeException($invocation->failure->message ?? 'Expert invocation failed.');
             }
 
+            app(AgentExecutionEventService::class)->dispatch(ExpertInvoked::class, $execution, provenance: [
+                'expert' => $invocation->expertName,
+            ], data: [
+                'expert' => $invocation->expertName,
+                'correlation_id' => $invocation->correlationId,
+            ]);
+
             $results[] = [
                 'expert' => $invocation->expertName,
                 'result' => $invocation->reasoningOutput,
@@ -986,6 +1042,12 @@ final class AgentExecutionService
 
             $capability = $request['capability'];
             $definition = $capabilities->resolve($capability);
+            app(AgentExecutionEventService::class)->dispatch(CapabilityRequested::class, $execution, provenance: [
+                'capability' => $capability,
+                'operation' => $definition->operation,
+            ], data: [
+                'idempotency_key' => $request['idempotency_key'] ?? null,
+            ]);
             $requestContext = isset($request['target_context']) && is_array($request['target_context'])
                 ? $request['target_context']
                 : $targetContext;
@@ -1026,6 +1088,14 @@ final class AgentExecutionService
                 if (! $this->capabilityAuthorizer->allowsRequest($capabilityRequest)) {
                     throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
                 }
+
+                app(AgentExecutionEventService::class)->dispatch(CapabilityAuthorized::class, $execution, provenance: [
+                    'capability' => $capability,
+                    'operation' => $definition->operation,
+                    'approval_request_id' => $approval?->getKey(),
+                ], data: [
+                    'idempotency_key' => $idempotencyKey,
+                ]);
             }
 
             $authorized[] = $capabilityRequest;
@@ -1190,6 +1260,15 @@ final class AgentExecutionService
 
             $childExecution = $response->execution;
             $childResult = $childExecution?->last_result;
+
+            app(AgentExecutionEventService::class)->dispatch(AgentDelegated::class, $execution, provenance: [
+                'delegation_id' => $response->delegation->getKey(),
+                'target_assignment_id' => $response->targetAssignment->getKey(),
+            ], data: [
+                'target_agent' => $response->targetDescriptor->slug,
+                'capability' => $response->capability,
+                'child_execution_id' => $childExecution?->getKey(),
+            ]);
 
             $results[] = [
                 'delegation_id' => $response->delegation->getKey(),

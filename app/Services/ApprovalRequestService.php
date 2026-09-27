@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\ApprovalGranted;
+use App\Events\ApprovalRequested;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
@@ -16,7 +18,7 @@ class ApprovalRequestService
     {
         $requestedAt = now();
 
-        return ApprovalRequest::query()->create([
+        $request = ApprovalRequest::query()->create([
             'organization_id' => $assignment->organization_id,
             'enterprise_id' => $assignment->enterprise_id,
             'agent_assignment_id' => $assignment->getKey(),
@@ -34,12 +36,36 @@ class ApprovalRequestService
             'requested_at' => $requestedAt,
             'expires_at' => $requestedAt->copy()->addHour(),
         ]);
+
+        if ($execution !== null) {
+            app(AgentExecutionEventService::class)->dispatch(ApprovalRequested::class, $execution, provenance: [
+                'approval_request_id' => $request->getKey(),
+                'capability' => $capability,
+            ], data: [
+                'status' => $request->status,
+            ]);
+        }
+
+        return $request;
     }
 
     public function approve(ApprovalRequest $request, User $approver, ?string $reason = null): ApprovalRequest
     {
         Gate::forUser($approver)->authorize('approve', $request);
         $request->approve($approver, $reason)->save();
+
+        if ($request->agent_execution_id !== null) {
+            $execution = AgentExecution::query()->find($request->agent_execution_id);
+            if ($execution instanceof AgentExecution) {
+                app(AgentExecutionEventService::class)->dispatch(ApprovalGranted::class, $execution, provenance: [
+                    'approval_request_id' => $request->getKey(),
+                    'capability' => $request->capability,
+                ], data: [
+                    'approver_id' => $approver->getKey(),
+                    'status' => $request->status,
+                ]);
+            }
+        }
 
         return $request;
     }

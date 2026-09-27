@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
 use App\Data\CapabilityRequest;
+use App\Events\CapabilityResultReceived;
+use App\Events\OperationExecuted;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -126,6 +128,14 @@ final class CapabilityExecutionService
         } catch (Throwable $exception) {
             throw $exception;
         }
+
+        app(AgentExecutionEventService::class)->dispatch(OperationExecuted::class, $request->execution, provenance: $this->provenance($request, $definition->operation), data: [
+            'result_type' => get_debug_type($result),
+        ]);
+        app(AgentExecutionEventService::class)->dispatch(CapabilityResultReceived::class, $request->execution, provenance: $this->provenance($request, $definition->operation), data: [
+            'status' => 'executed',
+            'result_type' => get_debug_type($result),
+        ]);
 
         return [
             'status' => 'executed',
