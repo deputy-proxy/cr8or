@@ -398,7 +398,7 @@ Phase 7.6 exposes multi-Agent operational state through the existing Filament ad
 
 ## Phase 8 Runtime Completion
 
-The Phase 8 runtime is implemented through the 8.22 memory-context integration boundary:
+The Phase 8 runtime is implemented through the 8.22 memory-context integration boundary and was audited through 8.24:
 
 - **8.1–8.2:** canonical immutable `AgentDefinition` and `ExpertDefinition` runtime structures.
 - **8.3:** `AgentExecutionRequest` and the canonical governed `AgentExecutionService` request boundary.
@@ -413,6 +413,7 @@ The Phase 8 runtime is implemented through the 8.22 memory-context integration b
 - **8.20:** centralized memory retrieval/write policy with bounded limits and terminal-execution requirements.
 - **8.21:** historical Agent identity and source provenance exposed without rewriting authoritative execution history.
 - **8.22:** explicit `memory` context requirement with assignment-scoped, budgeted episodic/semantic retrieval.
+- **8.23–8.24:** documentation reconciliation and final Phase 8 acceptance/CI audit. The verification record is maintained in `docs/phase-8-audit.md`.
 
 Memory remains a derived Agent runtime concern. It does not replace Knowledge, current business state, or authoritative execution history.
 
