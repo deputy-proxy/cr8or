@@ -5,13 +5,16 @@ namespace App\Services;
 use App\Data\AgentContext;
 use App\Data\AgentContextSection;
 use App\Models\Enterprise;
-use App\Models\EnterpriseContext;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
 
 class McpContextAssembler
 {
+    public function __construct(
+        private readonly EnterpriseContextAssembler $enterpriseContextAssembler,
+    ) {}
+
     /**
      * Assemble only the context categories explicitly required by the Agent.
      *
@@ -21,18 +24,8 @@ class McpContextAssembler
     {
         Gate::forUser($user)->authorize('view', $enterprise);
 
+        $context = $this->enterpriseContextAssembler->assemble($user, $enterprise);
         $scope = $this->scope($enterprise);
-        $context = new AgentContext;
-
-        $context = $context->withSection(new AgentContextSection(
-            name: 'enterprise',
-            data: $this->enterpriseIdentity($enterprise),
-            source: Enterprise::class,
-            scope: $scope,
-            relevance: 'Agent execution scope',
-        ));
-
-        $context = $context->withSection($this->enterpriseContextSection($user, $enterprise, $scope));
 
         foreach ($requiredContext as $requirement) {
             if ($requirement === 'enterprise' || $requirement === 'enterprise_context') {
@@ -63,10 +56,11 @@ class McpContextAssembler
     public function enterprise(User $user, int $enterpriseId): array
     {
         $enterprise = $this->authorizedEnterprise($user, $enterpriseId);
+        $context = $this->enterpriseContextAssembler->assemble($user, $enterprise);
 
         return [
-            'enterprise' => $this->enterpriseIdentity($enterprise),
-            'context' => $this->enterpriseContextData($enterprise),
+            'enterprise' => $context->section('enterprise')?->data,
+            'context' => $context->section('enterprise_context')?->data['context'],
         ];
     }
 
@@ -112,23 +106,6 @@ class McpContextAssembler
     }
 
     /** @param array{organization_id: int|string, enterprise_id: int|string} $scope */
-    private function enterpriseContextSection(
-        User $user,
-        Enterprise $enterprise,
-        array $scope,
-    ): AgentContextSection {
-        $authorized = $this->authorizedEnterprise($user, $enterprise->getKey());
-
-        return new AgentContextSection(
-            name: 'enterprise_context',
-            data: $this->enterpriseContextData($authorized),
-            source: EnterpriseContext::class,
-            scope: $scope,
-            relevance: 'Agent-declared context requirement',
-        );
-    }
-
-    /** @param array{organization_id: int|string, enterprise_id: int|string} $scope */
     private function strategySection(User $user, Enterprise $enterprise, array $scope): AgentContextSection
     {
         $authorized = $this->authorizedEnterprise($user, $enterprise->getKey());
@@ -168,32 +145,6 @@ class McpContextAssembler
             scope: $scope,
             relevance: 'Agent-declared context requirement',
         );
-    }
-
-    /** @return array{id: int|string, name: string, slug: string, status: string} */
-    private function enterpriseIdentity(Enterprise $enterprise): array
-    {
-        return [
-            'id' => $enterprise->getKey(),
-            'name' => $enterprise->name,
-            'slug' => $enterprise->slug,
-            'status' => $enterprise->status,
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function enterpriseContextData(Enterprise $enterprise): array
-    {
-        $context = $enterprise->context;
-
-        return $context === null ? [] : [
-            'description' => $context->description,
-            'industry' => $context->industry,
-            'business_model' => $context->business_model,
-            'target_market' => $context->target_market,
-            'geography' => $context->geography,
-            'additional_context' => $context->additional_context,
-        ];
     }
 
     /** @return array<string, mixed> */
@@ -267,6 +218,17 @@ class McpContextAssembler
                     ],
                 ])
                 ->all(),
+        ];
+    }
+
+    /** @return array{id: int|string, name: string, slug: string, status: string} */
+    private function enterpriseIdentity(Enterprise $enterprise): array
+    {
+        return [
+            'id' => $enterprise->getKey(),
+            'name' => $enterprise->name,
+            'slug' => $enterprise->slug,
+            'status' => $enterprise->status,
         ];
     }
 
