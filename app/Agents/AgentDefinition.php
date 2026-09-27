@@ -11,10 +11,25 @@ final readonly class AgentDefinition
      * @param  list<string>  $experts
      * @param  list<string>  $requiredContext
      * @param  list<string>  $capabilities
+     * @param  list<string>  $decisionBoundaries
+     * @param  list<string>  $expectedOutputs
+     * @param  array<string, list<string>>  $capabilityMap
+     * @param  list<string>  $capabilityGaps
+     * @param  list<string>  $approvalSensitiveCapabilities
      */
     public function __construct(
-        public string $name, public string $description, public array $responsibilities,
-        public string $instructions, public array $experts, public array $requiredContext, public array $capabilities,
+        public string $name,
+        public string $description,
+        public array $responsibilities,
+        public string $instructions,
+        public array $experts,
+        public array $requiredContext,
+        public array $capabilities,
+        public array $decisionBoundaries = [],
+        public array $expectedOutputs = [],
+        public array $capabilityMap = [],
+        public array $capabilityGaps = [],
+        public array $approvalSensitiveCapabilities = [],
     ) {
         if ($name === '') {
             throw new InvalidArgumentException('Agent identity must define a name.');
@@ -31,12 +46,53 @@ final readonly class AgentDefinition
         if ($requiredContext === []) {
             throw new InvalidArgumentException("Agent [{$name}] must define required context.");
         }
-        foreach ([$responsibilities, $experts, $requiredContext, $capabilities] as $values) {
+
+        foreach ([
+            $responsibilities,
+            $experts,
+            $requiredContext,
+            $capabilities,
+            $decisionBoundaries,
+            $expectedOutputs,
+            $capabilityGaps,
+            $approvalSensitiveCapabilities,
+        ] as $values) {
             foreach ($values as $value) {
                 if ($value === '') {
                     throw new InvalidArgumentException("Agent [{$name}] contains an invalid runtime declaration.");
                 }
             }
         }
+
+        foreach ($capabilityMap as $responsibility => $mappedCapabilities) {
+            if ($responsibility === '' || $mappedCapabilities === []) {
+                throw new InvalidArgumentException("Agent [{$name}] contains an invalid Capability map.");
+            }
+
+            foreach ($mappedCapabilities as $capability) {
+                if ($capability === '') {
+                    throw new InvalidArgumentException("Agent [{$name}] contains an invalid Capability map.");
+                }
+            }
+        }
+    }
+
+    public function version(): string
+    {
+        return hash('sha256', json_encode([
+            'name' => $this->name,
+            'description' => $this->description,
+            'responsibilities' => $this->responsibilities,
+            'instructions' => $this->instructions,
+            'experts' => $this->experts,
+            'requiredContext' => $this->requiredContext,
+            'capabilities' => $this->capabilities,
+            'decisionBoundaries' => $this->decisionBoundaries,
+            'expectedOutputs' => $this->expectedOutputs,
+            'capabilityMap' => $this->capabilityMap,
+            'capabilityGaps' => $this->capabilityGaps,
+            'approvalSensitiveCapabilities' => $this->approvalSensitiveCapabilities,
+        ], JSON_THROW_ON_ERROR));
     }
 }
+
