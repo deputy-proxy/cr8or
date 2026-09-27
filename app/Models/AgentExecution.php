@@ -187,6 +187,12 @@ class AgentExecution extends Model
         return $this->belongsTo(User::class, 'actor_id');
     }
 
+    /** @return HasMany<AgentDelegation, $this> */
+    public function delegationsFrom(): HasMany
+    {
+        return $this->hasMany(AgentDelegation::class, 'parent_agent_execution_id');
+    }
+
     /** @return HasMany<AgentExecutionStep, $this> */
     public function steps(): HasMany
     {
