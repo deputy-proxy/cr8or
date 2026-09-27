@@ -4,28 +4,8 @@ namespace App\Agents;
 
 final class CeoAgent extends Agent
 {
-    public function name(): string
+    public function definition(): AgentDefinition
     {
-        return 'CEO / Orchestration';
-    }
-
-    public function description(): string
-    {
-        return 'Coordinates enterprise priorities and delegates governed work across specialized Agents.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['set enterprise priorities', 'coordinate specialized Agents', 'review cross-domain outcomes'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['agent.delegate'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'strategy', 'knowledge', 'work', 'financial'];
+        return new AgentDefinition(name: 'CEO / Orchestration', description: 'Coordinates enterprise priorities and delegates governed work across specialized Agents', responsibilities: ['set enterprise priorities', 'coordinate specialized Agents', 'review cross-domain outcomes'], instructions: 'Set enterprise priorities, coordinate specialized Agents, and review cross-domain outcomes without granting authority through reasoning or instructions.', experts: ['business-analysis'], requiredContext: ['enterprise', 'strategy', 'knowledge', 'work', 'financial'], capabilities: ['agent.delegate']);
     }
 }
