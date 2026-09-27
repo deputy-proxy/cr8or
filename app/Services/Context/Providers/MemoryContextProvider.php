@@ -89,13 +89,12 @@ final class MemoryContextProvider implements AgentContextProvider
                 'agent_descriptor_id' => $assignment->agent_descriptor_id,
             ],
             relevance: $options['topic'] === null && $options['relevant_after'] === null
-                ? 'Bounded Agent-declared persistent memory requirement'
+                ? 'Bounded Agent persistent memory'
                 : 'Bounded Agent memory matching the execution target context',
         )];
     }
 
-    /**
-     * @param  array<string, mixed>  $targetContext
+    /** @param array<string, mixed> $targetContext
      * @return array{topic: ?string, relevant_after: ?Carbon, episodic_limit: int, semantic_status: ?string, semantic_limit: int, budget: int}
      */
     private function options(array $targetContext): array
@@ -117,7 +116,7 @@ final class MemoryContextProvider implements AgentContextProvider
 
         $budget = $this->boundedInteger($memory['budget'] ?? self::DEFAULT_CONTEXT_BUDGET, self::MAX_CONTEXT_BUDGET, 'budget');
         $episodicLimit = $this->boundedInteger($memory['episodic_limit'] ?? self::DEFAULT_EPISODIC_LIMIT, $budget, 'episodic_limit');
-        $semanticLimit = $this->boundedInteger($memory['semantic_limit'] ?? self::DEFAULT_SEMANTIC_LIMIT, $budget, 'semantic_limit');
+        $semanticLimit = $this->boundedInteger($memory['semantic_limit'] ?? self::DEFAULT_SEMANTIC_LIMIT, $budget, 'semantic_limit', true);
         $semanticStatus = $memory['semantic_status'] ?? null;
 
         if ($semanticStatus !== null && ! is_string($semanticStatus)) {
@@ -134,9 +133,11 @@ final class MemoryContextProvider implements AgentContextProvider
         ];
     }
 
-    private function boundedInteger(mixed $value, int $max, string $name): int
+    private function boundedInteger(mixed $value, int $max, string $name, bool $allowZero = false): int
     {
-        if (! is_int($value) || $value < 1) {
+        $minimum = $allowZero ? 0 : 1;
+
+        if (! is_int($value) || $value < $minimum) {
             throw new AuthorizationException("Agent memory {$name} must be a positive integer.");
         }
 
