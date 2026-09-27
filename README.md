@@ -788,7 +788,7 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Future Roadmap / Deferred Capabilities
 
-Phase 7 is complete within its defined scope. The remaining roadmap consists of capabilities intentionally deferred from the completed phases, including generalized Knowledge Retrieval / AI Context Infrastructure, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, Agent memory and broader cross-service integrations.
+Phase 7 is complete within its defined scope. The remaining roadmap consists of capabilities intentionally deferred from the completed phases, including generalized Knowledge Retrieval / AI Context Infrastructure, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, Agent memory capabilities beyond the implemented Phase 8.18-8.19 foundations, and broader cross-service integrations.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 or Phase 7 completion gap.
 
