@@ -40,6 +40,8 @@ Workflow, Job and Execution records provide the authoritative trace for CR8OR-ow
 
 AI agents reason over authorized CR8OR context. An agent may propose a plan or request a capability, but technical access to a tool does not itself grant business authority. Model calls cross an internal provider-neutral `App\AI\Contracts\ModelProvider` boundary. Laravel AI is currently the concrete infrastructure adapter, while fake providers keep runtime tests independent of network access and provider credentials.
 
+Agent and Expert runtime components use canonical immutable definition objects for their authoritative runtime metadata. Agents expose AgentDefinition; Experts expose ExpertDefinition. These definitions describe identity, responsibilities, methodology/context and declared Capabilities but do not create authorization. The executable Agent/Expert classes remain the reasoning boundary, while application services remain responsible for governed execution.
+
 MCP translates AI-facing requests into controlled CR8OR capabilities. MCP must authenticate the caller, establish authorization context, validate inputs, and invoke application/domain services. MCP is not a second domain layer.
 
 ## Orchestration and Execution Boundaries
