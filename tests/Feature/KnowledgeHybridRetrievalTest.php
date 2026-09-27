@@ -23,8 +23,10 @@ function hybridActor(): array
 
 function fakeRetrievalProvider(array $items, string $mode): KnowledgeRetrievalProvider
 {
-    return new class($items, $mode) implements KnowledgeRetrievalProvider {
+    return new class($items, $mode) implements KnowledgeRetrievalProvider
+    {
         public function __construct(private array $items, private string $mode) {}
+
         public function retrieve(KnowledgeRetrievalRequest $request): KnowledgeRetrievalResult
         {
             return new KnowledgeRetrievalResult('succeeded', $request->correlationId ?? 'generated', $this->items, count($this->items), ['mode' => $this->mode]);
