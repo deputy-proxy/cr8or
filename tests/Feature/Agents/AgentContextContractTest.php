@@ -1,1 +1,152 @@
-<?php\n\nuse App\\Data\\AgentContext;\nuse App\\Data\\AgentContextSection;\nuse App\\Models\\Enterprise;\nuse App\\Models\\EnterpriseContext;\nuse App\\Models\\Membership;\nuse App\\Models\\Organization;\nuse App\\Models\\User;\nuse App\\Services\\McpContextAssembler;\nuse Illuminate\\Auth\\Access\\AuthorizationException;\n\nit('defines a provider-neutral context contract with deterministic section ordering and metadata', function () {\n    $context = new AgentContext([\n        'work' => new AgentContextSection(\n            name: 'work',\n            data: ['work_items' => []],\n            source: 'work.provider',\n            scope: ['organization_id' => 1, 'enterprise_id' => 2],\n            relevance: 'current work',\n        ),\n        'enterprise_context' => new AgentContextSection(\n            name: 'enterprise_context',\n            data: ['description' => 'Test'],\n            source: 'enterprise.context',\n            scope: ['organization_id' => 1, 'enterprise_id' => 2],\n        ),\n        'enterprise' => new AgentContextSection(\n            name: 'enterprise',\n            data: ['id' => 2, 'name' => 'Test'],\n            source: 'enterprise',\n            scope: ['organization_id' => 1, 'enterprise_id' => 2],\n        ),\n        'decisions' => new AgentContextSection(\n            name: 'decisions',\n            data: [],\n            source: 'decision.history',\n            scope: ['organization_id' => 1, 'enterprise_id' => 2],\n        ),\n    ]);\n\n    expect(array_map(\n        fn (AgentContextSection $section) => $section->name,\n        $context->sections(),\n    ))->toBe([\n        'enterprise',\n        'enterprise_context',\n        'work',\n        'decisions',\n    ])\n        ->and($context->metadata()['work'])->toMatchArray([\n            'source' => 'work.provider',\n            'scope' => ['organization_id' => 1, 'enterprise_id' => 2],\n            'relevance' => 'current work',\n        ]);\n});\n\nit('keeps persistent Agent memory outside the current context contract', function () {\n    $context = new AgentContext([\n        'enterprise' => new AgentContextSection(\n            name: 'enterprise',\n            data: ['id' => 1],\n            source: 'enterprise',\n            scope: ['organization_id' => 1, 'enterprise_id' => 1],\n        ),\n    ]);\n\n    expect($context->toArray())->not->toHaveKey('memory')\n        ->and($context->metadata())->not->toHaveKey('memory');\n});\n\nit('assembles an authorization-scoped context contract for Agent execution', function () {\n    $user = User::factory()->create();\n    $organization = Organization::factory()->create();\n\n    Membership::factory()->create([\n        'user_id' => $user->getKey(),\n        'organization_id' => $organization->getKey(),\n    ]);\n\n    $enterprise = Enterprise::factory()->create([\n        'organization_id' => $organization->getKey(),\n    ]);\n\n    EnterpriseContext::factory()->create([\n        'enterprise_id' => $enterprise->getKey(),\n        'description' => 'Authorized enterprise context.',\n    ]);\n\n    $context = app(McpContextAssembler::class)->forAgent(\n        $user,\n        $enterprise,\n        ['enterprise', 'knowledge', 'strategy', 'work'],\n    );\n\n    expect($context)->toBeInstanceOf(AgentContext::class)\n        ->and($context->sections())->toHaveCount(5)\n        ->and($context->section('enterprise')?->data['id'])->toBe($enterprise->getKey())\n        ->and($context->section('enterprise_context')?->data['description'])->toBe('Authorized enterprise context.')\n        ->and($context->metadata()['enterprise']['scope'])->toBe([\n            'organization_id' => $organization->getKey(),\n            'enterprise_id' => $enterprise->getKey(),\n        ])\n        ->and($context->toArray()['enterprise']['enterprise']['id'])->toBe($enterprise->getKey());\n});\n\nit('denies a context contract for an Enterprise outside the user organization', function () {\n    $user = User::factory()->create();\n    $organization = Organization::factory()->create();\n    $foreignOrganization = Organization::factory()->create();\n\n    Membership::factory()->create([\n        'user_id' => $user->getKey(),\n        'organization_id' => $organization->getKey(),\n    ]);\n\n    $foreignEnterprise = Enterprise::factory()->create([\n        'organization_id' => $foreignOrganization->getKey(),\n    ]);\n\n    expect(fn () => app(McpContextAssembler::class)->forAgent(\n        $user,\n        $foreignEnterprise,\n        ['enterprise'],\n    ))->toThrow(AuthorizationException::class);\n});\n\nit('does not require optional context sections to be present', function () {\n    $user = User::factory()->create();\n    $organization = Organization::factory()->create();\n\n    Membership::factory()->create([\n        'user_id' => $user->getKey(),\n        'organization_id' => $organization->getKey(),\n    ]);\n\n    $enterprise = Enterprise::factory()->create([\n        'organization_id' => $organization->getKey(),\n    ]);\n\n    $context = app(McpContextAssembler::class)->forAgent(\n        $user,\n        $enterprise,\n        ['enterprise'],\n    );\n\n    expect($context->has('knowledge'))->toBeFalse()\n        ->and($context->has('strategy'))->toBeFalse()\n        ->and($context->has('work'))->toBeFalse()\n        ->and($context->has('decisions'))->toBeFalse()\n        ->and($context->has('execution_history'))->toBeFalse();\n});\n
+<?php
+
+use App\Data\AgentContext;
+use App\Data\AgentContextSection;
+use App\Models\Enterprise;
+use App\Models\EnterpriseContext;
+use App\Models\Membership;
+use App\Models\Organization;
+use App\Models\User;
+use App\Services\McpContextAssembler;
+use Illuminate\Auth\Access\AuthorizationException;
+
+it('defines a provider-neutral context contract with deterministic section ordering and metadata', function () {
+    $context = new AgentContext([
+        'work' => new AgentContextSection(
+            name: 'work',
+            data: ['work_items' => []],
+            source: 'work.provider',
+            scope: ['organization_id' => 1, 'enterprise_id' => 2],
+            relevance: 'current work',
+        ),
+        'enterprise_context' => new AgentContextSection(
+            name: 'enterprise_context',
+            data: ['description' => 'Test'],
+            source: 'enterprise.context',
+            scope: ['organization_id' => 1, 'enterprise_id' => 2],
+        ),
+        'enterprise' => new AgentContextSection(
+            name: 'enterprise',
+            data: ['id' => 2, 'name' => 'Test'],
+            source: 'enterprise',
+            scope: ['organization_id' => 1, 'enterprise_id' => 2],
+        ),
+        'decisions' => new AgentContextSection(
+            name: 'decisions',
+            data: [],
+            source: 'decision.history',
+            scope: ['organization_id' => 1, 'enterprise_id' => 2],
+        ),
+    ]);
+
+    expect(array_map(
+        fn (AgentContextSection $section) => $section->name,
+        $context->sections(),
+    ))->toBe([
+        'enterprise',
+        'enterprise_context',
+        'work',
+        'decisions',
+    ])
+        ->and($context->metadata()['work'])->toMatchArray([
+            'source' => 'work.provider',
+            'scope' => ['organization_id' => 1, 'enterprise_id' => 2],
+            'relevance' => 'current work',
+        ]);
+});
+
+it('keeps persistent Agent memory outside the current context contract', function () {
+    $context = new AgentContext([
+        'enterprise' => new AgentContextSection(
+            name: 'enterprise',
+            data: ['id' => 1],
+            source: 'enterprise',
+            scope: ['organization_id' => 1, 'enterprise_id' => 1],
+        ),
+    ]);
+
+    expect($context->toArray())->not->toHaveKey('memory')
+        ->and($context->metadata())->not->toHaveKey('memory');
+});
+
+it('assembles an authorization-scoped context contract for Agent execution', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    EnterpriseContext::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'description' => 'Authorized enterprise context.',
+    ]);
+
+    $context = app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['enterprise', 'knowledge', 'strategy', 'work'],
+    );
+
+    expect($context)->toBeInstanceOf(AgentContext::class)
+        ->and($context->sections())->toHaveCount(5)
+        ->and($context->section('enterprise')?->data['id'])->toBe($enterprise->getKey())
+        ->and($context->section('enterprise_context')?->data['description'])->toBe('Authorized enterprise context.')
+        ->and($context->metadata()['enterprise']['scope'])->toBe([
+            'organization_id' => $organization->getKey(),
+            'enterprise_id' => $enterprise->getKey(),
+        ])
+        ->and($context->toArray()['enterprise']['enterprise']['id'])->toBe($enterprise->getKey());
+});
+
+it('denies a context contract for an Enterprise outside the user organization', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $foreignOrganization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $foreignEnterprise = Enterprise::factory()->create([
+        'organization_id' => $foreignOrganization->getKey(),
+    ]);
+
+    expect(fn () => app(McpContextAssembler::class)->forAgent(
+        $user,
+        $foreignEnterprise,
+        ['enterprise'],
+    ))->toThrow(AuthorizationException::class);
+});
+
+it('does not require optional context sections to be present', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $context = app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['enterprise'],
+    );
+
+    expect($context->has('knowledge'))->toBeFalse()
+        ->and($context->has('strategy'))->toBeFalse()
+        ->and($context->has('work'))->toBeFalse()
+        ->and($context->has('decisions'))->toBeFalse()
+        ->and($context->has('execution_history'))->toBeFalse();
+});
