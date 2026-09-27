@@ -4,6 +4,7 @@ use App\Agents\Agent;
 use App\AI\Exceptions\ModelProviderException;
 use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\Providers\FakeModelProvider;
+use App\Data\AgentExecutionRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentDescriptor;
@@ -53,7 +54,7 @@ it('records a failed provider execution without persisting a successful decision
         app(AgentCapabilityAuthorizer::class),
     );
 
-    expect(fn () => $service->execute($actor, $assignment, 'Fail safely.'))
+    expect(fn () => $service->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Fail safely.')))
         ->toThrow(ModelProviderException::class);
 
     $execution = AgentExecution::query()->latest('id')->firstOrFail();

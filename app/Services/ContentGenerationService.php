@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Data\AgentExecutionRequest;
 use App\Models\AgentAssignment;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
@@ -29,13 +30,13 @@ final class ContentGenerationService
         array $attributes,
         array $modelOptions = [],
     ): ContentItem {
-        $result = $this->executions->execute(
-            $actor,
-            $assignment,
-            $prompt,
+        $result = $this->executions->execute(new AgentExecutionRequest(
+            actor: $actor,
+            assignment: $assignment,
+            prompt: $prompt,
             targetContext: ['enterprise_id' => $enterprise->getKey()],
-            modelOptions: $modelOptions,
-        );
+            options: $modelOptions,
+        ));
 
         if (! $this->capabilities->allows(
             $assignment,
@@ -72,13 +73,13 @@ final class ContentGenerationService
         string $prompt,
         array $modelOptions = [],
     ): ContentItem {
-        $result = $this->executions->execute(
-            $actor,
-            $assignment,
-            $prompt,
+        $result = $this->executions->execute(new AgentExecutionRequest(
+            actor: $actor,
+            assignment: $assignment,
+            prompt: $prompt,
             targetContext: ['content_item_id' => $item->getKey()],
-            modelOptions: $modelOptions,
-        );
+            options: $modelOptions,
+        ));
 
         if (! $this->capabilities->allows(
             $assignment,

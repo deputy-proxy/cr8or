@@ -2,13 +2,14 @@
 
 namespace App\AI\Data;
 
+use App\Data\CapabilityRequest;
 use App\Models\AgentDecision;
 use App\Models\AgentExecution;
 
 final readonly class AgentExecutionResult
 {
     /**
-     * @param  list<array<string, mixed>>  $capabilityRequests
+     * @param  list<CapabilityRequest>  $capabilityRequests
      */
     public function __construct(
         public AgentExecution $execution,

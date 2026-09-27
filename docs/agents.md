@@ -119,6 +119,40 @@ The runtime relationship is:
 
 Expert capability declarations describe available expertise only. They do not grant execution authority. When an Expert is coordinated by an Agent, the existing execution boundary continues to verify the Expert declaration and the Agent assignment's explicit Capability permission before execution.
 
+### Canonical Agent Execution Contract
+
+Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for Agent execution. `App\Data\AgentExecutionRequest` carries the actor, Agent assignment, prompt, authorized target context, selected Expert slugs, correlation identity and optional delegation context. Provider-specific options remain opaque to the contract and are consumed only by the infrastructure-facing execution service.
+
+`AgentExecutionService` is the canonical application boundary. Its lifecycle is:
+
+    AgentExecutionRequest
+        |
+        v
+    Agent assignment + authorization
+        |
+        v
+    authorized context
+        |
+        v
+    Agent reasoning / Expert coordination
+        |
+        v
+    Capability Request
+        |
+        +--> server-side authorization
+        +--> approval when required
+        +--> Capability -> Operation -> application/domain service
+        |
+        v
+    AgentExecutionResult
+        |
+        v
+    AgentExecution / AgentDecision / audit
+
+Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` rather than loose arrays. The contract contains the Capability identifier, target context and approval reference while the existing `CapabilityRegistry` and authorization services remain authoritative for resolution and permission. Later Capability Request contract work may extend this DTO without changing the Agent execution boundary.
+
+Failures continue to use `ExecutionError` for normalized failure codes and human-readable reasons, while `ExecutionCorrelationService` provides the correlation identity. `AgentExecution` remains the authoritative persistent lifecycle record. No provider-specific request type, transport contract or generalized workflow engine is introduced.
+
 ### Runtime Metadata Authority
 
 The runtime PHP class is authoritative for:
