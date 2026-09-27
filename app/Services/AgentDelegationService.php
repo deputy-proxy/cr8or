@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Agents\Agent;
 use App\Data\AgentDelegationRequest;
 use App\Data\AgentDelegationResponse;
 use App\Data\AgentExecutionRequest;
@@ -54,10 +55,15 @@ final class AgentDelegationService
             throw new AuthorizationException('The parent Agent execution is outside the source Agent scope.');
         }
 
+        $this->assertContextRequirements($target, $request->contextRequirements);
+
         $delegationContext = array_merge($request->targetContext, [
             'target_agent_slug' => $target->agentDescriptor->slug,
             'target_capability' => $request->capability,
         ]);
+        if ($request->contextRequirements !== []) {
+            $delegationContext['context_requirements'] = $request->contextRequirements;
+        }
 
         $delegation = $this->findOrCreateDelegation(
             $request,
@@ -134,6 +140,18 @@ final class AgentDelegationService
             ));
 
             $delegation->target_agent_execution_id = $result->execution->getKey();
+
+            if (in_array($result->execution->status, [
+                AgentExecution::STATUS_WAITING_FOR_INPUT,
+                AgentExecution::STATUS_WAITING_FOR_APPROVAL,
+                AgentExecution::STATUS_DELEGATED,
+                AgentExecution::STATUS_PAUSED,
+            ], true)) {
+                $delegation->save();
+
+                return $this->response($request, $source, $target, $delegation, $result->execution);
+            }
+
             $delegation->succeed()->save();
 
             return $this->response($request, $source, $target, $delegation, $result->execution);
@@ -169,6 +187,11 @@ final class AgentDelegationService
             return $delegation;
         }
 
+        $delegationContext = $request->targetContext;
+        if ($request->contextRequirements !== []) {
+            $delegationContext['context_requirements'] = $request->contextRequirements;
+        }
+
         try {
             return AgentDelegation::query()->create([
                 'organization_id' => $source->organization_id,
@@ -186,7 +209,7 @@ final class AgentDelegationService
                 'actor_name' => $request->actor->name,
                 'capability' => $request->capability,
                 'prompt' => $request->prompt,
-                'target_context' => $request->targetContext,
+                'target_context' => $delegationContext,
                 'correlation_id' => $correlationId,
                 'idempotency_key' => $idempotencyKey,
                 'attempts' => 0,
@@ -257,6 +280,11 @@ final class AgentDelegationService
             $storedContext = $decoded;
         }
 
+        $expectedContext = $request->targetContext;
+        if ($request->contextRequirements !== []) {
+            $expectedContext['context_requirements'] = $request->contextRequirements;
+        }
+
         if (
             $delegation->source_agent_assignment_id !== $source->getKey()
             || $delegation->target_agent_assignment_id !== $target->getKey()
@@ -264,7 +292,7 @@ final class AgentDelegationService
             || $delegation->prompt !== $request->prompt
             || $delegation->actor_id !== $request->actor->getKey()
             || $delegation->parent_agent_execution_id !== $request->parentExecution?->getKey()
-            || $storedContext !== $request->targetContext
+            || $storedContext !== $expectedContext
         ) {
             throw new AuthorizationException('The idempotency key is already bound to a different delegation request.');
         }
@@ -277,6 +305,27 @@ final class AgentDelegationService
         }
 
         return trim($request->idempotencyKey);
+    }
+
+    /** @param list<string> $requirements */
+    private function assertContextRequirements(AgentAssignment $target, array $requirements): void
+    {
+        $runtime = app($target->agentDescriptor->resolveRuntimeClass());
+
+        if (! $runtime instanceof Agent) {
+            throw new AuthorizationException('The target Agent runtime is invalid.');
+        }
+
+        $allowed = $runtime->requiredContext();
+
+        foreach ($requirements as $requirement) {
+            if (trim($requirement) === '' || ! in_array($requirement, $allowed, true)) {
+                throw new AuthorizationException(sprintf(
+                    'The target Agent does not permit delegated context requirement [%s].',
+                    $requirement,
+                ));
+            }
+        }
     }
 
     private function assertEnabled(AgentAssignment $assignment, string $role): void
