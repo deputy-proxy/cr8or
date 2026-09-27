@@ -1,1 +1,390 @@
-<?php\n\nnamespace App\\Services;\n\nuse App\\Agents\\Agent;\nuse App\\AI\\Contracts\\ExecutionError;\nuse App\\AI\\Contracts\\ModelProvider;\nuse App\\AI\\Data\\AgentExecutionResult;\nuse App\\AI\\Data\\ModelRequest;\nuse App\\AI\\Data\\ModelResult;\nuse App\\Capabilities\\CapabilityRegistry;\nuse App\\Data\\AgentContextSection;\nuse App\\Data\\AgentExecutionRequest;\nuse App\\Data\\CapabilityRequest;\nuse App\\Experts\\Expert;\nuse App\\Models\\AgentAssignment;\nuse App\\Models\\AgentDecision;\nuse App\\Models\\AgentDelegation;\nuse App\\Models\\AgentExecution;\nuse App\\Models\\ApprovalRequest;\nuse App\\Models\\Enterprise;\nuse App\\Models\\ExpertDescriptor;\nuse App\\Models\\User;\nuse Illuminate\\Auth\\Access\\AuthorizationException;\nuse Illuminate\\Support\\Facades\\Gate;\nuse Throwable;\n\nfinal class AgentExecutionService\n{\n    public function __construct(\n        private readonly ModelProvider $provider,\n        private readonly McpContextAssembler $contextAssembler,\n        private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,\n        private readonly ?ExecutionCorrelationService $correlation = null,\n        private readonly ?CapabilityRegistry $capabilities = null,\n    ) {}\n\n    public function execute(AgentExecutionRequest $request): AgentExecutionResult\n    {\n        $actor = $request->actor;\n        $assignment = $request->assignment;\n        $prompt = $request->prompt;\n        $targetContext = $request->targetContext;\n        $expertSlugs = $request->expertSlugs;\n        $modelOptions = $request->options;\n        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);\n        $correlationId = $correlation->resolve($request->correlationId);\n\n        $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);\n\n        $delegation = $request->delegation;\n\n        Gate::forUser($actor)->authorize('view', $assignment);\n\n        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {\n            throw new AuthorizationException('The Agent assignment is disabled.');\n        }\n\n        $enterprise = $assignment->enterprise;\n\n        if (! $enterprise instanceof Enterprise) {\n            throw new AuthorizationException('Agent execution requires an enterprise-scoped assignment.');\n        }\n\n        if ($enterprise->organization_id !== $assignment->organization_id) {\n            throw new AuthorizationException('The Agent assignment enterprise does not belong to its organization.');\n        }\n\n        $descriptor = $assignment->agentDescriptor;\n        $runtimeClass = $descriptor->resolveRuntimeClass();\n        $agent = app($runtimeClass);\n\n        if (! $agent instanceof Agent) {\n            throw new AuthorizationException('The configured Agent runtime is invalid.');\n        }\n\n        $context = $this->contextAssembler->forAgent(\n            $actor,\n            $enterprise,\n            $agent->requiredContext(),\n        );\n\n        $contextData = $context->toArray();\n\n        $execution = AgentExecution::query()->create([\n            'organization_id' => $assignment->organization_id,\n            'enterprise_id' => $enterprise->getKey(),\n            'agent_descriptor_id' => $descriptor->getKey(),\n            'agent_assignment_id' => $assignment->getKey(),\n            'actor_id' => $actor->getKey(),\n            'organization_name' => $assignment->organization->name,\n            'enterprise_name' => $enterprise->name,\n            'agent_slug' => $descriptor->slug,\n            'agent_runtime_class' => $descriptor->runtime_class,\n            'actor_name' => $actor->name,\n            'correlation_id' => $correlationId,\n            'status' => AgentExecution::STATUS_REQUESTED,\n            'requested_at' => now(),\n        ]);\n\n        try {\n            $execution->start()->save();\n\n            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $enterprise);\n\n            $contextData = $context->withSection(new AgentContextSection(\n                name: 'instructions',\n                data: [\n                    'agent' => [\n                        'name' => $agent->name(),\n                        'instructions' => $agent->instructions(),\n                    ],\n                    'experts' => $expertResults['instructions'] ?? [],\n                ],\n                source: get_class($agent),\n                scope: [\n                    'organization_id' => $assignment->organization_id,\n                    'enterprise_id' => $enterprise->getKey(),\n                    'agent_assignment_id' => $assignment->getKey(),\n                ],\n                relevance: 'Agent and Expert runtime instructions',\n            ))->toArray();\n\n            $request = new ModelRequest(\n                prompt: $prompt,\n                instructions: implode('\n', [$agent->instructions(), $this->instructions($agent, $expertResults)]),\n                context: array_merge($contextData, [\n                    'execution_id' => $execution->getKey(),\n                    'agent' => [\n                        'slug' => $descriptor->slug,\n                        'name' => $agent->name(),\n                        'responsibilities' => $agent->responsibilities(),\n                        'capabilities' => $agent->capabilities(),\n                    ],\n                    'experts' => $expertResults,\n                    'target_context' => $targetContext,\n                ]),\n                provider: isset($modelOptions['provider']) ? (string) $modelOptions['provider'] : null,\n                model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,\n                timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,\n                structuredOutputSchema: $this->outputSchema(),\n                correlationId: $correlationId,\n            );\n\n            $modelResult = $this->provider->generate($request);\n            $execution->provider = $modelResult->provider;\n            $execution->external_execution_id = $modelResult->invocationId;\n            $execution->save();\n            $capabilityRequests = $this->authorizeCapabilityRequests(\n                $actor,\n                $assignment,\n                $enterprise,\n                $execution,\n                $modelResult,\n                $targetContext,\n                $delegation,\n            );\n\n            $decision = $this->persistDecision($execution, $modelResult);\n\n            $execution->succeed()->save();\n\n            return new AgentExecutionResult(\n                execution: $execution->refresh(),\n                modelResult: $modelResult,\n                decision: $decision,\n                capabilityRequests: $capabilityRequests,\n            );\n        } catch (Throwable $exception) {\n            if ($execution->status === AgentExecution::STATUS_EXECUTING) {\n                $error = ExecutionError::from($exception);\n                $execution->failure_code = $error->code;\n                $execution->fail($error->message)->save();\n                $correlation->logFailure('agent.execute', $execution->correlation_id ?? $correlationId, $error, [\n                    'actor_id' => $execution->actor_id,\n                    'organization_id' => $execution->organization_id,\n                    'enterprise_id' => $execution->enterprise_id,\n                    'agent_assignment_id' => $execution->agent_assignment_id,\n                    'execution_id' => $execution->getKey(),\n                    'provider' => $execution->provider,\n                ]);\n            }\n\n            throw $exception;\n        }\n    }\n\n    /**\n     * @param  array<string, mixed>  $context\n     * @param  list<string>  $expertSlugs\n     * @return array<string, mixed>\n     */\n    private function coordinateExperts(\n        Agent $agent,\n        array $context,\n        array $expertSlugs,\n        AgentAssignment $assignment,\n        Enterprise $enterprise,\n    ): array {\n        if ($expertSlugs === []) {\n            return [];\n        }\n\n        $descriptors = ExpertDescriptor::query()->whereIn('slug', $expertSlugs)->get()->keyBy('slug');\n\n        if ($descriptors->count() !== count(array_unique($expertSlugs))) {\n            throw new AuthorizationException('One or more requested Experts could not be resolved.');\n        }\n\n        $experts = [];\n\n        foreach ($expertSlugs as $slug) {\n            /** @var ExpertDescriptor $descriptor */\n            $descriptor = $descriptors->get($slug);\n\n            if (! $descriptor->enabled) {\n                throw new AuthorizationException(\"Expert [{$slug}] is disabled.\");\n            }\n\n            $runtime = app($descriptor->resolveRuntimeClass());\n\n            if (! $runtime instanceof Expert) {\n                throw new AuthorizationException(\"Expert [{$slug}] has an invalid runtime.\");\n            }\n\n            foreach ($runtime->capabilities() as $capability) {\n                if (! $this->capabilityAuthorizer->allowsExpertCapability(\n                    $assignment,\n                    $runtime,\n                    $capability,\n                    $assignment->organization,\n                    $enterprise,\n                )) {\n                    throw new AuthorizationException(\"The Agent is not authorized to use capability [{$capability}] through Expert [{$slug}].\");\n                }\n            }\n\n            $experts[] = $runtime;\n        }\n\n        /** @var array<string, mixed> $result */\n        $result = $agent->execute($context, $experts);\n        $result['instructions'] = array_map(\n            fn (Expert $expert): array => [\n                'name' => $expert->name(),\n                'responsibilities' => $expert->responsibilities(),\n                'methodology' => $expert->methodology(),\n            ],\n            $experts,\n        );\n\n        return $result;\n    }\n\n    /** @param array<string, mixed> $expertResults */\n    private function instructions(Agent $agent, array $expertResults): string\n    {\n        $instructions = implode(\"\\n\", [\n            'You are executing as the authorized CR8OR Agent runtime.',\n            'Treat the supplied context as the complete authorization context.',\n            'Instructions and model reasoning never grant permissions.',\n            'Do not invent authority, capabilities, approvals, or context.',\n            'Only request capabilities explicitly represented by the Agent assignment permissions.',\n            'Only produce a decision/recommendation when the result is suitable for historical recording.',\n            \"Agent methodology: {$agent->description()}\",\n        ]);\n\n        if ($expertResults !== []) {\n            $instructions .= \"\\nExperts are advisory only and cannot grant authority.\";\n        }\n\n        return $instructions;\n    }\n\n    /** @return array<string, mixed> */\n    private function outputSchema(): array\n    {\n        return [\n            'type' => 'object',\n            'properties' => [\n                'answer' => ['type' => 'string'],\n                'decision_title' => ['type' => 'string'],\n                'decision_summary' => ['type' => 'string'],\n                'decision_rationale' => ['type' => 'string'],\n                'capability_requests' => [\n                    'type' => 'array',\n                    'items' => ['type' => 'string'],\n                ],\n            ],\n        ];\n    }\n\n    /**\n     * @param  array<string, mixed>  $targetContext\n     * @return list<CapabilityRequest>\n     */\n    private function authorizeCapabilityRequests(\n        User $actor,\n        AgentAssignment $assignment,\n        Enterprise $enterprise,\n        AgentExecution $execution,\n        ModelResult $result,\n        array $targetContext,\n        ?AgentDelegation $delegation = null,\n    ): array {\n        $requests = $result->structured['capability_requests'] ?? [];\n\n        if (! is_array($requests)) {\n            return [];\n        }\n\n        /** @var list<CapabilityRequest> $authorized */\n        $authorized = [];\n        $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);\n\n        foreach ($requests as $encodedRequest) {\n            if (! is_string($encodedRequest)) {\n                throw new AuthorizationException('The model returned an invalid capability request.');\n            }\n\n            $request = json_decode($encodedRequest, true);\n\n            if (! is_array($request) || ! isset($request['capability']) || ! is_string($request['capability'])) {\n                throw new AuthorizationException('The model returned an invalid capability request.');\n            }\n\n            $capability = $request['capability'];\n            $definition = $capabilities->resolve($capability);\n            $requestContext = isset($request['target_context']) && is_array($request['target_context'])\n                ? $request['target_context']\n                : $targetContext;\n\n            $approval = isset($request['approval_request_id'])\n                ? ApprovalRequest::query()->find((int) $request['approval_request_id'])\n                : null;\n\n            if (! $this->capabilityAuthorizer->allows(\n                $assignment,\n                $capability,\n                $assignment->organization,\n                $enterprise,\n                $actor,\n                $approval,\n                $execution,\n                $requestContext,\n                $delegation,\n            )) {\n                throw new AuthorizationException(\"The Agent is not authorized for capability [{$capability}].\");\n            }\n\n            $authorized[] = new CapabilityRequest(\n                capability: $capability,\n                targetContext: $requestContext,\n                approvalRequestId: $approval?->getKey(),\n            );\n        }\n\n        return $authorized;\n    }\n\n    private function persistDecision(AgentExecution $execution, ModelResult $result): ?AgentDecision\n    {\n        $title = $result->structured['decision_title'] ?? null;\n        $summary = $result->structured['decision_summary'] ?? null;\n\n        if (! is_string($title) || $title === '' || ! is_string($summary) || $summary === '') {\n            return null;\n        }\n\n        return AgentDecision::query()->create([\n            'organization_id' => $execution->organization_id,\n            'enterprise_id' => $execution->enterprise_id,\n            'execution_id' => $execution->getKey(),\n            'agent_descriptor_id' => $execution->agent_descriptor_id,\n            'actor_id' => $execution->actor_id,\n            'organization_name' => $execution->organization_name,\n            'enterprise_name' => $execution->enterprise_name,\n            'agent_slug' => $execution->agent_slug,\n            'agent_runtime_class' => $execution->agent_runtime_class,\n            'actor_name' => $execution->actor_name,\n            'title' => $title,\n            'summary' => $summary,\n            'rationale' => isset($result->structured['decision_rationale']) && is_string($result->structured['decision_rationale'])\n                ? $result->structured['decision_rationale']\n                : null,\n            'decided_at' => now(),\n        ]);\n    }\n}
+<?php
+
+namespace App\Services;
+
+use App\Agents\Agent;
+use App\AI\Contracts\ExecutionError;
+use App\AI\Contracts\ModelProvider;
+use App\AI\Data\AgentExecutionResult;
+use App\AI\Data\ModelRequest;
+use App\AI\Data\ModelResult;
+use App\Capabilities\CapabilityRegistry;
+use App\Data\AgentContextSection;
+use App\Data\AgentExecutionRequest;
+use App\Data\CapabilityRequest;
+use App\Experts\Expert;
+use App\Models\AgentAssignment;
+use App\Models\AgentDecision;
+use App\Models\AgentDelegation;
+use App\Models\AgentExecution;
+use App\Models\ApprovalRequest;
+use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
+use Throwable;
+
+final class AgentExecutionService
+{
+    public function __construct(
+        private readonly ModelProvider $provider,
+        private readonly McpContextAssembler $contextAssembler,
+        private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
+        private readonly ?ExecutionCorrelationService $correlation = null,
+        private readonly ?CapabilityRegistry $capabilities = null,
+    ) {}
+
+    public function execute(AgentExecutionRequest $request): AgentExecutionResult
+    {
+        $actor = $request->actor;
+        $assignment = $request->assignment;
+        $prompt = $request->prompt;
+        $targetContext = $request->targetContext;
+        $expertSlugs = $request->expertSlugs;
+        $modelOptions = $request->options;
+        $correlation = $this->correlation ?? app(ExecutionCorrelationService::class);
+        $correlationId = $correlation->resolve($request->correlationId);
+
+        $assignment->loadMissing(['agentDescriptor', 'organization', 'enterprise']);
+
+        $delegation = $request->delegation;
+
+        Gate::forUser($actor)->authorize('view', $assignment);
+
+        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
+            throw new AuthorizationException('The Agent assignment is disabled.');
+        }
+
+        $enterprise = $assignment->enterprise;
+
+        if (! $enterprise instanceof Enterprise) {
+            throw new AuthorizationException('Agent execution requires an enterprise-scoped assignment.');
+        }
+
+        if ($enterprise->organization_id !== $assignment->organization_id) {
+            throw new AuthorizationException('The Agent assignment enterprise does not belong to its organization.');
+        }
+
+        $descriptor = $assignment->agentDescriptor;
+        $runtimeClass = $descriptor->resolveRuntimeClass();
+        $agent = app($runtimeClass);
+
+        if (! $agent instanceof Agent) {
+            throw new AuthorizationException('The configured Agent runtime is invalid.');
+        }
+
+        $context = $this->contextAssembler->forAgent(
+            $actor,
+            $enterprise,
+            $agent->requiredContext(),
+        );
+
+        $contextData = $context->toArray();
+
+        $execution = AgentExecution::query()->create([
+            'organization_id' => $assignment->organization_id,
+            'enterprise_id' => $enterprise->getKey(),
+            'agent_descriptor_id' => $descriptor->getKey(),
+            'agent_assignment_id' => $assignment->getKey(),
+            'actor_id' => $actor->getKey(),
+            'organization_name' => $assignment->organization->name,
+            'enterprise_name' => $enterprise->name,
+            'agent_slug' => $descriptor->slug,
+            'agent_runtime_class' => $descriptor->runtime_class,
+            'actor_name' => $actor->name,
+            'correlation_id' => $correlationId,
+            'status' => AgentExecution::STATUS_REQUESTED,
+            'requested_at' => now(),
+        ]);
+
+        try {
+            $execution->start()->save();
+
+            $expertResults = $this->coordinateExperts($agent, $contextData, $expertSlugs, $assignment, $enterprise);
+
+            $contextData = $context->withSection(new AgentContextSection(
+                name: 'instructions',
+                data: [
+                    'agent' => [
+                        'name' => $agent->name(),
+                        'instructions' => $agent->instructions(),
+                    ],
+                    'experts' => $expertResults['instructions'] ?? [],
+                ],
+                source: get_class($agent),
+                scope: [
+                    'organization_id' => $assignment->organization_id,
+                    'enterprise_id' => $enterprise->getKey(),
+                    'agent_assignment_id' => $assignment->getKey(),
+                ],
+                relevance: 'Agent and Expert runtime instructions',
+            ))->toArray();
+
+            $request = new ModelRequest(
+                prompt: $prompt,
+                instructions: implode('
+', [$agent->instructions(), $this->instructions($agent, $expertResults)]),
+                context: array_merge($contextData, [
+                    'execution_id' => $execution->getKey(),
+                    'agent' => [
+                        'slug' => $descriptor->slug,
+                        'name' => $agent->name(),
+                        'responsibilities' => $agent->responsibilities(),
+                        'capabilities' => $agent->capabilities(),
+                    ],
+                    'experts' => $expertResults,
+                    'target_context' => $targetContext,
+                ]),
+                provider: isset($modelOptions['provider']) ? (string) $modelOptions['provider'] : null,
+                model: isset($modelOptions['model']) ? (string) $modelOptions['model'] : null,
+                timeout: isset($modelOptions['timeout']) ? (int) $modelOptions['timeout'] : null,
+                structuredOutputSchema: $this->outputSchema(),
+                correlationId: $correlationId,
+            );
+
+            $modelResult = $this->provider->generate($request);
+            $execution->provider = $modelResult->provider;
+            $execution->external_execution_id = $modelResult->invocationId;
+            $execution->save();
+            $capabilityRequests = $this->authorizeCapabilityRequests(
+                $actor,
+                $assignment,
+                $enterprise,
+                $execution,
+                $modelResult,
+                $targetContext,
+                $delegation,
+            );
+
+            $decision = $this->persistDecision($execution, $modelResult);
+
+            $execution->succeed()->save();
+
+            return new AgentExecutionResult(
+                execution: $execution->refresh(),
+                modelResult: $modelResult,
+                decision: $decision,
+                capabilityRequests: $capabilityRequests,
+            );
+        } catch (Throwable $exception) {
+            if ($execution->status === AgentExecution::STATUS_EXECUTING) {
+                $error = ExecutionError::from($exception);
+                $execution->failure_code = $error->code;
+                $execution->fail($error->message)->save();
+                $correlation->logFailure('agent.execute', $execution->correlation_id ?? $correlationId, $error, [
+                    'actor_id' => $execution->actor_id,
+                    'organization_id' => $execution->organization_id,
+                    'enterprise_id' => $execution->enterprise_id,
+                    'agent_assignment_id' => $execution->agent_assignment_id,
+                    'execution_id' => $execution->getKey(),
+                    'provider' => $execution->provider,
+                ]);
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @param  list<string>  $expertSlugs
+     * @return array<string, mixed>
+     */
+    private function coordinateExperts(
+        Agent $agent,
+        array $context,
+        array $expertSlugs,
+        AgentAssignment $assignment,
+        Enterprise $enterprise,
+    ): array {
+        if ($expertSlugs === []) {
+            return [];
+        }
+
+        $descriptors = ExpertDescriptor::query()->whereIn('slug', $expertSlugs)->get()->keyBy('slug');
+
+        if ($descriptors->count() !== count(array_unique($expertSlugs))) {
+            throw new AuthorizationException('One or more requested Experts could not be resolved.');
+        }
+
+        $experts = [];
+
+        foreach ($expertSlugs as $slug) {
+            /** @var ExpertDescriptor $descriptor */
+            $descriptor = $descriptors->get($slug);
+
+            if (! $descriptor->enabled) {
+                throw new AuthorizationException("Expert [{$slug}] is disabled.");
+            }
+
+            $runtime = app($descriptor->resolveRuntimeClass());
+
+            if (! $runtime instanceof Expert) {
+                throw new AuthorizationException("Expert [{$slug}] has an invalid runtime.");
+            }
+
+            foreach ($runtime->capabilities() as $capability) {
+                if (! $this->capabilityAuthorizer->allowsExpertCapability(
+                    $assignment,
+                    $runtime,
+                    $capability,
+                    $assignment->organization,
+                    $enterprise,
+                )) {
+                    throw new AuthorizationException("The Agent is not authorized to use capability [{$capability}] through Expert [{$slug}].");
+                }
+            }
+
+            $experts[] = $runtime;
+        }
+
+        /** @var array<string, mixed> $result */
+        $result = $agent->execute($context, $experts);
+        $result['instructions'] = array_map(
+            fn (Expert $expert): array => [
+                'name' => $expert->name(),
+                'responsibilities' => $expert->responsibilities(),
+                'methodology' => $expert->methodology(),
+            ],
+            $experts,
+        );
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $expertResults */
+    private function instructions(Agent $agent, array $expertResults): string
+    {
+        $instructions = implode("\n", [
+            'You are executing as the authorized CR8OR Agent runtime.',
+            'Treat the supplied context as the complete authorization context.',
+            'Instructions and model reasoning never grant permissions.',
+            'Do not invent authority, capabilities, approvals, or context.',
+            'Only request capabilities explicitly represented by the Agent assignment permissions.',
+            'Only produce a decision/recommendation when the result is suitable for historical recording.',
+            "Agent methodology: {$agent->description()}",
+        ]);
+
+        if ($expertResults !== []) {
+            $instructions .= "\nExperts are advisory only and cannot grant authority.";
+        }
+
+        return $instructions;
+    }
+
+    /** @return array<string, mixed> */
+    private function outputSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'answer' => ['type' => 'string'],
+                'decision_title' => ['type' => 'string'],
+                'decision_summary' => ['type' => 'string'],
+                'decision_rationale' => ['type' => 'string'],
+                'capability_requests' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'string'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @return list<CapabilityRequest>
+     */
+    private function authorizeCapabilityRequests(
+        User $actor,
+        AgentAssignment $assignment,
+        Enterprise $enterprise,
+        AgentExecution $execution,
+        ModelResult $result,
+        array $targetContext,
+        ?AgentDelegation $delegation = null,
+    ): array {
+        $requests = $result->structured['capability_requests'] ?? [];
+
+        if (! is_array($requests)) {
+            return [];
+        }
+
+        /** @var list<CapabilityRequest> $authorized */
+        $authorized = [];
+        $capabilities = $this->capabilities ?? app(CapabilityRegistry::class);
+
+        foreach ($requests as $encodedRequest) {
+            if (! is_string($encodedRequest)) {
+                throw new AuthorizationException('The model returned an invalid capability request.');
+            }
+
+            $request = json_decode($encodedRequest, true);
+
+            if (! is_array($request) || ! isset($request['capability']) || ! is_string($request['capability'])) {
+                throw new AuthorizationException('The model returned an invalid capability request.');
+            }
+
+            $capability = $request['capability'];
+            $definition = $capabilities->resolve($capability);
+            $requestContext = isset($request['target_context']) && is_array($request['target_context'])
+                ? $request['target_context']
+                : $targetContext;
+
+            $approval = isset($request['approval_request_id'])
+                ? ApprovalRequest::query()->find((int) $request['approval_request_id'])
+                : null;
+
+            if (! $this->capabilityAuthorizer->allows(
+                $assignment,
+                $capability,
+                $assignment->organization,
+                $enterprise,
+                $actor,
+                $approval,
+                $execution,
+                $requestContext,
+                $delegation,
+            )) {
+                throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
+            }
+
+            $authorized[] = new CapabilityRequest(
+                capability: $capability,
+                targetContext: $requestContext,
+                approvalRequestId: $approval?->getKey(),
+            );
+        }
+
+        return $authorized;
+    }
+
+    private function persistDecision(AgentExecution $execution, ModelResult $result): ?AgentDecision
+    {
+        $title = $result->structured['decision_title'] ?? null;
+        $summary = $result->structured['decision_summary'] ?? null;
+
+        if (! is_string($title) || $title === '' || ! is_string($summary) || $summary === '') {
+            return null;
+        }
+
+        return AgentDecision::query()->create([
+            'organization_id' => $execution->organization_id,
+            'enterprise_id' => $execution->enterprise_id,
+            'execution_id' => $execution->getKey(),
+            'agent_descriptor_id' => $execution->agent_descriptor_id,
+            'actor_id' => $execution->actor_id,
+            'organization_name' => $execution->organization_name,
+            'enterprise_name' => $execution->enterprise_name,
+            'agent_slug' => $execution->agent_slug,
+            'agent_runtime_class' => $execution->agent_runtime_class,
+            'actor_name' => $execution->actor_name,
+            'title' => $title,
+            'summary' => $summary,
+            'rationale' => isset($result->structured['decision_rationale']) && is_string($result->structured['decision_rationale'])
+                ? $result->structured['decision_rationale']
+                : null,
+            'decided_at' => now(),
+        ]);
+    }
+}
