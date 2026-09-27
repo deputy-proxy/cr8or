@@ -167,3 +167,9 @@ Social-account Tools expose provider metadata and external identifiers only. The
 Lifecycle Operations use the domain model transition methods where those transitions exist. They do not permit arbitrary status writes to bypass the model's transition rules. Human approval remains a separate governed step; MCP mutation authority does not imply approval authority.
 
 All state-changing Operations continue through the existing authorization boundary and application/domain services. The MCP layer remains a transport and validation boundary rather than a second business-rule implementation.
+
+## Knowledge Retrieval Boundary
+
+Knowledge retrieval is an application-service capability rather than direct MCP persistence or database access. The canonical KnowledgeRetrievalService enforces Enterprise authorization before invoking a provider and provenance normalization after provider execution. Lexical, semantic and hybrid retrieval share the same provider-neutral contract.
+
+MCP resources and future retrieval tools must use this boundary rather than querying KnowledgeIndexUnit, KnowledgeEmbedding or authoritative Knowledge records directly. Retrieved Knowledge remains bounded and provenance-aware when consumed by the Agent context pipeline.
