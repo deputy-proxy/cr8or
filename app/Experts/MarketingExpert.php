@@ -4,34 +4,16 @@ namespace App\Experts;
 
 final class MarketingExpert extends Expert
 {
-    public function name(): string
+    public function definition(): ExpertDefinition
     {
-        return 'Marketing';
-    }
-
-    public function description(): string
-    {
-        return 'Applies marketing planning methodology to authorized enterprise and strategic context.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['analyze audience and positioning', 'identify campaign opportunities', 'support content planning'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['marketing.plan'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'strategy', 'knowledge'];
-    }
-
-    public function methodology(): string
-    {
-        return 'Audience-first, strategy-aligned marketing analysis.';
+        return new ExpertDefinition(
+            name: 'Marketing',
+            description: 'Applies marketing planning methodology to authorized enterprise and strategic context.',
+            responsibilities: ['analyze audience and positioning', 'identify campaign opportunities', 'support content planning'],
+            methodology: 'Audience-first, strategy-aligned marketing analysis.',
+            requiredContext: ['enterprise', 'strategy', 'knowledge'],
+            capabilities: ['marketing.plan'],
+        );
     }
 
     public function analyze(array $context): array
