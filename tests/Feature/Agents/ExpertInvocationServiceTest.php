@@ -3,8 +3,6 @@
 use App\Agents\Agent;
 use App\Agents\AgentDefinition;
 use App\Data\ExpertInvocationRequest;
-use App\Experts\Expert;
-use App\Experts\ExpertDefinition;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\AgentPermission;
@@ -14,95 +12,10 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Services\ExpertInvocationService;
 use Illuminate\Auth\Access\AuthorizationException;
-
-final class ContractTestAgent extends Agent
-{
-    public function definition(): AgentDefinition
-    {
-        return new AgentDefinition(
-            name: 'Contract Agent',
-            description: 'Tests the governed Expert invocation contract.',
-            responsibilities: ['coordinate'],
-            instructions: 'Coordinate Expert reasoning within authorized context.',
-            experts: ['contract-expert', 'failing-expert', 'capability-expert'],
-            requiredContext: ['enterprise'],
-            capabilities: [],
-        );
-    }
-}
-
-final class ContractTestExpert extends Expert
-{
-    public function definition(): ExpertDefinition
-    {
-        return new ExpertDefinition(
-            name: 'Contract Expert',
-            description: 'Provides contract test reasoning.',
-            responsibilities: ['analyze'],
-            methodology: 'Evidence-first analysis.',
-            requiredContext: ['enterprise', 'strategy'],
-            capabilities: ['work.item.create'],
-        );
-    }
-
-    public function analyze(array $context): array
-    {
-        return [
-            'answer' => 'Reasoned result.',
-            'decisions' => [['title' => 'Proceed', 'summary' => 'Context supports proceeding.']],
-            'recommendations' => [['action' => 'Proceed']],
-        ];
-    }
-}
-
-final class FailingContractTestExpert extends Expert
-{
-    public function definition(): ExpertDefinition
-    {
-        return new ExpertDefinition(
-            name: 'Failing Expert',
-            description: 'Fails during reasoning.',
-            responsibilities: ['fail'],
-            methodology: 'Deliberately failing test reasoning.',
-            requiredContext: ['enterprise'],
-            capabilities: [],
-        );
-    }
-
-    public function analyze(array $context): array
-    {
-        throw new RuntimeException('reasoning failed');
-    }
-}
-
-final class CapabilityContractTestExpert extends Expert
-{
-    public function definition(): ExpertDefinition
-    {
-        return new ExpertDefinition(
-            name: 'Capability Expert',
-            description: 'Requests a governed Capability.',
-            responsibilities: ['request'],
-            methodology: 'Evidence-first capability request.',
-            requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
-        );
-    }
-
-    public function analyze(array $context): array
-    {
-        return [
-            'answer' => 'Requesting governed work.',
-            'capability_requests' => [
-                [
-                    'capability' => 'work.item.create',
-                    'target_context' => ['enterprise_id' => $context['enterprise']['enterprise']['id']],
-                    'input_payload' => ['name' => 'Requested work item'],
-                ],
-            ],
-        ];
-    }
-}
+use Tests\Support\Agents\CapabilityContractTestExpert;
+use Tests\Support\Agents\ContractTestAgent;
+use Tests\Support\Agents\ContractTestExpert;
+use Tests\Support\Agents\FailingContractTestExpert;
 
 function invocationContractContext(Enterprise $enterprise): array
 {
