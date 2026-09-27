@@ -27,26 +27,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class KnowledgeIndexRecord extends Model
 {
+    /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
     }
 
+    /** @return BelongsTo<KnowledgeSource, $this> */
     public function source(): BelongsTo
     {
         return $this->belongsTo(KnowledgeSource::class, 'knowledge_source_id');
     }
 
+    /** @return BelongsTo<KnowledgeDocument, $this> */
     public function document(): BelongsTo
     {
         return $this->belongsTo(KnowledgeDocument::class, 'knowledge_document_id');
     }
 
+    /** @return BelongsTo<KnowledgeItem, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(KnowledgeItem::class, 'knowledge_item_id');
     }
 
+    /** @return BelongsTo<KnowledgeVersion, $this> */
     public function version(): BelongsTo
     {
         return $this->belongsTo(KnowledgeVersion::class, 'knowledge_version_id');
