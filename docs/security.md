@@ -227,3 +227,11 @@ Operational failures are classified as authentication, authorization, validation
 Correlation identifiers are propagated from the MCP HTTP/request boundary into AgentExecution and ApprovalRequest records where applicable. AgentExecution also records the provider and external invocation identifier when returned by the provider.
 
 Provider failures are persisted as failed AgentExecution states and do not create successful AgentDecision records.
+
+## Knowledge Retrieval Security
+
+Phase 9 establishes two security checks around retrieval. KnowledgeRetrievalService authorizes the actor against the requested Enterprise before provider execution, while KnowledgeRetrievalProvenanceService rehydrates every returned Knowledge Item from the authoritative Enterprise scope and re-applies Knowledge authorization afterward. A provider cannot grant itself cross-Enterprise access by returning fabricated identifiers.
+
+Indexed representations are derived state and are never treated as authoritative Knowledge. Lifecycle state excludes stale and removed representations from retrieval, embeddings are rejected when their content hash no longer matches the indexed unit, and retrieved Agent context is bounded independently from other context sections.
+
+Retrieval observability allow-lists structural metadata and deliberately excludes retrieved Knowledge content, titles, summaries, references and arbitrary provider metadata from ordinary logs.
