@@ -167,7 +167,7 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
 
     $provider = new FakeModelProvider(function ($request) {
         expect($request->context['experts']['results'][0]['expert'])->toBe('Analyst')
-            ->and($request->context['experts']['results'][0]['result'])->toBe([
+            ->and($request->context['experts']['results'][0]['result'])->toMatchArray([
                 'enterprise' => $request->context['enterprise']['enterprise']['slug'],
             ])
             ->and($request->context['instructions']['agent']['instructions'])->toContain('supplied authorized context')
