@@ -5,6 +5,7 @@ use App\Experts\MarketingExpert;
 use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
@@ -138,6 +139,28 @@ it('allows an authorized human to create and update a work item', function () {
     expect($workItem->refresh()->name)->toBe('Updated work')
         ->and($workItem->status)->toBe('active')
         ->and(WorkItem::query()->where('id', $workItem->getKey())->count())->toBe(1);
+});
+
+it('allows an authorized human to create a marketing strategy', function () {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    mcpCapabilityOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(CreateMarketingStrategyTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'name' => 'Parent Education Strategy',
+            'description' => 'Created through the governed marketing strategy capability.',
+        ])
+        ->assertOk();
+
+    $strategy = \App\Models\MarketingStrategy::query()
+        ->where('enterprise_id', $enterprise->getKey())
+        ->where('name', 'Parent Education Strategy')
+        ->firstOrFail();
+
+    expect($strategy->status)->toBe('draft');
 });
 
 it('allows an authorized human to create and update a strategy', function () {
