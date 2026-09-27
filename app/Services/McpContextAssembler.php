@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\AgentContext;
 use App\Data\AgentContextSection;
+use App\Models\AgentAssignment;
 use App\Models\Enterprise;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
@@ -17,14 +18,16 @@ class McpContextAssembler
         private readonly EnterpriseContextAssembler $enterpriseContextAssembler,
         private readonly WorkContextAssembler $workContextAssembler,
         private readonly KnowledgeContextAssembler $knowledgeContextAssembler,
+        private readonly HistoricalContextAssembler $historicalContextAssembler,
     ) {}
 
     /**
      * Assemble only the context categories explicitly required by the Agent.
      *
      * @param  list<string>  $requiredContext
+     * @param  array<string, mixed>  $targetContext
      */
-    public function forAgent(User $user, Enterprise $enterprise, array $requiredContext): AgentContext
+    public function forAgent(User $user, Enterprise $enterprise, array $requiredContext, array $targetContext = [], ?AgentAssignment $assignment = null): AgentContext
     {
         Gate::forUser($user)->authorize('view', $enterprise);
 
@@ -40,6 +43,8 @@ class McpContextAssembler
                 'knowledge' => $context->withSection($this->knowledgeSection($user, $enterprise, $scope)),
                 'strategy' => $context->withSection($this->strategySection($user, $enterprise, $scope)),
                 'work' => $context->withSection($this->workSection($user, $enterprise, $scope)),
+                'decisions' => $context->withSection($this->historicalContextAssembler->decisions($user, $enterprise, $targetContext)),
+                'execution_history' => $context->withSection($this->historicalContextAssembler->executionHistory($user, $enterprise, $assignment)),
                 'financial' => $context->withSection(new AgentContextSection(
                     name: 'financial',
                     data: $this->financial($user, $enterprise->getKey()),
