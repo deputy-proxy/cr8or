@@ -3,6 +3,8 @@
 namespace App\Events;
 
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
 {
@@ -15,6 +17,10 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
 
     /** @var array<string, mixed> */
     public array $data;
+
+    public string $eventId;
+
+    public Carbon $occurredAt;
 
     /**
      * @param  array<string, mixed>  $provenance
@@ -29,9 +35,14 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
         public ?string $correlationId,
         array $provenance = [],
         array $data = [],
+        ?string $eventId = null,
+        ?Carbon $occurredAt = null,
+        public ?int $organizationId = null,
     ) {
         $this->provenance = self::sanitize($provenance);
         $this->data = self::sanitize($data);
+        $this->eventId = $eventId ?? (string) Str::uuid();
+        $this->occurredAt = $occurredAt ?? Carbon::now();
     }
 
     /** @return array<string, mixed> */
@@ -39,9 +50,11 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
     {
         return [
             'event' => static::class,
+            'event_id' => $this->eventId,
             'version' => self::VERSION,
             'visibility' => self::VISIBILITY,
             'execution_id' => $this->executionId,
+            'organization_id' => $this->organizationId,
             'enterprise_id' => $this->enterpriseId,
             'agent_assignment_id' => $this->agentAssignmentId,
             'agent_slug' => $this->agentSlug,
@@ -49,6 +62,7 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
             'correlation_id' => $this->correlationId,
             'provenance' => $this->provenance,
             'data' => $this->data,
+            'occurred_at' => $this->occurredAt->toISOString(),
         ];
     }
 
