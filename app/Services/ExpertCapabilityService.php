@@ -1,1 +1,79 @@
-<?php\n\nnamespace App\\Services;\n\nuse App\\Experts\\Expert;\nuse App\\Models\\Enterprise;\nuse App\\Models\\ExpertDescriptor;\nuse App\\Models\\User;\nuse Illuminate\\Auth\\Access\\AuthorizationException;\n\nfinal class ExpertCapabilityService\n{\n    public function __construct(\n        private readonly McpContextAssembler $contextAssembler,\n        private readonly McpCapabilityAuthorizer $authorization,\n    ) {}\n\n    /**\n     * @param  array<string, mixed>  $targetContext\n     * @return array<string, mixed>\n     */\n    public function execute(\n        User $actor,\n        Enterprise $enterprise,\n        string $expertSlug,\n        string $capability,\n        array $targetContext = [],\n        ?int $assignmentId = null,\n        ?int $executionId = null,\n        ?int $approvalId = null,\n    ): array {\n        $this->authorization->authorizeCapability(\n            $actor,\n            $capability,\n            $enterprise,\n            $assignmentId,\n            $executionId,\n            $approvalId,\n            ['enterprise_id' => $enterprise->getKey(), ...$targetContext],\n        );\n\n        $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail();\n\n        if (! $descriptor->enabled) {\n            throw new AuthorizationException(\"Expert [{$expertSlug}] is disabled.\");\n        }\n\n        $runtime = app($descriptor->resolveRuntimeClass());\n\n        if (! $runtime instanceof Expert) {\n            throw new AuthorizationException(\"Expert [{$expertSlug}] has an invalid runtime.\");\n        }\n\n        if (! in_array($capability, $runtime->capabilities(), true)) {\n            throw new AuthorizationException(\n                \"Expert [{$expertSlug}] does not expose capability [{$capability}].\",\n            );\n        }\n\n        $context = $this->contextAssembler->forAgent(\n            $actor,\n            $enterprise,\n            $runtime->requiredContext(),\n        );\n        $contextData = $context->toArray();\n\n        return [\n            'expert' => [\n                'slug' => $descriptor->slug,\n                'name' => $runtime->name(),\n                'methodology' => $runtime->methodology(),\n            ],\n            'capability' => $capability,\n            'target_context' => $targetContext,\n            'analysis' => $runtime->analyze($contextData),\n            'context_categories' => array_keys($contextData),\n        ];\n    }\n}\n
+<?php
+
+namespace App\Services;
+
+use App\Experts\Expert;
+use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+
+final class ExpertCapabilityService
+{
+    public function __construct(
+        private readonly McpContextAssembler $contextAssembler,
+        private readonly McpCapabilityAuthorizer $authorization,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $targetContext
+     * @return array<string, mixed>
+     */
+    public function execute(
+        User $actor,
+        Enterprise $enterprise,
+        string $expertSlug,
+        string $capability,
+        array $targetContext = [],
+        ?int $assignmentId = null,
+        ?int $executionId = null,
+        ?int $approvalId = null,
+    ): array {
+        $this->authorization->authorizeCapability(
+            $actor,
+            $capability,
+            $enterprise,
+            $assignmentId,
+            $executionId,
+            $approvalId,
+            ['enterprise_id' => $enterprise->getKey(), ...$targetContext],
+        );
+
+        $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail();
+
+        if (! $descriptor->enabled) {
+            throw new AuthorizationException("Expert [{$expertSlug}] is disabled.");
+        }
+
+        $runtime = app($descriptor->resolveRuntimeClass());
+
+        if (! $runtime instanceof Expert) {
+            throw new AuthorizationException("Expert [{$expertSlug}] has an invalid runtime.");
+        }
+
+        if (! in_array($capability, $runtime->capabilities(), true)) {
+            throw new AuthorizationException(
+                "Expert [{$expertSlug}] does not expose capability [{$capability}].",
+            );
+        }
+
+        $context = $this->contextAssembler->forAgent(
+            $actor,
+            $enterprise,
+            $runtime->requiredContext(),
+        );
+        $contextData = $context->toArray();
+
+        return [
+            'expert' => [
+                'slug' => $descriptor->slug,
+                'name' => $runtime->name(),
+                'methodology' => $runtime->methodology(),
+            ],
+            'capability' => $capability,
+            'target_context' => $targetContext,
+            'analysis' => $runtime->analyze($contextData),
+            'context_categories' => array_keys($contextData),
+        ];
+    }
+}
