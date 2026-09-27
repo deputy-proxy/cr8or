@@ -36,13 +36,22 @@ it('implements the five roadmap Agent roles with authoritative runtime metadata'
     foreach ($agents as $slug => $class) {
         $agent = app($class);
 
+        $definition = $agent->definition();
+
         expect($agent)->toBeInstanceOf(Agent::class)
-            ->and($agent->name())->not->toBeEmpty()
-            ->and($agent->description())->not->toBeEmpty()
+            ->and($definition->name)->toBe($agent->name())
+            ->and($definition->description)->toBe($agent->description())
+            ->and($definition->responsibilities)->toBe($agent->responsibilities())
+            ->and($definition->instructions)->toBe($agent->instructions())
+            ->and($definition->experts)->toBe($agent->experts())
+            ->and($definition->requiredContext)->toBe($agent->requiredContext())
+            ->and($definition->capabilities)->toBe($agent->capabilities())
+            ->and($agent->instructions())->not->toBeEmpty()
             ->and($agent->responsibilities())->not->toBeEmpty()
-            ->and($agent->capabilities())->not->toBeEmpty()
             ->and($agent->requiredContext())->not->toBeEmpty()
-            ->and(new ReflectionClass($class)->getParentClass()->getName())->toBe(Agent::class);
+            ->and($agent->experts())->not->toBeEmpty()
+            ->and(new ReflectionClass($class)->getParentClass()->getName())->toBe(Agent::class)
+            ->and(method_exists($agent, 'execute'))->toBeTrue();
 
         expect(AgentDescriptor::query()->where('slug', $slug)->where('runtime_class', $class)->exists())->toBeTrue();
     }
@@ -95,4 +104,11 @@ it('rejects invalid runtime descriptor classes', function () {
     expect(fn () => ExpertDescriptor::factory()->create([
         'runtime_class' => CeoAgent::class,
     ]))->toThrow(InvalidArgumentException::class);
+});
+
+it('uses the canonical Agent execution entry point without changing coordination results', function () {
+    $agent = app(MarketingAgent::class);
+    $expert = app(MarketingExpert::class);
+    expect($agent->execute(['enterprise' => ['id' => 1]], [$expert]))
+        ->toBe($agent->coordinate(['enterprise' => ['id' => 1]], [$expert]));
 });

@@ -6,29 +6,15 @@ use App\Experts\Expert;
 it('exposes authoritative runtime metadata and coordinates experts', function () {
     $agent = new class extends Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Marketing';
-        }
-
-        public function description(): string
-        {
-            return 'Coordinates marketing work.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['route requests', 'coordinate experts'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['marketing.plan'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise'];
+            return new \App\Agents\AgentDefinition(
+                name: 'Marketing', description: 'Coordinates marketing work.',
+                responsibilities: ['route requests', 'coordinate experts'],
+                instructions: 'Coordinate marketing work within authorized context.',
+                experts: ['marketing'], requiredContext: ['enterprise'],
+                capabilities: ['marketing.plan'],
+            );
         }
     };
 

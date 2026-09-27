@@ -50,6 +50,41 @@ An **ExpertDescriptor is a persistent registry/governance record** identifying a
 
 The descriptor provides discovery and persistent registry information without becoming a second source of truth for the Expert's behavior.
 
+### Canonical Agent Runtime Structure
+
+Phase 8.1 establishes one canonical PHP structure for every Agent runtime. Each Agent implements an immutable AgentDefinition containing:
+
+- identity (name);
+- runtime description;
+- responsibilities;
+- authoritative instructions;
+- Expert composition, represented by registered Expert slugs;
+- required execution context;
+- declared Capabilities.
+
+The Agent base class exposes this definition through read-only runtime accessors and provides execute() as the canonical Agent execution entry point. coordinate() remains a compatibility alias for existing callers and delegates to execute().
+
+The definition is runtime authority only. It does not create Agent permission, Capability permission or approval authority. Agent assignments, Agent permissions, authorization services and approval services remain authoritative for governance.
+
+The runtime relationship is:
+
+    AgentDescriptor
+        |
+        | runtime_class
+        v
+    Agent
+        |
+        | AgentDefinition
+        +-- identity / metadata
+        +-- instructions
+        +-- Expert composition
+        +-- required context
+        +-- declared Capabilities
+        |
+        +-- execute()
+
+Expert composition is declarative runtime metadata. It does not automatically grant or bypass Expert availability, Agent assignment, Capability permission or approval checks. Existing execution services remain responsible for resolving and governing actual Expert invocation.
+
 ### Runtime Metadata Authority
 
 The runtime PHP class is authoritative for:

@@ -22,29 +22,9 @@ function testAgentRuntimeClass(): string
 {
     return get_class(new class extends Agent
     {
-        public function name(): string
+        public function definition(): \App\Agents\AgentDefinition
         {
-            return 'Planner';
-        }
-
-        public function description(): string
-        {
-            return 'Plans governed enterprise work.';
-        }
-
-        public function responsibilities(): array
-        {
-            return ['plan'];
-        }
-
-        public function capabilities(): array
-        {
-            return ['work.item.create'];
-        }
-
-        public function requiredContext(): array
-        {
-            return ['enterprise', 'knowledge', 'strategy', 'work'];
+            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: [], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
         }
     });
 }

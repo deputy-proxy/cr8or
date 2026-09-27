@@ -4,28 +4,8 @@ namespace App\Agents;
 
 final class OperationsAgent extends Agent
 {
-    public function name(): string
+    public function definition(): AgentDefinition
     {
-        return 'Operations';
-    }
-
-    public function description(): string
-    {
-        return 'Coordinates operational work, execution priorities and delivery constraints.';
-    }
-
-    public function responsibilities(): array
-    {
-        return ['coordinate operational work', 'identify delivery constraints', 'coordinate operational expertise'];
-    }
-
-    public function capabilities(): array
-    {
-        return ['work.item.create', 'work.item.update'];
-    }
-
-    public function requiredContext(): array
-    {
-        return ['enterprise', 'work', 'strategy'];
+        return new AgentDefinition(name: 'Operations', description: 'Coordinates operational work, execution priorities and delivery constraints', responsibilities: ['coordinate operational work', 'identify delivery constraints', 'coordinate operational expertise'], instructions: 'Coordinate operational work, identify delivery constraints, and use operational expertise without bypassing governed execution boundaries.', experts: ['operations'], requiredContext: ['enterprise', 'work', 'strategy'], capabilities: ['work.item.create', 'work.item.update']);
     }
 }
