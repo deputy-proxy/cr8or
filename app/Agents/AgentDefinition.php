@@ -2,10 +2,14 @@
 
 namespace App\Agents;
 
+use App\AI\ReasoningOutputValidator;
 use InvalidArgumentException;
 
 final readonly class AgentDefinition
 {
+    /** @var array<string, mixed> */
+    public array $reasoningOutputSchema;
+
     /**
      * @param  list<string>  $responsibilities
      * @param  list<string>  $experts
@@ -17,6 +21,7 @@ final readonly class AgentDefinition
      * @param  list<string>  $capabilityGaps
      * @param  list<string>  $approvalSensitiveCapabilities
      * @param  array<string, list<string>>  $expertRouting
+     * @param  array<string, mixed>  $reasoningOutputSchema
      */
     public function __construct(
         public string $name,
@@ -32,7 +37,12 @@ final readonly class AgentDefinition
         public array $capabilityGaps = [],
         public array $approvalSensitiveCapabilities = [],
         public array $expertRouting = [],
+        array $reasoningOutputSchema = [],
     ) {
+        $this->reasoningOutputSchema = $reasoningOutputSchema === []
+            ? ReasoningOutputValidator::agentSchema()
+            : $reasoningOutputSchema;
+
         if ($name === '') {
             throw new InvalidArgumentException('Agent identity must define a name.');
         }
@@ -109,6 +119,7 @@ final readonly class AgentDefinition
             'capabilityGaps' => $this->capabilityGaps,
             'approvalSensitiveCapabilities' => $this->approvalSensitiveCapabilities,
             'expertRouting' => $this->expertRouting,
+            'reasoningOutputSchema' => $this->reasoningOutputSchema,
         ], JSON_THROW_ON_ERROR));
     }
 }
