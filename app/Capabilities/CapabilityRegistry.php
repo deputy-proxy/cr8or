@@ -6,6 +6,7 @@ use App\Contracts\Operation;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
@@ -19,6 +20,7 @@ use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Operations\AnalyzeBusinessContext;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateStrategy;
+use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateWorkItem;
 use App\Operations\DelegateAgent;
 use App\Operations\GenerateFinancialReport;
@@ -148,6 +150,15 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'financial_period_id' => 'integer|required', 'financial_account_id' => 'integer|nullable', 'transaction_category_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'financial-report'],
                 'McpCapabilityAuthorizer::authorizeMutation + Finance policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'marketing.strategy.create',
+                CreateMarketingStrategy::class,
+                CreateMarketingStrategyTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
                 'permission-dependent',
             ),
             $this->definition(
