@@ -17,6 +17,8 @@ final readonly class AgentDelegationRequest
         public string $capability,
         public string $prompt,
         public array $targetContext = [],
+        /** @var list<string> */
+        public array $contextRequirements = [],
         public ?ApprovalRequest $sourceApproval = null,
         public ?ApprovalRequest $targetApproval = null,
         public ?string $correlationId = null,

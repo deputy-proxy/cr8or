@@ -656,3 +656,244 @@ it('pauses for capability approval, resumes, and executes only after approval', 
         ->and(WorkItem::query()->where('name', 'Approved work item')->exists())->toBeTrue()
         ->and($approval->refresh()->consumed_agent_execution_id)->toBe($waiting->execution->getKey());
 });
+it('delegates from Agent reasoning, links parent and child executions, and feeds the child result back to the parent', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+
+    $sourceDescriptor = \App\Models\AgentDescriptor::factory()
+        ->forRuntimeClass(get_class(new class extends Agent
+        {
+            public function definition(): \App\Agents\AgentDefinition
+            {
+                return new \App\Agents\AgentDefinition(
+                    name: 'Source Orchestrator',
+                    description: 'Delegates governed work.',
+                    responsibilities: ['delegate'],
+                    instructions: 'Delegate governed work only through the execution boundary.',
+                    experts: [],
+                    requiredContext: ['enterprise'],
+                    capabilities: ['agent.delegate'],
+                );
+            }
+        }))
+        ->create(['slug' => 'source-orchestrator']);
+
+    $targetDescriptor = \App\Models\AgentDescriptor::factory()
+        ->forRuntimeClass(get_class(new class extends Agent
+        {
+            public function definition(): \App\Agents\AgentDefinition
+            {
+                return new \App\Agents\AgentDefinition(
+                    name: 'Target Operator',
+                    description: 'Executes delegated work.',
+                    responsibilities: ['execute'],
+                    instructions: 'Execute delegated work within the supplied authorized context.',
+                    experts: [],
+                    requiredContext: ['enterprise'],
+                    capabilities: ['work.item.create'],
+                );
+            }
+        }))
+        ->create(['slug' => 'target-operator']);
+
+    $source = AgentAssignment::factory()->forEnterprise($enterprise)->create([
+        'agent_descriptor_id' => $sourceDescriptor->getKey(),
+    ]);
+    $target = AgentAssignment::factory()->forEnterprise($enterprise)->create([
+        'agent_descriptor_id' => $targetDescriptor->getKey(),
+    ]);
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $source->getKey(),
+        'capability' => 'agent.delegate',
+    ]);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $target->getKey(),
+        'capability' => 'work.item.create',
+    ]);
+
+    $calls = 0;
+    $provider = new FakeModelProvider(function ($request) use (&$calls) {
+        $calls++;
+        $agentSlug = $request->context['agent']['slug'];
+
+        if ($agentSlug === 'source-orchestrator' && $calls === 1) {
+            return new \App\AI\Data\ModelResult(
+                text: 'Delegate this work.',
+                structured: [
+                    'answer' => 'Delegate this work.',
+                    'decision_title' => '',
+                    'decision_summary' => '',
+                    'decision_rationale' => '',
+                    'capability_requests' => [],
+                    'delegation_requests' => [
+                        [
+                            'target_agent_slug' => 'target-operator',
+                            'capability' => 'work.item.create',
+                            'objective' => 'Perform the delegated operation.',
+                            'context_requirements' => ['enterprise'],
+                            'target_context' => ['enterprise_id' => $request->context['target_context']['enterprise_id'] ?? null],
+                            'idempotency_key' => 'runtime-delegation-1',
+                        ],
+                    ],
+                    'termination' => 'delegated',
+                    'termination_reason' => 'delegated_to_specialist',
+                    'next_step' => 'Review the delegated result.',
+                ],
+                provider: 'fake',
+                model: 'test',
+                invocationId: 'source-step-1',
+                correlationId: $request->correlationId,
+            );
+        }
+
+        if ($agentSlug === 'target-operator') {
+            return new \App\AI\Data\ModelResult(
+                text: 'Delegated work completed.',
+                structured: [
+                    'answer' => 'Delegated work completed.',
+                    'decision_title' => 'Delegated work complete',
+                    'decision_summary' => 'The target Agent completed the delegated objective.',
+                    'decision_rationale' => 'The child execution remained within the authorized Enterprise scope.',
+                    'capability_requests' => [],
+                    'delegation_requests' => [],
+                    'termination' => 'completed',
+                    'termination_reason' => 'delegated_work_complete',
+                ],
+                provider: 'fake',
+                model: 'test',
+                invocationId: 'target-step-1',
+                correlationId: $request->correlationId,
+            );
+        }
+
+        expect($request->context['previous_result']['delegation_results'])->toHaveCount(1)
+            ->and($request->context['previous_result']['delegation_results'][0]['target_agent'])->toBe('target-operator')
+            ->and($request->context['previous_result']['delegation_results'][0]['execution_status'])->toBe(AgentExecution::STATUS_COMPLETED)
+            ->and($request->context['previous_result']['delegation_results'][0]['provenance']['parent_execution_id'])->not->toBeNull();
+
+        return new \App\AI\Data\ModelResult(
+            text: 'Parent completed from the delegated result.',
+            structured: [
+                'answer' => 'Parent completed from the delegated result.',
+                'decision_title' => 'Delegation reviewed',
+                'decision_summary' => 'The parent Agent consumed the delegated result.',
+                'decision_rationale' => 'The child execution result was available as structured prior execution state.',
+                'capability_requests' => [],
+                'delegation_requests' => [],
+                'termination' => 'completed',
+                'termination_reason' => 'delegated_result_consumed',
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'source-step-2',
+            correlationId: $request->correlationId,
+        );
+    });
+
+    app()->instance(\App\AI\Contracts\ModelProvider::class, $provider);
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $source,
+        prompt: 'Delegate the operation and review the result.',
+        targetContext: ['enterprise_id' => $enterprise->getKey()],
+        correlationId: 'delegation-runtime-loop',
+        options: ['max_steps' => 3],
+    ));
+
+    $delegation = \App\Models\AgentDelegation::query()->firstOrFail();
+    $child = AgentExecution::query()->where('agent_assignment_id', $target->getKey())->firstOrFail();
+
+    expect($calls)->toBe(3)
+        ->and($result->succeeded())->toBeTrue()
+        ->and($result->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($result->execution->current_step)->toBe(2)
+        ->and($delegation->status)->toBe(\App\Models\AgentDelegation::STATUS_SUCCEEDED)
+        ->and($delegation->parent_agent_execution_id)->toBe($result->execution->getKey())
+        ->and($delegation->target_agent_execution_id)->toBe($child->getKey())
+        ->and($child->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($result->execution->last_result['delegation_results'][0]['execution_id'])->toBe($child->getKey());
+});
+
+it('rejects a runtime delegation that requests context outside the target Agent contract', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+
+    $sourceDescriptor = \App\Models\AgentDescriptor::factory()
+        ->forRuntimeClass(get_class(new class extends Agent
+        {
+            public function definition(): \App\Agents\AgentDefinition
+            {
+                return new \App\Agents\AgentDefinition(name: 'Source', description: 'Delegates.', responsibilities: ['delegate'], instructions: 'Delegate.', experts: [], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
+            }
+        }))
+        ->create(['slug' => 'runtime-source']);
+    $targetDescriptor = \App\Models\AgentDescriptor::factory()
+        ->forRuntimeClass(get_class(new class extends Agent
+        {
+            public function definition(): \App\Agents\AgentDefinition
+            {
+                return new \App\Agents\AgentDefinition(name: 'Target', description: 'Executes.', responsibilities: ['execute'], instructions: 'Execute.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+            }
+        }))
+        ->create(['slug' => 'runtime-target']);
+
+    $source = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $sourceDescriptor->getKey()]);
+    $target = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $targetDescriptor->getKey()]);
+    AgentPermission::factory()->create(['agent_assignment_id' => $source->getKey(), 'capability' => 'agent.delegate']);
+    AgentPermission::factory()->create(['agent_assignment_id' => $target->getKey(), 'capability' => 'work.item.create']);
+
+    $provider = new FakeModelProvider(function ($request) {
+        return new \App\AI\Data\ModelResult(
+            text: 'Delegate.',
+            structured: [
+                'answer' => 'Delegate.',
+                'decision_title' => '',
+                'decision_summary' => '',
+                'decision_rationale' => '',
+                'capability_requests' => [],
+                'delegation_requests' => [[
+                    'target_agent_slug' => 'runtime-target',
+                    'capability' => 'work.item.create',
+                    'objective' => 'Perform the operation.',
+                    'context_requirements' => ['financial'],
+                    'target_context' => [],
+                    'idempotency_key' => 'invalid-context-delegation',
+                ]],
+                'termination' => 'delegated',
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'invalid-context',
+            correlationId: $request->correlationId,
+        );
+    });
+
+    expect(fn () => (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $source,
+        prompt: 'Delegate with invalid context.',
+        correlationId: 'delegation-boundary',
+    )))->toThrow(AuthorizationException::class, 'does not permit delegated context requirement [financial]');
+
+    expect(AgentExecution::query()->count())->toBe(1)
+        ->and(AgentExecution::query()->firstOrFail()->status)->toBe(AgentExecution::STATUS_FAILED)
+        ->and(AgentExecution::query()->where('agent_assignment_id', $target->getKey())->exists())->toBeFalse();
+});
