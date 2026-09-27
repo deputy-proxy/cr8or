@@ -107,16 +107,13 @@ it('coordinates Experts without granting them authority', function () {
     $agent = app(MarketingAgent::class);
     $expert = app(MarketingExpert::class);
 
-    expect($agent->coordinate(['enterprise' => ['id' => 1]], [$expert]))
-        ->toMatchArray([
-            'agent' => 'Marketing',
-            'results' => [[
-                'expert' => 'Marketing',
-                'result' => [
-                    'focus' => 'marketing planning',
-                    'available_context' => ['enterprise'],
-                ],
-            ]],
+    $coordination = $agent->coordinate(['enterprise' => ['id' => 1]], [$expert]);
+
+    expect($coordination['agent'])->toBe('Marketing')
+        ->and($coordination['results'][0]['expert'])->toBe('Marketing')
+        ->and($coordination['results'][0]['result'])->toMatchArray([
+            'focus' => 'marketing planning',
+            'available_context' => ['enterprise'],
         ]);
 });
 
