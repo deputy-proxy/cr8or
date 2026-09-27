@@ -177,7 +177,7 @@ Phase 8.4 establishes `App\Data\AgentContext` as the provider-neutral current-ex
 
 `HistoricalContextAssembler` supplies the Decisions and execution-history sections when explicitly requested by an Agent. Decision history is Enterprise-scoped and can be narrowed by the execution target context; execution history is bounded and, when an Agent assignment is available, scoped to that assignment plus its relevant delegations and approvals. Historical identity fields are read from the persisted snapshots on the records, and failed executions/delegations remain represented with their recorded failure state. Persistent Agent memory remains separate from this context contract.
 
-Current execution context and persistent Agent memory are separate concepts. `AgentContext` intentionally contains no memory section or memory persistence behavior. Memory may be introduced by a later governed context provider without changing the meaning of the current-execution contract.
+Current execution context and persistent Agent memory are separate concepts. `AgentContext` intentionally contains no memory section or memory persistence behavior. Phase 8.18 introduces `AgentEpisodicMemory` as a separate durable record and `AgentEpisodicMemoryService` as its explicit write/retrieval boundary; it is not implicitly included in current execution context.
 
 Failures continue to use `ExecutionError` for normalized failure codes and human-readable reasons, while `ExecutionCorrelationService` provides the correlation identity. `AgentExecution` remains the authoritative persistent lifecycle record. No provider-specific request type, transport contract or generalized workflow engine is introduced.
 
@@ -401,7 +401,7 @@ Phase 7.6 exposes multi-Agent operational state through the existing Filament ad
 The following remain intentionally deferred:
 - generalized Agent governance/orchestration beyond the current execution service;
 - a broader execution context catalogue beyond Enterprise, Knowledge, Strategy and Work;
-- Agent memory implementation;
+- semantic Agent memory and governed memory retrieval/write policy;
 - generalized cross-Agent workflow orchestration beyond the governed delegation traceability boundary;
 - broader capability catalogue and general policy language;
 ### Canonical Expert Invocation Contract
