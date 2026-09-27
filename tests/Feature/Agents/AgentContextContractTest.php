@@ -265,6 +265,107 @@ it('includes governed Agent memory when explicitly requested by the Agent contex
         ]);
 });
 
+it('applies memory relevance filters and a bounded context budget', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+    $agent = AgentDescriptor::factory()->create();
+    $assignment = AgentAssignment::factory()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $organization->getKey(),
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+    ]);
+
+    AgentEpisodicMemory::factory()->forAgent($agent, $enterprise)->create([
+        'topic' => 'campaigns',
+        'occurred_at' => now()->subDay(),
+    ]);
+    AgentEpisodicMemory::factory()->forAgent($agent, $enterprise)->create([
+        'topic' => 'campaigns',
+        'occurred_at' => now()->subHour(),
+    ]);
+    AgentEpisodicMemory::factory()->forAgent($agent, $enterprise)->create([
+        'topic' => 'operations',
+        'occurred_at' => now(),
+    ]);
+    AgentSemanticMemory::factory()->forAgent($agent, $enterprise)->create([
+        'status' => AgentSemanticMemory::STATUS_ACTIVE,
+        'updated_at' => now(),
+    ]);
+    AgentSemanticMemory::factory()->forAgent($agent, $enterprise)->create([
+        'status' => AgentSemanticMemory::STATUS_DISPUTED,
+        'updated_at' => now()->subDay(),
+    ]);
+
+    $context = app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['memory'],
+        [
+            'memory' => [
+                'topic' => 'campaigns',
+                'relevant_after' => now()->subHours(12)->toISOString(),
+                'semantic_status' => AgentSemanticMemory::STATUS_ACTIVE,
+                'budget' => 2,
+                'episodic_limit' => 2,
+                'semantic_limit' => 2,
+            ],
+        ],
+        $assignment,
+    );
+
+    $memory = $context->section('memory')?->data;
+
+    expect($memory['episodic'])->toHaveCount(1)
+        ->and($memory['episodic'][0]['topic'])->toBe('campaigns')
+        ->and($memory['semantic'])->toHaveCount(1)
+        ->and($memory['semantic'][0]['status'])->toBe(AgentSemanticMemory::STATUS_ACTIVE)
+        ->and(count($memory['episodic']) + count($memory['semantic']))->toBeLessThanOrEqual(2)
+        ->and($memory['selection'])->toMatchArray([
+            'topic' => 'campaigns',
+            'budget' => 2,
+        ])
+        ->and($memory['selection']['relevant_after'])->not->toBeNull();
+});
+
+it('rejects invalid memory target context options', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+    $agent = AgentDescriptor::factory()->create();
+    $assignment = AgentAssignment::factory()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $organization->getKey(),
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+    ]);
+
+    expect(fn () => app(McpContextAssembler::class)->forAgent(
+        $user,
+        $enterprise,
+        ['memory'],
+        ['memory' => ['budget' => 0]],
+        $assignment,
+    ))->toThrow(AuthorizationException::class);
+});
+
 it('denies the memory context requirement without the current Agent assignment', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
