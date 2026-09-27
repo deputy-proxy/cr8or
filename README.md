@@ -372,17 +372,14 @@ MCP is a first-class interface to CR8OR, but it does not own the business domain
 
 ### MCP Resources
 
-Resources provide authorized context to AI clients.
+Resources provide authorized context to AI clients. The current server registers four contextual resources:
 
-Examples:
+- `cr8or://enterprises/{enterprise}/context`
+- `cr8or://enterprises/{enterprise}/strategy`
+- `cr8or://enterprises/{enterprise}/knowledge`
+- `cr8or://enterprises/{enterprise}/work`
 
-- `enterprise://{enterprise}`
-- `enterprise://{enterprise}/context`
-- `enterprise://{enterprise}/strategy`
-- `enterprise://{enterprise}/marketing`
-- `enterprise://{enterprise}/finance`
-- `enterprise://{enterprise}/kpis`
-- `enterprise://{enterprise}/projects`
+Additional domain-specific resource URIs remain roadmap examples until implemented.
 
 ### MCP Tools
 
@@ -1015,8 +1012,8 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 | MCP contextual resources | Implemented |
 | Governed MCP capability tools | Implemented |
 | Workflow / Job / Execution tracking | Implemented |
-| Concrete business Agent catalog | Deferred to domain/product phases |
-| Concrete business Expert catalog | Deferred to domain/product phases |
+| Core business Agent catalog (CEO, Marketing, Finance, Product, Operations) | Implemented within current domain/runtime boundaries |
+| Core business Expert catalog (Business Analysis, Copywriting, Finance, Marketing, Operations, Product, SEO, Strategy) | Implemented within current domain/runtime boundaries |
 | Generalized knowledge retrieval | Deferred platform capability |
 | Full workflow engine | Deferred |
 | Cross-service business integrations | Future domain phases |
@@ -1239,29 +1236,41 @@ Phase 8 builds on the completed governance and execution foundations from Phases
 
 ## MCP Surface: Current Implementation
 
-The implemented MCP surface is intentionally narrower than the target architecture.
+The implemented MCP surface is broader than the original Phase 4 mutation subset. The MCP server currently registers discovery/read tools, domain mutation and lifecycle tools, governed Agent-facing Capability tools, approval tools, social-account tools, and context resources.
 
 ### Resources
 
-- Enterprise Context
-- Strategy Context
-- Knowledge Context
-- Work Context
+The current server registers four contextual resources:
 
-### Tools
+- Enterprise Context: `cr8or://enterprises/{enterprise}/context`
+- Strategy Context: `cr8or://enterprises/{enterprise}/strategy`
+- Knowledge Context: `cr8or://enterprises/{enterprise}/knowledge`
+- Work Context: `cr8or://enterprises/{enterprise}/work`
 
-- Create Work Item
-- Update Work Item
-- Create Strategy
-- Update Strategy
-- Create Content Item
-- Update Content Item
-- Submit Content for Review
-- Mark Content Publication Ready
-- Publish Content
-- Request Approval
+### Tool categories
 
-These resources and tools are the currently implemented governed MCP capabilities. The broader examples in the target architecture are roadmap examples, not claims that those tools already exist.
+The current server registers tools for:
+
+- Capability discovery
+- Enterprise, objective, strategy, marketing-strategy, goal, KPI, plan and initiative discovery
+- Campaign, content-series, content-item, audience, channel and social-account operations
+- Project and work-item operations
+- Agent/Expert descriptor and execution/approval discovery
+- Agent delegation, business analysis, marketing planning and financial reporting
+- Governed content creation, update, review, publication-readiness and publishing
+- Strategy and work-item creation/update
+- Enterprise context creation
+
+The server currently registers 78 concrete tool classes. Not every registered MCP tool is itself a Capability. Read/discovery tools provide authorized resource access, while state-changing tools either resolve to an explicit governed Capability/Operation or use the shared authorized domain-mutation/lifecycle boundaries described below.
+
+### MCP mutation boundaries
+
+There are currently two intentional state-changing MCP patterns:
+
+1. **Explicit governed Capability path:** MCP Tool → CapabilityRegistry → Operation → application/domain service. This is used by Agent-facing governed capabilities such as marketing planning, content operations, delegation, financial reporting, strategy operations and work-item operations.
+2. **Authorized domain-resource path:** MCP Tool → shared domain mutation/transition boundary → DomainResourceService. This is used by the broader enterprise/domain CRUD and lifecycle surface. These tools still require authentication, Enterprise scope and policy/capability authorization, but are not represented as individual Agent-facing Capability definitions.
+
+These two paths should not be conflated. The Capability Registry remains the authoritative mapping for governed Agent-facing capabilities; the shared domain-resource boundary exists for the broader MCP domain interface.
 
 ### MCP Context Limitations
 
@@ -1567,7 +1576,7 @@ Operational dashboards will expose queues, approvals, jobs, agent executions, in
 - AI-generated work should be distinguishable from approved or executed work.
 ## Current Agent / Expert Capability / Operation / Tool graph
 
-The current runtime capability graph is exposed through governed MCP Tools. Runtime PHP classes remain authoritative for Capability metadata and Operation bindings; MCP is the transport and authorization coordination layer.
+The current runtime capability graph is exposed through governed MCP Tools. Runtime PHP classes remain authoritative for Capability metadata and Operation bindings; MCP is the transport and authorization coordination layer. The graph below covers the explicit Agent-facing Capability Registry, not every domain CRUD/discovery MCP tool.
 
 | Capability | Runtime consumer | Operation | Tool | Type |
 | --- | --- | --- | --- |
@@ -1581,5 +1590,6 @@ The current runtime capability graph is exposed through governed MCP Tools. Runt
 | `marketing.content.publication-ready` | Marketing Agent | `MarkContentPublicationReady` | `mark-content-publication-ready` | lifecycle transition |
 | `strategy.create` / `strategy.update` | Product Agent | `CreateStrategy` / `UpdateStrategy` | `create-strategy` / `update-strategy` | state-changing |
 | `work.item.create` / `work.item.update` | Product / Operations Agents | `CreateWorkItem` / `UpdateWorkItem` | `create-work-item` / `update-work-item` | state-changing |
+| `publication.publish` | Publishing / Marketing runtime | `PublishContent` | `publish-content` | state-changing |
 
 Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance Operation is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain Operation exists.
