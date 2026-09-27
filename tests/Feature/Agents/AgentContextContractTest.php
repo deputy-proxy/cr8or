@@ -96,7 +96,7 @@ it('assembles an authorization-scoped context contract for Agent execution', fun
     expect($context)->toBeInstanceOf(AgentContext::class)
         ->and($context->sections())->toHaveCount(5)
         ->and($context->section('enterprise')?->data['id'])->toBe($enterprise->getKey())
-        ->and($context->section('enterprise_context')?->data['description'])->toBe('Authorized enterprise context.')
+        ->and($context->section('enterprise_context')?->data['context']['description'])->toBe('Authorized enterprise context.')
         ->and($context->metadata()['enterprise']['scope'])->toBe([
             'organization_id' => $organization->getKey(),
             'enterprise_id' => $enterprise->getKey(),
