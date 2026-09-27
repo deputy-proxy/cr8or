@@ -139,7 +139,7 @@ it('retries a retryable worker failure from durable execution state without fail
     expect(fn () => $job->handle($service))->toThrow(ModelProviderException::class);
 
     expect($execution->refresh()->status)->toBe(AgentExecution::STATUS_EXECUTING)
-        ->and($execution->failure_code)->toBeNull()
+        ->and($execution->failure_code)->toBe('provider.unavailable')
         ->and($execution->steps()->firstOrFail()->status)->toBe(AgentExecutionStep::STATUS_RUNNING);
 
     $job->handle($service);
