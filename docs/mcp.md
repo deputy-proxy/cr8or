@@ -173,3 +173,25 @@ All state-changing Operations continue through the existing authorization bounda
 Knowledge retrieval is an application-service capability rather than direct MCP persistence or database access. The canonical KnowledgeRetrievalService enforces Enterprise authorization before invoking a provider and provenance normalization after provider execution. Lexical, semantic and hybrid retrieval share the same provider-neutral contract.
 
 MCP resources and future retrieval tools must use this boundary rather than querying KnowledgeIndexUnit, KnowledgeEmbedding or authoritative Knowledge records directly. Retrieved Knowledge remains bounded and provenance-aware when consumed by the Agent context pipeline.
+## Knowledge resource and retrieval surface
+
+Phase 12 adds a dedicated Knowledge resource surface while preserving the existing authoritative/derived boundary.
+
+| Domain | Tool | Canonical Operation | Authority |
+| --- | --- | --- | --- |
+| Knowledge index | create-knowledge-index | CreateKnowledgeIndex | Resource operation; rebuilds derived index state from authoritative Knowledge |
+| Knowledge index | get-knowledge-index | GetKnowledgeIndex | Authorized resource query |
+| Knowledge index | list-knowledge-indexes | ListKnowledgeIndexes | Authorized bounded resource query |
+| Knowledge index | update-knowledge-index | UpdateKnowledgeIndex | Resource operation; reindexes authoritative Knowledge |
+| Knowledge unit | create-knowledge-unit | CreateKnowledgeUnit | Resource operation; materializes a derived unit from authoritative Knowledge |
+| Knowledge unit | get-knowledge-unit | GetKnowledgeUnit | Authorized resource query |
+| Knowledge unit | list-knowledge-units | ListKnowledgeUnits | Authorized bounded resource query |
+| Knowledge unit | update-knowledge-unit | UpdateKnowledgeUnit | Resource operation; rebuilds the unit from authoritative Knowledge |
+| Knowledge unit | archive-knowledge-unit | ArchiveKnowledgeUnit | Resource operation; archives the derived representation without deleting authoritative Knowledge |
+| Retrieval | retrieve-knowledge | RetrieveKnowledge | Governed knowledge.retrieve capability |
+
+Knowledge Index Records and Knowledge Index Units are derived search representations. Their content is never authoritative business state and MCP resource operations do not permit arbitrary persistence writes to those records. Create/update operations rebuild them through KnowledgeIndexingService; archive marks the derived representation removed while retaining historical state.
+
+retrieve-knowledge supports lexical, semantic, and hybrid modes, bounded results (1-50), optional minimum relevance, correlation identifiers, Enterprise authorization and provenance normalization. Agent-backed retrieval requires both agent_assignment_id and agent_execution_id and is authorized through McpCapabilityAuthorizer.
+
+Cross-Enterprise access is rejected at the application boundary. MCP handlers do not query or mutate Knowledge persistence directly.
