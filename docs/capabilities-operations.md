@@ -56,3 +56,11 @@ The invocation service is transport-independent. It resolves the Capability only
 MCP governed Tools are interface adapters and delegate execution through the application invocation boundary. MCP remains a transport/interface surface and is not required for application-level Capability execution.
 
 An application invocation may be human-scoped to an Enterprise or Agent-backed with an Assignment and Execution. Agent-backed requests retain Enterprise isolation and Agent Capability permissions. Approval-sensitive Agent requests return a resumable `waiting` result until a valid approval is supplied.
+### Enterprise Context
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `enterprise.context.create` | `EnterpriseContextCreate` | `create-enterprise-context` | Establish the authoritative Enterprise Context record. |
+| `enterprise.context.retrieve` | `EnterpriseContextRetrieve` | `retrieve-enterprise-context` | Retrieve the authorized, canonical Enterprise Context representation consumed by downstream Agent/Expert runtime composition. |
+
+`EnterpriseContextRetrieve` is the application retrieval contract. It delegates to `EnterpriseContextService`, which enforces Enterprise authorization, requires the persisted context record to exist, and serializes the current Enterprise Context through `EnterpriseContextAssembler`. MCP resources may adapt this operation for their transport-specific response shape; they do not own a parallel retrieval implementation.
