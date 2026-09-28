@@ -163,7 +163,7 @@ it('keeps historical record schemas and relationships focused', function () {
         'id', 'organization_id', 'enterprise_id', 'agent_descriptor_id', 'agent_assignment_id',
         'actor_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class',
         'actor_name', 'status', 'requested_at', 'started_at', 'completed_at', 'failure_reason',
-        'created_at', 'updated_at', 'correlation_id', 'provider', 'external_execution_id', 'failure_code', 'agent_definition_version', 'max_steps', 'current_step', 'prompt', 'target_context', 'expert_slugs', 'model_options', 'execution_context', 'last_result', 'next_step', 'state_reason', 'idempotency_key', 'failure_category', 'retry_count', 'max_retries',
+        'created_at', 'updated_at', 'correlation_id', 'provider', 'external_execution_id', 'failure_code', 'agent_definition_version', 'max_steps', 'current_step', 'prompt', 'target_context', 'expert_slugs', 'model_options', 'execution_context', 'last_result', 'next_step', 'state_reason', 'idempotency_key', 'failure_category', 'retry_count', 'max_retries', 'runtime_policy', 'runtime_policy_version',
     ])->and(Schema::getColumnListing('agent_decisions'))->toBe([
         'id', 'organization_id', 'enterprise_id', 'execution_id', 'agent_descriptor_id', 'actor_id',
         'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name',

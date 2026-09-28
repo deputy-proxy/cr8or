@@ -472,3 +472,12 @@ Default policy remains one owner/admin approval with self-approval disabled. Exi
 ## Reporting Context
 
 Agents may explicitly request the `reporting` context category. The provider returns the latest authorized cross-domain business-performance report, metric values and provenance. It does not calculate or mutate reporting state during context assembly.
+## Agent Runtime Policies
+
+Agent runtime configuration is governed separately from authorization. Runtime policy may bound execution and select an approved model/provider configuration, but it cannot grant capabilities, bypass permissions or satisfy approvals.
+
+Effective policy inheritance is environment defaults followed by organization, Enterprise, Agent and Expert scoped overrides. More-specific non-null values override broader values. Unsafe values and unknown providers fail closed.
+
+A new Agent execution snapshots its effective runtime policy and a SHA-256 policy version. Resumed executions use their persisted execution options/policy snapshot rather than silently changing behavior because governance configuration changed later.
+
+Runtime limits currently cover enabled state, maximum steps, retries, provider timeout, serialized context size, retrieved-knowledge limit, memory limit, provider/model selection and provider fallback. Provider fallback is attempted only for transient unavailable/rate-limited failures; configuration and invalid-response failures do not silently switch providers.
