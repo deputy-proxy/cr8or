@@ -81,6 +81,17 @@ final class AgentSemanticMemoryService
         return $memory->refresh();
     }
 
+    public function archive(User $actor, AgentSemanticMemory $memory): AgentSemanticMemory
+    {
+        $this->policy->authorizeRead($actor, $memory->enterprise, $memory->agentDescriptor);
+
+        $memory->status = AgentSemanticMemory::STATUS_ARCHIVED;
+        $memory->setVersionActor($actor);
+        $memory->save();
+
+        return $memory->refresh();
+    }
+
     /** Mark two scoped memories as an explicit contradiction while preserving both. */
     public function recordConflict(
         User $actor,

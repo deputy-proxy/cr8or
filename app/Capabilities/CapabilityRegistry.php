@@ -13,7 +13,9 @@ use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
+use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
+use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
@@ -48,7 +50,9 @@ use App\Operations\PlanMarketing;
 use App\Operations\ProjectCreate;
 use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
+use App\Operations\RecordMemory;
 use App\Operations\RetrieveKnowledge;
+use App\Operations\RetrieveMemory;
 use App\Operations\SocialAccountConnect;
 use App\Operations\SocialAccountDisconnect;
 use App\Operations\SocialAccountUpdate;
@@ -481,6 +485,39 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'memory.retrieve',
+                RetrieveMemory::class,
+                RetrieveMemoryTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'agent_descriptor_id' => 'integer|required',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'topic' => 'string|nullable',
+                    'relevant_after' => 'string|nullable',
+                    'episodic_limit' => 'integer|nullable',
+                    'semantic_status' => 'string|nullable',
+                    'semantic_limit' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'memory-retrieval'],
+                'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'memory.record',
+                RecordMemory::class,
+                RecordMemoryTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'persist' => 'boolean|required',
+                    'type' => 'string|required',
+                    'source_execution_id' => 'integer|required',
+                    'agent_descriptor_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'memory-record'],
+                'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
                 'permission-dependent',
             ),
             $this->definition(
