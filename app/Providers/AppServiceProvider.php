@@ -15,6 +15,10 @@ use App\Contracts\MediaStorage;
 use App\Contracts\PublishingProvider;
 use App\Events\AgentExecutionEvent;
 use App\Listeners\RecordAgentExecutionEvent;
+use App\Models\Competitor;
+use App\Models\Mission;
+use App\Models\Vision;
+use App\Policies\StrategicRecordPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\HmacIntegrationWebhookVerifier;
 use App\Services\KnowledgeHybridRetrievalProvider;
@@ -25,6 +29,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passport\Passport;
@@ -86,6 +91,9 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureDefaults();
         Event::listen(AgentExecutionEvent::class, [RecordAgentExecutionEvent::class, 'handle']);
+        Gate::policy(Vision::class, StrategicRecordPolicy::class);
+        Gate::policy(Mission::class, StrategicRecordPolicy::class);
+        Gate::policy(Competitor::class, StrategicRecordPolicy::class);
     }
 
     /**

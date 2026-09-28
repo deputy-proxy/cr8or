@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class EnterpriseContextAssembler
 {
+    public function __construct(private readonly StrategicContextService $strategicContext) {}
+
     public function assemble(User $user, Enterprise $enterprise): AgentContext
     {
         Gate::forUser($user)->authorize('view', $enterprise);
@@ -30,7 +32,7 @@ final class EnterpriseContextAssembler
             ))
             ->withSection(new AgentContextSection(
                 name: 'enterprise_context',
-                data: $this->context($enterprise),
+                data: $this->context($user, $enterprise),
                 source: EnterpriseContext::class,
                 scope: $scope,
                 relevance: 'Enterprise business context',
@@ -49,7 +51,7 @@ final class EnterpriseContextAssembler
     }
 
     /** @return array<string, mixed> */
-    private function context(Enterprise $enterprise): array
+    private function context(User $user, Enterprise $enterprise): array
     {
         $context = $enterprise->context;
 
@@ -62,7 +64,8 @@ final class EnterpriseContextAssembler
                 'geography' => $context->geography,
                 'additional_context' => $context->additional_context,
             ],
-            'strategic_context' => [
+            'strategic_context' => array_merge($this->strategicContext->context($user, $enterprise), [
+
                 'goals' => $enterprise->goals()
                     ->orderBy('id')
                     ->get()
@@ -86,7 +89,7 @@ final class EnterpriseContextAssembler
                         'status' => $kpi->status,
                     ])
                     ->all(),
-            ],
+            ]),
             'products' => $enterprise->products()
                 ->orderBy('id')
                 ->get()
