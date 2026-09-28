@@ -22,13 +22,6 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = AgentFailurePolicy::MAX_RETRIES;
-
-    public int $timeout = 120;
-
-    /** @var list<int> */
-    public array $backoff = [10, 30, 60];
-
     public int $uniqueFor = 3600;
 
     public function __construct(
@@ -45,18 +38,33 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
         return 'agent-execution:'.$this->executionId;
     }
 
+    public function tries(): int
+    {
+        $execution = AgentExecution::query()->find($this->executionId);
+
+        return max(1, (int) ($execution->max_retries ?? AgentFailurePolicy::MAX_RETRIES));
+    }
+
+    public function timeout(): int
+    {
+        $execution = AgentExecution::query()->find($this->executionId);
+        $policy = is_array($execution?->runtime_policy) ? $execution->runtime_policy : [];
+
+        return max(1, (int) ($policy['timeout_seconds'] ?? 120));
+    }
+
     /** @return list<int> */
     public function backoff(): array
     {
         $policy = app(AgentFailurePolicy::class);
 
-        return array_map($policy->backoff(...), range(1, $this->tries));
+        return array_map($policy->backoff(...), range(1, $this->tries()));
     }
 
     /** @return array<int, WithoutOverlapping> */
     public function middleware(): array
     {
-        return [new WithoutOverlapping($this->uniqueId())->expireAfter($this->timeout * 2)];
+        return [new WithoutOverlapping($this->uniqueId())->expireAfter($this->timeout() * 2)];
     }
 
     public function handle(AgentExecutionService $service): void
