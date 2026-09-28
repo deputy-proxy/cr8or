@@ -458,3 +458,14 @@ The runtime contract remains replaceable: Agents consume the existing `ModelProv
 Agents declaring `knowledge` now receive two related context surfaces during execution: authoritative enterprise Knowledge context and, when an execution target is available, bounded `retrieved_knowledge` from the existing hybrid Knowledge retrieval service. The retrieval path reuses authorization and provenance normalization, preserves source/document/version references, and exposes retrieval correlation/metadata to the Agent.
 
 Retrieval is automatically seeded from the Agent execution prompt unless the caller supplies explicit retrieval parameters. Limits and token budgets are bounded. Empty results are represented as explicit Knowledge insufficiency; retrieval failures degrade to an `unavailable` insufficiency signal while remaining observable through the existing Knowledge retrieval observability service. No second retrieval stack is introduced for Experts, because they receive the same assembled execution context.
+## Approval Governance
+
+Approval is a separate governance layer from Agent capability permission. A capability may require approval, but the authority to approve is resolved independently through the approval policy snapshot attached to the request.
+
+Approval requests snapshot the applicable policy, including staged approval requirements, expiry, self-approval rules and escalation roles. The snapshot is immutable so later policy changes do not rewrite the meaning of an already-requested approval.
+
+Approval decisions are immutable historical records. A request may be pending, approved, rejected, cancelled, expired or stale. Multi-stage policies advance only when the active stage has received its required distinct approvals. Repeated votes by the same approver in the same stage are rejected.
+
+Approval reuse is bound to an exact request fingerprint covering the assignment, capability, execution and target context. A materially different request cannot consume an earlier approval.
+
+Default policy remains one owner/admin approval with self-approval disabled. Existing legacy approval records without a policy snapshot use the same normalized owner/admin policy for authorization compatibility.

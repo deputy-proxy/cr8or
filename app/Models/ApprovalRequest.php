@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Database\Factories\ApprovalRequestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,15 +9,39 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use LogicException;
 
-/**
- * @property Carbon $requested_at
- * @property Carbon|null $expires_at
- * @property Carbon|null $decided_at
- */
-#[Fillable(['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'agent_delegation_id', 'consumed_agent_execution_id', 'consumed_agent_delegation_id', 'actor_id', 'approver_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'approver_name', 'status', 'requested_at', 'expires_at', 'decided_at', 'decision_reason'])]
+#[Fillable([
+    'organization_id',
+    'enterprise_id',
+    'agent_assignment_id',
+    'agent_execution_id',
+    'agent_delegation_id',
+    'consumed_agent_execution_id',
+    'consumed_agent_delegation_id',
+    'actor_id',
+    'approver_id',
+    'capability',
+    'target_context',
+    'correlation_id',
+    'organization_name',
+    'enterprise_name',
+    'agent_slug',
+    'agent_runtime_class',
+    'actor_name',
+    'approver_name',
+    'status',
+    'requested_at',
+    'expires_at',
+    'decided_at',
+    'decision_reason',
+    'policy_snapshot',
+    'policy_key',
+    'current_stage',
+    'request_hash',
+    'stale_reason',
+])]
 class ApprovalRequest extends Model
 {
-    /** @use HasFactory<ApprovalRequestFactory> */
+    /** @use HasFactory<\Database\Factories\ApprovalRequestFactory> */
     use HasFactory;
 
     public const STATUS_PENDING = 'pending';
@@ -27,11 +50,41 @@ class ApprovalRequest extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
-    /** @var list<string> */
-    private const STATUSES = [self::STATUS_PENDING, self::STATUS_APPROVED, self::STATUS_REJECTED];
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const STATUS_STALE = 'stale';
 
     /** @var list<string> */
-    private const HISTORICAL_FIELDS = ['organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id', 'actor_id', 'capability', 'target_context', 'correlation_id', 'organization_name', 'enterprise_name', 'agent_slug', 'agent_runtime_class', 'actor_name', 'requested_at', 'expires_at'];
+    private const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_APPROVED,
+        self::STATUS_REJECTED,
+        self::STATUS_CANCELLED,
+        self::STATUS_EXPIRED,
+        self::STATUS_STALE,
+    ];
+
+    /** @var list<string> */
+    private const HISTORICAL_FIELDS = [
+        'organization_id',
+        'enterprise_id',
+        'agent_assignment_id',
+        'agent_execution_id',
+        'actor_id',
+        'capability',
+        'target_context',
+        'correlation_id',
+        'organization_name',
+        'enterprise_name',
+        'agent_slug',
+        'agent_runtime_class',
+        'actor_name',
+        'requested_at',
+        'expires_at',
+        'policy_key',
+    ];
 
     protected static function booted(): void
     {
@@ -43,28 +96,31 @@ class ApprovalRequest extends Model
                 return;
             }
 
+            foreach (['policy_snapshot', 'request_hash'] as $field) {
+                if ($request->isDirty($field)) {
+                    throw new LogicException("Approval request {$field} is immutable.");
+                }
+            }
+
             foreach (self::HISTORICAL_FIELDS as $field) {
                 $request->{$field} = $request->getRawOriginal($field);
             }
 
             $originalDelegation = $request->getRawOriginal('agent_delegation_id');
-            if ($originalDelegation !== null
-                && (int) $request->agent_delegation_id !== (int) $originalDelegation
-            ) {
+
+            if ($originalDelegation !== null && (int) $request->agent_delegation_id !== (int) $originalDelegation) {
                 throw new LogicException('An approval request cannot be rebound to another delegation.');
             }
 
             $originalConsumedDelegation = $request->getRawOriginal('consumed_agent_delegation_id');
-            if ($originalConsumedDelegation !== null
-                && (int) $request->consumed_agent_delegation_id !== (int) $originalConsumedDelegation
-            ) {
+
+            if ($originalConsumedDelegation !== null && (int) $request->consumed_agent_delegation_id !== (int) $originalConsumedDelegation) {
                 throw new LogicException('An approval request cannot be rebound after delegation consumption.');
             }
 
             $originalConsumedExecution = $request->getRawOriginal('consumed_agent_execution_id');
-            if ($originalConsumedExecution !== null
-                && (int) $request->consumed_agent_execution_id !== (int) $originalConsumedExecution
-            ) {
+
+            if ($originalConsumedExecution !== null && (int) $request->consumed_agent_execution_id !== (int) $originalConsumedExecution) {
                 throw new LogicException('An approval request cannot be rebound after it has been consumed.');
             }
         });
@@ -112,10 +168,16 @@ class ApprovalRequest extends Model
         return $this->belongsTo(User::class, 'approver_id');
     }
 
-    /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['target_context' => 'array', 'requested_at' => 'datetime', 'expires_at' => 'datetime', 'decided_at' => 'datetime'];
+        return [
+            'target_context' => 'array',
+            'policy_snapshot' => 'array',
+            'requested_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'decided_at' => 'datetime',
+            'current_stage' => 'integer',
+        ];
     }
 
     public function approve(User $approver, ?string $reason = null): static
@@ -132,9 +194,67 @@ class ApprovalRequest extends Model
         return $this;
     }
 
+    public function cancel(?string $reason = null): static
+    {
+        if ($this->status !== self::STATUS_PENDING) {
+            throw new LogicException('Only a pending approval request can be cancelled.');
+        }
+
+        $this->status = self::STATUS_CANCELLED;
+        $this->decided_at = Carbon::now();
+        $this->decision_reason = $reason;
+
+        return $this;
+    }
+
+    public function expire(?string $reason = null): static
+    {
+        if ($this->status !== self::STATUS_PENDING) {
+            throw new LogicException('Only a pending approval request can expire.');
+        }
+
+        $this->status = self::STATUS_EXPIRED;
+        $this->decided_at = Carbon::now();
+        $this->decision_reason = $reason ?? 'Approval request expired.';
+
+        return $this;
+    }
+
+    public function markStale(string $reason): static
+    {
+        if ($this->status !== self::STATUS_PENDING) {
+            throw new LogicException('Only a pending approval request can become stale.');
+        }
+
+        $this->status = self::STATUS_STALE;
+        $this->stale_reason = $reason;
+        $this->decided_at = Carbon::now();
+        $this->decision_reason = $reason;
+
+        return $this;
+    }
+
+    public function expiresAt(): ?Carbon
+    {
+        $value = $this->expires_at;
+
+        return $value === null ? null : Carbon::parse((string) $value);
+    }
+
     public function isValid(): bool
     {
-        return $this->status === self::STATUS_APPROVED && ($this->expires_at === null || $this->expires_at->isFuture());
+        $expiresAt = $this->expiresAt();
+
+        return $this->status === self::STATUS_APPROVED
+            && ($expiresAt === null || $expiresAt->isFuture());
+    }
+
+    public function isDecisionOpen(): bool
+    {
+        $expiresAt = $this->expiresAt();
+
+        return $this->status === self::STATUS_PENDING
+            && ($expiresAt === null || $expiresAt->isFuture());
     }
 
     private function transitionTo(string $status, User $approver, ?string $reason): void
@@ -142,9 +262,13 @@ class ApprovalRequest extends Model
         if ($this->status !== self::STATUS_PENDING) {
             throw new LogicException('Only a pending approval request can be decided.');
         }
-        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+
+        $expiresAt = $this->expiresAt();
+
+        if ($expiresAt !== null && $expiresAt->isPast()) {
             throw new LogicException('An expired approval request cannot be decided.');
         }
+
         $this->status = $status;
         $this->approver_id = $approver->getKey();
         $this->approver_name = $approver->name;
@@ -157,11 +281,21 @@ class ApprovalRequest extends Model
         if (! in_array($this->status, self::STATUSES, true)) {
             throw new LogicException("Invalid approval request status [{$this->status}].");
         }
+
         if ($this->status === self::STATUS_PENDING && ($this->approver_id !== null || $this->decided_at !== null)) {
             throw new LogicException('A pending approval request cannot have a decision.');
         }
-        if ($this->status !== self::STATUS_PENDING && ($this->approver_id === null || $this->decided_at === null)) {
+
+        if (in_array($this->status, [self::STATUS_APPROVED, self::STATUS_REJECTED], true)
+            && ($this->approver_id === null || $this->decided_at === null)
+        ) {
             throw new LogicException('A decided approval request must have an approver and decision timestamp.');
+        }
+
+        if (in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_EXPIRED, self::STATUS_STALE], true)
+            && $this->decided_at === null
+        ) {
+            throw new LogicException('A closed approval request must have a lifecycle timestamp.');
         }
     }
 
@@ -169,25 +303,36 @@ class ApprovalRequest extends Model
     {
         if ($this->enterprise_id !== null) {
             $enterprise = Enterprise::query()->find($this->enterprise_id);
+
             if ($enterprise === null || $enterprise->organization_id !== $this->organization_id) {
                 throw new LogicException('Approval request enterprise must belong to its organization.');
             }
         }
 
         $assignment = AgentAssignment::query()->find($this->agent_assignment_id);
-        if ($assignment === null || $assignment->organization_id !== $this->organization_id || $assignment->enterprise_id !== $this->enterprise_id) {
+
+        if ($assignment === null
+            || $assignment->organization_id !== $this->organization_id
+            || $assignment->enterprise_id !== $this->enterprise_id
+        ) {
             throw new LogicException('Approval request assignment must belong to its organization and enterprise scope.');
         }
 
         if ($this->agent_execution_id !== null) {
             $execution = AgentExecution::query()->find($this->agent_execution_id);
-            if ($execution === null || $execution->organization_id !== $this->organization_id || $execution->enterprise_id !== $this->enterprise_id || $execution->agent_assignment_id !== $this->agent_assignment_id) {
+
+            if ($execution === null
+                || $execution->organization_id !== $this->organization_id
+                || $execution->enterprise_id !== $this->enterprise_id
+                || $execution->agent_assignment_id !== $this->agent_assignment_id
+            ) {
                 throw new LogicException('Approval request execution must belong to its organization, enterprise and assignment scope.');
             }
         }
 
         if ($this->agent_delegation_id !== null) {
             $delegation = AgentDelegation::query()->find($this->agent_delegation_id);
+
             if ($delegation === null
                 || $delegation->organization_id !== $this->organization_id
                 || $delegation->enterprise_id !== $this->enterprise_id
@@ -199,6 +344,7 @@ class ApprovalRequest extends Model
 
         if ($this->approver_id !== null) {
             $approver = User::query()->find($this->approver_id);
+
             if ($approver === null || ! $approver->memberships()->where('organization_id', $this->organization_id)->exists()) {
                 throw new LogicException('Approval request approver must belong to its organization.');
             }

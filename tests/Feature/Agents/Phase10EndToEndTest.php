@@ -75,6 +75,8 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = phase10E2EAssignment($actor, $enterprise);
+    $approver = User::factory()->create();
+    Membership::factory()->admin()->create(['user_id' => $approver->id, 'organization_id' => $enterprise->organization_id]);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $assignment->getKey(),
         'capability' => 'work.item.create',
@@ -148,6 +150,11 @@ it('pauses for approval and resumes through the same governed execution', functi
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = phase10E2EAssignment($actor, $enterprise);
+    $approver = User::factory()->create();
+    Membership::factory()->admin()->create([
+        'user_id' => $approver->id,
+        'organization_id' => $enterprise->organization_id,
+    ]);
     AgentPermission::factory()->create([
         'agent_assignment_id' => $assignment->getKey(),
         'capability' => 'work.item.create',
@@ -181,7 +188,7 @@ it('pauses for approval and resumes through the same governed execution', functi
     $approval = ApprovalRequest::query()->where('agent_execution_id', $paused->execution->getKey())->firstOrFail();
 
     expect($paused->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL);
-    app(\App\Services\ApprovalRequestService::class)->approve($approval, $actor);
+    app(\App\Services\ApprovalRequestService::class)->approve($approval, $approver);
     $resumed = $service->resume($paused->execution, $actor);
 
     expect($resumed->execution->status)->toBe(AgentExecution::STATUS_COMPLETED);
