@@ -1,1 +1,114 @@
-{"stdout":"<?php\n\nuse App\\Filament\\Resources\\AgentAssignments\\AgentAssignmentResource;\nuse App\\Filament\\Resources\\AgentDecisions\\AgentDecisionResource;\nuse App\\Filament\\Resources\\AgentDescriptors\\AgentDescriptorResource;\nuse App\\Filament\\Resources\\AgentExecutions\\AgentExecutionResource;\nuse App\\Filament\\Resources\\AgentPermissions\\AgentPermissionResource;\nuse App\\Filament\\Resources\\ApprovalRequests\\ApprovalRequestResource;\nuse App\\Filament\\Resources\\ExpertDescriptors\\ExpertDescriptorResource;\nuse App\\Models\\AgentAssignment;\nuse App\\Models\\AgentDecision;\nuse App\\Models\\AgentDescriptor;\nuse App\\Models\\AgentExecution;\nuse App\\Models\\AgentPermission;\nuse App\\Models\\Enterprise;\nuse App\\Models\\Membership;\nuse App\\Models\\Organization;\nuse App\\Models\\User;\nuse Filament\\Schemas\\Schema;\nuse Illuminate\\Support\\Facades\\Gate;\n\nit('scopes every phase two organization resource to the authenticated organizations', function () {\n    $organization = Organization::factory()->create();\n    $otherOrganization = Organization::factory()->create();\n    $owner = User::factory()->create();\n    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);\n\n    $descriptor = AgentDescriptor::factory()->create();\n    $assignment = AgentAssignment::factory()->create(['agent_descriptor_id' => $descriptor, 'organization_id' => $organization]);\n    $foreignAssignment = AgentAssignment::factory()->create(['agent_descriptor_id' => $descriptor, 'organization_id' => $otherOrganization]);\n    $permission = AgentPermission::factory()->create(['agent_assignment_id' => $assignment]);\n    $foreignPermission = AgentPermission::factory()->create(['agent_assignment_id' => $foreignAssignment]);\n    $execution = AgentExecution::factory()->create(['organization_id' => $organization]);\n    $foreignExecution = AgentExecution::factory()->create(['organization_id' => $otherOrganization]);\n    $decision = AgentDecision::factory()->create(['organization_id' => $organization]);\n    $foreignDecision = AgentDecision::factory()->create(['organization_id' => $otherOrganization]);\n    $approvalActor = User::factory()->create();\n    $foreignApprovalActor = User::factory()->create();\n    $approval = app(\\App\\Services\\ApprovalRequestService::class)->request($approvalActor, 'test.approve', $assignment);\n    $foreignApproval = app(\\App\\Services\\ApprovalRequestService::class)->request($foreignApprovalActor, 'test.approve', $foreignAssignment);\n\n    $this->actingAs($owner);\n\n    expect(AgentAssignmentResource::getEloquentQuery()->pluck('id')->all())->toContain($assignment->id)->not->toContain($foreignAssignment->id)\n        ->and(AgentPermissionResource::getEloquentQuery()->pluck('id')->all())->toContain($permission->id)->not->toContain($foreignPermission->id)\n        ->and(AgentExecutionResource::getEloquentQuery()->pluck('id')->all())->toContain($execution->id)->not->toContain($foreignExecution->id)\n        ->and(AgentDecisionResource::getEloquentQuery()->pluck('id')->all())->toContain($decision->id)->not->toContain($foreignDecision->id)\n        ->and(ApprovalRequestResource::getEloquentQuery()->pluck('id')->all())->toContain($approval->id)->not->toContain($foreignApproval->id);\n});\n\nit('does not expose phase two administration to users without organization membership', function () {\n    $user = User::factory()->create();\n    $this->actingAs($user);\n\n    expect(AgentDescriptorResource::canViewAny())->toBeFalse()\n        ->and(AgentAssignmentResource::canViewAny())->toBeFalse()\n        ->and(AgentPermissionResource::canViewAny())->toBeFalse()\n        ->and(AgentExecutionResource::canViewAny())->toBeFalse()\n        ->and(AgentDecisionResource::canViewAny())->toBeFalse()\n        ->and(ApprovalRequestResource::canViewAny())->toBeFalse()\n        ->and(ExpertDescriptorResource::canViewAny())->toBeFalse();\n});\n\nit('allows owners and admins to manage assignments and permissions but not historical records', function () {\n    $organization = Organization::factory()->create();\n    $owner = User::factory()->create();\n    $admin = User::factory()->create();\n    $member = User::factory()->create();\n    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);\n    Membership::factory()->admin()->create(['user_id' => $admin, 'organization_id' => $organization]);\n    Membership::factory()->create(['user_id' => $member, 'organization_id' => $organization]);\n\n    $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);\n    $permission = AgentPermission::factory()->create(['agent_assignment_id' => $assignment]);\n    $execution = AgentExecution::factory()->create(['organization_id' => $organization]);\n    $decision = AgentDecision::factory()->create(['organization_id' => $organization]);\n    $approvalActor = User::factory()->create();\n    $approval = app(\\App\\Services\\ApprovalRequestService::class)->request($approvalActor, 'test.approve', $assignment);\n\n    expect(Gate::forUser($owner)->allows('update', $assignment))->toBeTrue()\n        ->and(Gate::forUser($admin)->allows('update', $assignment))->toBeTrue()\n        ->and(Gate::forUser($member)->allows('update', $assignment))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('update', $permission))->toBeTrue()\n        ->and(Gate::forUser($admin)->allows('update', $permission))->toBeTrue()\n        ->and(Gate::forUser($member)->allows('update', $permission))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('update', $execution))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('delete', $execution))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('update', $decision))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('delete', $decision))->toBeFalse()\n        ->and(Gate::forUser($owner)->allows('approve', $approval))->toBeTrue();\n});\n\nit('keeps runtime class fields read-only in agent and expert descriptor forms', function () {\n    $agentSchema = AgentDescriptorResource::form(new Schema);\n    $expertSchema = ExpertDescriptorResource::form(new Schema);\n\n    $agentRuntimeClass = $agentSchema->getComponents()[1];\n    $expertRuntimeClass = $expertSchema->getComponents()[1];\n\n    expect($agentRuntimeClass->isDisabled())->toBeTrue()\n        ->and($agentRuntimeClass->isDehydrated())->toBeFalse()\n        ->and($expertRuntimeClass->isDisabled())->toBeTrue()\n        ->and($expertRuntimeClass->isDehydrated())->toBeFalse();\n});\nit('does not permit cross-organization relation access for agent assignments', function () {\n    $organization = Organization::factory()->create();\n    $otherOrganization = Organization::factory()->create();\n    $owner = User::factory()->create();\n    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);\n    $foreignEnterprise = Enterprise::factory()->create(['organization_id' => $otherOrganization]);\n    $assignment = AgentAssignment::make(['organization_id' => $organization, 'enterprise_id' => $foreignEnterprise]);\n\n    expect(Gate::forUser($owner)->allows('view', $assignment))->toBeFalse();\n});\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+use App\Filament\Resources\AgentAssignments\AgentAssignmentResource;
+use App\Filament\Resources\AgentDecisions\AgentDecisionResource;
+use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
+use App\Filament\Resources\AgentExecutions\AgentExecutionResource;
+use App\Filament\Resources\AgentPermissions\AgentPermissionResource;
+use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
+use App\Filament\Resources\ExpertDescriptors\ExpertDescriptorResource;
+use App\Models\AgentAssignment;
+use App\Models\AgentDecision;
+use App\Models\AgentDescriptor;
+use App\Models\AgentExecution;
+use App\Models\AgentPermission;
+use App\Models\Enterprise;
+use App\Models\Membership;
+use App\Models\Organization;
+use App\Models\User;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Gate;
+
+it('scopes every phase two organization resource to the authenticated organizations', function () {
+    $organization = Organization::factory()->create();
+    $otherOrganization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
+
+    $descriptor = AgentDescriptor::factory()->create();
+    $assignment = AgentAssignment::factory()->create(['agent_descriptor_id' => $descriptor, 'organization_id' => $organization]);
+    $foreignAssignment = AgentAssignment::factory()->create(['agent_descriptor_id' => $descriptor, 'organization_id' => $otherOrganization]);
+    $permission = AgentPermission::factory()->create(['agent_assignment_id' => $assignment]);
+    $foreignPermission = AgentPermission::factory()->create(['agent_assignment_id' => $foreignAssignment]);
+    $execution = AgentExecution::factory()->create(['organization_id' => $organization]);
+    $foreignExecution = AgentExecution::factory()->create(['organization_id' => $otherOrganization]);
+    $decision = AgentDecision::factory()->create(['organization_id' => $organization]);
+    $foreignDecision = AgentDecision::factory()->create(['organization_id' => $otherOrganization]);
+    $approvalActor = User::factory()->create();
+    $foreignApprovalActor = User::factory()->create();
+    $approval = app(\App\Services\ApprovalRequestService::class)->request($approvalActor, 'test.approve', $assignment);
+    $foreignApproval = app(\App\Services\ApprovalRequestService::class)->request($foreignApprovalActor, 'test.approve', $foreignAssignment);
+
+    $this->actingAs($owner);
+
+    expect(AgentAssignmentResource::getEloquentQuery()->pluck('id')->all())->toContain($assignment->id)->not->toContain($foreignAssignment->id)
+        ->and(AgentPermissionResource::getEloquentQuery()->pluck('id')->all())->toContain($permission->id)->not->toContain($foreignPermission->id)
+        ->and(AgentExecutionResource::getEloquentQuery()->pluck('id')->all())->toContain($execution->id)->not->toContain($foreignExecution->id)
+        ->and(AgentDecisionResource::getEloquentQuery()->pluck('id')->all())->toContain($decision->id)->not->toContain($foreignDecision->id)
+        ->and(ApprovalRequestResource::getEloquentQuery()->pluck('id')->all())->toContain($approval->id)->not->toContain($foreignApproval->id);
+});
+
+it('does not expose phase two administration to users without organization membership', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    expect(AgentDescriptorResource::canViewAny())->toBeFalse()
+        ->and(AgentAssignmentResource::canViewAny())->toBeFalse()
+        ->and(AgentPermissionResource::canViewAny())->toBeFalse()
+        ->and(AgentExecutionResource::canViewAny())->toBeFalse()
+        ->and(AgentDecisionResource::canViewAny())->toBeFalse()
+        ->and(ApprovalRequestResource::canViewAny())->toBeFalse()
+        ->and(ExpertDescriptorResource::canViewAny())->toBeFalse();
+});
+
+it('allows owners and admins to manage assignments and permissions but not historical records', function () {
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $member = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
+    Membership::factory()->admin()->create(['user_id' => $admin, 'organization_id' => $organization]);
+    Membership::factory()->create(['user_id' => $member, 'organization_id' => $organization]);
+
+    $assignment = AgentAssignment::factory()->create(['organization_id' => $organization]);
+    $permission = AgentPermission::factory()->create(['agent_assignment_id' => $assignment]);
+    $execution = AgentExecution::factory()->create(['organization_id' => $organization]);
+    $decision = AgentDecision::factory()->create(['organization_id' => $organization]);
+    $approvalActor = User::factory()->create();
+    $approval = app(\App\Services\ApprovalRequestService::class)->request($approvalActor, 'test.approve', $assignment);
+
+    expect(Gate::forUser($owner)->allows('update', $assignment))->toBeTrue()
+        ->and(Gate::forUser($admin)->allows('update', $assignment))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('update', $assignment))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('update', $permission))->toBeTrue()
+        ->and(Gate::forUser($admin)->allows('update', $permission))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('update', $permission))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('update', $execution))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('delete', $execution))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('update', $decision))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('delete', $decision))->toBeFalse()
+        ->and(Gate::forUser($owner)->allows('approve', $approval))->toBeTrue();
+});
+
+it('keeps runtime class fields read-only in agent and expert descriptor forms', function () {
+    $agentSchema = AgentDescriptorResource::form(new Schema);
+    $expertSchema = ExpertDescriptorResource::form(new Schema);
+
+    $agentRuntimeClass = $agentSchema->getComponents()[1];
+    $expertRuntimeClass = $expertSchema->getComponents()[1];
+
+    expect($agentRuntimeClass->isDisabled())->toBeTrue()
+        ->and($agentRuntimeClass->isDehydrated())->toBeFalse()
+        ->and($expertRuntimeClass->isDisabled())->toBeTrue()
+        ->and($expertRuntimeClass->isDehydrated())->toBeFalse();
+});
+it('does not permit cross-organization relation access for agent assignments', function () {
+    $organization = Organization::factory()->create();
+    $otherOrganization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
+    $foreignEnterprise = Enterprise::factory()->create(['organization_id' => $otherOrganization]);
+    $assignment = AgentAssignment::make(['organization_id' => $organization, 'enterprise_id' => $foreignEnterprise]);
+
+    expect(Gate::forUser($owner)->allows('view', $assignment))->toBeFalse();
+});
