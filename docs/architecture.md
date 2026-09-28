@@ -170,3 +170,10 @@ Dashboards are currently a read-contract concern rather than persisted business 
 `AgentRuntimePolicy` is durable governance configuration. `AgentExecution.runtime_policy` is a historical snapshot of the effective configuration used by that execution. Runtime implementation metadata such as PHP runtime classes remains authoritative in Agent/Expert descriptors and is not duplicated into the policy model.
 
 Policy resolution cannot grant authority. Capability authorization, assignment authorization and approval governance remain independent checks. Runtime policy only constrains an already-authorized execution and fails closed when a requested limit, provider or context budget is outside the effective policy.
+## Retention and Recovery
+
+Agent execution records, decisions, approvals, delegation history and integration reconciliation records are required historical truth and are not candidates for routine operational deletion. High-volume operational event/log retention may be handled at the infrastructure layer, provided the durable business records and required provenance remain intact.
+
+Recovery after worker interruption relies on queue retry, execution idempotency and terminal-state guards. A repeated job for a completed/failed/cancelled execution is a no-op. Waiting states are not automatically resumed because doing so could bypass human approval/input boundaries.
+
+The operational health service reports stale requested/running executions for operator action; it deliberately does not auto-recover them without a future explicit, authorization-aware recovery command.
