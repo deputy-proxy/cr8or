@@ -725,7 +725,7 @@ Important state changes must be attributable to:
 
 ## Verified Current State
 
-The repository has completed **Phases 0 through 8** within their audited boundaries. Phase 8 establishes the canonical Agent/Expert runtime contracts, authorized composable context, the Marketing Agent runtime, governed Expert coordination, and persistent Agent memory with retrieval, write policy, provenance, auditability and explicit context integration. Phase 8.23 reconciled the documentation and Phase 8.24 completed the final implementation audit. Deferred capabilities remain explicitly identified in the roadmap.
+The repository has completed **Phases 0 through 8** within their audited product boundaries, plus the post-Phase-8 platform hardening and governance work recorded in Phase 11. Phase 8 establishes the canonical Agent/Expert runtime contracts, authorized composable context, the Marketing Agent runtime, governed Expert coordination, and persistent Agent memory with retrieval, write policy, provenance, auditability and explicit context integration. Phase 8.23 reconciled the documentation and Phase 8.24 completed the final implementation audit. Deferred capabilities remain explicitly identified in the roadmap.
 
 ### Implemented
 
@@ -760,8 +760,8 @@ The following capabilities were deliberately deferred from the completed Phase 4
 - AI planning and metric-calculation engines.
 - Full workflow-engine semantics.
 - Marketing, media and publishing domains inside CR8OR Core.
-- Generalized forecasting and reporting-engine semantics.
-- Cross-service business integrations.
+- Predictive forecasting.
+- Additional provider-specific cross-service integrations beyond the implemented platform contracts.
 
 These items are not missing Phase 4 implementation. Phase 4 provides the reusable runtime, governance, authorization, context and capability infrastructure on which later domain capabilities can be built.
 
@@ -787,7 +787,7 @@ During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULE
 
 ### Future Roadmap / Deferred Capabilities
 
-Phase 7 is complete within its defined scope. Phase 8.1–8.24 are implemented, documented and audited within their defined boundaries. The remaining deferred roadmap includes generalized Knowledge Retrieval / AI Context Infrastructure beyond the current bounded context providers, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, autonomous self-modifying Agent behavior, and broader cross-service integrations.
+Phase 7 is complete within its defined scope. Phase 8.1–8.24 are implemented, documented and audited within their defined boundaries. Phase 11 platform hardening is implemented and audited in `docs/phase-11-audit.md`. The remaining deferred roadmap includes generalized Knowledge Retrieval / AI Context Infrastructure beyond the current bounded context providers, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, autonomous self-modifying Agent behavior, and broader cross-service integrations.
 
 Generalized Knowledge Retrieval / AI Context Infrastructure should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 or Phase 7 completion gap.
 
@@ -1014,11 +1014,29 @@ Phase 4 is the verified implementation phase in which CR8OR first invokes AI mod
 | Workflow / Job / Execution tracking | Implemented |
 | Core business Agent catalog (CEO, Marketing, Finance, Product, Operations) | Implemented within current domain/runtime boundaries |
 | Core business Expert catalog (Business Analysis, Copywriting, Finance, Marketing, Operations, Product, SEO, Strategy) | Implemented within current domain/runtime boundaries |
-| Generalized knowledge retrieval | Deferred platform capability |
+| Generalized knowledge retrieval | Implemented within bounded enterprise-scoped context/retrieval contracts; broader retrieval infrastructure remains future |
 | Full workflow engine | Deferred |
-| Cross-service business integrations | Future domain phases |
+| Cross-service business integrations | Platform contracts implemented; additional provider/domain adapters remain future |
 
 The status above distinguishes completed Phase 4 infrastructure from intentionally deferred product capabilities. “Deferred” does not indicate an incomplete Phase 4 implementation. Supporting infrastructure does not, by itself, make a business capability complete.
+
+
+### Post-Phase-8 Platform Hardening — Phase 11
+
+**Status: Complete within documented boundaries**
+
+Phase 11 closes the platform gaps identified after the Agent runtime phases. It adds generalized reporting foundations, Agent runtime policies, production reliability controls, cross-system security hardening and operational governance UX. The final reconciliation is recorded in `docs/phase-11-audit.md`.
+
+Implemented boundaries include:
+
+- Generic cross-domain reporting contracts with immutable snapshots and provenance.
+- Environment → organization → Enterprise → Agent → Expert runtime policy inheritance.
+- Persisted execution limits, queue retry/timeout governance and stuck-execution detection.
+- Webhook authentication, delivery-identity replay protection and external-result reconciliation.
+- Cross-system threat model and asynchronous governance revalidation.
+- Agent execution inspection, structured timeline, approvals/delegations/integration status and runtime-policy operational views.
+
+Accepted limitations are predictive forecasting, a general arbitrary workflow engine, richer runtime-policy editing UX and additional provider-specific integrations.
 
 ### Phase 5 — Marketing, Media & Publishing
 
