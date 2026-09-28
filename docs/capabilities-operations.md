@@ -64,3 +64,13 @@ An application invocation may be human-scoped to an Enterprise or Agent-backed w
 | `enterprise.context.retrieve` | `EnterpriseContextRetrieve` | `retrieve-enterprise-context` | Retrieve the authorized, canonical Enterprise Context representation consumed by downstream Agent/Expert runtime composition. |
 
 `EnterpriseContextRetrieve` is the application retrieval contract. It delegates to `EnterpriseContextService`, which enforces Enterprise authorization, requires the persisted context record to exist, and serializes the current Enterprise Context through `EnterpriseContextAssembler`. MCP resources may adapt this operation for their transport-specific response shape; they do not own a parallel retrieval implementation.
+### Knowledge lifecycle
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `knowledge.item.create` | `CreateKnowledgeItem` | `create-knowledge-item` | Persist authoritative Enterprise-scoped Knowledge Item content and its version. |
+| `knowledge.index.create` | `CreateKnowledgeIndex` | `create-knowledge-index` | Build the derived Knowledge index from authoritative Knowledge. |
+| `knowledge.unit.create` | `CreateKnowledgeUnit` | `create-knowledge-unit` | Rebuild or retrieve one derived Knowledge Unit from authoritative Knowledge. |
+| `knowledge.retrieve` | `RetrieveKnowledge` | `retrieve-knowledge` | Retrieve authorized indexed Knowledge with normalized provenance. |
+
+The Knowledge lifecycle remains split between authoritative persistence and derived representations. `knowledge.item.create` persists the business Knowledge Item and version; index and unit capabilities invoke the existing indexing/resource services; `knowledge.retrieve` invokes the existing retrieval service. Repeated indexing rebuilds the derived representation rather than creating duplicate authoritative Knowledge. The capability-native application path does not require MCP.
