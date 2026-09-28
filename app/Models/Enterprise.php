@@ -154,6 +154,24 @@ class Enterprise extends Model
         return $this->hasMany(KnowledgeSpecification::class);
     }
 
+    /** @return HasMany<Vision, $this> */
+    public function visions(): HasMany
+    {
+        return $this->hasMany(Vision::class);
+    }
+
+    /** @return HasMany<Mission, $this> */
+    public function missions(): HasMany
+    {
+        return $this->hasMany(Mission::class);
+    }
+
+    /** @return HasMany<Competitor, $this> */
+    public function competitors(): HasMany
+    {
+        return $this->hasMany(Competitor::class);
+    }
+
     /** @return HasMany<Objective, $this> */
     public function objectives(): HasMany
     {
