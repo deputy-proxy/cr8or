@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Gate;
 
 final class CanvaService
 {
-    public function __construct(private readonly CanvaClient $client) {}
+    public function __construct(
+        private readonly CanvaClient $client,
+        private readonly IntegrationBoundaryService $boundary,
+    ) {}
 
     public function createDesign(
         User $actor,
@@ -31,11 +34,8 @@ final class CanvaService
     ): ExternalResource {
         $enterprise = $content !== null ? $content->enterprise : ($asset !== null ? $asset->enterprise : $execution?->enterprise);
 
-        if ($enterprise === null
-            || (int) $connection->organization_id !== (int) $enterprise->organization_id
-            || ($connection->enterprise_id !== null && (int) $connection->enterprise_id !== (int) $enterprise->id)
-        ) {
-            throw new AuthorizationException('The Canva connection is outside the target organization or enterprise.');
+        if ($enterprise === null) {
+            throw new AuthorizationException('External execution requires an enterprise context.');
         }
 
         if ($content !== null) {
@@ -52,27 +52,38 @@ final class CanvaService
             throw new AuthorizationException('The Agent execution is outside the target organization or enterprise.');
         }
 
-        if ($connection->status !== IntegrationConnection::STATUS_ACTIVE) {
-            throw new AuthorizationException('The Canva connection is disabled.');
-        }
-
         $correlationId ??= app(ExecutionCorrelationService::class)->resolve();
+
+        $context = $this->boundary->authorizeConnection(
+            $actor,
+            $connection,
+            $enterprise,
+            'creative',
+            'design.create',
+            $correlationId,
+            $idempotencyKey,
+            [
+                'content_item_id' => $content?->id,
+                'asset_id' => $asset?->id,
+                'agent_execution_id' => $execution?->id,
+            ],
+        );
 
         $job = IntegrationJob::query()->firstOrCreate(
             [
-                'provider' => 'canva',
+                'provider' => $context->provider,
                 'operation' => 'design.create',
-                'idempotency_key' => $idempotencyKey,
+                'idempotency_key' => $context->idempotencyKey,
             ],
             [
                 'integration_connection_id' => $connection->id,
-                'organization_id' => $enterprise->organization_id,
-                'enterprise_id' => $enterprise->id,
+                'organization_id' => $context->organizationId,
+                'enterprise_id' => $context->enterpriseId,
                 'content_item_id' => $content?->id,
                 'asset_id' => $asset?->id,
                 'agent_execution_id' => $execution?->id,
                 'status' => IntegrationJob::STATUS_PENDING,
-                'correlation_id' => $correlationId,
+                'correlation_id' => $context->correlationId,
             ],
         );
 
@@ -84,7 +95,7 @@ final class CanvaService
 
         if ($job->status === IntegrationJob::STATUS_SUCCEEDED) {
             $existing = ExternalResource::query()
-                ->where('provider', 'canva')
+                ->where('provider', $context->provider)
                 ->where('resource_type', 'design')
                 ->where('correlation_id', $job->correlation_id)
                 ->first();
@@ -105,19 +116,19 @@ final class CanvaService
 
             $resource = ExternalResource::query()->firstOrCreate(
                 [
-                    'provider' => 'canva',
+                    'provider' => $context->provider,
                     'resource_type' => 'design',
                     'external_id' => $result->externalId,
                 ],
                 [
                     'integration_connection_id' => $connection->id,
-                    'organization_id' => $enterprise->organization_id,
-                    'enterprise_id' => $enterprise->id,
+                    'organization_id' => $context->organizationId,
+                    'enterprise_id' => $context->enterpriseId,
                     'content_item_id' => $content?->id,
                     'asset_id' => $asset?->id,
                     'agent_execution_id' => $execution?->id,
                     'external_url' => $result->externalUrl,
-                    'correlation_id' => $job->correlation_id,
+                    'correlation_id' => $context->correlationId,
                     'metadata' => $result->metadata,
                 ],
             );
