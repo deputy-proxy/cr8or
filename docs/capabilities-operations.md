@@ -84,3 +84,9 @@ The Knowledge lifecycle remains split between authoritative persistence and deri
 | `agent.assignment.transition` | `TransitionAgentAssignment` | `transition-agent-assignment` | Apply explicit Assignment state-machine transitions. |
 
 These Capabilities operate on the durable Assignment resource. They do not turn the target Assignment into an Agent-backed execution request. Agent execution remains a separate Capability (`agent.execute`) that uses an Assignment as its runtime authority.
+
+### Capability-native E2E
+
+`E2E-CAPABILITY-20260928` is the definitive application-path validation. It starts at `CapabilityInvocationService` and exercises the persisted Enterprise → Context → Knowledge → Strategy/Work → Agent Assignment → Agent Execution → Expert → Memory → Delegation → Campaign → Content → Review → Approval graph without invoking MCP CRUD/action tools or Railway Sandbox. The test records the resolved Operation for every Capability and emits a machine-readable persisted graph at `storage/app/e2e/E2E-CAPABILITY-20260928.json`.
+
+`enterprise.create` is the bootstrap exception to the normal Enterprise-scoped invocation contract. It may be invoked without a pre-existing Enterprise, provided the actor is authorized for the target Organization. All other human-scoped Capabilities require an Enterprise; Agent-backed Capabilities additionally require the matching Assignment and Execution.
