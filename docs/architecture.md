@@ -48,7 +48,7 @@ MCP translates AI-facing requests into controlled CR8OR capabilities. MCP must a
 
 n8n is an optional future automation capability that may be exposed through MCP and used by an Automatiser Expert. If connected, it may coordinate external steps, but CR8OR remains the source of truth for resulting business state.
 
-Specialized services such as media renderers, publishing systems, Canva, GitHub, and AI providers perform bounded execution. Their responses are external execution results that CR8OR may persist or reconcile where they affect business state.
+Specialized services such as media renderers, publishing systems, Canva, GitHub, and AI providers perform bounded execution. Their responses are external execution results that CR8OR may persist or reconcile where they affect business state. The canonical integration boundary now separates logical integrations from concrete providers and carries enterprise, resource, correlation and idempotency context without transferring business-state ownership.
 
 ## Request Lifecycle
 
