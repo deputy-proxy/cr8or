@@ -18,6 +18,8 @@ final readonly class AgentDelegationRequest
         public string $prompt,
         public array $targetContext = [],
         /** @var list<string> */
+        public array $expertSlugs = [],
+        /** @var list<string> */
         public array $contextRequirements = [],
         public ?ApprovalRequest $sourceApproval = null,
         public ?ApprovalRequest $targetApproval = null,
