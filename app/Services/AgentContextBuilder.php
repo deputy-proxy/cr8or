@@ -17,6 +17,7 @@ use App\Services\Context\Providers\ReportingContextProvider;
 use App\Services\Context\Providers\RetrievedKnowledgeContextProvider;
 use App\Services\Context\Providers\StrategyContextProvider;
 use App\Services\Context\Providers\WorkContextProvider;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 final class AgentContextBuilder
@@ -122,8 +123,22 @@ final class AgentContextBuilder
 
         $provided[$key] = true;
 
-        foreach ($provider->provide($user, $enterprise, $targetContext, $assignment) as $section) {
-            $context = $context->withSection($section);
+        try {
+            foreach ($provider->provide($user, $enterprise, $targetContext, $assignment) as $section) {
+                $context = $context->withSection($section);
+            }
+        } catch (\Throwable $exception) {
+            Log::error('CR8OR Agent context provider failed.', [
+                'provider' => $provider::class,
+                'requirements' => $provider->requirements(),
+                'enterprise_id' => $enterprise->getKey(),
+                'organization_id' => $enterprise->organization_id,
+                'agent_assignment_id' => $assignment?->getKey(),
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
         }
 
         return $context;
