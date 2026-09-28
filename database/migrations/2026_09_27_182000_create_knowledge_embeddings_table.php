@@ -19,7 +19,7 @@ return new class extends Migration
             $table->json('vector');
             $table->timestamps();
 
-            $table->unique(['knowledge_index_unit_id', 'embedding_version']);
+            $table->unique(['knowledge_index_unit_id', 'embedding_version'], 'ke_unit_embedding_ver_unique');
             $table->index(['enterprise_id', 'knowledge_version_id']);
         });
     }
