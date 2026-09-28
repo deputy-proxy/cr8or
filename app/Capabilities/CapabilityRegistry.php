@@ -27,6 +27,9 @@ use App\Operations\ApprovalRequestCreate;
 use App\Operations\CampaignLifecycle;
 use App\Operations\ContentSeriesLifecycle;
 use App\Operations\CreateContentItem;
+use App\Operations\CreateKnowledgeIndex;
+use App\Operations\CreateKnowledgeItem;
+use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkItem;
@@ -549,6 +552,33 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'memory-record'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'knowledge.item.create',
+                CreateKnowledgeItem::class,
+                \App\Mcp\Tools\CreateKnowledgeItemTool::class,
+                ['enterprise_id' => 'integer|required', 'title' => 'string|required', 'type' => 'string|nullable', 'summary' => 'string|nullable', 'content' => 'string|required', 'context_snapshot' => 'object|nullable', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'Enterprise policy + KnowledgeItem createForEnterprise authorization',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'knowledge.index.create',
+                CreateKnowledgeIndex::class,
+                \App\Mcp\Tools\CreateKnowledgeIndexTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'Enterprise policy + KnowledgeItem authorization',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'knowledge.unit.create',
+                CreateKnowledgeUnit::class,
+                \App\Mcp\Tools\CreateKnowledgeUnitTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required', 'unit_key' => 'string|required', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'Enterprise policy + KnowledgeItem authorization',
                 'permission-dependent',
             ),
             $this->definition(
