@@ -1,1 +1,138 @@
-{"stdout":"<?php\n\nnamespace App\\Models;\n\nuse Database\\Factories\\AgentAssignmentFactory;\nuse Illuminate\\Database\\Eloquent\\Attributes\\Fillable;\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\nuse Illuminate\\Database\\Eloquent\\Relations\\BelongsTo;\nuse Illuminate\\Database\\Eloquent\\Relations\\HasMany;\nuse LogicException;\n\n#[Fillable([\n    'agent_descriptor_id',\n    'organization_id',\n    'enterprise_id',\n    'enabled',\n    'status',\n    'objective',\n    'requirements',\n    'context',\n    'correlation_id',\n    'idempotency_key',\n    'started_at',\n    'completed_at',\n])]\nclass AgentAssignment extends Model\n{\n    /** @use HasFactory<AgentAssignmentFactory> */\n    use HasFactory;\n\n    public const STATUS_DRAFT = 'draft';\n\n    public const STATUS_READY = 'ready';\n\n    public const STATUS_RUNNING = 'running';\n\n    public const STATUS_PAUSED = 'paused';\n\n    public const STATUS_COMPLETED = 'completed';\n\n    public const STATUS_FAILED = 'failed';\n\n    public const STATUS_CANCELLED = 'cancelled';\n\n    /** @var list<string> */\n    public const STATUSES = [\n        self::STATUS_DRAFT,\n        self::STATUS_READY,\n        self::STATUS_RUNNING,\n        self::STATUS_PAUSED,\n        self::STATUS_COMPLETED,\n        self::STATUS_FAILED,\n        self::STATUS_CANCELLED,\n    ];\n\n    /** @return array<string, list<string>> */\n    public static function transitions(): array\n    {\n        return [\n            self::STATUS_DRAFT => [self::STATUS_READY, self::STATUS_CANCELLED],\n            self::STATUS_READY => [self::STATUS_RUNNING, self::STATUS_CANCELLED],\n            self::STATUS_RUNNING => [self::STATUS_PAUSED, self::STATUS_COMPLETED, self::STATUS_FAILED, self::STATUS_CANCELLED],\n            self::STATUS_PAUSED => [self::STATUS_RUNNING, self::STATUS_CANCELLED],\n            self::STATUS_COMPLETED => [],\n            self::STATUS_FAILED => [self::STATUS_READY, self::STATUS_CANCELLED],\n            self::STATUS_CANCELLED => [],\n        ];\n    }\n\n    /** @return BelongsTo<AgentDescriptor, $this> */\n    public function agentDescriptor(): BelongsTo\n    {\n        return $this->belongsTo(AgentDescriptor::class);\n    }\n\n    /** @return BelongsTo<Organization, $this> */\n    public function organization(): BelongsTo\n    {\n        return $this->belongsTo(Organization::class);\n    }\n\n    /** @return BelongsTo<Enterprise, $this> */\n    public function enterprise(): BelongsTo\n    {\n        return $this->belongsTo(Enterprise::class);\n    }\n\n    /** @return HasMany<Assignment, $this> */\n    public function workAssignments(): HasMany\n    {\n        return $this->hasMany(Assignment::class);\n    }\n\n    /** @return HasMany<AgentPermission, $this> */\n    public function permissions(): HasMany\n    {\n        return $this->hasMany(AgentPermission::class);\n    }\n\n    protected function casts(): array\n    {\n        return [\n            'enabled' => 'boolean',\n            'requirements' => 'array',\n            'context' => 'array',\n            'started_at' => 'datetime',\n            'completed_at' => 'datetime',\n        ];\n    }\n\n    protected static function booted(): void\n    {\n        static::saving(function (AgentAssignment $assignment): void {\n            if (! in_array($assignment->status, self::STATUSES, true)) {\n                throw new LogicException(\"Invalid Agent Assignment status [{$assignment->status}].\");\n            }\n\n            if ($assignment->enterprise_id !== null) {\n                $enterprise = Enterprise::query()->find($assignment->enterprise_id);\n\n                if ($enterprise === null || $enterprise->organization_id !== $assignment->organization_id) {\n                    throw new LogicException('Agent Assignment Enterprise must belong to its organization.');\n                }\n\n                $agent = AgentDescriptor::query()->find($assignment->agent_descriptor_id);\n\n                if ($agent === null || ! $agent->enabled) {\n                    throw new LogicException('Agent Assignment requires an enabled Agent descriptor.');\n                }\n            }\n\n            if (in_array($assignment->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED], true)) {\n                $assignment->enabled = false;\n            }\n        });\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Models;
+
+use Database\Factories\AgentAssignmentFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use LogicException;
+
+#[Fillable([
+    'agent_descriptor_id',
+    'organization_id',
+    'enterprise_id',
+    'enabled',
+    'status',
+    'objective',
+    'requirements',
+    'context',
+    'correlation_id',
+    'idempotency_key',
+    'started_at',
+    'completed_at',
+])]
+class AgentAssignment extends Model
+{
+    /** @use HasFactory<AgentAssignmentFactory> */
+    use HasFactory;
+
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_READY = 'ready';
+
+    public const STATUS_RUNNING = 'running';
+
+    public const STATUS_PAUSED = 'paused';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_FAILED = 'failed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_READY,
+        self::STATUS_RUNNING,
+        self::STATUS_PAUSED,
+        self::STATUS_COMPLETED,
+        self::STATUS_FAILED,
+        self::STATUS_CANCELLED,
+    ];
+
+    /** @return array<string, list<string>> */
+    public static function transitions(): array
+    {
+        return [
+            self::STATUS_DRAFT => [self::STATUS_READY, self::STATUS_CANCELLED],
+            self::STATUS_READY => [self::STATUS_RUNNING, self::STATUS_CANCELLED],
+            self::STATUS_RUNNING => [self::STATUS_PAUSED, self::STATUS_COMPLETED, self::STATUS_FAILED, self::STATUS_CANCELLED],
+            self::STATUS_PAUSED => [self::STATUS_RUNNING, self::STATUS_CANCELLED],
+            self::STATUS_COMPLETED => [],
+            self::STATUS_FAILED => [self::STATUS_READY, self::STATUS_CANCELLED],
+            self::STATUS_CANCELLED => [],
+        ];
+    }
+
+    /** @return BelongsTo<AgentDescriptor, $this> */
+    public function agentDescriptor(): BelongsTo
+    {
+        return $this->belongsTo(AgentDescriptor::class);
+    }
+
+    /** @return BelongsTo<Organization, $this> */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /** @return BelongsTo<Enterprise, $this> */
+    public function enterprise(): BelongsTo
+    {
+        return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return HasMany<Assignment, $this> */
+    public function workAssignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    /** @return HasMany<AgentPermission, $this> */
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(AgentPermission::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'enabled' => 'boolean',
+            'requirements' => 'array',
+            'context' => 'array',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (AgentAssignment $assignment): void {
+            if (! in_array($assignment->status, self::STATUSES, true)) {
+                throw new LogicException("Invalid Agent Assignment status [{$assignment->status}].");
+            }
+
+            if ($assignment->enterprise_id !== null) {
+                $enterprise = Enterprise::query()->find($assignment->enterprise_id);
+
+                if ($enterprise === null || $enterprise->organization_id !== $assignment->organization_id) {
+                    throw new LogicException('Agent Assignment Enterprise must belong to its organization.');
+                }
+
+                $agent = AgentDescriptor::query()->find($assignment->agent_descriptor_id);
+
+                if ($agent === null || ! $agent->enabled) {
+                    throw new LogicException('Agent Assignment requires an enabled Agent descriptor.');
+                }
+            }
+
+            if (in_array($assignment->status, [self::STATUS_COMPLETED, self::STATUS_CANCELLED], true)) {
+                $assignment->enabled = false;
+            }
+        });
+    }
+}
