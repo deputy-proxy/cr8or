@@ -26,15 +26,15 @@ final readonly class IntegrationResultEnvelope
 
     public function dedupeKey(string $provider): string
     {
-        $identity = $this->externalResultId !== null
-            ? $this->externalResultId
-            : ($this->deliveryId !== null ? $this->deliveryId : $this->externalJobId);
+        $identity = $this->deliveryId !== null
+            ? $this->deliveryId
+            : ($this->externalResultId !== null ? $this->externalResultId : $this->externalJobId);
 
         return hash('sha256', implode('|', [
             $provider,
             $this->externalJobId,
             $identity,
-            $this->status,
+            $this->deliveryId === null ? $this->status : '',
         ]));
     }
 }

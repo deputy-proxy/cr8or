@@ -454,6 +454,53 @@ it('pauses and resumes the same Agent execution from durable state', function ()
         ->and($calls)->toBe(2);
 });
 
+it('revalidates runtime policy before asynchronous resume', function () {
+    $actor = User::factory()->create();
+    $assignment = governedAssignment($actor);
+    $provider = new FakeModelProvider(function ($request) {
+        return new \App\AI\Data\ModelResult(
+            text: 'Waiting',
+            structured: [
+                'answer' => 'Waiting',
+                'decision_title' => '',
+                'decision_summary' => '',
+                'decision_rationale' => '',
+                'termination' => 'waiting_for_input',
+                'termination_reason' => 'Awaiting input.',
+                'next_step' => 'Resume later.',
+                'capability_requests' => [],
+            ],
+            provider: 'fake',
+            model: 'test',
+            invocationId: 'resume-policy',
+            correlationId: $request->correlationId,
+        );
+    });
+
+    $service = new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    );
+
+    $first = $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Wait for input.',
+        correlationId: 'resume-policy-test',
+    ));
+
+    \App\Models\AgentRuntimePolicy::query()->create([
+        'environment' => config('agent_runtime.environment'),
+        'organization_id' => $assignment->organization_id,
+        'enterprise_id' => $assignment->enterprise_id,
+        'enabled' => false,
+    ]);
+
+    expect(fn () => $service->resume($first->execution, $actor))
+        ->toThrow(AuthorizationException::class, 'disables execution');
+});
+
 it('executes a governed capability and feeds its result into the next reasoning step', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();

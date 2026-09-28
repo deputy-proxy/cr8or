@@ -235,3 +235,10 @@ Phase 9 establishes two security checks around retrieval. KnowledgeRetrievalServ
 Indexed representations are derived state and are never treated as authoritative Knowledge. Lifecycle state excludes stale and removed representations from retrieval, embeddings are rejected when their content hash no longer matches the indexed unit, and retrieved Agent context is bounded independently from other context sections.
 
 Retrieval observability allow-lists structural metadata and deliberately excludes retrieved Knowledge content, titles, summaries, references and arbitrary provider metadata from ordinary logs.
+## Cross-System Threat Model
+
+The authoritative threat model for Agent execution, delegation, approvals, integrations and asynchronous recovery is documented in `docs/security-threat-model.md`.
+
+Security-sensitive boundaries are server-side only. Model output, webhook payloads and external integration results are treated as untrusted input. Webhook signatures authenticate provider delivery, while job correlation, tenant scope and existing authorization determine what CR8OR may reconcile.
+
+Asynchronous resume revalidates both execution authorization and current runtime policy. This prevents an execution that was permitted when created from bypassing a later governance disablement.

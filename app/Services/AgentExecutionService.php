@@ -328,6 +328,10 @@ final class AgentExecutionService
             throw new AuthorizationException('Only the execution actor may resume this Agent execution.');
         }
 
+        $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
+        $runtimePolicy = $runtimePolicies->resolveForAssignment($actor, $assignment);
+        $runtimePolicies->assertCanExecute($runtimePolicy);
+
         if (! in_array($execution->status, [
             AgentExecution::STATUS_WAITING_FOR_INPUT,
             AgentExecution::STATUS_WAITING_FOR_APPROVAL,
