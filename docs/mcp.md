@@ -264,3 +264,6 @@ Delegation inspection is exposed through `get-agent-delegation` and `list-agent-
 ### Authoritative Knowledge creation
 
 `create-knowledge-item` is the canonical MCP resource operation for creating an Enterprise-scoped authoritative Knowledge Item and its initial immutable Knowledge Version. It exists so a direct MCP client can construct the Knowledge branch before invoking the derived Knowledge Index/Unit lifecycle; indexing remains a derived representation and never becomes the authoritative content store.
+## Enterprise Context Capability coverage
+
+Enterprise Context is available through both `enterprise.context.create` and `enterprise.context.retrieve`. The retrieval Capability resolves to `EnterpriseContextRetrieve`, which is also the application Operation consumed by the Enterprise Context MCP resource. The application contract returns the canonical Enterprise/Context representation used by downstream Agent and Expert composition; the MCP resource retains its existing transport response shape and does not expose persistence metadata.
