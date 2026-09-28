@@ -182,3 +182,6 @@ The operational health service reports stale requested/running executions for op
 Filament is a presentation layer over authoritative services and read models. It must not reconstruct Agent state from UI-local assumptions, logs or hidden model output. Execution inspection uses structured `AgentExecutionEventRecord` history; approval actions call `ApprovalRequestService`; runtime policy administration calls `AgentRuntimePolicyService`.
 
 Operational UX distinguishes proposed/requested, executing, waiting, delegated, paused, failed and completed states. Visibility of an action is never treated as permission to perform it.
+## Capability application boundary
+
+Governed business actions have one canonical Capability execution path independent of transport. `CapabilityInvocationService` accepts an application `CapabilityInvocationRequest`, resolves the Capability through `CapabilityRegistry`, applies authorization and approval rules, invokes the mapped Operation, and returns structured provenance. Agent execution adapts into this boundary through `CapabilityExecutionService`; MCP Tools are transport adapters around the same boundary.
