@@ -11,6 +11,7 @@ use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveKnowledgeUnitTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
+use App\Mcp\Tools\ArchiveMemoryTool;
 use App\Mcp\Tools\ConnectSocialAccountTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
@@ -22,6 +23,7 @@ use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
 use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
+use App\Mcp\Tools\CreateMemoryTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -46,6 +48,7 @@ use App\Mcp\Tools\GetKnowledgeIndexTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetKpiTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
+use App\Mcp\Tools\GetMemoryTool;
 use App\Mcp\Tools\GetObjectiveTool;
 use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
@@ -69,6 +72,7 @@ use App\Mcp\Tools\ListKnowledgeIndexesTool;
 use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListKpiTool;
 use App\Mcp\Tools\ListMarketingStrategyTool;
+use App\Mcp\Tools\ListMemoryTool;
 use App\Mcp\Tools\ListObjectiveTool;
 use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProjectTool;
@@ -78,8 +82,10 @@ use App\Mcp\Tools\ListWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
+use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
+use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
@@ -90,6 +96,7 @@ use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
 use App\Mcp\Tools\UpdateKnowledgeIndexTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
+use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
@@ -149,13 +156,20 @@ class Cr8orServer extends Server
         GetExecutionTool::class,
         ListApprovalRequestTool::class,
         ListKnowledgeIndexesTool::class,
+        ListMemoryTool::class,
         GetKnowledgeIndexTool::class,
+        GetMemoryTool::class,
         ListKnowledgeUnitsTool::class,
         GetKnowledgeUnitTool::class,
 
         GetApprovalRequestTool::class,
 
         CreateKnowledgeIndexTool::class,
+        CreateMemoryTool::class,
+        UpdateMemoryTool::class,
+        ArchiveMemoryTool::class,
+        RecordMemoryTool::class,
+        RetrieveMemoryTool::class,
         UpdateKnowledgeIndexTool::class,
         CreateKnowledgeUnitTool::class,
         UpdateKnowledgeUnitTool::class,

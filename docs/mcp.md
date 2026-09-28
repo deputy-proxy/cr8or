@@ -195,3 +195,22 @@ Knowledge Index Records and Knowledge Index Units are derived search representat
 retrieve-knowledge supports lexical, semantic, and hybrid modes, bounded results (1-50), optional minimum relevance, correlation identifiers, Enterprise authorization and provenance normalization. Agent-backed retrieval requires both agent_assignment_id and agent_execution_id and is authorized through McpCapabilityAuthorizer.
 
 Cross-Enterprise access is rejected at the application boundary. MCP handlers do not query or mutate Knowledge persistence directly.
+## Memory resource and retrieval surface
+
+Phase 12 exposes the existing durable Agent Memory stores through a single enterprise-scoped MCP resource contract while keeping episodic and semantic lifecycle rules distinct.
+
+| Domain | Tool | Canonical Operation | Authority |
+| --- | --- | --- | --- |
+| Memory | create-memory | CreateMemory | Resource operation; requires explicit source execution provenance |
+| Memory | get-memory | GetMemory | Authorized resource query |
+| Memory | list-memory | ListMemory | Authorized bounded resource query/search |
+| Memory | update-memory | UpdateMemory | Resource operation; semantic Memory only, with version history |
+| Memory | archive-memory | ArchiveMemory | Resource operation; semantic Memory lifecycle |
+| Memory | retrieve-memory | RetrieveMemory | Governed memory.retrieve capability |
+| Memory | record-memory | RecordMemory | Governed memory.record capability |
+
+Episodic Memory remains an immutable concise record of a meaningful Agent execution event. Semantic Memory supports explicit versioned updates and archival. Durable writes require explicit source execution provenance; transient Agent context is never silently persisted as Memory.
+
+memory.retrieve is bounded and Enterprise/Agent scoped. memory.record requires an explicit persist=true request and uses the same application/domain Memory services as resource creation. Neither capability exposes hidden chain-of-thought.
+
+All Memory MCP handlers are adapters over Operations and application services. They do not mutate Eloquent models directly.
