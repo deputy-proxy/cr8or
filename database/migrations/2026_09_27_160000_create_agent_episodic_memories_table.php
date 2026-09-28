@@ -23,10 +23,22 @@ return new class extends Migration
             $table->json('provenance');
             $table->timestamps();
 
-            $table->index(['organization_id', 'enterprise_id', 'occurred_at']);
-            $table->index(['enterprise_id', 'agent_descriptor_id', 'occurred_at']);
-            $table->index(['enterprise_id', 'topic', 'occurred_at']);
-            $table->index(['execution_id', 'occurred_at']);
+            $table->index(
+                ['organization_id', 'enterprise_id', 'occurred_at'],
+                'aem_org_ent_occurred_idx'
+            );
+            $table->index(
+                ['enterprise_id', 'agent_descriptor_id', 'occurred_at'],
+                'aem_ent_agent_occurred_idx'
+            );
+            $table->index(
+                ['enterprise_id', 'topic', 'occurred_at'],
+                'aem_ent_topic_occurred_idx'
+            );
+            $table->index(
+                ['execution_id', 'occurred_at'],
+                'aem_execution_occurred_idx'
+            );
         });
     }
 
