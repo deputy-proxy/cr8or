@@ -16,7 +16,7 @@ final class DelegateAgent implements Operation
     {
         return $this->delegations->delegate(new AgentDelegationRequest(
             actor: $actor,
-            sourceAssignment: $input['source_assignment'] instanceof AgentAssignment
+            sourceAssignment: ($input['source_assignment'] ?? null) instanceof AgentAssignment
                 ? $input['source_assignment']
                 : AgentAssignment::query()->with(['agentDescriptor', 'organization', 'enterprise'])->findOrFail((int) $input['source_agent_assignment_id']),
             targetAgentSlug: (string) $input['target_agent_slug'],
