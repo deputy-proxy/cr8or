@@ -43,14 +43,14 @@ function integrationResultContext(string $provider = 'canva'): array
     return [$organization, $user, $enterprise, $connection, $job];
 }
 
-function resultEnvelope(string $status, string $externalResultId = 'result-1', ?string $correlationId = 'correlation-1'): IntegrationResultEnvelope
+function resultEnvelope(string $status, string $externalResultId = 'result-1', ?string $correlationId = 'correlation-1', string $deliveryId = 'delivery-1'): IntegrationResultEnvelope
 {
     return new IntegrationResultEnvelope(
         'external-job-1',
         $externalResultId,
         $status,
         $correlationId,
-        'delivery-1',
+        $deliveryId,
         CarbonImmutable::parse('2026-09-28T06:00:00Z'),
         ['provider_status' => $status],
         $status === 'failed' ? 'provider_failed' : null,
@@ -81,6 +81,20 @@ it('deduplicates webhook replay by stable provider result identity', function ()
         ->and($job->refresh()->status)->toBe(IntegrationJob::STATUS_SUCCEEDED);
 });
 
+it('deduplicates a webhook replay by delivery identity even when the provider result payload changes', function () {
+    [, , , , $job] = integrationResultContext();
+
+    $first = resultEnvelope('succeeded', 'result-original');
+    $second = resultEnvelope('failed', 'result-replayed');
+
+    $firstResult = app(IntegrationResultService::class)->ingest('canva', 'webhook', $first);
+    $secondResult = app(IntegrationResultService::class)->ingest('canva', 'webhook', $second);
+
+    expect($secondResult->id)->toBe($firstResult->id)
+        ->and(IntegrationResult::query()->count())->toBe(1)
+        ->and($job->refresh()->status)->toBe(IntegrationJob::STATUS_SUCCEEDED);
+});
+
 it('records late and out-of-order results without overwriting terminal CR8OR state', function () {
     [, , , , $job] = integrationResultContext();
 
@@ -89,7 +103,7 @@ it('records late and out-of-order results without overwriting terminal CR8OR sta
     $late = app(IntegrationResultService::class)->ingest(
         'canva',
         'webhook',
-        resultEnvelope('failed', 'result-failure'),
+        resultEnvelope('failed', 'result-failure', 'correlation-1', 'delivery-2'),
     );
 
     expect($late->processing_status)->toBe(IntegrationResult::PROCESSING_IGNORED)
