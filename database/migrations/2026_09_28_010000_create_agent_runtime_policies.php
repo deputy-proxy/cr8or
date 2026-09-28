@@ -27,9 +27,9 @@ return new class extends Migration
             $table->json('fallback_providers')->nullable();
             $table->timestamps();
 
-            $table->index(['environment', 'organization_id', 'enterprise_id']);
-            $table->index(['environment', 'organization_id', 'agent_descriptor_id']);
-            $table->index(['environment', 'organization_id', 'expert_descriptor_id']);
+            $table->index(['environment', 'organization_id', 'enterprise_id'], 'arp_env_org_ent_idx');
+            $table->index(['environment', 'organization_id', 'agent_descriptor_id'], 'arp_env_org_agent_idx');
+            $table->index(['environment', 'organization_id', 'expert_descriptor_id'], 'arp_env_org_expert_idx');
         });
     }
 
