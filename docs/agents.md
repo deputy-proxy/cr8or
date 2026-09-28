@@ -469,3 +469,6 @@ Approval decisions are immutable historical records. A request may be pending, a
 Approval reuse is bound to an exact request fingerprint covering the assignment, capability, execution and target context. A materially different request cannot consume an earlier approval.
 
 Default policy remains one owner/admin approval with self-approval disabled. Existing legacy approval records without a policy snapshot use the same normalized owner/admin policy for authorization compatibility.
+## Reporting Context
+
+Agents may explicitly request the `reporting` context category. The provider returns the latest authorized cross-domain business-performance report, metric values and provenance. It does not calculate or mutate reporting state during context assembly.
