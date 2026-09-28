@@ -267,3 +267,10 @@ Delegation inspection is exposed through `get-agent-delegation` and `list-agent-
 ## Enterprise Context Capability coverage
 
 Enterprise Context is available through both `enterprise.context.create` and `enterprise.context.retrieve`. The retrieval Capability resolves to `EnterpriseContextRetrieve`, which is also the application Operation consumed by the Enterprise Context MCP resource. The application contract returns the canonical Enterprise/Context representation used by downstream Agent and Expert composition; the MCP resource retains its existing transport response shape and does not expose persistence metadata.
+## Knowledge Capability boundary
+
+The state-changing Knowledge MCP adapters `create-knowledge-item`, `create-knowledge-index`, and `create-knowledge-unit` resolve through the Capability Registry and `CapabilityInvocationService`. They do not execute Knowledge Operations directly. The application-native Knowledge lifecycle is therefore:
+
+**Capability → Operation → Knowledge service → Persistence / derived index**
+
+`retrieve-knowledge` already uses the same governed boundary. MCP remains an adapter and is not required for Capability-native Knowledge execution.
