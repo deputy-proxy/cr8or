@@ -20,7 +20,7 @@ return new class extends Migration
             $table->json('provenance');
             $table->timestamps();
 
-            $table->index(['organization_id', 'enterprise_id', 'agent_descriptor_id']);
+            $table->index(['organization_id', 'enterprise_id', 'agent_descriptor_id'], 'asm_org_ent_agent_idx');
             $table->index(['enterprise_id', 'status', 'updated_at']);
         });
 
@@ -40,8 +40,8 @@ return new class extends Migration
             $table->timestamp('recorded_at');
             $table->timestamps();
 
-            $table->index(['agent_semantic_memory_id', 'recorded_at']);
-            $table->index(['enterprise_id', 'agent_descriptor_id', 'recorded_at']);
+            $table->index(['agent_semantic_memory_id', 'recorded_at'], 'asmv_memory_recorded_idx');
+            $table->index(['enterprise_id', 'agent_descriptor_id', 'recorded_at'], 'asmv_ent_agent_recorded_idx');
         });
     }
 
