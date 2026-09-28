@@ -23,8 +23,6 @@ use App\Events\AgentExecutionPaused;
 use App\Events\AgentExecutionResumed;
 use App\Events\AgentExecutionStarted;
 use App\Events\AgentReasoningCompleted;
-use App\Events\CapabilityAuthorized;
-use App\Events\CapabilityRequested;
 use App\Events\ExpertInvoked;
 use App\Events\KnowledgeRetrieved;
 use App\Jobs\RunAgentExecutionJob;
@@ -1120,13 +1118,7 @@ final class AgentExecutionService
             }
 
             $capability = $request['capability'];
-            $definition = $capabilities->resolve($capability);
-            app(AgentExecutionEventService::class)->dispatch(CapabilityRequested::class, $execution, provenance: [
-                'capability' => $capability,
-                'operation' => $definition->operation,
-            ], data: [
-                'idempotency_key' => $request['idempotency_key'] ?? null,
-            ]);
+            $capabilities->resolve($capability);
             $requestContext = isset($request['target_context']) && is_array($request['target_context'])
                 ? $request['target_context']
                 : $targetContext;
@@ -1168,13 +1160,6 @@ final class AgentExecutionService
                     throw new AuthorizationException("The Agent is not authorized for capability [{$capability}].");
                 }
 
-                app(AgentExecutionEventService::class)->dispatch(CapabilityAuthorized::class, $execution, provenance: [
-                    'capability' => $capability,
-                    'operation' => $definition->operation,
-                    'approval_request_id' => $approval?->getKey(),
-                ], data: [
-                    'idempotency_key' => $idempotencyKey,
-                ]);
             }
 
             $authorized[] = $capabilityRequest;
