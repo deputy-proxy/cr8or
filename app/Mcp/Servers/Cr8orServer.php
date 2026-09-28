@@ -127,7 +127,7 @@ class Cr8orServer extends Server
 {
     /** @var array<int, class-string<\Laravel\Mcp\Server\Tool>> */
     protected array $tools = [
-        ListCapabilitiesTool::class,
+        /* ListCapabilitiesTool::class,
         GetCapabilityTool::class,
         ListEnterpriseTool::class,
         GetEnterpriseTool::class,
@@ -170,9 +170,9 @@ class Cr8orServer extends Server
         ListExpertDescriptorTool::class,
         GetExpertDescriptorTool::class,
         ListExecutionTool::class,
-        GetExecutionTool::class,
+        GetExecutionTool::class, */
         CreateAgentExecutionTool::class,
-        ResumeAgentExecutionTool::class,
+        /* ResumeAgentExecutionTool::class,
         CancelAgentExecutionTool::class,
         ExecuteAgentTool::class,
         ListApprovalRequestTool::class,
@@ -240,6 +240,7 @@ class Cr8orServer extends Server
         AnalyzeBusinessContextTool::class,
         PlanMarketingTool::class,
         GenerateFinancialReportTool::class,
+        */
     ];
 
     protected array $resources = [
