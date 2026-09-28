@@ -94,6 +94,7 @@ use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\ResumeAgentExecutionTool;
+use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
@@ -194,6 +195,7 @@ class Cr8orServer extends Server
         ArchiveMemoryTool::class,
         RecordMemoryTool::class,
         RetrieveMemoryTool::class,
+        RetrieveEnterpriseContextTool::class,
         UpdateKnowledgeIndexTool::class,
         CreateKnowledgeUnitTool::class,
         UpdateKnowledgeUnitTool::class,

@@ -3,7 +3,7 @@
 namespace App\Mcp\Resources;
 
 use App\Models\User;
-use App\Services\McpContextAssembler;
+use App\Operations\EnterpriseContextRetrieve;
 use Illuminate\Auth\Access\AuthorizationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -25,10 +25,14 @@ class EnterpriseContextResource extends Resource implements HasUriTemplate
         $user = $request->user();
 
         if ($user instanceof User) {
-            return Response::json(app(McpContextAssembler::class)->enterprise(
-                $user,
-                $this->enterpriseId($request->get('enterprise')),
-            ));
+            $result = app(EnterpriseContextRetrieve::class)->execute($user, [
+                'enterprise_id' => $this->enterpriseId($request->get('enterprise')),
+            ]);
+
+            return Response::json([
+                'enterprise' => $result['enterprise'],
+                'context' => $result['context'],
+            ]);
         }
 
         throw new AuthorizationException('Authentication is required to read MCP resources.');
