@@ -1,1 +1,46 @@
-{"stdout":"<?php\n\nnamespace Database\\Factories;\n\nuse App\\Models\\AgentAssignment;\nuse App\\Models\\AgentDescriptor;\nuse App\\Models\\Enterprise;\nuse App\\Models\\Organization;\nuse Illuminate\\Database\\Eloquent\\Factories\\Factory;\n\n/** @extends Factory<AgentAssignment> */\nclass AgentAssignmentFactory extends Factory\n{\n    public function definition(): array\n    {\n        return [\n            'agent_descriptor_id' => AgentDescriptor::factory(),\n            'organization_id' => Organization::factory(),\n            'enterprise_id' => null,\n            'enabled' => true,\n            'status' => AgentAssignment::STATUS_DRAFT,\n            'objective' => null,\n            'requirements' => [],\n            'context' => [],\n        ];\n    }\n\n    public function forEnterprise(?Enterprise $enterprise = null): static\n    {\n        return $this->state(function () use ($enterprise): array {\n            $enterprise ??= Enterprise::factory()->create();\n\n            return [\n                'organization_id' => $enterprise->organization_id,\n                'enterprise_id' => $enterprise->getKey(),\n            ];\n        });\n    }\n\n    public function disabled(): static\n    {\n        return $this->state([\n            'enabled' => false,\n        ]);\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace Database\Factories;
+
+use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
+use App\Models\Enterprise;
+use App\Models\Organization;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/** @extends Factory<AgentAssignment> */
+class AgentAssignmentFactory extends Factory
+{
+    public function definition(): array
+    {
+        return [
+            'agent_descriptor_id' => AgentDescriptor::factory(),
+            'organization_id' => Organization::factory(),
+            'enterprise_id' => null,
+            'enabled' => true,
+            'status' => AgentAssignment::STATUS_DRAFT,
+            'objective' => null,
+            'requirements' => [],
+            'context' => [],
+        ];
+    }
+
+    public function forEnterprise(?Enterprise $enterprise = null): static
+    {
+        return $this->state(function () use ($enterprise): array {
+            $enterprise ??= Enterprise::factory()->create();
+
+            return [
+                'organization_id' => $enterprise->organization_id,
+                'enterprise_id' => $enterprise->getKey(),
+            ];
+        });
+    }
+
+    public function disabled(): static
+    {
+        return $this->state([
+            'enabled' => false,
+        ]);
+    }
+}

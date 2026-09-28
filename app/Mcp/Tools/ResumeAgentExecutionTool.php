@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools;
 
-use App\Operations\GetAgentExecution;
+use App\Operations\ResumeAgentExecution;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -10,13 +10,11 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('get-execution')]
-#[Description('Get an authorized Agent Execution by id from CR8OR.')]
-class GetExecutionTool extends AgentExecutionResourceTool
+#[Name('resume-execution')] #[Description('Resume a paused or waiting Agent Execution through the canonical runtime.') ] class ResumeAgentExecutionTool extends AgentExecutionResourceTool
 {
     protected function operationClass(): string
     {
-        return GetAgentExecution::class;
+        return ResumeAgentExecution::class;
     }
 
     public function schema(JsonSchema $schema): array

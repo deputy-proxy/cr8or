@@ -1,1 +1,20 @@
-{"stdout":"<?php\n\nnamespace App\\Operations;\n\nuse App\\Contracts\\Operation;\nuse App\\Models\\Enterprise;\nuse App\\Models\\User;\nuse App\\Services\\AgentAssignmentService;\n\nfinal class CreateAgentAssignment implements Operation\n{\n    public function __construct(private readonly AgentAssignmentService $assignments) {}\n\n    public function execute(User $actor, array $input): mixed\n    {\n        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);\n\n        return $this->assignments->serialize($this->assignments->create($actor, $enterprise, $input));\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Operations;
+
+use App\Contracts\Operation;
+use App\Models\Enterprise;
+use App\Models\User;
+use App\Services\AgentAssignmentService;
+
+final class CreateAgentAssignment implements Operation
+{
+    public function __construct(private readonly AgentAssignmentService $assignments) {}
+
+    public function execute(User $actor, array $input): mixed
+    {
+        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
+
+        return $this->assignments->serialize($this->assignments->create($actor, $enterprise, $input));
+    }
+}

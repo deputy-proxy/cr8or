@@ -2,61 +2,30 @@
 
 namespace App\Mcp\Tools;
 
-use App\Models\Execution;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use App\Operations\ListAgentExecutions;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('list-executions')]
-#[Description('Discover authorized execution resources in CR8OR.')]
-class ListExecutionTool extends DiscoveryListTool
+#[Description('List bounded Agent Executions for an Enterprise.')]
+class ListExecutionTool extends AgentExecutionResourceTool
 {
-    protected static function modelClass(): string
+    protected function operationClass(): string
     {
-        return Execution::class;
+        return ListAgentExecutions::class;
     }
 
-    protected static function filters(): array
+    public function schema(JsonSchema $schema): array
     {
-        return [
-            'project_id' => 'Project id.',
-            'task_id' => 'Task id.',
-            'work_item_id' => 'Work item id.',
-        ];
+        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'agent_assignment_id' => $schema->integer()->min(1), 'status' => $schema->string()->max(64), 'limit' => $schema->integer()->min(1)->max(50)];
     }
 
-    protected static function fields(): array
+    public function handle(Request $request): Response|ResponseFactory
     {
-        return [
-            'id' => 'id',
-            'organization_id' => 'organization_id',
-            'enterprise_id' => 'enterprise_id',
-            'project_id' => 'project_id',
-            'task_id' => 'task_id',
-            'work_item_id' => 'work_item_id',
-            'status' => 'status',
-            'started_at' => 'started_at',
-            'completed_at' => 'completed_at',
-            'created_at' => 'created_at',
-            'updated_at' => 'updated_at',
-        ];
-    }
-
-    protected static function searchableColumns(): array
-    {
-        return [];
-    }
-
-    /**
-     * @param  Builder<Model>  $query
-     */
-    // @phpstan-ignore missingType.generics
-    protected static function scopeQuery(Builder $query, User $actor): Builder
-    {
-        $organizationIds = $actor->memberships()->pluck('organization_id');
-
-        return $query->whereIn('organization_id', $organizationIds);
+        return $this->executeOperation($request, $request->validate(['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'status' => ['nullable', 'string', 'max:64'], 'limit' => ['nullable', 'integer', 'min:1', 'max:50']]));
     }
 }

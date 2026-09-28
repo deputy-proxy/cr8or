@@ -1,1 +1,22 @@
-{"stdout":"<?php\n\nnamespace App\\Operations;\n\nuse App\\Contracts\\Operation;\nuse App\\Models\\AgentAssignment;\nuse App\\Models\\Enterprise;\nuse App\\Models\\User;\nuse App\\Services\\AgentAssignmentService;\n\nfinal class TransitionAgentAssignment implements Operation\n{\n    public function __construct(private readonly AgentAssignmentService $assignments) {}\n\n    public function execute(User $actor, array $input): mixed\n    {\n        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);\n        $assignment = $input['assignment'] ?? AgentAssignment::query()->findOrFail((int) $input['agent_assignment_id']);\n\n        return $this->assignments->serialize($this->assignments->transition($actor, $enterprise, $assignment, (string) $input['status']));\n    }\n}\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+namespace App\Operations;
+
+use App\Contracts\Operation;
+use App\Models\AgentAssignment;
+use App\Models\Enterprise;
+use App\Models\User;
+use App\Services\AgentAssignmentService;
+
+final class TransitionAgentAssignment implements Operation
+{
+    public function __construct(private readonly AgentAssignmentService $assignments) {}
+
+    public function execute(User $actor, array $input): mixed
+    {
+        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
+        $assignment = $input['assignment'] ?? AgentAssignment::query()->findOrFail((int) $input['agent_assignment_id']);
+
+        return $this->assignments->serialize($this->assignments->transition($actor, $enterprise, $assignment, (string) $input['status']));
+    }
+}

@@ -12,7 +12,10 @@ use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveKnowledgeUnitTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
 use App\Mcp\Tools\ArchiveMemoryTool;
+use App\Mcp\Tools\CancelAgentExecutionTool;
 use App\Mcp\Tools\ConnectSocialAccountTool;
+use App\Mcp\Tools\CreateAgentAssignmentTool;
+use App\Mcp\Tools\CreateAgentExecutionTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
@@ -30,12 +33,9 @@ use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
-use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\GetAgentAssignmentTool;
-use App\Mcp\Tools\ListAgentAssignmentsTool;
-use App\Mcp\Tools\TransitionAgentAssignmentTool;
-use App\Mcp\Tools\UpdateAgentAssignmentTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetApprovalRequestTool;
 use App\Mcp\Tools\GetAudienceTool;
@@ -60,6 +60,7 @@ use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
 use App\Mcp\Tools\GetWorkItemTool;
+use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDescriptorTool;
 use App\Mcp\Tools\ListApprovalRequestTool;
 use App\Mcp\Tools\ListAudienceTool;
@@ -89,11 +90,14 @@ use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RequestApprovalTool;
+use App\Mcp\Tools\ResumeAgentExecutionTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
+use App\Mcp\Tools\TransitionAgentAssignmentTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
+use App\Mcp\Tools\UpdateAgentAssignmentTool;
 use App\Mcp\Tools\UpdateAudienceTool;
 use App\Mcp\Tools\UpdateCampaignTool;
 use App\Mcp\Tools\UpdateChannelTool;
@@ -161,6 +165,10 @@ class Cr8orServer extends Server
         GetExpertDescriptorTool::class,
         ListExecutionTool::class,
         GetExecutionTool::class,
+        CreateAgentExecutionTool::class,
+        ResumeAgentExecutionTool::class,
+        CancelAgentExecutionTool::class,
+        ExecuteAgentTool::class,
         ListApprovalRequestTool::class,
         ListKnowledgeIndexesTool::class,
         ListMemoryTool::class,
