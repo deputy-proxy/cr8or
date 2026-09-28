@@ -283,6 +283,15 @@ it('delegates through AgentDelegationService and preserves idempotency', functio
     $server->tool(DelegateAgentTool::class, $payload)->assertOk();
     $server->tool(DelegateAgentTool::class, $payload)->assertOk();
 
+    $delegation = \App\Models\AgentDelegation::query()->where('idempotency_key', 'mcp-delegation-123')->firstOrFail();
+
+    expect($delegation->target_agent_execution_id)->not->toBeNull();
+
+    $server->tool(\App\Mcp\Tools\GetExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $delegation->target_agent_execution_id,
+    ])->assertOk()->assertSee((string) $delegation->target_agent_execution_id);
+
     expect(\App\Models\AgentDelegation::query()
         ->where('idempotency_key', 'mcp-delegation-123')
         ->count())->toBe(1);
