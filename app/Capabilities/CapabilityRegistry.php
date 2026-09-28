@@ -15,6 +15,7 @@ use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\RecordMemoryTool;
+use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
@@ -31,6 +32,7 @@ use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkItem;
 use App\Operations\DelegateAgent;
 use App\Operations\EnterpriseContextCreate;
+use App\Operations\EnterpriseContextRetrieve;
 use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
@@ -433,6 +435,15 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'enterprise.context.retrieve',
+                EnterpriseContextRetrieve::class,
+                RetrieveEnterpriseContextTool::class,
+                ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'EnterprisePolicy::view + EnterpriseContextService authorization',
                 'permission-dependent',
             ),
             $this->definition(
