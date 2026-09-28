@@ -251,3 +251,16 @@ Execution starts are idempotent by organization and idempotency key. Starts thro
 The CR8OR server registers every concrete MCP Tool class under `app/Mcp/Tools`; a contract test fails if a concrete tool is added without server registration. Governed action tools resolve through `CapabilityRegistry`, while resource/discovery tools resolve to canonical resource Operations or query services. The server also exposes the Enterprise, Strategy, Knowledge and Work context resources through URI templates.
 
 The live surface is intentionally split into: discovery/read resources, domain resource CRUD and lifecycle tools, governed capability tools, and Agent runtime tools. This keeps direct MCP clients on the same authorization, approval, lifecycle and provenance paths as internal execution.
+
+
+## Runtime E2E audit
+
+`E2E-TEST-20260928` is the canonical Phase 12 runtime audit. It exercises the live MCP contract rather than application services directly: Enterprise and Enterprise Context creation, Knowledge indexing/retrieval, Memory creation/retrieval, Agent Assignment and Execution resources, Agent-to-Agent delegation, Expert-backed child execution, governed Content creation, and human review.
+
+The audit also verifies duplicate creation, invalid relationships, missing execution input, invalid lifecycle transitions, and cross-Enterprise access. It writes a machine-readable report to `storage/app/e2e/E2E-TEST-20260928.json` and prints the complete report to the test output. The test database is isolated by the repository Feature-test `RefreshDatabase` harness.
+
+Delegation inspection is exposed through `get-agent-delegation` and `list-agent-delegations`, allowing direct MCP clients to reconstruct the parent execution → delegation → child execution relationship without database access. Delegation may explicitly provide registered Expert slugs for the child execution; the canonical `AgentDelegationService` passes those slugs into the Agent execution path.
+
+### Authoritative Knowledge creation
+
+`create-knowledge-item` is the canonical MCP resource operation for creating an Enterprise-scoped authoritative Knowledge Item and its initial immutable Knowledge Version. It exists so a direct MCP client can construct the Knowledge branch before invoking the derived Knowledge Index/Unit lifecycle; indexing remains a derived representation and never becomes the authoritative content store.
