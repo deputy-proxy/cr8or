@@ -26,7 +26,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['agent_execution_id', 'occurred_at']);
-            $table->index(['organization_id', 'enterprise_id', 'occurred_at']);
+            $table->index(
+                ['organization_id', 'enterprise_id', 'occurred_at'],
+                'aee_org_ent_occurred_idx'
+            );
             $table->index(['event_type', 'occurred_at']);
         });
     }
