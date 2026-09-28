@@ -13,7 +13,7 @@ final class SubmitContentForReview implements Operation
 
     public function execute(User $actor, array $input): ContentItem
     {
-        $item = $input['content_item'] instanceof ContentItem
+        $item = ($input['content_item'] ?? null) instanceof ContentItem
             ? $input['content_item']
             : ContentItem::query()->findOrFail((int) $input['content_item_id']);
 
