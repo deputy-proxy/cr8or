@@ -15,6 +15,21 @@ final class CanvaClient implements CanvaClientContract
 {
     public function __construct(private readonly CredentialResolver $credentials) {}
 
+    public function integrationKey(): string
+    {
+        return 'creative';
+    }
+
+    public function providerKey(): string
+    {
+        return 'canva';
+    }
+
+    public function supports(string $operation): bool
+    {
+        return $operation === 'design.create';
+    }
+
     public function createDesign(IntegrationConnection $connection, CanvaDesignRequest $request): CanvaDesignResult
     {
         $token = $this->credentials->resolveAccessToken($connection);
@@ -51,6 +66,7 @@ final class CanvaClient implements CanvaClientContract
         }
 
         $status = $response->status();
+
         throw new CanvaClientException(
             'Canva rejected the design request.',
             $status === 429 ? 'rate_limited' : ($status >= 500 ? 'provider_unavailable' : 'provider_rejected'),

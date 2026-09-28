@@ -11,6 +11,21 @@ use Illuminate\Support\Facades\Http;
 
 final class PostizPublishingProvider implements PublishingProvider
 {
+    public function integrationKey(): string
+    {
+        return 'publishing';
+    }
+
+    public function providerKey(): string
+    {
+        return 'postiz';
+    }
+
+    public function supports(string $operation): bool
+    {
+        return $operation === 'publication.publish';
+    }
+
     public function publish(PublishingRequest $r): PublishingProviderResult
     {
         $key = (string) config('services.postiz.key', '');

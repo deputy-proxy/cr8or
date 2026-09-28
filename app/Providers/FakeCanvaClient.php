@@ -14,6 +14,21 @@ final class FakeCanvaClient implements CanvaClient
 
     public bool $shouldTimeout = false;
 
+    public function integrationKey(): string
+    {
+        return 'creative';
+    }
+
+    public function providerKey(): string
+    {
+        return 'canva';
+    }
+
+    public function supports(string $operation): bool
+    {
+        return $operation === 'design.create';
+    }
+
     public function createDesign(IntegrationConnection $connection, CanvaDesignRequest $request): CanvaDesignResult
     {
         if ($this->shouldTimeout) {
