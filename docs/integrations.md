@@ -86,3 +86,12 @@ The current implementation deliberately does not make preview-only Canva APIs pa
 External calls may fail after CR8OR accepts an operation. Such states must be explicit. Retryable operations should use idempotency where duplicate execution could create duplicate effects. External identifiers should be persisted when needed for callbacks or reconciliation. Incoming webhooks must be authenticated where supported, validated, safely deduplicated and associated with relevant integration state.
 
 Webhook ingestion, external-result reconciliation, durable integration-event delivery and concrete long-running polling workers are separate capabilities and must use the canonical boundary rather than bypass it.
+## External Result Reconciliation
+
+External provider results are recorded as immutable IntegrationResult records and correlated to exactly one IntegrationJob using provider + external job identity and, where available, the CR8OR correlation identifier. Ambiguous matches are rejected rather than risking cross-enterprise mutation.
+
+Webhook and polling paths both normalize into the same IntegrationResultEnvelope and pass through IntegrationResultService. The reconciler uses a stable dedupe key, preserves the provider payload and occurrence time, and applies authoritative IntegrationJob transitions only when the current lifecycle state permits them. Duplicate delivery is harmless; delayed or out-of-order terminal results are recorded but ignored. An `unknown` job may later be resolved by a known provider result.
+
+Webhook authentication currently uses an HMAC boundary with provider-specific or default managed secrets. Provider-specific signature verification can replace this adapter without changing reconciliation semantics. Webhook handlers never mutate arbitrary domain models directly.
+
+Polling is represented by the provider-neutral IntegrationResultFetcher contract. Provider-specific fetchers can recover a result when a webhook is delayed or lost while preserving the same correlation, idempotency and lifecycle rules.
