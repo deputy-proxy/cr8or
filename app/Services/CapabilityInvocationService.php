@@ -12,6 +12,7 @@ use App\Events\CapabilityResultReceived;
 use App\Events\OperationExecuted;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
+use App\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 
@@ -122,6 +123,17 @@ final class CapabilityInvocationService
             return;
         }
 
+        if ($request->enterprise === null) {
+            if ($request->capability !== 'enterprise.create') {
+                throw new AuthorizationException('A Capability invocation requires an Enterprise context.');
+            }
+
+            $organization = Organization::query()->findOrFail((int) ($request->inputPayload['organization_id'] ?? 0));
+            Gate::forUser($request->actor)->authorize('view', $organization);
+
+            return;
+        }
+
         Gate::forUser($request->actor)->authorize('view', $request->enterprise);
     }
 
@@ -132,7 +144,7 @@ final class CapabilityInvocationService
             $request->targetContext,
             [
                 'enterprise' => $request->enterprise,
-                'enterprise_id' => $request->enterprise->getKey(),
+                'enterprise_id' => $request->enterprise?->getKey(),
                 'correlation_id' => $request->resolvedCorrelationId(),
                 'idempotency_key' => $request->idempotencyKey,
             ],
@@ -141,20 +153,28 @@ final class CapabilityInvocationService
         if ($request->assignment !== null) {
             $input['assignment'] = $request->assignment;
             $input['agent_assignment_id'] = $request->assignment->getKey();
+        } else {
+            $input['assignment'] ??= null;
         }
 
         if ($request->execution !== null) {
             $input['execution'] = $request->execution;
             $input['agent_execution_id'] = $request->execution->getKey();
+        } else {
+            $input['execution'] ??= null;
         }
 
         if ($request->approval !== null) {
             $input['approval'] = $request->approval;
             $input['approval_request_id'] = $request->approval->getKey();
+        } else {
+            $input['approval'] ??= null;
         }
 
         if ($request->delegation !== null) {
             $input['delegation'] = $request->delegation;
+        } else {
+            $input['delegation'] ??= null;
         }
 
         return $this->capabilities->operation($definition->key)->execute($request->actor, $input);
@@ -206,7 +226,7 @@ final class CapabilityInvocationService
         return [
             'capability' => $request->capability,
             'operation' => $operation,
-            'enterprise_id' => $request->enterprise->getKey(),
+            'enterprise_id' => $request->enterprise?->getKey(),
             'agent_assignment_id' => $request->assignment?->getKey(),
             'agent_execution_id' => $request->execution?->getKey(),
             'correlation_id' => $request->resolvedCorrelationId(),
