@@ -20,6 +20,7 @@ final class ExpertInvocationService
         private readonly AgentCapabilityAuthorizer $capabilityAuthorizer,
         private readonly CapabilityRegistry $capabilities,
         private readonly ?ExecutionCorrelationService $correlation = null,
+        private readonly ?AgentRuntimePolicyService $runtimePolicies = null,
     ) {}
 
     public function invoke(ExpertInvocationRequest $request): ExpertInvocationResult
@@ -53,6 +54,10 @@ final class ExpertInvocationService
 
             $failureExpertSlug = $descriptor->slug;
             $failureRuntimeClass = $descriptor->runtime_class;
+
+            $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
+            $runtimePolicy = $runtimePolicies->resolveForAssignment($request->actor, $request->assignment, $descriptor);
+            $runtimePolicies->assertCanExecute($runtimePolicy);
 
             if (! $descriptor->enabled) {
                 throw new AuthorizationException(sprintf('Expert [%s] is disabled.', $request->expertSlug));
