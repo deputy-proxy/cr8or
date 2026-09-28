@@ -165,3 +165,8 @@ A report has a calculation period and methodology version. Its snapshot stores t
 Agent reporting context is opt-in through the `reporting` context requirement. Agents receive the latest authorized cross-domain report and its provenance. Context retrieval is read-only and does not silently generate a new report.
 
 Dashboards are currently a read-contract concern rather than persisted business state. A future dashboard implementation should compose reports and domain-specific views rather than introduce a second source of truth.
+## Runtime Configuration Boundary
+
+`AgentRuntimePolicy` is durable governance configuration. `AgentExecution.runtime_policy` is a historical snapshot of the effective configuration used by that execution. Runtime implementation metadata such as PHP runtime classes remains authoritative in Agent/Expert descriptors and is not duplicated into the policy model.
+
+Policy resolution cannot grant authority. Capability authorization, assignment authorization and approval governance remain independent checks. Runtime policy only constrains an already-authorized execution and fails closed when a requested limit, provider or context budget is outside the effective policy.
