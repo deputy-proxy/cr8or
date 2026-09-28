@@ -497,3 +497,7 @@ The Filament Agent Operations surface is read-only for execution history and con
 Approvals remain actionable through `ApprovalRequestService`, with Filament visibility treated only as UX convenience. Server-side ApprovalRequest policies and service checks remain authoritative.
 
 Agent Runtime Policies are exposed as an organization-scoped administrative view. Runtime-policy writes continue to require the server-side authorization path in `AgentRuntimePolicyService`.
+
+## Assignment and Capability E2E boundary
+
+The capability-native E2E workflow treats Agent Assignment as durable authority and Agent Execution as the runtime record. Assignment lifecycle operations are invoked through Capabilities; Agent execution and delegation carry the resulting Assignment/Execution relationships. The test uses the configured Agent and Expert descriptors and does not create substitute runtime records.
