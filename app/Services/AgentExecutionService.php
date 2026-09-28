@@ -8,6 +8,8 @@ use App\AI\Contracts\ModelProvider;
 use App\AI\Data\AgentExecutionResult;
 use App\AI\Data\ModelRequest;
 use App\AI\Data\ModelResult;
+use App\AI\Exceptions\ModelProviderException;
+use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\ReasoningOutputValidator;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentDelegationRequest;
@@ -49,6 +51,7 @@ final class AgentExecutionService
         private readonly ?ExpertInvocationService $expertInvocations = null,
         private readonly ?AgentMemoryRuntimeService $memoryRuntime = null,
         private readonly ?CapabilityExecutionService $capabilityExecution = null,
+        private readonly ?AgentRuntimePolicyService $runtimePolicies = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -73,6 +76,11 @@ final class AgentExecutionService
         if (! $agent instanceof Agent) {
             throw new AuthorizationException('The configured Agent runtime is invalid.');
         }
+
+        $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
+        $runtimePolicy = $runtimePolicies->resolveForAssignment($actor, $assignment);
+        $runtimePolicies->assertCanExecute($runtimePolicy);
+        $runtimeOptions = $runtimePolicies->enforceOptions($runtimePolicy, $request->options);
 
         $expertSlugs = $request->expertRoutingKey !== null
             ? $agent->expertsFor($request->expertRoutingKey)
@@ -109,7 +117,7 @@ final class AgentExecutionService
             );
         }
 
-        $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt);
+        $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt, $runtimePolicy);
 
         $context = $this->contextAssembler->forAgent(
             $actor,
@@ -118,6 +126,7 @@ final class AgentExecutionService
             $executionTargetContext,
             $assignment,
         );
+        $runtimePolicies->enforceContextSize($runtimePolicy, $context->toArray());
 
         $execution = AgentExecution::query()->create([
             'organization_id' => $assignment->organization_id,
@@ -135,12 +144,15 @@ final class AgentExecutionService
             'idempotency_key' => $idempotencyKey,
             'status' => AgentExecution::STATUS_REQUESTED,
             'requested_at' => now(),
-            'max_steps' => $this->maxSteps($request->options),
+            'max_steps' => (int) $runtimeOptions['max_steps'],
             'current_step' => 0,
             'prompt' => $request->prompt,
             'target_context' => $executionTargetContext,
             'expert_slugs' => $expertSlugs,
-            'model_options' => $request->options,
+            'max_retries' => (int) $runtimeOptions['max_retries'],
+            'model_options' => $runtimeOptions,
+            'runtime_policy' => $runtimePolicy,
+            'runtime_policy_version' => hash('sha256', json_encode($runtimePolicy, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),
             'execution_context' => $context->toArray(),
         ]);
 
@@ -183,6 +195,11 @@ final class AgentExecutionService
             throw new AuthorizationException('The configured Agent runtime is invalid.');
         }
 
+        $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
+        $runtimePolicy = $runtimePolicies->resolveForAssignment($actor, $assignment);
+        $runtimePolicies->assertCanExecute($runtimePolicy);
+        $runtimeOptions = $runtimePolicies->enforceOptions($runtimePolicy, $request->options);
+
         $expertSlugs = $request->expertRoutingKey !== null
             ? $agent->expertsFor($request->expertRoutingKey)
             : $request->expertSlugs;
@@ -209,7 +226,7 @@ final class AgentExecutionService
             return $existing->refresh();
         }
 
-        $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt);
+        $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt, $runtimePolicy);
         $context = $this->contextAssembler->forAgent(
             $actor,
             $enterprise,
@@ -217,6 +234,7 @@ final class AgentExecutionService
             $executionTargetContext,
             $assignment,
         );
+        $runtimePolicies->enforceContextSize($runtimePolicy, $context->toArray());
 
         $execution = AgentExecution::query()->create([
             'organization_id' => $assignment->organization_id,
@@ -234,12 +252,15 @@ final class AgentExecutionService
             'idempotency_key' => $idempotencyKey,
             'status' => AgentExecution::STATUS_REQUESTED,
             'requested_at' => now(),
-            'max_steps' => $this->maxSteps($request->options),
+            'max_steps' => (int) $runtimeOptions['max_steps'],
             'current_step' => 0,
             'prompt' => $request->prompt,
             'target_context' => $executionTargetContext,
             'expert_slugs' => $expertSlugs,
-            'model_options' => $request->options,
+            'max_retries' => (int) $runtimeOptions['max_retries'],
+            'model_options' => $runtimeOptions,
+            'runtime_policy' => $runtimePolicy,
+            'runtime_policy_version' => hash('sha256', json_encode($runtimePolicy, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),
             'execution_context' => $context->toArray(),
         ]);
 
@@ -507,7 +528,7 @@ final class AgentExecutionService
                         correlationId: isset($persistedModel['correlation_id']) && is_string($persistedModel['correlation_id']) ? $persistedModel['correlation_id'] : $correlationId,
                     );
                 } else {
-                    $modelResult = $this->provider->generate($modelRequest);
+                    $modelResult = $this->generateModelWithFallback($modelRequest, $modelOptions);
                     $structured = $modelResult->structured ?? ['answer' => $modelResult->text];
 
                     $modelResult = new ModelResult(
@@ -852,9 +873,10 @@ final class AgentExecutionService
 
     /**
      * @param  array<string, mixed>  $targetContext
+     * @param  array<string, mixed>  $runtimePolicy
      * @return array<string, mixed>
      */
-    private function executionTargetContext(Agent $agent, array $targetContext, string $prompt): array
+    private function executionTargetContext(Agent $agent, array $targetContext, string $prompt, array $runtimePolicy = []): array
     {
         $requirements = $agent->requiredContext();
 
@@ -863,32 +885,53 @@ final class AgentExecutionService
                 'query' => $prompt,
                 'objective' => $prompt,
                 'mode' => 'hybrid',
-                'limit' => 5,
-                'budget' => 1200,
+                'limit' => (int) ($runtimePolicy['retrieved_knowledge_limit'] ?? 5),
+                'budget' => min(1200, (int) ($runtimePolicy['max_context_bytes'] ?? 120000) / 100),
             ];
         }
 
         $targetContext['memory'] ??= [
             'topic' => $prompt,
-            'budget' => 20,
-            'episodic_limit' => 10,
+            'budget' => (int) ($runtimePolicy['memory_limit'] ?? 20),
+            'episodic_limit' => min(10, (int) ($runtimePolicy['memory_limit'] ?? 20)),
             'relevant_after' => now()->subDays(180)->toISOString(),
-            'semantic_limit' => 10,
+            'semantic_limit' => min(10, (int) ($runtimePolicy['memory_limit'] ?? 20)),
         ];
 
         return $targetContext;
     }
 
-    /** @param array<string, mixed> $options */
-    private function maxSteps(array $options): int
+    /** @param array<string, mixed> $modelOptions */
+    private function generateModelWithFallback(ModelRequest $request, array $modelOptions): ModelResult
     {
-        $value = $options['max_steps'] ?? 5;
+        $providers = array_values(array_unique(array_filter([
+            $request->provider,
+            ...(array) ($modelOptions['fallback_providers'] ?? []),
+        ])));
 
-        if (! is_int($value) || $value < 1) {
-            throw new AuthorizationException('Agent execution max_steps must be a positive integer.');
+        $lastFailure = null;
+
+        foreach ($providers === [] ? [null] : $providers as $provider) {
+            try {
+                return $this->provider->generate(new ModelRequest(
+                    prompt: $request->prompt,
+                    instructions: $request->instructions,
+                    context: $request->context,
+                    provider: $provider,
+                    model: $request->model,
+                    timeout: $request->timeout,
+                    structuredOutputSchema: $request->structuredOutputSchema,
+                    correlationId: $request->correlationId,
+                ));
+            } catch (ModelProviderException $exception) {
+                $lastFailure = $exception;
+                if (! in_array($exception->type, [ModelProviderFailureType::Unavailable, ModelProviderFailureType::RateLimited], true)) {
+                    throw $exception;
+                }
+            }
         }
 
-        return min($value, 10);
+        throw $lastFailure;
     }
 
     /**
