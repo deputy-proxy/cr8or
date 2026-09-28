@@ -185,3 +185,8 @@ Operational UX distinguishes proposed/requested, executing, waiting, delegated, 
 ## Capability application boundary
 
 Governed business actions have one canonical Capability execution path independent of transport. `CapabilityInvocationService` accepts an application `CapabilityInvocationRequest`, resolves the Capability through `CapabilityRegistry`, applies authorization and approval rules, invokes the mapped Operation, and returns structured provenance. Agent execution adapts into this boundary through `CapabilityExecutionService`; MCP Tools are transport adapters around the same boundary.
+## Agent Assignment Capability boundary
+
+Agent Assignment is durable Enterprise-scoped business state. `CreateAgentAssignment`, `UpdateAgentAssignment` and `TransitionAgentAssignment` remain the canonical Operations and are now reachable through `agent.assignment.create`, `agent.assignment.update` and `agent.assignment.transition`. The Capability boundary preserves Assignment authorization, Agent descriptor compatibility, idempotent creation and the explicit lifecycle state machine.
+
+An Assignment targeted by these resource Capabilities is not implicitly an Agent-backed execution context. `agent.execute` remains the separate runtime Capability. This distinction prevents resource lifecycle operations from accidentally acquiring execution authority.
