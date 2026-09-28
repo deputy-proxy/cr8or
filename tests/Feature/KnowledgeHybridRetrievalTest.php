@@ -89,3 +89,33 @@ it('preserves the canonical authorization boundary', function (): void {
         new KnowledgeRetrievalRequest(actor: $user, enterprise: $foreign, query: 'secret'),
     ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
 });
+it('honors explicit lexical and semantic retrieval modes without hybridizing them', function (): void {
+    [$user, $enterprise] = hybridActor();
+    $item = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise, 'title' => 'Mode']);
+
+    $provider = new KnowledgeHybridRetrievalProvider(
+        fakeRetrievalProvider([new KnowledgeRetrievalResultItem($item->getKey(), 'Mode', relevance: 0.9)], 'lexical'),
+        fakeRetrievalProvider([new KnowledgeRetrievalResultItem($item->getKey(), 'Mode', relevance: 0.7)], 'semantic'),
+    );
+
+    $lexical = $provider->retrieve(new KnowledgeRetrievalRequest(
+        actor: $user,
+        enterprise: $enterprise,
+        query: 'mode',
+        mode: 'lexical',
+    ));
+
+    $semantic = $provider->retrieve(new KnowledgeRetrievalRequest(
+        actor: $user,
+        enterprise: $enterprise,
+        query: 'mode',
+        mode: 'semantic',
+    ));
+
+    expect($lexical->items)->toHaveCount(1)
+        ->and($lexical->items[0]->relevance)->toBe(0.9)
+        ->and($lexical->metadata['mode'])->toBe('lexical')
+        ->and($semantic->items)->toHaveCount(1)
+        ->and($semantic->items[0]->relevance)->toBe(0.7)
+        ->and($semantic->metadata['mode'])->toBe('semantic');
+});

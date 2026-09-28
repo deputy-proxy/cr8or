@@ -13,6 +13,7 @@ use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
+use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
@@ -47,6 +48,7 @@ use App\Operations\PlanMarketing;
 use App\Operations\ProjectCreate;
 use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
+use App\Operations\RetrieveKnowledge;
 use App\Operations\SocialAccountConnect;
 use App\Operations\SocialAccountDisconnect;
 use App\Operations\SocialAccountUpdate;
@@ -479,6 +481,25 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'knowledge.retrieve',
+                RetrieveKnowledge::class,
+                RetrieveKnowledgeTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'query' => 'string|nullable',
+                    'objective' => 'string|nullable',
+                    'mode' => 'string|required',
+                    'limit' => 'integer|nullable',
+                    'minimum_relevance' => 'number|nullable',
+                    'correlation_id' => 'string|nullable',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'agent_execution_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'knowledge-retrieval'],
+                'McpCapabilityAuthorizer::authorizeCapability + Enterprise policy',
                 'permission-dependent',
             ),
         ];

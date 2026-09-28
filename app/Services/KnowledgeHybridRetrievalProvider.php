@@ -16,6 +16,16 @@ final class KnowledgeHybridRetrievalProvider implements KnowledgeRetrievalProvid
 
     public function retrieve(KnowledgeRetrievalRequest $request): KnowledgeRetrievalResult
     {
+        $mode = strtolower(trim($request->mode));
+
+        if ($mode === 'lexical') {
+            return $this->lexical->retrieve($this->modeRequest($request, 'lexical'));
+        }
+
+        if ($mode === 'semantic') {
+            return $this->semantic->retrieve($this->modeRequest($request, 'semantic'));
+        }
+
         $lexical = $this->lexical->retrieve($this->modeRequest($request, 'lexical'));
         $semantic = $this->semantic->retrieve($this->modeRequest($request, 'semantic'));
 

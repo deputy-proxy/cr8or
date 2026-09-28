@@ -33,8 +33,8 @@ final readonly class KnowledgeRetrievalRequest
 
         $limit = $this->limits['limit'] ?? 20;
 
-        if (! is_int($limit) || $limit < 1) {
-            throw new InvalidArgumentException('Knowledge retrieval limit must be a positive integer.');
+        if (! is_int($limit) || $limit < 1 || $limit > 50) {
+            throw new InvalidArgumentException('Knowledge retrieval limit must be an integer between 1 and 50.');
         }
 
         if (array_key_exists('minimum_relevance', $this->relevance)
