@@ -172,6 +172,7 @@ class Cr8orServer extends Server
         GetExecutionTool::class, */
         GetAgentAssignmentTool::class,
         CreateAgentExecutionTool::class,
+        CreateAgentAssignmentTool::class,
         /* ResumeAgentExecutionTool::class,
         CancelAgentExecutionTool::class,
         ExecuteAgentTool::class,
