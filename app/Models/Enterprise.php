@@ -244,6 +244,18 @@ class Enterprise extends Model
         return $this->hasMany(FinancialReport::class);
     }
 
+    /** @return HasMany<Report, $this> */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
+    }
+
+    /** @return HasMany<MetricDefinition, $this> */
+    public function metricDefinitions(): HasMany
+    {
+        return $this->hasMany(MetricDefinition::class);
+    }
+
     /** @return HasMany<BusinessHealthResult, $this> */
     public function businessHealthResults(): HasMany
     {
