@@ -1643,3 +1643,7 @@ The current runtime capability graph is exposed through governed MCP Tools. Runt
 | `publication.publish` | Publishing / Marketing runtime | `PublishContent` | `publish-content` | state-changing |
 
 Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance Operation is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain Operation exists.
+
+### Phase 12 capability-native validation
+
+Phase 12 is validated by `E2E-CAPABILITY-20260928`, which executes the application workflow through `CapabilityInvocationService → CapabilityRegistry → Operation → Application/Domain Service → Persistence`. The validation intentionally does not invoke MCP CRUD/action tools or Railway Sandbox and emits a machine-readable persisted graph for the complete test workflow.
