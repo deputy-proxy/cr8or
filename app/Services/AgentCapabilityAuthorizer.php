@@ -17,10 +17,8 @@ class AgentCapabilityAuthorizer
 {
     public function __construct(private readonly CapabilityRegistry $capabilities) {}
 
-    /**
-     * Authorize a Capability request through its canonical contract.
-     */
-    public function allowsRequest(CapabilityRequest $request): bool
+    /** Authorize a Capability request through its canonical contract. */
+    public function allowsRequest(CapabilityRequest $request, bool $allowPendingApproval = false): bool
     {
         return $this->allows(
             $request->assignment,
@@ -32,6 +30,7 @@ class AgentCapabilityAuthorizer
             $request->execution,
             $request->targetContext,
             $request->delegation,
+            $allowPendingApproval,
         );
     }
 
@@ -84,6 +83,7 @@ class AgentCapabilityAuthorizer
         ?AgentExecution $execution = null,
         array $targetContext = [],
         ?AgentDelegation $delegation = null,
+        bool $allowPendingApproval = false,
     ): bool {
         try {
             $this->capabilities->resolve($capability);
@@ -117,7 +117,7 @@ class AgentCapabilityAuthorizer
             return true;
         }
         if ($actor === null || $approval === null) {
-            return false;
+            return $allowPendingApproval;
         }
 
         return app(ApprovalRequestService::class)->matches(
