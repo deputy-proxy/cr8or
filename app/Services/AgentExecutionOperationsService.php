@@ -38,6 +38,8 @@ final class AgentExecutionOperationsService
                 'failure_code' => $execution->failure_code,
                 'failure_reason' => $execution->failure_reason,
                 'correlation_id' => $execution->correlation_id,
+                'agent_assignment_id' => $execution->agent_assignment_id,
+                'parent_agent_execution_id' => AgentDelegation::query()->where('target_agent_execution_id', $execution->getKey())->value('parent_agent_execution_id'),
             ],
             'steps' => $execution->steps->map(fn (AgentExecutionStep $step): array => [
                 'number' => $step->sequence,
@@ -78,6 +80,8 @@ final class AgentExecutionOperationsService
                     'capability' => $delegation->capability,
                     'status' => $delegation->status,
                     'requested_at' => optional($delegation->requested_at)?->toISOString(),
+                    'target_agent_execution_id' => $delegation->target_agent_execution_id,
+                    'correlation_id' => $delegation->correlation_id,
                 ])->all(),
             'integration_results' => IntegrationResult::query()
                 ->where('correlation_id', $execution->correlation_id)
