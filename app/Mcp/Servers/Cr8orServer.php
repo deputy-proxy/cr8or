@@ -24,6 +24,7 @@ use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
+use App\Mcp\Tools\CreateKnowledgeItemTool;
 use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
@@ -36,6 +37,7 @@ use App\Mcp\Tools\DisconnectSocialAccountTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetAgentAssignmentTool;
+use App\Mcp\Tools\GetAgentDelegationTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetApprovalRequestTool;
 use App\Mcp\Tools\GetAudienceTool;
@@ -61,6 +63,7 @@ use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
 use App\Mcp\Tools\GetWorkItemTool;
 use App\Mcp\Tools\ListAgentAssignmentsTool;
+use App\Mcp\Tools\ListAgentDelegationsTool;
 use App\Mcp\Tools\ListAgentDescriptorTool;
 use App\Mcp\Tools\ListApprovalRequestTool;
 use App\Mcp\Tools\ListAudienceTool;
@@ -158,8 +161,10 @@ class Cr8orServer extends Server
         ListWorkItemTool::class,
         GetWorkItemTool::class,
         ListAgentAssignmentsTool::class,
+        ListAgentDelegationsTool::class,
         ListAgentDescriptorTool::class,
         GetAgentAssignmentTool::class,
+        GetAgentDelegationTool::class,
         GetAgentDescriptorTool::class,
         ListExpertDescriptorTool::class,
         GetExpertDescriptorTool::class,
@@ -182,6 +187,7 @@ class Cr8orServer extends Server
         CreateAgentAssignmentTool::class,
         UpdateAgentAssignmentTool::class,
         TransitionAgentAssignmentTool::class,
+        CreateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,
         CreateMemoryTool::class,
         UpdateMemoryTool::class,
