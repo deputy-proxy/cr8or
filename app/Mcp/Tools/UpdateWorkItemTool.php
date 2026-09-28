@@ -76,7 +76,7 @@ class UpdateWorkItemTool extends GovernedCapabilityTool
                 throw new LogicException('At least one mutable work item field is required.');
             }
 
-            $workItem = $this->executeCapability($registry, $actor, ['work_item' => $workItem, ...$validated, 'attributes' => $attributes]);
+            $workItem = $this->executeCapability($registry, $actor, ['work_item' => $workItem, ...$validated, 'attributes' => $attributes, 'target_context' => ['work_item_id' => $workItem->getKey()]]);
 
             return Response::structured([
                 'success' => true,
