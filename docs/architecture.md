@@ -190,3 +190,9 @@ Governed business actions have one canonical Capability execution path independe
 Agent Assignment is durable Enterprise-scoped business state. `CreateAgentAssignment`, `UpdateAgentAssignment` and `TransitionAgentAssignment` remain the canonical Operations and are now reachable through `agent.assignment.create`, `agent.assignment.update` and `agent.assignment.transition`. The Capability boundary preserves Assignment authorization, Agent descriptor compatibility, idempotent creation and the explicit lifecycle state machine.
 
 An Assignment targeted by these resource Capabilities is not implicitly an Agent-backed execution context. `agent.execute` remains the separate runtime Capability. This distinction prevents resource lifecycle operations from accidentally acquiring execution authority.
+
+## Capability-native E2E validation
+
+`E2E-CAPABILITY-20260928` validates the application architecture independently of MCP. Business actions originate at `CapabilityInvocationService`, resolve through `CapabilityRegistry`, execute one canonical Operation, and persist through the existing application/domain services. The test does not invoke MCP Tools or Railway Sandbox, does not create business state through repositories/models/SQL, and treats unsupported or failed Capability paths as test failures.
+
+Enterprise creation is the bootstrap case because no Enterprise exists yet. `CapabilityInvocationService` therefore permits `enterprise.create` with a null Enterprise context only after Organization authorization. Every downstream Capability is Enterprise-scoped, and Agent-backed execution additionally carries its Assignment and Execution authority.
