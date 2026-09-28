@@ -9,6 +9,7 @@ use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
+use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
@@ -31,6 +32,7 @@ use App\Operations\CreateWorkItem;
 use App\Operations\DelegateAgent;
 use App\Operations\EnterpriseContextCreate;
 use App\Operations\EnterpriseCreate;
+use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingAudienceArchive;
@@ -143,6 +145,24 @@ final class CapabilityRegistry
     private function defaultDefinitions(): array
     {
         return [
+            $this->definition(
+                'agent.execute',
+                ExecuteAgent::class,
+                ExecuteAgentTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'agent_assignment_id' => 'integer|required',
+                    'prompt' => 'string|required',
+                    'target_context' => 'object|nullable',
+                    'expert_slugs' => 'array|nullable',
+                    'options' => 'object|nullable',
+                    'correlation_id' => 'string|nullable',
+                    'idempotency_key' => 'string|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'agent-execution'],
+                'McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService',
+                'permission-dependent',
+            ),
             $this->definition(
                 'agent.delegate',
                 DelegateAgent::class,
