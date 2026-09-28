@@ -245,3 +245,9 @@ Agent Executions are durable runtime resources linked to an Enterprise, Agent As
 | `cancel-execution` | `CancelAgentExecution` | Cancel an active execution through its lifecycle rules |
 
 Execution starts are idempotent by organization and idempotency key. Starts through the resource surface require the Assignment to be `ready` or `running`; invalid Assignment state is rejected before dispatch. Execution failures remain durable with structured failure code/category, while structured results are persisted without hidden chain-of-thought.
+
+## Complete MCP surface contract
+
+The CR8OR server registers every concrete MCP Tool class under `app/Mcp/Tools`; a contract test fails if a concrete tool is added without server registration. Governed action tools resolve through `CapabilityRegistry`, while resource/discovery tools resolve to canonical resource Operations or query services. The server also exposes the Enterprise, Strategy, Knowledge and Work context resources through URI templates.
+
+The live surface is intentionally split into: discovery/read resources, domain resource CRUD and lifecycle tools, governed capability tools, and Agent runtime tools. This keeps direct MCP clients on the same authorization, approval, lifecycle and provenance paths as internal execution.
