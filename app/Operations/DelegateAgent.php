@@ -23,6 +23,7 @@ final class DelegateAgent implements Operation
             capability: (string) $input['capability'],
             prompt: (string) $input['prompt'],
             targetContext: $input['target_context'] ?? [],
+            expertSlugs: $input['expert_slugs'] ?? [],
             contextRequirements: $input['context_requirements'] ?? [],
             sourceApproval: $input['source_approval'] ?? null,
             targetApproval: $input['target_approval'] ?? null,
