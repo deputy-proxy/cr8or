@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('enabled')->default(true);
             $table->timestamps();
 
-            $table->index(['organization_id', 'enterprise_id', 'capability', 'enabled']);
+            $table->index(['organization_id', 'enterprise_id', 'capability', 'enabled'], 'ap_org_ent_cap_enabled_idx');
         });
 
         Schema::create('approval_decisions', function (Blueprint $table) {
