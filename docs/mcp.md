@@ -274,3 +274,8 @@ The state-changing Knowledge MCP adapters `create-knowledge-item`, `create-knowl
 **Capability → Operation → Knowledge service → Persistence / derived index**
 
 `retrieve-knowledge` already uses the same governed boundary. MCP remains an adapter and is not required for Capability-native Knowledge execution.
+
+
+## Capability-native E2E is separate from MCP
+
+`E2E-CAPABILITY-20260928` is the application-path validation for Phase 12. It must not invoke MCP CRUD/action Tools. MCP remains a transport/interface adapter and is validated separately by the MCP E2E contract. The Capability E2E starts at `CapabilityInvocationService` and verifies persisted relationships and governance independently of the MCP surface.

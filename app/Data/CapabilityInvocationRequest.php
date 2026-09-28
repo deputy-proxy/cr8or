@@ -19,7 +19,7 @@ final readonly class CapabilityInvocationRequest
     public function __construct(
         public string $capability,
         public User $actor,
-        public Enterprise $enterprise,
+        public ?Enterprise $enterprise,
         public array $targetContext = [],
         public array $inputPayload = [],
         public ?AgentAssignment $assignment = null,
@@ -39,6 +39,10 @@ final readonly class CapabilityInvocationRequest
         }
 
         if ($this->assignment !== null && $this->execution !== null) {
+            if ($this->enterprise === null) {
+                throw new InvalidArgumentException('Agent-backed Capability invocation requires an Enterprise context.');
+            }
+
             if ($this->execution->agent_assignment_id !== $this->assignment->getKey()) {
                 throw new InvalidArgumentException('A Capability invocation execution must belong to its Agent assignment.');
             }

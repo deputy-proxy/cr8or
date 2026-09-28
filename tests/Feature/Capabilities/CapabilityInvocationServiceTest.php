@@ -123,3 +123,38 @@ it('preserves the canonical Capability operation mapping for Agent-backed invoca
         ->and($result['provenance']['agent_assignment_id'])->toBe($assignment->getKey())
         ->and($result['provenance']['agent_execution_id'])->toBe($execution->getKey());
 });
+it('bootstraps Enterprise creation through the Capability boundary without a pre-existing Enterprise', function () {
+    $organization = Organization::factory()->create();
+    $actor = User::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $result = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
+        capability: 'enterprise.create',
+        actor: $actor,
+        enterprise: null,
+        inputPayload: [
+            'organization_id' => $organization->getKey(),
+            'name' => 'Capability Bootstrap Enterprise',
+            'slug' => 'capability-bootstrap-enterprise',
+        ],
+        correlationId: 'capability-bootstrap-1',
+    ));
+
+    expect($result['status'])->toBe('executed')
+        ->and($result['result']['organization_id'])->toBe($organization->getKey())
+        ->and($result['provenance']['enterprise_id'])->toBeNull();
+});
+
+it('rejects a non-bootstrap Capability invocation without Enterprise context', function () {
+    $actor = User::factory()->create();
+
+    expect(fn () => app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
+        capability: 'work.item.create',
+        actor: $actor,
+        enterprise: null,
+        inputPayload: ['name' => 'Must not persist'],
+    )))->toThrow(AuthorizationException::class);
+});

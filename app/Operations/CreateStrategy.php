@@ -14,7 +14,7 @@ final class CreateStrategy implements Operation
 
     public function execute(User $actor, array $input): Strategy
     {
-        $objective = $input['objective'] instanceof Objective
+        $objective = ($input['objective'] ?? null) instanceof Objective
             ? $input['objective']
             : Objective::query()->findOrFail((int) $input['objective_id']);
 
