@@ -481,3 +481,12 @@ Effective policy inheritance is environment defaults followed by organization, E
 A new Agent execution snapshots its effective runtime policy and a SHA-256 policy version. Resumed executions use their persisted execution options/policy snapshot rather than silently changing behavior because governance configuration changed later.
 
 Runtime limits currently cover enabled state, maximum steps, retries, provider timeout, serialized context size, retrieved-knowledge limit, memory limit, provider/model selection and provider fallback. Provider fallback is attempted only for transient unavailable/rate-limited failures; configuration and invalid-response failures do not silently switch providers.
+## Production Reliability
+
+Agent execution jobs are unique per execution and protected by `WithoutOverlapping`. Queue retry count, timeout and overlap expiry use the persisted execution runtime policy rather than process-wide constants.
+
+Worker/process failures remain recoverable through queue retry semantics. Terminal execution state is recorded by the execution service/job failure handler, and idempotency keys prevent repeated delivery from creating duplicate governed mutations.
+
+`AgentExecutionHealthService` exposes operational counts and identifies stale requested/running executions using the persisted execution timeout. Waiting-for-input, waiting-for-approval and paused executions are intentionally not classified as stuck because they represent deliberate lifecycle states.
+
+Operational telemetry is derived from execution records and events. It is not authoritative business state and does not mutate executions merely to report health.
