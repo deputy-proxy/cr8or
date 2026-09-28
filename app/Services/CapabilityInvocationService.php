@@ -133,17 +133,29 @@ final class CapabilityInvocationService
             [
                 'enterprise' => $request->enterprise,
                 'enterprise_id' => $request->enterprise->getKey(),
-                'assignment' => $request->assignment,
-                'agent_assignment_id' => $request->assignment?->getKey(),
-                'execution' => $request->execution,
-                'agent_execution_id' => $request->execution?->getKey(),
-                'approval' => $request->approval,
-                'approval_request_id' => $request->approval?->getKey(),
                 'correlation_id' => $request->resolvedCorrelationId(),
                 'idempotency_key' => $request->idempotencyKey,
-                'delegation' => $request->delegation,
             ],
         );
+
+        if ($request->assignment !== null) {
+            $input['assignment'] = $request->assignment;
+            $input['agent_assignment_id'] = $request->assignment->getKey();
+        }
+
+        if ($request->execution !== null) {
+            $input['execution'] = $request->execution;
+            $input['agent_execution_id'] = $request->execution->getKey();
+        }
+
+        if ($request->approval !== null) {
+            $input['approval'] = $request->approval;
+            $input['approval_request_id'] = $request->approval->getKey();
+        }
+
+        if ($request->delegation !== null) {
+            $input['delegation'] = $request->delegation;
+        }
 
         return $this->capabilities->operation($definition->key)->execute($request->actor, $input);
     }

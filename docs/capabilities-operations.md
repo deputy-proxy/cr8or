@@ -74,3 +74,13 @@ An application invocation may be human-scoped to an Enterprise or Agent-backed w
 | `knowledge.retrieve` | `RetrieveKnowledge` | `retrieve-knowledge` | Retrieve authorized indexed Knowledge with normalized provenance. |
 
 The Knowledge lifecycle remains split between authoritative persistence and derived representations. `knowledge.item.create` persists the business Knowledge Item and version; index and unit capabilities invoke the existing indexing/resource services; `knowledge.retrieve` invokes the existing retrieval service. Repeated indexing rebuilds the derived representation rather than creating duplicate authoritative Knowledge. The capability-native application path does not require MCP.
+
+### Agent Assignment lifecycle
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `agent.assignment.create` | `CreateAgentAssignment` | `create-agent-assignment` | Persist an Enterprise-scoped Agent Assignment with objective, requirements, context and idempotency state. |
+| `agent.assignment.update` | `UpdateAgentAssignment` | `update-agent-assignment` | Update Assignment definition without bypassing lifecycle rules. |
+| `agent.assignment.transition` | `TransitionAgentAssignment` | `transition-agent-assignment` | Apply explicit Assignment state-machine transitions. |
+
+These Capabilities operate on the durable Assignment resource. They do not turn the target Assignment into an Agent-backed execution request. Agent execution remains a separate Capability (`agent.execute`) that uses an Assignment as its runtime authority.

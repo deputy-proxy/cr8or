@@ -26,6 +26,7 @@ use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
 use App\Operations\CampaignLifecycle;
 use App\Operations\ContentSeriesLifecycle;
+use App\Operations\CreateAgentAssignment;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateKnowledgeIndex;
 use App\Operations\CreateKnowledgeItem;
@@ -64,6 +65,8 @@ use App\Operations\SocialAccountConnect;
 use App\Operations\SocialAccountDisconnect;
 use App\Operations\SocialAccountUpdate;
 use App\Operations\SubmitContentForReview;
+use App\Operations\TransitionAgentAssignment;
+use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
 use App\Operations\UpdateWorkItem;
@@ -552,6 +555,33 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'memory-record'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'agent.assignment.create',
+                CreateAgentAssignment::class,
+                \App\Mcp\Tools\CreateAgentAssignmentTool::class,
+                ['enterprise_id' => 'integer|required', 'agent_descriptor_id' => 'integer|required', 'objective' => 'string|nullable', 'requirements' => 'object|nullable', 'context' => 'object|nullable', 'status' => 'string|nullable', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'agent-assignment'],
+                'Enterprise policy + AgentAssignment createForAgentAssignment authorization',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'agent.assignment.update',
+                UpdateAgentAssignment::class,
+                \App\Mcp\Tools\UpdateAgentAssignmentTool::class,
+                ['enterprise_id' => 'integer|required', 'agent_assignment_id' => 'integer|required', 'agent_descriptor_id' => 'integer|nullable', 'objective' => 'string|nullable', 'requirements' => 'object|nullable', 'context' => 'object|nullable', 'correlation_id' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'agent-assignment'],
+                'Enterprise policy + AgentAssignment update authorization',
+                'permission-dependent',
+            ),
+            $this->definition(
+                'agent.assignment.transition',
+                TransitionAgentAssignment::class,
+                \App\Mcp\Tools\TransitionAgentAssignmentTool::class,
+                ['enterprise_id' => 'integer|required', 'agent_assignment_id' => 'integer|required', 'status' => 'string|required'],
+                ['success' => 'boolean', 'result' => 'agent-assignment'],
+                'Enterprise policy + AgentAssignment lifecycle authorization',
                 'permission-dependent',
             ),
             $this->definition(
