@@ -14,6 +14,21 @@ final class FakePublishingProvider implements PublishingProvider
 
     public bool $shouldFail = false;
 
+    public function integrationKey(): string
+    {
+        return 'publishing';
+    }
+
+    public function providerKey(): string
+    {
+        return 'postiz';
+    }
+
+    public function supports(string $operation): bool
+    {
+        return $operation === 'publication.publish';
+    }
+
     public function publish(PublishingRequest $request): PublishingProviderResult
     {
         if ($this->shouldTimeout) {
