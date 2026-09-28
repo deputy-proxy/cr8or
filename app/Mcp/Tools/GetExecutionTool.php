@@ -2,47 +2,30 @@
 
 namespace App\Mcp\Tools;
 
-use App\Models\Execution;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use App\Operations\GetAgentExecution;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('get-execution')]
-#[Description('Get an authorized execution by id from CR8OR.')]
-class GetExecutionTool extends DiscoveryGetTool
+#[Description('Get an authorized Agent Execution by id from CR8OR.')]
+class GetExecutionTool extends AgentExecutionResourceTool
 {
-    protected static function modelClass(): string
+    protected function operationClass(): string
     {
-        return Execution::class;
+        return GetAgentExecution::class;
     }
 
-    protected static function fields(): array
+    public function schema(JsonSchema $schema): array
     {
-        return [
-            'id' => 'id',
-            'organization_id' => 'organization_id',
-            'enterprise_id' => 'enterprise_id',
-            'project_id' => 'project_id',
-            'task_id' => 'task_id',
-            'work_item_id' => 'work_item_id',
-            'status' => 'status',
-            'started_at' => 'started_at',
-            'completed_at' => 'completed_at',
-            'created_at' => 'created_at',
-            'updated_at' => 'updated_at',
-        ];
+        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'agent_execution_id' => $schema->integer()->min(1)->required()];
     }
 
-    /**
-     * @param  Builder<Model>  $query
-     */
-    // @phpstan-ignore missingType.generics
-    protected static function scopeQuery(Builder $query, User $actor): Builder
+    public function handle(Request $request): Response|ResponseFactory
     {
-        $organizationIds = $actor->memberships()->pluck('organization_id');
-
-        return $query->whereIn('organization_id', $organizationIds);
+        return $this->executeOperation($request, $request->validate(['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'agent_execution_id' => ['required', 'integer', 'min:1', 'exists:agent_executions,id']]));
     }
 }
