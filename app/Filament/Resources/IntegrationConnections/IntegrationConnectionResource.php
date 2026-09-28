@@ -41,7 +41,12 @@ class IntegrationConnectionResource extends Resource
             TextInput::make('provider')->maxLength(255),
             TextInput::make('external_account_id')->maxLength(255),
             TextInput::make('credential_reference')->required()->maxLength(255),
-            Select::make('status')->options(['active' => 'Active', 'disabled' => 'Disabled'])->required(),
+            Select::make('status')->options([
+                IntegrationConnection::STATUS_ACTIVE => 'Active',
+                IntegrationConnection::STATUS_DISABLED => 'Disabled',
+                IntegrationConnection::STATUS_DEGRADED => 'Degraded',
+                IntegrationConnection::STATUS_REVOKED => 'Revoked',
+            ])->required(),
         ]);
     }
 
