@@ -7,6 +7,11 @@ use App\Models\User;
 
 class AgentDelegationPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->memberships()->exists();
+    }
+
     public function view(User $user, AgentDelegation $delegation): bool
     {
         return $user->memberships()->where('organization_id', $delegation->organization_id)->exists();
