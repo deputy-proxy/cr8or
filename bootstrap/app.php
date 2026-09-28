@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: static function (): void {
             require base_path('routes/ai.php');
+            require base_path('routes/integrations.php');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

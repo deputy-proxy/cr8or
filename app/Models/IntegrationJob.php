@@ -18,10 +18,24 @@ class IntegrationJob extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const STATUS_UNKNOWN = 'unknown';
+
     protected static function booted(): void
     {
         static::saving(function (IntegrationJob $job): void {
-            if (! in_array($job->status, [self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
+            if (! in_array($job->status, [
+                self::STATUS_PENDING,
+                self::STATUS_RUNNING,
+                self::STATUS_SUCCEEDED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+                self::STATUS_EXPIRED,
+                self::STATUS_UNKNOWN,
+            ], true)) {
                 throw new LogicException("Invalid integration job status [{$job->status}].");
             }
 
@@ -37,6 +51,7 @@ class IntegrationJob extends Model
                 if ($job->{$field} === null) {
                     continue;
                 }
+
                 $record = $model::query()->find($job->{$field});
                 if ($record === null || (int) $record->enterprise_id !== (int) $job->enterprise_id) {
                     throw new LogicException("Integration job {$field} must belong to its enterprise.");
@@ -46,9 +61,11 @@ class IntegrationJob extends Model
             if ($job->status === self::STATUS_SUCCEEDED && $job->failure_reason !== null) {
                 throw new LogicException('A succeeded integration job cannot have a failure reason.');
             }
+
             if ($job->status === self::STATUS_FAILED && $job->failure_reason === null) {
                 throw new LogicException('A failed integration job must have a failure reason.');
             }
+
             if ($job->exists && $job->getRawOriginal('status') === self::STATUS_FAILED && $job->status === self::STATUS_SUCCEEDED) {
                 throw new LogicException('A failed integration job cannot be represented as succeeded.');
             }
@@ -70,15 +87,44 @@ class IntegrationJob extends Model
     public function transitionTo(string $status): static
     {
         $allowed = match ($this->status) {
-            self::STATUS_PENDING => [self::STATUS_RUNNING, self::STATUS_FAILED],
-            self::STATUS_RUNNING => [self::STATUS_SUCCEEDED, self::STATUS_FAILED],
-            self::STATUS_SUCCEEDED, self::STATUS_FAILED => [],
+            self::STATUS_PENDING => [
+                self::STATUS_RUNNING,
+                self::STATUS_SUCCEEDED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+                self::STATUS_EXPIRED,
+                self::STATUS_UNKNOWN,
+            ],
+            self::STATUS_RUNNING => [
+                self::STATUS_SUCCEEDED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+                self::STATUS_EXPIRED,
+                self::STATUS_UNKNOWN,
+            ],
+            self::STATUS_UNKNOWN => [
+                self::STATUS_RUNNING,
+                self::STATUS_SUCCEEDED,
+                self::STATUS_FAILED,
+                self::STATUS_CANCELLED,
+                self::STATUS_EXPIRED,
+            ],
+            self::STATUS_SUCCEEDED,
+            self::STATUS_FAILED,
+            self::STATUS_CANCELLED,
+            self::STATUS_EXPIRED => [],
             default => throw new LogicException('Integration job has no valid lifecycle state.'),
         };
 
-        if (! in_array($status, [self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)
-            || ! in_array($status, $allowed, true)
-        ) {
+        if (! in_array($status, [
+            self::STATUS_PENDING,
+            self::STATUS_RUNNING,
+            self::STATUS_SUCCEEDED,
+            self::STATUS_FAILED,
+            self::STATUS_CANCELLED,
+            self::STATUS_EXPIRED,
+            self::STATUS_UNKNOWN,
+        ], true) || ! in_array($status, $allowed, true)) {
             throw new LogicException("Integration job cannot transition from [{$this->status}] to [{$status}].");
         }
 
@@ -93,5 +139,19 @@ class IntegrationJob extends Model
         $this->failure_code = $code;
 
         return $this->transitionTo(self::STATUS_FAILED);
+    }
+
+    public function reconcile(string $status, ?string $failureCode = null, ?string $failureReason = null, ?string $externalJobId = null): static
+    {
+        $this->failure_code = $failureCode;
+        $this->failure_reason = $status === self::STATUS_FAILED
+            ? ($failureReason ?? 'Provider reported integration failure.')
+            : null;
+
+        if ($externalJobId !== null && $this->external_job_id === null) {
+            $this->external_job_id = $externalJobId;
+        }
+
+        return $this->transitionTo($status);
     }
 }

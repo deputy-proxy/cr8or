@@ -226,7 +226,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Credentials are references, not plaintext secrets in domain records. External operations consider retries and idempotency.
 
-**Verified Phase 11.1 implementation:** Provider-neutral integration definitions, provider metadata, credential references, external execution context, webhook/event envelopes and the IntegrationConnection lifecycle are explicit application contracts. Provider-specific execution remains in adapters; external-result reconciliation and durable platform event delivery remain separate phases.
+**Verified Phase 11.1 implementation:** Provider-neutral integration definitions, provider metadata, credential references, external execution context, webhook/event envelopes and the IntegrationConnection lifecycle are explicit application contracts. **Verified Phase 11.2 implementation:** External IntegrationResult records provide immutable webhook/poll reconciliation history with idempotent deduplication, deterministic late/out-of-order handling and governed IntegrationJob lifecycle transitions. Provider-specific execution remains in adapters; external-result reconciliation and durable platform event delivery remain separate phases.
 
 ## Governance
 
