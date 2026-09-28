@@ -188,6 +188,7 @@ it('composes explicitly requested providers in canonical order regardless of req
     ])
         ->and($context->metadata()['strategy']['source'])->toBe(
             App\Services\Context\Providers\StrategyContextProvider::class,
+            App\Services\Context\Providers\ReportingContextProvider::class,
         )
         ->and($context->metadata()['execution_history']['relevance'])
         ->toContain('Enterprise execution history');

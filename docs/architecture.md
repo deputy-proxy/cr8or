@@ -154,3 +154,14 @@ All platform events use versioned contracts with event ID, category, schema/vers
 Ordering is category-specific: Agent execution timelines use persisted occurrence time plus record identity, integration reconciliation uses stable provider/result deduplication and lifecycle transitions, and domain consumers must not infer authoritative state solely from event order. Repeated delivery is expected and must be idempotent.
 
 The platform deliberately does not persist a generic second copy of every domain fact. Durable Agent execution history and integration reconciliation history are persisted because the product requires them; domain and webhook events remain typed contracts and delivery mechanisms unless a concrete consumer requires durable storage.
+## Generic Reporting Foundations
+
+CR8OR uses generic reporting only at the cross-domain derived-data boundary. `Report`, `ReportSnapshot`, `MetricDefinition` and `ReportMetricValue` store derived results; they do not replace Finance, Marketing, Strategy, Work, KPI or Agent execution records.
+
+A report has a calculation period and methodology version. Its snapshot stores the exact source records/values used by the calculation and a SHA-256 source fingerprint. Metric values record their calculation description and source records. Snapshots and metric values are immutable so historical reports remain reproducible.
+
+`BusinessPerformanceReportingService` is the current cross-domain aggregation boundary. It reads existing domain services/models, produces a completed derived report, and never mutates source records. Domain-specific reports such as `FinancialReport` and `BusinessHealthResult` remain authoritative for their own calculations.
+
+Agent reporting context is opt-in through the `reporting` context requirement. Agents receive the latest authorized cross-domain report and its provenance. Context retrieval is read-only and does not silently generate a new report.
+
+Dashboards are currently a read-contract concern rather than persisted business state. A future dashboard implementation should compose reports and domain-specific views rather than introduce a second source of truth.
