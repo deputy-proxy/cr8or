@@ -42,6 +42,8 @@ use LogicException;
  * @property array<string, mixed>|null $target_context
  * @property list<string>|null $expert_slugs
  * @property array<string, mixed>|null $model_options
+ * @property array<string, mixed>|null $runtime_policy
+ * @property string|null $runtime_policy_version
  * @property array<string, mixed>|null $execution_context
  * @property array<string, mixed>|null $last_result
  * @property string|null $next_step
@@ -78,6 +80,8 @@ use LogicException;
     'target_context',
     'expert_slugs',
     'model_options',
+    'runtime_policy',
+    'runtime_policy_version',
     'execution_context',
     'last_result',
     'next_step',
@@ -215,6 +219,7 @@ class AgentExecution extends Model
             'target_context' => 'array',
             'expert_slugs' => 'array',
             'model_options' => 'array',
+            'runtime_policy' => 'array',
             'execution_context' => 'array',
             'last_result' => 'array',
         ];
