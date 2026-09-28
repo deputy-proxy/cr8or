@@ -177,3 +177,8 @@ Agent execution records, decisions, approvals, delegation history and integratio
 Recovery after worker interruption relies on queue retry, execution idempotency and terminal-state guards. A repeated job for a completed/failed/cancelled execution is a no-op. Waiting states are not automatically resumed because doing so could bypass human approval/input boundaries.
 
 The operational health service reports stale requested/running executions for operator action; it deliberately does not auto-recover them without a future explicit, authorization-aware recovery command.
+## Operational UX Boundary
+
+Filament is a presentation layer over authoritative services and read models. It must not reconstruct Agent state from UI-local assumptions, logs or hidden model output. Execution inspection uses structured `AgentExecutionEventRecord` history; approval actions call `ApprovalRequestService`; runtime policy administration calls `AgentRuntimePolicyService`.
+
+Operational UX distinguishes proposed/requested, executing, waiting, delegated, paused, failed and completed states. Visibility of an action is never treated as permission to perform it.

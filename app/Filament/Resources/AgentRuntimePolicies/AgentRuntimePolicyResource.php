@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Filament\Resources\AgentRuntimePolicies;
+
+use App\Filament\Resources\AgentRuntimePolicies\Pages\ListAgentRuntimePolicies;
+use App\Models\AgentRuntimePolicy;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class AgentRuntimePolicyResource extends Resource
+{
+    protected static ?string $model = AgentRuntimePolicy::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+
+    protected static ?string $navigationLabel = 'Agent Runtime Policies';
+
+    protected static ?int $navigationSort = 45;
+
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            TextColumn::make('environment')->sortable(),
+            TextColumn::make('organization_id')->label('Organization')->sortable(),
+            TextColumn::make('enterprise_id')->label('Enterprise')->sortable(),
+            TextColumn::make('agent_descriptor_id')->label('Agent')->sortable(),
+            TextColumn::make('expert_descriptor_id')->label('Expert')->sortable(),
+            TextColumn::make('enabled')->badge(),
+            TextColumn::make('provider')->sortable(),
+            TextColumn::make('max_steps')->sortable(),
+            TextColumn::make('max_retries')->sortable(),
+            TextColumn::make('timeout_seconds')->suffix('s'),
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $ids = auth()->user()?->memberships()->pluck('organization_id') ?? collect();
+
+        return parent::getEloquentQuery()->whereIn('organization_id', $ids);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->memberships()->exists();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function getPages(): array
+    {
+        return ['index' => ListAgentRuntimePolicies::route('/')];
+    }
+}

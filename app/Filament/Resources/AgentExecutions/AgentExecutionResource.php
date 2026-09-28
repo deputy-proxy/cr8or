@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\AgentExecutions;
 
 use App\Filament\Resources\AgentExecutions\Pages\ListAgentExecutions;
+use App\Filament\Resources\AgentExecutions\Pages\ViewAgentExecution;
 use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
 use App\Models\AgentExecution;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -36,6 +38,8 @@ class AgentExecutionResource extends Resource
             TextColumn::make('status')->badge()->sortable(),
             TextColumn::make('requested_at')->dateTime()->sortable(),
             TextColumn::make('completed_at')->dateTime()->sortable(),
+        ])->recordActions([
+            Action::make('view')->url(fn (AgentExecution $record): string => static::getUrl('view', ['record' => $record])),
         ]);
     }
 
@@ -56,6 +60,9 @@ class AgentExecutionResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListAgentExecutions::route('/')];
+        return [
+            'index' => ListAgentExecutions::route('/'),
+            'view' => ViewAgentExecution::route('/{record}'),
+        ];
     }
 }

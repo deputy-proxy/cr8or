@@ -490,3 +490,10 @@ Worker/process failures remain recoverable through queue retry semantics. Termin
 `AgentExecutionHealthService` exposes operational counts and identifies stale requested/running executions using the persisted execution timeout. Waiting-for-input, waiting-for-approval and paused executions are intentionally not classified as stuck because they represent deliberate lifecycle states.
 
 Operational telemetry is derived from execution records and events. It is not authoritative business state and does not mutate executions merely to report health.
+## Agent Operations UX
+
+The Filament Agent Operations surface is read-only for execution history and consumes `AgentExecutionOperationsService` as its application read model. Execution detail exposes lifecycle state, structured events, steps, approvals, delegations and correlated external results. It intentionally excludes prompts, model options and private reasoning content.
+
+Approvals remain actionable through `ApprovalRequestService`, with Filament visibility treated only as UX convenience. Server-side ApprovalRequest policies and service checks remain authoritative.
+
+Agent Runtime Policies are exposed as an organization-scoped administrative view. Runtime-policy writes continue to require the server-side authorization path in `AgentRuntimePolicyService`.
