@@ -135,6 +135,7 @@ final class AgentDelegationService
                 assignment: $target,
                 prompt: $request->prompt,
                 targetContext: $request->targetContext,
+                expertSlugs: $request->expertSlugs,
                 correlationId: $correlationId,
                 delegation: $delegation,
             ));
