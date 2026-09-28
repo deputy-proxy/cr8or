@@ -26,6 +26,7 @@ final class RecordAgentExecutionEvent implements ShouldQueue
                 'version' => $event::VERSION,
                 'visibility' => $event::VISIBILITY,
                 'correlation_id' => $event->correlationId,
+                'causation_id' => $event->causationId,
                 'provenance' => $event->provenance,
                 'data' => $event->data,
                 'occurred_at' => $event->occurredAt,
