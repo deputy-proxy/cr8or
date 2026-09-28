@@ -31,6 +31,11 @@ use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
+use App\Mcp\Tools\CreateAgentAssignmentTool;
+use App\Mcp\Tools\GetAgentAssignmentTool;
+use App\Mcp\Tools\ListAgentAssignmentsTool;
+use App\Mcp\Tools\TransitionAgentAssignmentTool;
+use App\Mcp\Tools\UpdateAgentAssignmentTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetApprovalRequestTool;
 use App\Mcp\Tools\GetAudienceTool;
@@ -148,7 +153,9 @@ class Cr8orServer extends Server
         GetProjectTool::class,
         ListWorkItemTool::class,
         GetWorkItemTool::class,
+        ListAgentAssignmentsTool::class,
         ListAgentDescriptorTool::class,
+        GetAgentAssignmentTool::class,
         GetAgentDescriptorTool::class,
         ListExpertDescriptorTool::class,
         GetExpertDescriptorTool::class,
@@ -164,6 +171,9 @@ class Cr8orServer extends Server
 
         GetApprovalRequestTool::class,
 
+        CreateAgentAssignmentTool::class,
+        UpdateAgentAssignmentTool::class,
+        TransitionAgentAssignmentTool::class,
         CreateKnowledgeIndexTool::class,
         CreateMemoryTool::class,
         UpdateMemoryTool::class,
