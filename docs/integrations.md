@@ -95,3 +95,7 @@ Webhook and polling paths both normalize into the same IntegrationResultEnvelope
 Webhook authentication currently uses an HMAC boundary with provider-specific or default managed secrets. Provider-specific signature verification can replace this adapter without changing reconciliation semantics. Webhook handlers never mutate arbitrary domain models directly.
 
 Polling is represented by the provider-neutral IntegrationResultFetcher contract. Provider-specific fetchers can recover a result when a webhook is delayed or lost while preserving the same correlation, idempotency and lifecycle rules.
+
+## Integration Events vs Webhooks
+
+An Integration Event is a CR8OR-normalized fact at the integration boundary and carries an explicit `inbound` or `outbound` direction. An External Webhook Event represents the provider's delivery envelope before reconciliation. Webhook authentication and normalization happen before the result reaches IntegrationResultService; the webhook is not itself authoritative state.

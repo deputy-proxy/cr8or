@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'event_id', 'organization_id', 'enterprise_id', 'agent_assignment_id', 'agent_execution_id',
-    'actor_id', 'event_type', 'version', 'visibility', 'correlation_id', 'provenance', 'data', 'occurred_at',
+    'actor_id', 'event_type', 'version', 'visibility', 'correlation_id', 'causation_id', 'provenance', 'data', 'occurred_at',
 ])]
 class AgentExecutionEventRecord extends Model
 {

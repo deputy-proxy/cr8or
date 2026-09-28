@@ -2,11 +2,13 @@
 
 namespace App\Events;
 
+use App\Contracts\PlatformEvent;
+use App\Services\PlatformEventSanitizer;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
-abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
+abstract readonly class AgentExecutionEvent implements PlatformEvent, ShouldDispatchAfterCommit
 {
     public const VERSION = 1;
 
@@ -33,16 +35,57 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
         public ?string $agentSlug,
         public ?int $actorId,
         public ?string $correlationId,
+        public ?string $causationId = null,
         array $provenance = [],
         array $data = [],
         ?string $eventId = null,
         ?Carbon $occurredAt = null,
         public ?int $organizationId = null,
     ) {
-        $this->provenance = self::sanitize($provenance);
-        $this->data = self::sanitize($data);
+        $this->provenance = PlatformEventSanitizer::sanitize($provenance);
+        $this->data = PlatformEventSanitizer::sanitize($data);
         $this->eventId = $eventId ?? (string) Str::uuid();
         $this->occurredAt = $occurredAt ?? Carbon::now();
+    }
+
+    public function category(): string
+    {
+        return 'agent_execution';
+    }
+
+    public function eventId(): string
+    {
+        return $this->eventId;
+    }
+
+    public function version(): int
+    {
+        return self::VERSION;
+    }
+
+    /** @return array<string, mixed> */
+    public function metadata(): array
+    {
+        return [
+            'execution_id' => $this->executionId,
+            'organization_id' => $this->organizationId,
+            'enterprise_id' => $this->enterpriseId,
+            'agent_assignment_id' => $this->agentAssignmentId,
+            'agent_slug' => $this->agentSlug,
+            'actor_id' => $this->actorId,
+            'correlation_id' => $this->correlationId,
+            'causation_id' => $this->causationId,
+            'occurred_at' => $this->occurredAt->toISOString(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function payload(): array
+    {
+        return [
+            'provenance' => $this->provenance,
+            'data' => $this->data,
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -50,6 +93,7 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
     {
         return [
             'event' => static::class,
+            'category' => $this->category(),
             'event_id' => $this->eventId,
             'version' => self::VERSION,
             'visibility' => self::VISIBILITY,
@@ -60,39 +104,10 @@ abstract readonly class AgentExecutionEvent implements ShouldDispatchAfterCommit
             'agent_slug' => $this->agentSlug,
             'actor_id' => $this->actorId,
             'correlation_id' => $this->correlationId,
+            'causation_id' => $this->causationId,
             'provenance' => $this->provenance,
             'data' => $this->data,
             'occurred_at' => $this->occurredAt->toISOString(),
         ];
-    }
-
-    private static function sanitize(mixed $value): mixed
-    {
-        if (is_array($value)) {
-            $safe = [];
-
-            foreach ($value as $key => $item) {
-                $key = (string) $key;
-                if (preg_match('/(?:chain.?of.?thought|reasoning|analysis|thought|prompt|instruction|model.?output)/i', $key) === 1) {
-                    continue;
-                }
-
-                $safe[$key] = self::sanitize($item);
-            }
-
-            return $safe;
-        }
-
-        if (is_scalar($value) || $value === null) {
-            return $value;
-        }
-
-        if ($value instanceof \BackedEnum) {
-            return $value->value;
-        }
-
-        return is_object($value) && method_exists($value, 'getKey')
-            ? ['id' => $value->getKey()]
-            : (string) $value;
     }
 }

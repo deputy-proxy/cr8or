@@ -140,3 +140,17 @@ Retrieval observability records structural diagnostics through the application b
 ### Durable Agent execution state
 
 Agent execution is now represented as a durable bounded state machine. `AgentExecution` is the authoritative parent record and `AgentExecutionStep` records each reasoning iteration. The parent persists the execution request/context snapshot, current and maximum step, next-step intent, latest structured result, idempotency key and resumable lifecycle state. The state machine distinguishes reasoning, waiting for input/approval, delegated, paused, executing, completed, failed and cancelled states. `AgentExecutionService::resume()` re-enters the same execution after a resumable pause. Capability requests remain governed requests; this phase does not introduce a second Operation execution path.
+## Platform Event Taxonomy
+
+CR8OR distinguishes four event categories:
+
+- **Domain events:** facts about authoritative CR8OR state changes. They are emitted after commit and never become an alternate mutation path.
+- **Agent execution events:** internal execution lifecycle/provenance facts. These remain durably recorded in `agent_execution_events` because execution history is product state.
+- **Integration events:** normalized outbound or inbound facts at an integration boundary. `IntegrationResult` remains the authoritative reconciliation record; integration events communicate the fact rather than replacing it.
+- **External webhook events:** provider-originated delivery facts. They are authenticated and normalized before reconciliation and are not trusted as domain commands.
+
+All platform events use versioned contracts with event ID, category, schema/version, organization/enterprise scope, actor/execution context where applicable, correlation and causation identifiers, and occurrence time. Event consumers are observers or bounded processors; they must invoke existing domain/application services for state changes.
+
+Ordering is category-specific: Agent execution timelines use persisted occurrence time plus record identity, integration reconciliation uses stable provider/result deduplication and lifecycle transitions, and domain consumers must not infer authoritative state solely from event order. Repeated delivery is expected and must be idempotent.
+
+The platform deliberately does not persist a generic second copy of every domain fact. Durable Agent execution history and integration reconciliation history are persisted because the product requires them; domain and webhook events remain typed contracts and delivery mechanisms unless a concrete consumer requires durable storage.
