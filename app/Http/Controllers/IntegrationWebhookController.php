@@ -30,6 +30,11 @@ final class IntegrationWebhookController extends Controller
 
         $externalJobId = data_get($payload, 'external_job_id');
         $status = data_get($payload, 'status');
+        $deliveryId = data_get($payload, 'delivery_id') ?? $request->header('X-Delivery-ID');
+
+        if (! is_string($deliveryId) || trim($deliveryId) === '') {
+            throw ValidationException::withMessages(['delivery_id' => 'A stable webhook delivery identifier is required.']);
+        }
 
         if (! is_string($externalJobId) || $externalJobId === '' || ! is_string($status)) {
             throw ValidationException::withMessages([
@@ -54,7 +59,7 @@ final class IntegrationWebhookController extends Controller
                 is_string(data_get($payload, 'external_result_id')) ? data_get($payload, 'external_result_id') : null,
                 $status,
                 is_string(data_get($payload, 'correlation_id')) ? data_get($payload, 'correlation_id') : $correlation->resolve(),
-                is_string(data_get($payload, 'delivery_id')) ? data_get($payload, 'delivery_id') : $request->header('X-Delivery-ID'),
+                $deliveryId,
                 $occurredAt,
                 $payload,
                 is_string(data_get($payload, 'failure_code')) ? data_get($payload, 'failure_code') : null,
