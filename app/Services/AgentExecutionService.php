@@ -576,6 +576,19 @@ final class AgentExecutionService
                 $execution->provider = $modelResult->provider;
                 $execution->external_execution_id = $modelResult->invocationId;
                 $execution->last_result = [
+                    'expert_results' => array_map(static function (array $result): array {
+                        $invocation = is_array($result['invocation'] ?? null) ? $result['invocation'] : [];
+
+                        return [
+                            'expert' => $result['expert'] ?? null,
+                            'status' => $invocation['status'] ?? 'succeeded',
+                            'correlation_id' => $invocation['correlation_id'] ?? null,
+                            'requested_capabilities' => $invocation['requested_capabilities'] ?? [],
+                            'decisions' => $invocation['decisions'] ?? [],
+                            'recommendations' => $invocation['recommendations'] ?? [],
+                            'metadata' => $invocation['metadata'] ?? [],
+                        ];
+                    }, is_array($expertResults['results'] ?? null) ? $expertResults['results'] : []),
                     'text' => $modelResult->text,
                     'structured' => $modelResult->structured,
                     'provider' => $modelResult->provider,
