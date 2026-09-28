@@ -242,3 +242,7 @@ The authoritative threat model for Agent execution, delegation, approvals, integ
 Security-sensitive boundaries are server-side only. Model output, webhook payloads and external integration results are treated as untrusted input. Webhook signatures authenticate provider delivery, while job correlation, tenant scope and existing authorization determine what CR8OR may reconcile.
 
 Asynchronous resume revalidates both execution authorization and current runtime policy. This prevents an execution that was permitted when created from bypassing a later governance disablement.
+
+## Capability-native E2E security boundary
+
+The Phase 12 capability-native E2E validates Enterprise isolation, Agent/Expert authorization, invalid lifecycle transitions, duplicate/idempotent requests and the human approval boundary. Publication-sensitive work remains blocked while approval is pending. Enterprise bootstrap is authorized against the target Organization because no Enterprise exists at that point; all subsequent business actions require Enterprise scope.
