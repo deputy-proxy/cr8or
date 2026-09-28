@@ -1,1 +1,42 @@
-{"stdout":"<?php\n\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    public function up(): void\n    {\n        Schema::table('agent_assignments', function (Blueprint $table): void {\n            $table->string('status', 32)->default('draft')->after('enabled');\n            $table->text('objective')->nullable()->after('status');\n            $table->json('requirements')->nullable()->after('objective');\n            $table->json('context')->nullable()->after('requirements');\n            $table->string('correlation_id')->nullable()->after('context');\n            $table->string('idempotency_key', 255)->nullable()->after('correlation_id');\n            $table->timestamp('started_at')->nullable()->after('idempotency_key');\n            $table->timestamp('completed_at')->nullable()->after('started_at');\n            $table->index(['enterprise_id', 'status']);\n            $table->unique(['enterprise_id', 'idempotency_key'], 'agent_assignments_enterprise_idempotency_unique');\n        });\n    }\n\n    public function down(): void\n    {\n        Schema::table('agent_assignments', function (Blueprint $table): void {\n            $table->dropUnique('agent_assignments_enterprise_idempotency_unique');\n            $table->dropIndex(['enterprise_id', 'status']);\n            $table->dropColumn([\n                'status',\n                'objective',\n                'requirements',\n                'context',\n                'correlation_id',\n                'idempotency_key',\n                'started_at',\n                'completed_at',\n            ]);\n        });\n    }\n};\n","stderr":"","exitCode":0,"timedOut":false,"truncated":false}
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('agent_assignments', function (Blueprint $table): void {
+            $table->string('status', 32)->default('draft')->after('enabled');
+            $table->text('objective')->nullable()->after('status');
+            $table->json('requirements')->nullable()->after('objective');
+            $table->json('context')->nullable()->after('requirements');
+            $table->string('correlation_id')->nullable()->after('context');
+            $table->string('idempotency_key', 255)->nullable()->after('correlation_id');
+            $table->timestamp('started_at')->nullable()->after('idempotency_key');
+            $table->timestamp('completed_at')->nullable()->after('started_at');
+            $table->index(['enterprise_id', 'status']);
+            $table->unique(['enterprise_id', 'idempotency_key'], 'agent_assignments_enterprise_idempotency_unique');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('agent_assignments', function (Blueprint $table): void {
+            $table->dropUnique('agent_assignments_enterprise_idempotency_unique');
+            $table->dropIndex(['enterprise_id', 'status']);
+            $table->dropColumn([
+                'status',
+                'objective',
+                'requirements',
+                'context',
+                'correlation_id',
+                'idempotency_key',
+                'started_at',
+                'completed_at',
+            ]);
+        });
+    }
+};
