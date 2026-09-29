@@ -13,8 +13,7 @@ it('exposes authoritative runtime metadata and coordinates experts', function ()
                 name: 'Marketing', description: 'Coordinates marketing work.',
                 responsibilities: ['route requests', 'coordinate experts'],
                 instructions: 'Coordinate marketing work within authorized context.',
-                experts: ['marketing'], requiredContext: ['enterprise'],
-                capabilities: ['marketing.plan'],
+                experts: ['marketing'], requiredContext: ['enterprise']
             );
         }
     };
@@ -42,7 +41,6 @@ it('exposes authoritative runtime metadata and coordinates experts', function ()
     expect($agent->name())->toBe('Marketing')
         ->and($agent->description())->toBe('Coordinates marketing work.')
         ->and($agent->responsibilities())->toBe(['route requests', 'coordinate experts'])
-        ->and($agent->capabilities())->toBe(['marketing.plan'])
         ->and($agent->requiredContext())->toBe(['enterprise'])
         ->and($expert->definition())->toBeInstanceOf(ExpertDefinition::class)
         ->and($agent->coordinate(['topic' => 'CR8OR'], [$expert]))->toBe([
