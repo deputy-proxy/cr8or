@@ -166,7 +166,7 @@ it('reuses one capability across multiple Experts without duplicating capability
         ))->toBeTrue();
 });
 
-it('denies an Expert capability declaration without Agent permission', function () {
+it('allows an Expert-owned capability without duplicate Agent permission', function () {
     $organization = Organization::factory()->create();
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
@@ -177,10 +177,10 @@ it('denies an Expert capability declaration without Agent permission', function 
         'work.item.create',
         $organization,
         $enterprise,
-    ))->toBeFalse();
+    ))->toBeTrue();
 });
 
-it('keeps Expert approval requirements independent from capability declaration', function () {
+it('does not inherit Agent permission approval requirements for Expert-owned capabilities', function () {
     $organization = Organization::factory()->create();
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
@@ -198,5 +198,5 @@ it('keeps Expert approval requirements independent from capability declaration',
         'work.item.create',
         $organization,
         $enterprise,
-    ))->toBeFalse();
+    ))->toBeTrue();
 });

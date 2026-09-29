@@ -28,7 +28,7 @@ function testAgentRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: ['analyst', 'unauthorized-analyst'], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
+            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: ['analyst'], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
         }
     });
 }
@@ -199,7 +199,7 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
     expect($result->succeeded())->toBeTrue();
 });
 
-it('denies an Expert whose declared capability is not permitted by the Agent assignment', function () {
+it('denies an Expert that is not declared by the Agent assignment', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = governedAssignment($actor, $enterprise);
@@ -215,7 +215,7 @@ it('denies an Expert whose declared capability is not permitted by the Agent ass
         app(McpContextAssembler::class),
         app(\App\Services\AgentCapabilityAuthorizer::class),
     ))->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Analyze.', expertSlugs: [$expert->slug])))
-        ->toThrow(AuthorizationException::class, 'not authorized to use capability [work.item.create]');
+        ->toThrow(AuthorizationException::class, 'Expert [unauthorized-analyst] is not declared by Agent [Planner].');
 });
 
 it('re-authorizes a state-changing capability and requires approval when configured', function () {

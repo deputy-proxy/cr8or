@@ -33,11 +33,14 @@ final class CapabilityInvocationService
         $this->dispatchRequested($request, $definition);
         $this->authorize($request);
 
-        $permission = $request->assignment?->permissions()
-            ->where('capability', $request->capability)
-            ->first();
+        $permission = $request->expertSlug === null
+            ? $request->assignment?->permissions()->where('capability', $request->capability)->first()
+            : null;
+        $requiresApproval = $request->expertSlug !== null
+            ? $definition->approvalRequirement === 'required'
+            : $permission?->requires_approval === true;
 
-        if ($permission?->requires_approval === true && $request->approval === null) {
+        if ($requiresApproval && $request->approval === null) {
             $approval = $this->approvals->request(
                 actor: $request->actor,
                 capability: $request->capability,
@@ -55,7 +58,7 @@ final class CapabilityInvocationService
             ];
         }
 
-        if ($permission?->requires_approval === true) {
+        if ($requiresApproval) {
             if (! $request->approval->isValid()) {
                 throw new AuthorizationException(
                     "Approval [{$request->approval->getKey()}] is not valid for capability [{$request->capability}].",
@@ -109,14 +112,16 @@ final class CapabilityInvocationService
                 delegation: $request->delegation,
             );
 
-            $permission = $request->assignment->permissions()
-                ->where('capability', $request->capability)
-                ->first();
+            $permission = $request->expertSlug === null
+            ? $request->assignment->permissions()->where('capability', $request->capability)->first()
+            : null;
 
-            if ($permission === null || ! $this->authorizer->allowsRequest(
+            $allowed = $this->authorizer->allowsRequest(
                 $agentRequest,
-                $permission->requires_approval && $request->approval === null,
-            )) {
+                $request->expertSlug !== null || ($permission?->requires_approval === true && $request->approval === null),
+            );
+
+            if (! $allowed || ($request->expertSlug === null && $permission === null)) {
                 throw new AuthorizationException(
                     "The Agent is not authorized for capability [{$request->capability}] in this target context.",
                 );

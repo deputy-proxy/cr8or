@@ -6,6 +6,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -26,6 +27,7 @@ class McpCapabilityAuthorizer
         ?int $executionId,
         ?int $approvalId,
         array $targetContext,
+        ?string $expertSlug = null,
     ): void {
         if (($assignmentId === null) !== ($executionId === null)) {
             throw new AuthorizationException('Agent-backed MCP capabilities require both an assignment and execution context.');
@@ -59,16 +61,32 @@ class McpCapabilityAuthorizer
             ? null
             : ApprovalRequest::query()->findOrFail($approvalId);
 
-        if (! app(AgentCapabilityAuthorizer::class)->allows(
-            $assignment,
-            $capability,
-            Organization::query()->find($assignment->organization_id),
-            $enterprise,
-            $actor,
-            $approval,
-            $execution,
-            $targetContext,
-        )) {
+        $authorizer = app(AgentCapabilityAuthorizer::class);
+        $allowed = $expertSlug !== null
+            ? (function () use ($authorizer, $assignment, $expertSlug, $capability, $enterprise, $actor, $approval, $execution, $targetContext): bool {
+                $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->first();
+                if ($descriptor === null || ! $descriptor->enabled) {
+                    return false;
+                }
+                if (! $authorizer->agentAllowsExpert($assignment, $expertSlug)) {
+                    return false;
+                }
+                $expert = app($descriptor->resolveRuntimeClass());
+
+                return $expert instanceof \App\Experts\Expert
+                    && $authorizer->allowsExpertCapability(
+                        $assignment, $expert, $capability,
+                        Organization::query()->find($assignment->organization_id),
+                        $enterprise, $actor, $approval, $execution, $targetContext, null,
+                    );
+            })()
+            : $authorizer->allows(
+                $assignment, $capability,
+                Organization::query()->find($assignment->organization_id),
+                $enterprise, $actor, $approval, $execution, $targetContext,
+            );
+
+        if (! $allowed) {
             throw new AuthorizationException("The Agent is not authorized for capability [{$capability}] in this target context.");
         }
     }
@@ -86,6 +104,7 @@ class McpCapabilityAuthorizer
         ?int $approvalId,
         array $targetContext,
         array $humanAbility,
+        ?string $expertSlug = null,
     ): void {
         if (($assignmentId === null) !== ($executionId === null)) {
             throw new AuthorizationException('Agent-backed MCP mutations require both an assignment and execution context.');
@@ -105,6 +124,7 @@ class McpCapabilityAuthorizer
             $executionId,
             $approvalId,
             $targetContext,
+            $expertSlug,
         );
     }
 

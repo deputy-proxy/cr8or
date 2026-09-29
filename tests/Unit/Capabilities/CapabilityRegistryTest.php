@@ -118,13 +118,12 @@ it('rejects a Tool class mapped to multiple Operations', function () {
         ->toThrow(InvalidArgumentException::class, 'Duplicate MCP Tool class [App\\Mcp\\Tools\\CreateContentItemTool]');
 });
 
-it('keeps capability definitions independent from Expert ownership', function () {
+it('keeps Expert ownership in the Agent-to-Expert execution context', function () {
     $registry = app(CapabilityRegistry::class);
 
     expect($registry->resolve('work.item.create')->operation)->toBe(CreateWorkItem::class)
         ->and($registry->resolve('marketing.plan')->operation)->toBe(App\Operations\PlanMarketing::class);
 });
-
 it('rejects a Capability definition without an explicit failure contract', function () {
     expect(fn () => new CapabilityDefinition(
         key: 'test.missing-failure-contract',

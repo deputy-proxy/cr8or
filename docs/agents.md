@@ -100,7 +100,7 @@ Phase 8.2 establishes one canonical PHP structure for every Expert runtime. Each
 
 The Expert base class exposes this definition through read-only runtime accessors. analyze() remains the canonical Expert reasoning entry point and applies the Expert methodology to authorized context.
 
-The definition is runtime authority only. It does not create Expert permission, Agent assignment authority, Capability permission or approval authority. Agent execution, Expert invocation and Capability authorization remain governed by the existing application services.
+The definition is runtime authority only. It does not create Agent assignment authority or approval authority; an Expert's declared Capabilities define the Expert-to-Capability ownership boundary once the Agent-to-Expert relationship is authorized. Agent execution, Expert invocation and Capability authorization remain governed by the existing application services.
 
 The runtime relationship is:
 
@@ -119,7 +119,7 @@ The runtime relationship is:
         |
         +-- analyze()
 
-Expert capability declarations describe available expertise only. They do not grant execution authority. When an Expert is coordinated by an Agent, the existing execution boundary continues to verify the Expert declaration and the Agent assignment's explicit Capability permission before execution.
+Expert capability declarations define the Expert-to-Capability ownership boundary. When an Expert is coordinated by an Agent, the execution boundary verifies the Agent-to-Expert relationship, Expert declaration, Capability Registry membership, scope and approval requirements; it does not require a duplicate Agent Assignment Capability permission for an Expert-owned Capability.
 
 ### Governed Expert Coordination
 
@@ -217,7 +217,7 @@ These are separate concepts and must not be collapsed into a single Expert or Ag
 2. **Permission** is the server-side authorization granted to an Agent assignment for a Capability within an organization and applicable Enterprise scope. A runtime declaration never creates permission.
 3. **Approval** is an independent governance decision required when the applicable permission is configured as approval-sensitive. A valid Capability permission does not satisfy a required approval.
 
-For Agent-backed Expert execution, CR8OR verifies both sides of the boundary: the Expert must actually declare the requested Capability, and the Agent assignment must have an explicit permission for that Capability. Cross-organization and cross-Enterprise scope checks remain part of the same authorization path. MCP-backed Expert execution uses the same server-side authorization boundary.
+For Agent-backed Expert execution, CR8OR verifies both sides of the boundary: the Agent must be authorized to invoke the Expert, and the Expert must declare/own the requested Capability. Cross-organization and cross-Enterprise scope checks remain part of the same authorization path. Approval-sensitive Capabilities remain approval-gated. MCP-backed Expert execution uses the same server-side semantics.
 
 ### Operation
 

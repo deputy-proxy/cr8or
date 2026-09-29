@@ -15,6 +15,11 @@ use Illuminate\Database\Eloquent\Model;
 
 abstract class GovernedCapabilityTool extends AuthorizedTool
 {
+    protected function expertSlug(): ?string
+    {
+        return null;
+    }
+
     protected function definition(CapabilityRegistry $registry): CapabilityDefinition
     {
         return $registry->forTool(static::class);
@@ -53,6 +58,7 @@ abstract class GovernedCapabilityTool extends AuthorizedTool
             approval: $approval,
             correlationId: isset($input['correlation_id']) && is_string($input['correlation_id']) ? $input['correlation_id'] : null,
             idempotencyKey: isset($input['idempotency_key']) && is_string($input['idempotency_key']) ? $input['idempotency_key'] : null,
+            expertSlug: $this->expertSlug(),
         ))['raw_result'] ?? null;
     }
 

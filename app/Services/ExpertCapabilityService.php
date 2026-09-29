@@ -37,6 +37,7 @@ final class ExpertCapabilityService
             $executionId,
             $approvalId,
             ['enterprise_id' => $enterprise->getKey(), ...$targetContext],
+            $expertSlug,
         );
 
         $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail();

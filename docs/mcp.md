@@ -66,7 +66,7 @@ Capability authorization has three independent dimensions:
 - **Permission:** the Agent assignment has an explicit server-side permission for the Capability in the applicable organization and Enterprise scope.
 - **Approval:** a separate approval decision is required when that permission is configured to require approval. Approval never follows merely from Capability availability or permission.
 
-An Expert declaration without Agent permission is denied. An Agent permission for a Capability not declared by the requested Expert is also denied. Multiple Experts may declare the same reusable Capability without creating duplicate permission records or Capability definitions.
+An Expert-owned Capability does not require duplicate Agent permission. An Agent that is not authorized to use the Expert is denied, and an Expert cannot request a Capability it does not declare. Multiple Experts may reuse a Capability only where the registry explicitly permits that ownership model.
 
 ## Invocation Boundary
 
