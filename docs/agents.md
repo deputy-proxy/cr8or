@@ -141,6 +141,8 @@ Experts remain advisory reasoning components. They do not gain authority by bein
 
 Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for Agent execution. `App\Data\AgentExecutionRequest` carries the actor, Agent assignment, prompt, authorized target context, selected Expert slugs, correlation identity and optional delegation context. Provider-specific options remain opaque to the contract and are consumed only by the infrastructure-facing execution service.
 
+`AgentExecutionRequest::$mode` is explicit and persisted as `AgentExecutionMode::INTERACTIVE` or `AgentExecutionMode::AUTONOMOUS`. Interactive execution never invokes `ModelProvider`; the caller supplies governed Capability Requests and CR8OR executes them through the existing Capability → Operation boundary, persisting results and waiting/resume state on the same `AgentExecution`. Autonomous execution retains the existing ModelProvider-driven reasoning loop. Mode is part of the idempotency contract and cannot change for an existing execution key.
+
 `AgentExecutionService` is the canonical application boundary. Its lifecycle is:
 
     AgentExecutionRequest
