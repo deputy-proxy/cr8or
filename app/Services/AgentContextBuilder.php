@@ -25,10 +25,13 @@ final class AgentContextBuilder
     /** @var array<string, AgentContextProvider> */
     private array $providers = [];
 
+    private readonly DiagnosticSanitizer $sanitizer;
+
     public function __construct(
         EnterpriseContextProvider $enterprise,
         StrategyContextProvider $strategy,
         WorkContextProvider $work,
+        DiagnosticSanitizer $sanitizer,
         KnowledgeContextProvider $knowledge,
         RetrievedKnowledgeContextProvider $retrievedKnowledge,
         MemoryContextProvider $memory,
@@ -37,6 +40,8 @@ final class AgentContextBuilder
         FinancialContextProvider $financial,
         ReportingContextProvider $reporting,
     ) {
+        $this->sanitizer = $sanitizer;
+
         foreach ([$enterprise, $strategy, $work, $knowledge, $retrievedKnowledge, $memory, $decisions, $executionHistory, $financial, $reporting] as $provider) {
             foreach ($provider->requirements() as $requirement) {
                 if (isset($this->providers[$requirement]) && $this->providers[$requirement] !== $provider) {
@@ -135,7 +140,7 @@ final class AgentContextBuilder
                 'organization_id' => $enterprise->organization_id,
                 'agent_assignment_id' => $assignment?->getKey(),
                 'exception' => $exception::class,
-                'message' => $exception->getMessage(),
+                'message' => $this->sanitizer->message($exception->getMessage()),
             ]);
 
             throw $exception;

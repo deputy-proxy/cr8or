@@ -35,7 +35,7 @@ final class FailureTranslator
     /** @var WeakMap<Throwable, string> */
     private WeakMap $diagnosticIds;
 
-    public function __construct()
+    public function __construct(private readonly DiagnosticSanitizer $sanitizer)
     {
         $this->diagnosticIds = new WeakMap;
     }
@@ -325,10 +325,10 @@ final class FailureTranslator
             'correlation_id' => $correlationId,
             'provenance' => $provenance?->toArray() ?? [],
             'exception_class' => $exception::class,
-            'exception_message' => $exception->getMessage(),
+            'exception_message' => $this->sanitizer->message($exception->getMessage()),
             'exception_file' => $exception->getFile(),
             'exception_line' => $exception->getLine(),
-            'exception_trace' => $exception->getTraceAsString(),
+            'exception_trace' => $this->sanitizer->message($exception->getTraceAsString()),
         ]);
     }
 }

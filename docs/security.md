@@ -261,3 +261,11 @@ Exception translation preserves the original exception internally under a diagno
 ### External failure handling
 
 External failures are translated into the canonical failure contract before they cross an application or MCP boundary. Retryability is explicit, provider credentials are excluded from diagnostics, and partial external execution is represented by a non-terminal integration job with its external identifier persisted before CR8OR finalizes authoritative success.
+
+### Diagnostic correlation and redaction
+
+CR8OR uses the correlation ID to connect a client request or execution across MCP, Agent Execution, Capability/Operation, queue and integration boundaries. A separate diagnostic ID identifies the underlying exception record in internal logs. Diagnostic IDs are not authorization credentials.
+
+Internal diagnostic records contain the exception class, safe message, source file/line, trace metadata and governed provenance. Messages, structured context and traces pass through the shared DiagnosticSanitizer. Credential material, authorization headers, cookies, tokens, secrets, model prompts/context and hidden chain-of-thought are redacted before logging. Client-visible failure responses contain canonical failure metadata only and never expose diagnostic internals.
+
+Operational workflow: start with the client correlation ID, locate the structured execution failure event, follow its diagnostic ID to the failure diagnostic record, then use the operation/capability/provider provenance and execution identifiers to locate the affected authoritative state. Duplicate logs may repeat a diagnostic ID, but the diagnostic ID identifies the same underlying exception rather than creating a new failure identity.

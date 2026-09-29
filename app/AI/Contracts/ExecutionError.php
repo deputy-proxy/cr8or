@@ -33,7 +33,7 @@ final readonly class ExecutionError
             return app(\App\Services\FailureTranslator::class)->translate($exception, $correlationId, $provenance);
         }
 
-        return new \App\Services\FailureTranslator()->translate($exception, $correlationId, $provenance);
+        return new \App\Services\FailureTranslator(new \App\Services\DiagnosticSanitizer)->translate($exception, $correlationId, $provenance);
     }
 
     /** @return array<string, mixed> */
