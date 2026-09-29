@@ -161,6 +161,8 @@ final class CapabilityRegistry
                     'enterprise_id' => 'integer|required',
                     'agent_assignment_id' => 'integer|required',
                     'prompt' => 'string|required',
+                    'mode' => 'string|in:interactive,autonomous|required',
+                    'capability_requests' => 'array|nullable',
                     'target_context' => 'object|nullable',
                     'expert_slugs' => 'array|nullable',
                     'options' => 'object|nullable',
