@@ -3,7 +3,6 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
-use App\Models\AgentDescriptor;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
@@ -15,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('get-capability')]
-#[Description('Get a governed capability identifier exposed by the registered Agent and Expert runtimes.')]
+#[Description('Get a governed capability identifier exposed by the registered Expert runtimes.')]
 class GetCapabilityTool extends AuthorizedTool
 {
     public function schema(JsonSchema $schema): array
@@ -36,27 +35,20 @@ class GetCapabilityTool extends AuthorizedTool
             $validated = $request->validate(['id' => ['required', 'string', 'min:1', 'max:255']]);
             $id = $validated['id'];
             $definition = $registry->resolve($id);
-            $sources = ['agents' => [], 'experts' => []];
+            $experts = [];
 
-            foreach (AgentDescriptor::query()->where('enabled', true)->get() as $descriptor) {
-                $runtime = app($descriptor->resolveRuntimeClass());
-                if (in_array($id, $runtime->capabilities(), true)) {
-                    $sources['agents'][] = $descriptor->slug;
-                }
-            }
             foreach (ExpertDescriptor::query()->where('enabled', true)->get() as $descriptor) {
                 $runtime = app($descriptor->resolveRuntimeClass());
                 if (in_array($id, $runtime->capabilities(), true)) {
-                    $sources['experts'][] = $descriptor->slug;
+                    $experts[] = $descriptor->slug;
                 }
             }
 
-            if ($sources['agents'] === [] && $sources['experts'] === []) {
+            if ($experts === []) {
                 throw new \Illuminate\Database\Eloquent\ModelNotFoundException;
             }
 
-            sort($sources['agents']);
-            sort($sources['experts']);
+            sort($experts);
 
             return Response::structured([
                 'success' => true,
@@ -65,8 +57,7 @@ class GetCapabilityTool extends AuthorizedTool
                     'name' => $id,
                     'operation' => $definition->operation,
                     'tool' => $definition->tool,
-                    'agents' => $sources['agents'],
-                    'experts' => $sources['experts'],
+                    'experts' => $experts,
                 ],
             ]);
         });
