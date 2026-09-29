@@ -2,11 +2,13 @@
 
 namespace App\Mcp\Resources;
 
+use App\Mcp\McpFailureResponder;
 use App\Models\User;
 use App\Services\McpContextAssembler;
 use Illuminate\Auth\Access\AuthorizationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
@@ -20,18 +22,20 @@ class StrategyContextResource extends Resource implements HasUriTemplate
         return new UriTemplate('cr8or://enterprises/{enterprise}/strategy');
     }
 
-    public function handle(Request $request): Response
+    public function handle(Request $request): Response|ResponseFactory
     {
-        $user = $request->user();
+        return app(McpFailureResponder::class)->execute($request, 'mcp.resource.strategy_context', function () use ($request) {
+            $user = $request->user();
 
-        if ($user instanceof User) {
-            return Response::json(app(McpContextAssembler::class)->strategy(
-                $user,
-                $this->enterpriseId($request->get('enterprise')),
-            ));
-        }
+            if ($user instanceof User) {
+                return Response::json(app(McpContextAssembler::class)->strategy(
+                    $user,
+                    $this->enterpriseId($request->get('enterprise')),
+                ));
+            }
 
-        throw new AuthorizationException('Authentication is required to read MCP resources.');
+            throw new AuthorizationException('Authentication is required to read MCP resources.');
+        });
     }
 
     private function enterpriseId(mixed $value): int
