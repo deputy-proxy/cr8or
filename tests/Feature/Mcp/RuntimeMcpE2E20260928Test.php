@@ -302,8 +302,8 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
         'mode' => 'interactive',
         'capability_requests' => [[
             'capability' => 'strategy.create',
-            'target_context' => ['strategy_id' => $strategyId],
-            'input_payload' => ['name' => 'E2E Interactive Strategy'],
+            'target_context' => ['objective_id' => $objective['id']],
+            'input_payload' => ['objective_id' => $objective['id'], 'name' => 'E2E Interactive Strategy'],
             'idempotency_key' => 'e2e-interactive-strategy',
         ]],
         'expert_slugs' => ['marketing', 'copywriting'],
