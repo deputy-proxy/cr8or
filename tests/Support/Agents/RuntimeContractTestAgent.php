@@ -15,8 +15,7 @@ final class RuntimeContractTestAgent extends Agent
             responsibilities: ['validate'],
             instructions: 'Validate runtime contract behavior.',
             experts: ['runtime-contract-expert'],
-            requiredContext: ['enterprise'],
-            capabilities: [],
+            requiredContext: ['enterprise']
         );
     }
 }
