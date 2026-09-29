@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AgentExecutionMode;
 use Database\Factories\AgentExecutionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,7 @@ use LogicException;
  * @property string|null $agent_definition_version
  * @property string|null $actor_name
  * @property string $status
+ * @property AgentExecutionMode $mode
  * @property Carbon $requested_at
  * @property Carbon|null $started_at
  * @property Carbon|null $completed_at
@@ -63,6 +65,7 @@ use LogicException;
     'agent_definition_version',
     'actor_name',
     'status',
+    'mode',
     'requested_at',
     'started_at',
     'completed_at',
@@ -214,6 +217,7 @@ class AgentExecution extends Model
     {
         return [
             'requested_at' => 'datetime',
+            'mode' => AgentExecutionMode::class,
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'target_context' => 'array',
@@ -223,6 +227,13 @@ class AgentExecution extends Model
             'execution_context' => 'array',
             'last_result' => 'array',
         ];
+    }
+
+    public function assertMode(AgentExecutionMode $mode): void
+    {
+        if ($this->mode !== $mode) {
+            throw new LogicException(sprintf('Agent execution mode [%s] does not match required mode [%s].', $this->mode->value, $mode->value));
+        }
     }
 
     public function start(): static

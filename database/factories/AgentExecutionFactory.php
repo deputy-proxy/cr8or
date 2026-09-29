@@ -36,6 +36,7 @@ class AgentExecutionFactory extends Factory
             'agent_definition_version' => null,
             'actor_name' => $actor->name,
             'status' => AgentExecution::STATUS_REQUESTED,
+            'mode' => \App\Enums\AgentExecutionMode::AUTONOMOUS,
             'requested_at' => now(),
             'started_at' => null,
             'completed_at' => null,

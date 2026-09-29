@@ -140,6 +140,8 @@ Retrieval observability records structural diagnostics through the application b
 ### Durable Agent execution state
 
 Agent execution is now represented as a durable bounded state machine. `AgentExecution` is the authoritative parent record and `AgentExecutionStep` records each reasoning iteration. The parent persists the execution request/context snapshot, current and maximum step, next-step intent, latest structured result, idempotency key and resumable lifecycle state. The state machine distinguishes reasoning, waiting for input/approval, delegated, paused, executing, completed, failed and cancelled states. `AgentExecutionService::resume()` re-enters the same execution after a resumable pause. Capability requests remain governed requests; this phase does not introduce a second Operation execution path.
+
+Execution mode is persisted on `AgentExecution` and is never inferred from transport. `interactive` is provider-free: a request may carry explicit Capability Requests, which are re-authorized and invoked through `CapabilityInvocationService`/`CapabilityExecutionService`, with approval and resume handled by the same execution state machine. `autonomous` uses the existing ModelProvider reasoning loop. Resume and idempotent retry preserve the stored mode, preventing an interactive execution from crossing into model-driven execution.
 ## Platform Event Taxonomy
 
 CR8OR distinguishes four event categories:

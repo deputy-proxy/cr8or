@@ -23,6 +23,7 @@ final class AgentExecutionOperationsService
             'execution' => [
                 'id' => $execution->getKey(),
                 'status' => $execution->status,
+                'mode' => $execution->mode->value,
                 'agent_slug' => $execution->agent_slug,
                 'actor_name' => $execution->actor_name,
                 'organization_name' => $execution->organization_name,

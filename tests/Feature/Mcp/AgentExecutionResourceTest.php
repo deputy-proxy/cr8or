@@ -34,7 +34,7 @@ it('creates a durable execution idempotently and exposes structured state', func
     Queue::fake();
     [$user,$enterprise,$assignment] = executionMcpActor();
     $server = Cr8orServer::actingAs($user, 'api');
-    $input = ['enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => $assignment->getKey(), 'prompt' => 'Perform the requested enterprise task.', 'idempotency_key' => 'execution-contract-1'];
+    $input = ['enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => $assignment->getKey(), 'prompt' => 'Perform the requested enterprise task.', 'mode' => 'autonomous', 'idempotency_key' => 'execution-contract-1'];
     $server->tool(CreateAgentExecutionTool::class, $input)->assertOk()->assertSee('execution-contract-1');
     $server->tool(CreateAgentExecutionTool::class, $input)->assertOk();
     expect(\App\Models\AgentExecution::query()->count())->toBe(1);
@@ -46,7 +46,7 @@ it('creates a durable execution idempotently and exposes structured state', func
 it('rejects execution from a draft assignment and cross-enterprise inspection', function (): void {
     [$user,$enterprise,$assignment] = executionMcpActor();
     $assignment->update(['status' => AgentAssignment::STATUS_DRAFT]);
-    Cr8orServer::actingAs($user, 'api')->tool(CreateAgentExecutionTool::class, ['enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => $assignment->getKey(), 'prompt' => 'blocked'])->assertHasErrors();
+    Cr8orServer::actingAs($user, 'api')->tool(CreateAgentExecutionTool::class, ['enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => $assignment->getKey(), 'prompt' => 'blocked', 'mode' => 'autonomous'])->assertHasErrors();
     $foreign = Enterprise::factory()->create();
     $foreignAssignment = AgentAssignment::query()->create(['agent_descriptor_id' => $assignment->agent_descriptor_id, 'organization_id' => $foreign->organization_id, 'enterprise_id' => $foreign->getKey(), 'enabled' => true, 'status' => AgentAssignment::STATUS_READY]);
     Cr8orServer::actingAs($user, 'api')->tool(GetExecutionTool::class, ['enterprise_id' => $foreign->getKey(), 'agent_execution_id' => 999999])->assertHasErrors();
@@ -60,6 +60,7 @@ it('starts through the governed agent.execute capability and cancels durably', f
         'enterprise_id' => $enterprise->getKey(),
         'agent_assignment_id' => $assignment->getKey(),
         'prompt' => 'Execute through the governed capability.',
+        'mode' => 'autonomous',
         'idempotency_key' => 'governed-execution-1',
     ]);
     $response->assertOk()->assertSee('governed-execution-1');
