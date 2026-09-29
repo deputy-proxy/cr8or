@@ -113,8 +113,7 @@ it('denies an Expert that is not declared by the receiving Agent', function () {
                 responsibilities: ['coordinate'],
                 instructions: 'Coordinate only declared Experts.',
                 experts: [],
-                requiredContext: ['enterprise'],
-                capabilities: [],
+                requiredContext: ['enterprise']
             );
         }
     };
