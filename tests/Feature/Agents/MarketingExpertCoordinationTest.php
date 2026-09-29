@@ -5,7 +5,6 @@ use App\Data\ExpertInvocationRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
@@ -39,10 +38,6 @@ function marketingExpertCoordinationSetup(array $capabilities = ['strategy.creat
         ]);
 
     foreach ($capabilities as $capability) {
-        AgentPermission::factory()->create([
-            'agent_assignment_id' => $assignment->getKey(),
-            'capability' => $capability,
-        ]);
     }
 
     $execution = AgentExecution::factory()

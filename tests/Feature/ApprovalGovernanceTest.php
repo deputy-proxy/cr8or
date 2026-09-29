@@ -2,7 +2,6 @@
 
 use App\Enums\MembershipRole;
 use App\Models\AgentAssignment;
-use App\Models\AgentPermission;
 use App\Models\ApprovalDecision;
 use App\Models\ApprovalPolicy;
 use App\Models\ApprovalRequest;
@@ -170,11 +169,6 @@ it('marks a pending request stale when the originating operation is invalidated'
 
 it('binds approval reuse to an exact request fingerprint', function () {
     [$organization, $actor, $admin, , $assignment] = approvalGovernanceContext();
-
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment,
-        'capability' => 'sensitive.operation',
-    ]);
 
     $service = app(ApprovalRequestService::class);
     $request = $service->request($actor, 'sensitive.operation', $assignment, null, ['input_version' => 1]);

@@ -164,6 +164,7 @@ final class CapabilityRegistry
                     'mode' => 'string|in:interactive,autonomous|required',
                     'capability_requests' => 'array|nullable',
                     'capability_requests.*.capability' => 'string|required',
+                    'capability_requests.*.expert_slug' => 'string|required',
                     'capability_requests.*.step' => 'integer|min:1|nullable',
                     'capability_requests.*.target_context' => 'object|nullable',
                     'capability_requests.*.input_payload' => 'object|nullable',
@@ -177,7 +178,7 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'agent-execution'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'agent.delegate',
@@ -197,7 +198,7 @@ final class CapabilityRegistry
                 ],
                 ['delegation_id' => 'integer', 'status' => 'string', 'source_agent' => 'string', 'target_agent' => 'string', 'capability' => 'string', 'correlation_id' => 'string|null', 'execution_id' => 'integer|null'],
                 'delegation-service + capability authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'business.analysis',
@@ -206,7 +207,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'target_context' => 'object|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'ExpertCapabilityService + capability authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'finance.report.generate',
@@ -215,7 +216,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'financial_period_id' => 'integer|required', 'financial_account_id' => 'integer|nullable', 'transaction_category_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'financial-report'],
                 'McpCapabilityAuthorizer::authorizeMutation + Finance policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.strategy.create',
@@ -224,7 +225,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content.create',
@@ -233,7 +234,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'campaign_id' => 'integer|required', 'content_series_id' => 'integer|nullable', 'channel_id' => 'integer|nullable', 'audience_id' => 'integer|nullable', 'title' => 'string|required', 'body' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'content-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content.update',
@@ -242,7 +243,7 @@ final class CapabilityRegistry
                 ['content_item_id' => 'integer|required', 'title' => 'string|nullable', 'body' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'content-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content.review',
@@ -251,7 +252,7 @@ final class CapabilityRegistry
                 ['content_item_id' => 'integer|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'content-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content.publication-ready',
@@ -269,7 +270,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'target_context' => 'object|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'ExpertCapabilityService + capability authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'publication.publish',
@@ -278,7 +279,7 @@ final class CapabilityRegistry
                 ['content_item_id' => 'integer|required', 'social_account_id' => 'integer|required', 'scheduled_at' => 'date|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'publication'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
-                'permission-dependent',
+                'required',
             ),
             $this->definition(
                 'strategy.create',
@@ -287,7 +288,7 @@ final class CapabilityRegistry
                 ['objective_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'strategy'],
                 'McpCapabilityAuthorizer::authorizeMutation + Strategy policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'strategy.update',
@@ -296,7 +297,7 @@ final class CapabilityRegistry
                 ['strategy_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'strategy'],
                 'McpCapabilityAuthorizer::authorizeMutation + Strategy policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'work.item.create',
@@ -305,7 +306,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'work-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + WorkItem policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'work.item.update',
@@ -314,7 +315,7 @@ final class CapabilityRegistry
                 ['work_item_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'work-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + WorkItem policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'enterprise.create',
@@ -322,8 +323,8 @@ final class CapabilityRegistry
                 \App\Mcp\Tools\CreateEnterpriseTool::class,
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
-                'permission-dependent',
-                'permission-dependent',
+                'none',
+                'none',
             ),
             $this->definition(
                 'approval.request',
@@ -341,7 +342,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.audience.update',
@@ -350,7 +351,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.audience.archive',
@@ -359,7 +360,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.campaign.create',
@@ -368,7 +369,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.campaign.update',
@@ -377,7 +378,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.campaign.lifecycle',
@@ -386,7 +387,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Campaign policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.channel.create',
@@ -395,7 +396,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.channel.update',
@@ -404,7 +405,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.channel.archive',
@@ -413,7 +414,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Channel policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content-series.create',
@@ -422,7 +423,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content-series.update',
@@ -431,7 +432,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.content-series.lifecycle',
@@ -440,7 +441,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'enterprise.context.create',
@@ -449,7 +450,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'enterprise.context.retrieve',
@@ -458,7 +459,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'EnterprisePolicy::view + EnterpriseContextService authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.objective.create',
@@ -467,7 +468,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Objective policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.objective.update',
@@ -476,7 +477,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Objective policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.project.create',
@@ -485,7 +486,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Project policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.project.update',
@@ -494,7 +495,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Project policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.social-account.connect',
@@ -503,7 +504,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.social-account.update',
@@ -512,7 +513,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.social-account.disconnect',
@@ -521,7 +522,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'marketing.strategy.archive',
@@ -530,7 +531,7 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'memory.retrieve',
@@ -548,7 +549,7 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'memory-retrieval'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'memory.record',
@@ -563,7 +564,7 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'memory-record'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'agent.assignment.create',
@@ -572,7 +573,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'agent_descriptor_id' => 'integer|required', 'objective' => 'string|nullable', 'requirements' => 'object|nullable', 'context' => 'object|nullable', 'status' => 'string|nullable', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment createForAgentAssignment authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'agent.assignment.update',
@@ -581,7 +582,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'agent_assignment_id' => 'integer|required', 'agent_descriptor_id' => 'integer|nullable', 'objective' => 'string|nullable', 'requirements' => 'object|nullable', 'context' => 'object|nullable', 'correlation_id' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment update authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'agent.assignment.transition',
@@ -590,7 +591,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'agent_assignment_id' => 'integer|required', 'status' => 'string|required'],
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment lifecycle authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'knowledge.item.create',
@@ -599,7 +600,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'title' => 'string|required', 'type' => 'string|nullable', 'summary' => 'string|nullable', 'content' => 'string|required', 'context_snapshot' => 'object|nullable', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'Enterprise policy + KnowledgeItem createForEnterprise authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'knowledge.index.create',
@@ -608,7 +609,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'Enterprise policy + KnowledgeItem authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'knowledge.unit.create',
@@ -617,7 +618,7 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required', 'unit_key' => 'string|required', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'Enterprise policy + KnowledgeItem authorization',
-                'permission-dependent',
+                'none',
             ),
             $this->definition(
                 'knowledge.retrieve',
@@ -636,7 +637,7 @@ final class CapabilityRegistry
                 ],
                 ['success' => 'boolean', 'result' => 'knowledge-retrieval'],
                 'McpCapabilityAuthorizer::authorizeCapability + Enterprise policy',
-                'permission-dependent',
+                'none',
             ),
         ];
     }

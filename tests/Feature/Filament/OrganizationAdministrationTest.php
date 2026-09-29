@@ -1,7 +1,6 @@
 <?php
 
 use App\Filament\Resources\AgentAssignments\AgentAssignmentResource;
-use App\Filament\Resources\AgentPermissions\AgentPermissionResource;
 use App\Filament\Resources\Enterprises\EnterpriseResource;
 use App\Filament\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
@@ -22,7 +21,6 @@ it('allows organization owners and admins to see organization-scoped create acti
         EnterpriseResource::class,
         MembershipResource::class,
         AgentAssignmentResource::class,
-        AgentPermissionResource::class,
     ];
 
     $this->actingAs($owner);

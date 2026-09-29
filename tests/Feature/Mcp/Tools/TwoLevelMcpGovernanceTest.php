@@ -28,14 +28,12 @@ use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Campaign;
 use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
-use App\Services\AgentCapabilityAuthorizer;
 
 function governanceAgentContext(User $actor, Enterprise $enterprise): array
 {
@@ -103,10 +101,6 @@ it('does not allow the generic mutation capability to authorize an Agent-backed 
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     [$assignment, $execution] = governanceAgentContext($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->id,
-        'capability' => 'mcp.domain.mutation',
-    ]);
     $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->id]);
     $campaign = Campaign::factory()->create(['marketing_strategy_id' => $strategy->id]);
 
@@ -122,7 +116,7 @@ it('does not allow the generic mutation capability to authorize an Agent-backed 
     expect($campaign->refresh()->name)->not->toBe('Should remain unchanged');
 });
 
-it('authorizes a domain mutation only with its explicit Agent capability', function () {
+it('rejects direct Agent Capability authorization for domain mutations', function () {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
     Membership::factory()->owner()->create([
@@ -134,22 +128,6 @@ it('authorizes a domain mutation only with its explicit Agent capability', funct
     $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->id]);
     $campaign = Campaign::factory()->create(['marketing_strategy_id' => $strategy->id]);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->id,
-        'capability' => 'marketing.campaign.update',
-    ]);
-
-    expect(app(AgentCapabilityAuthorizer::class)->allows(
-        $assignment,
-        'marketing.campaign.update',
-        $organization,
-        $enterprise,
-        $actor,
-        null,
-        $execution,
-        ['campaign_id' => $campaign->id],
-    ))->toBeTrue();
-
     Cr8orServer::actingAs($actor, 'api')
         ->tool(UpdateCampaignTool::class, [
             'campaign_id' => $campaign->id,
@@ -157,9 +135,9 @@ it('authorizes a domain mutation only with its explicit Agent capability', funct
             'agent_assignment_id' => $assignment->id,
             'agent_execution_id' => $execution->id,
         ])
-        ->assertOk();
+        ->assertHasErrors();
 
-    expect($campaign->refresh()->name)->toBe('Explicitly authorized');
+    expect($campaign->refresh()->name)->not->toBe('Explicitly authorized');
 });
 
 it('preserves human domain policy authorization for explicit domain capabilities', function () {

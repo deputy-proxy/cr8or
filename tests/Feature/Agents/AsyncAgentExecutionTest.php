@@ -12,8 +12,8 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
 use App\Models\AgentExecutionStep;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\AgentCapabilityAuthorizer;
@@ -32,7 +32,7 @@ function asyncAgentClass(): string
                 description: 'Exercises durable queued execution.',
                 responsibilities: ['execute'],
                 instructions: 'Execute only through governed capabilities.',
-                experts: [],
+                experts: ['operations'],
                 requiredContext: ['enterprise'],
                 capabilities: ['work.item.create'],
             );
@@ -50,6 +50,7 @@ function asyncAgentAssignment(User $actor, Enterprise $enterprise): AgentAssignm
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(asyncAgentClass())->create([
         'slug' => 'async-test-agent',
     ]);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => \App\Experts\OperationsExpert::class, 'enabled' => true]);
 
     return AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $descriptor->getKey(),
@@ -214,10 +215,6 @@ it('reuses persisted capability results when a worker retries a running step', f
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = asyncAgentAssignment($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $providerCalls = 0;
     $provider = new FakeModelProvider(function ($request) use (&$providerCalls, $enterprise) {
@@ -229,6 +226,7 @@ it('reuses persisted capability results when a worker retries a running step', f
                 'answer' => 'Should not be called.',
                 'capability_requests' => [[
                     'capability' => 'work.item.create',
+                    'expert_slug' => 'operations',
                     'target_context' => ['enterprise_id' => $enterprise->getKey()],
                     'input_payload' => ['name' => 'Duplicate guard'],
                 ]],
@@ -257,6 +255,7 @@ it('reuses persisted capability results when a worker retries a running step', f
             'answer' => 'Persisted model result.',
             'capability_requests' => [[
                 'capability' => 'work.item.create',
+                'expert_slug' => 'operations',
                 'target_context' => ['enterprise_id' => $enterprise->getKey()],
                 'input_payload' => ['name' => 'Duplicate guard'],
             ]],

@@ -105,7 +105,7 @@ An Enterprise represents the operational entity an agent is helping to run. Ente
 
 Agents and Experts are **runtime components implemented as PHP classes**. They are not themselves Eloquent models or persistent business entities.
 
-CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as the platform runtime registry for those components. Descriptors identify the runtime class and expose persistent registry information, while the PHP runtime classes remain authoritative for their identity, description, responsibilities, capabilities, methodology and executable behavior. Enterprise-level governance is represented separately through **AgentAssignment** and **AgentPermission** records.
+CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as the platform runtime registry for those components. Descriptors identify the runtime class and expose persistent registry information, while the PHP runtime classes remain authoritative for their identity, description, responsibilities, capabilities, methodology and executable behavior. Enterprise-level governance is represented through **AgentAssignment** records and the Agent → Expert → Capability authorization chain.
 
 - Agent PHP classes
 - Expert PHP classes
@@ -131,7 +131,7 @@ Agents determine which expertise is required, coordinate one or more Experts, an
 Capability availability, authorization and approval are intentionally separate:
 
 - **Availability:** an Agent or Expert runtime declares a Capability it can use. The same Capability may be reused by multiple Agents or Experts.
-- **Permission:** an Agent assignment receives explicit server-side permission for that Capability within its organization and Enterprise scope. Declaring a Capability does not grant permission.
+- **Authorization:** an Agent assignment must authorize the requested Expert, and that Expert must own the requested Capability within the applicable organization and Enterprise scope.
 - **Approval:** a separate governance decision is required when the permission is approval-sensitive. Permission does not imply approval.
 
 When an Expert is used through an Agent, CR8OR verifies that the Expert declares the Capability and that the Agent assignment is explicitly permitted to use it. MCP and non-MCP execution share this authorization boundary.
@@ -483,7 +483,7 @@ The descriptor must never become a second source of truth for runtime behavior. 
 The Agent/Expert registry has two distinct governance layers:
 
 - **AgentDescriptor / ExpertDescriptor** define the platform-level runtime registry: which executable Agent/Expert classes exist, which runtime class they resolve to, and whether the registered runtime is enabled.
-- **AgentAssignment / AgentPermission** define organization/enterprise-level authority: where a registered Agent may operate and which capabilities it may use.
+- **AgentAssignment** defines where a registered Agent may operate; Expert composition and Expert-owned Capabilities define what governed work it may perform.
 
 Platform registry governance must not be confused with enterprise governance. The current implementation provides the descriptor registry and enterprise assignment/permission controls; a dedicated platform-authority boundary for administration of global descriptors should be established before the production Agent/Expert catalog expands.
 
@@ -685,7 +685,7 @@ CR8OR uses three deliberately separate names for governed AI execution:
 | Operation | `CreateContentItem` | Concrete executable business operation |
 | Tool | `create-content-item` | MCP-facing interface identifier |
 
-A Tool does not grant authority. A Capability declaration does not grant permission. Authorization is evaluated server-side for the current actor, Agent/Expert context, organization and Enterprise scope, with approval applied independently where policy requires it.
+A Tool does not grant authority. Agents do not directly authorize Capabilities. Authorization is evaluated server-side through Agent → Expert → Capability for the current actor, Agent assignment, organization and Enterprise scope, with approval applied independently where policy requires it.
 
 Capabilities may be reused by multiple Agents or Experts. They are not owned exclusively by one runtime component. Operations provide the concrete execution boundary and must not be bypassed by direct Expert calls to arbitrary application services.
 

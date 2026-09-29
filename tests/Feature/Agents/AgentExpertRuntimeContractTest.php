@@ -12,7 +12,6 @@ use App\Experts\ExpertDefinition;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
@@ -82,10 +81,6 @@ function runtimeContractExecution(string $agentSlug, string $expertSlug): array
     $expert = app(ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail()->resolveRuntimeClass());
 
     foreach (array_unique([...$agent->capabilities(), ...$expert->capabilities()]) as $capability) {
-        AgentPermission::factory()->create([
-            'agent_assignment_id' => $assignment->getKey(),
-            'capability' => $capability,
-        ]);
     }
 
     $execution = AgentExecution::factory()
@@ -252,11 +247,6 @@ it('propagates the canonical correlation and Capability Request through Expert e
     $assignment->update(['agent_descriptor_id' => $agentDescriptor->getKey()]);
     $assignment->load('agentDescriptor');
 
-    AgentPermission::query()->firstOrCreate([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
     $context = [
         'enterprise' => [
             'enterprise' => [
@@ -346,11 +336,6 @@ it('rejects invalid runtime implementations deterministically', function (): voi
         }
     };
 
-    AgentPermission::query()->firstOrCreate([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
     expect(fn () => app(ExpertInvocationService::class)->invoke(new ExpertInvocationRequest(
         actor: $actor,
         assignment: $assignment,
@@ -366,5 +351,5 @@ it('rejects invalid runtime implementations deterministically', function (): voi
         expectedReasoningOutput: 'Reject malformed Capability requests.',
         targetContext: ['enterprise_id' => $enterprise->getKey()],
         correlationId: $execution->correlation_id,
-    )))->toThrow(AuthorizationException::class, 'invalid Capability request');
+    )))->toThrow(AuthorizationException::class, 'not authorized to use capability [work.item.create] through Expert [invalid-contract-expert]');
 });

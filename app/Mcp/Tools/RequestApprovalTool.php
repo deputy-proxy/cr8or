@@ -27,6 +27,7 @@ class RequestApprovalTool extends AuthorizedTool
             'agent_assignment_id' => $schema->integer()->min(1)->description('Agent assignment requesting approval.')->required(),
             'agent_execution_id' => $schema->integer()->min(1)->description('Optional Agent execution associated with the request.'),
             'capability' => $schema->string()->min(1)->max(255)->description('Capability that requires approval.')->required(),
+            'expert_slug' => $schema->string()->min(1)->max(100)->description('Expert authorized by the Agent to own the Capability.')->required(),
             'target_context' => $schema->object()->description('Exact target context that must match when the approval is consumed.'),
         ];
     }
@@ -38,6 +39,7 @@ class RequestApprovalTool extends AuthorizedTool
                 'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
                 'capability' => ['required', 'string', 'min:1', 'max:255'],
+                'expert_slug' => ['required', 'string', 'min:1', 'max:100'],
                 'target_context' => ['nullable', 'array'],
             ]);
 
@@ -61,6 +63,7 @@ class RequestApprovalTool extends AuthorizedTool
                 $assignment,
                 $execution,
                 $validated['capability'],
+                $validated['expert_slug'],
             );
 
             $capabilities->forTool(static::class);
@@ -104,6 +107,7 @@ class RequestApprovalTool extends AuthorizedTool
             $execution,
             $validated['target_context'] ?? [],
             isset($validated['correlation_id']) ? (string) $validated['correlation_id'] : null,
+            isset($validated['expert_slug']) ? (string) $validated['expert_slug'] : null,
         );
     }
 }

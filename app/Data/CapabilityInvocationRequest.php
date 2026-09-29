@@ -39,6 +39,9 @@ final readonly class CapabilityInvocationRequest
         }
 
         if ($this->assignment !== null && $this->execution !== null) {
+            if ($this->expertSlug === null || trim($this->expertSlug) === '') {
+                throw new InvalidArgumentException('Agent-backed Capability invocation requires Expert provenance.');
+            }
             if ($this->enterprise === null) {
                 throw new InvalidArgumentException('Agent-backed Capability invocation requires an Enterprise context.');
             }

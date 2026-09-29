@@ -1,10 +1,13 @@
 <?php
 
+use App\Agents\OperationsAgent;
 use App\Data\CapabilityInvocationRequest;
+use App\Experts\OperationsExpert;
 use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
@@ -62,57 +65,30 @@ it('rejects an application Capability invocation across enterprise authorization
     expect(WorkItem::query()->where('enterprise_id', $foreignEnterprise->getKey())->where('name', 'Must not persist')->exists())->toBeFalse();
 });
 
-it('creates a resumable approval request through the application Capability boundary', function () {
-    $actor = User::factory()->create();
-    $enterprise = Enterprise::factory()->create();
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
-    $execution = AgentExecution::factory()->forAssignment($assignment)->executing()->create([
-        'actor_id' => $actor->getKey(),
-        'correlation_id' => 'application-approval-1',
-    ]);
-
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
-    $result = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.create',
-        actor: $actor,
-        enterprise: $enterprise,
-        assignment: $assignment,
-        execution: $execution,
-        inputPayload: ['name' => 'Approval gated work item'],
-        correlationId: 'application-approval-1',
-        idempotencyKey: 'application-approval-1',
-    ));
-
-    expect($result['status'])->toBe('waiting')
-        ->and($result['approval']->capability)->toBe('work.item.create')
-        ->and($result['approval']->agent_execution_id)->toBe($execution->getKey())
-        ->and(WorkItem::query()->where('enterprise_id', $enterprise->getKey())->where('name', 'Approval gated work item')->exists())->toBeFalse();
-});
-
 it('preserves the canonical Capability operation mapping for Agent-backed invocation', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+
+    $agentDescriptor = AgentDescriptor::factory()
+        ->forRuntimeClass(OperationsAgent::class)
+        ->create(['slug' => 'operations']);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(OperationsExpert::class)
+        ->create(['slug' => 'operations']);
+    $assignment->update(['agent_descriptor_id' => $agentDescriptor->getKey()]);
     $execution = AgentExecution::factory()->forAssignment($assignment)->executing()->create([
         'actor_id' => $actor->getKey(),
         'correlation_id' => 'application-agent-1',
     ]);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
     $result = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
         capability: 'work.item.create',
         actor: $actor,
         enterprise: $enterprise,
         assignment: $assignment,
         execution: $execution,
+        expertSlug: 'operations',
         inputPayload: ['name' => 'Agent boundary work item'],
         correlationId: 'application-agent-1',
         idempotencyKey: 'application-agent-1',

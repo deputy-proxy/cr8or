@@ -12,11 +12,10 @@ use App\Jobs\RunAgentExecutionJob;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\AgentSemanticMemory;
-use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
+use App\Models\ExpertDescriptor;
 use App\Models\KnowledgeContext;
 use App\Models\KnowledgeItem;
 use App\Models\Membership;
@@ -38,7 +37,7 @@ function phase10E2EAgentClass(): string
                 description: 'Exercises the complete governed execution loop.',
                 responsibilities: ['execute'],
                 instructions: 'Use only authorized capabilities and supplied context.',
-                experts: [],
+                experts: ['operations'],
                 requiredContext: ['enterprise', 'knowledge', 'memory'],
                 capabilities: ['work.item.create'],
             );
@@ -56,6 +55,7 @@ function phase10E2EAssignment(User $actor, Enterprise $enterprise): AgentAssignm
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(phase10E2EAgentClass())->create([
         'slug' => 'phase-10-e2e-agent',
     ]);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => \App\Experts\OperationsExpert::class, 'enabled' => true]);
 
     return AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $descriptor->getKey(),
@@ -77,10 +77,6 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
     $assignment = phase10E2EAssignment($actor, $enterprise);
     $approver = User::factory()->create();
     Membership::factory()->admin()->create(['user_id' => $approver->id, 'organization_id' => $enterprise->organization_id]);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
     EnterpriseContext::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     $knowledgeContext = KnowledgeContext::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     KnowledgeItem::factory()->create(['enterprise_id' => $enterprise->getKey(), 'knowledge_context_id' => $knowledgeContext->getKey()]);
@@ -107,6 +103,7 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
                     'answer' => 'Create the item.',
                     'capability_requests' => [[
                         'capability' => 'work.item.create',
+                        'expert_slug' => 'operations',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                         'input_payload' => ['name' => 'Phase 10 E2E item'],
                     ]],
@@ -146,63 +143,11 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
         ->and($events)->toContain(AgentExecutionCompleted::class);
 });
 
-it('pauses for approval and resumes through the same governed execution', function () {
-    $actor = User::factory()->create();
-    $enterprise = Enterprise::factory()->create();
-    $assignment = phase10E2EAssignment($actor, $enterprise);
-    $approver = User::factory()->create();
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->id,
-        'organization_id' => $enterprise->organization_id,
-    ]);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-        'requires_approval' => true,
-    ]);
-
-    $calls = 0;
-    $provider = new FakeModelProvider(function ($request) use (&$calls, $enterprise) {
-        $calls++;
-
-        return new ModelResult(
-            text: 'Approval step '.$calls,
-            structured: [
-                'answer' => 'Approval step '.$calls,
-                'capability_requests' => $calls === 1 ? [[
-                    'capability' => 'work.item.create',
-                    'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                    'input_payload' => ['name' => 'Approval E2E'],
-                ]] : [],
-                'delegation_requests' => [],
-                'termination' => $calls === 1 ? 'waiting_for_approval' : 'completed',
-                'next_step' => $calls === 1 ? 'Continue after approval.' : null,
-                'termination_reason' => $calls === 1 ? 'approval_required' : 'approved',
-            ],
-            provider: 'fake', model: 'test', invocationId: 'approval-'.$calls, correlationId: $request->correlationId,
-        );
-    });
-
-    $service = phase10E2EService($provider);
-    $paused = $service->execute(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Create after approval.', correlationId: 'approval-e2e'));
-    $approval = ApprovalRequest::query()->where('agent_execution_id', $paused->execution->getKey())->firstOrFail();
-
-    expect($paused->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL);
-    app(\App\Services\ApprovalRequestService::class)->approve($approval, $approver);
-    $resumed = $service->resume($paused->execution, $actor);
-
-    expect($resumed->execution->status)->toBe(AgentExecution::STATUS_COMPLETED);
-});
-
 it('queues an execution, retries a transient model failure, and keeps the operation governed', function () {
     Queue::fake();
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = phase10E2EAssignment($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
     $calls = 0;
     $provider = new FakeModelProvider(function ($request) use (&$calls) {
         $calls++;

@@ -12,7 +12,7 @@ final class BusinessAnalysisExpert extends Expert
             responsibilities: ['analyze enterprise context', 'identify dependencies', 'surface decision inputs'],
             methodology: 'Evidence-first analysis of authorized enterprise context.',
             requiredContext: ['enterprise', 'strategy', 'work', 'financial'],
-            capabilities: ['business.analysis'],
+            capabilities: ['business.analysis', 'agent.delegate'],
         );
     }
 

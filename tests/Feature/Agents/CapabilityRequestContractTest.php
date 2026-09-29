@@ -1,17 +1,29 @@
 <?php
 
+use App\Agents\OperationsAgent;
 use App\Data\CapabilityRequest;
+use App\Experts\OperationsExpert;
 use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\User;
 
 function capabilityRequestContractSetup(): array
 {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+    $agentDescriptor = AgentDescriptor::factory()
+        ->forRuntimeClass(OperationsAgent::class)
+        ->create(['slug' => 'operations']);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(OperationsExpert::class)
+        ->create(['slug' => 'operations']);
+
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create([
+        'agent_descriptor_id' => $agentDescriptor->getKey(),
+    ]);
 
     $execution = AgentExecution::factory()->forAssignment($assignment)->executing()->create([
         'actor_id' => $actor->getKey(),
@@ -60,6 +72,9 @@ it('rejects a Capability Request that is not scoped to its Agent execution', fun
         assignment: $otherAssignment,
         execution: $execution,
         actor: $actor,
+        targetContext: [],
+        inputPayload: [],
+        expertSlug: 'operations',
     ))->toThrow(InvalidArgumentException::class, 'must belong to its Agent assignment');
 });
 
@@ -71,11 +86,14 @@ it('rejects a Capability Request with a correlation identifier from another exec
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
+        targetContext: [],
+        inputPayload: [],
+        expertSlug: 'operations',
         correlationId: 'different-execution',
     ))->toThrow(InvalidArgumentException::class, 'must match its Agent execution');
 });
 
-it('keeps Capability availability separate from Agent permission', function () {
+it('keeps Capability authorization separate from Agent assignment metadata', function () {
     [$actor, $assignment, $execution] = capabilityRequestContractSetup();
 
     $request = new CapabilityRequest(
@@ -83,12 +101,10 @@ it('keeps Capability availability separate from Agent permission', function () {
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
+        targetContext: [],
+        inputPayload: [],
+        expertSlug: 'operations',
     );
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $authorizer = app(\App\Services\AgentCapabilityAuthorizer::class);
 
@@ -99,6 +115,9 @@ it('keeps Capability availability separate from Agent permission', function () {
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
+        targetContext: [],
+        inputPayload: [],
+        expertSlug: 'operations',
     );
 
     expect($authorizer->allowsRequest($unpermittedRequest))->toBeFalse();

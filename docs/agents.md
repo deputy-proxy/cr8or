@@ -64,7 +64,7 @@ Phase 8.1 establishes one canonical PHP structure for every Agent runtime. Each 
 
 The Agent base class exposes this definition through read-only runtime accessors and provides execute() as the canonical Agent execution entry point. coordinate() remains a compatibility alias for existing callers and delegates to execute().
 
-The definition is runtime authority only. It does not create Agent permission, Capability permission or approval authority. Agent assignments, Agent permissions, authorization services and approval services remain authoritative for governance.
+The definition is runtime authority only. It does not create direct Agent → Capability authority or approval authority. Agent assignments, Expert composition, authorization services and approval services remain authoritative for governance.
 
 For the Marketing Agent, the runtime definition additionally identifies decision boundaries, expected outputs, a responsibility-to-Capability map, genuine Capability gaps and approval-sensitive Capabilities. These declarations describe the implemented runtime contract; they do not create permission or approval authority. Marketing execution history stores a deterministic definition version alongside the Agent runtime class so changes to these instructions and declarations remain identifiable when the existing execution snapshot is used for audit.
 
@@ -85,7 +85,7 @@ The runtime relationship is:
         |
         +-- execute()
 
-Expert composition is declarative runtime metadata. It does not automatically grant or bypass Expert availability, Agent assignment, Capability permission or approval checks. Existing execution services remain responsible for resolving and governing actual Expert invocation.
+Expert composition is declarative runtime metadata. It does not automatically grant or bypass Expert availability, Agent assignment, Expert-owned Capability authorization or approval checks. Existing execution services remain responsible for resolving and governing actual Expert invocation.
 
 ### Canonical Expert Runtime Structure
 
@@ -119,7 +119,7 @@ The runtime relationship is:
         |
         +-- analyze()
 
-Expert capability declarations define the Expert-to-Capability ownership boundary. When an Expert is coordinated by an Agent, the execution boundary verifies the Agent-to-Expert relationship, Expert declaration, Capability Registry membership, scope and approval requirements; it does not require a duplicate Agent Assignment Capability permission for an Expert-owned Capability.
+Expert capability declarations define the Expert-to-Capability ownership boundary. When an Expert is coordinated by an Agent, the execution boundary verifies the Agent-to-Expert relationship, Expert declaration, Capability Registry membership, scope and approval requirements; it does not require a duplicate direct Agent permission for an Expert-owned Capability.
 
 ### Governed Expert Coordination
 
@@ -169,7 +169,7 @@ Phase 8.3 establishes a provider-neutral, transport-neutral request boundary for
         v
     AgentExecution / AgentDecision / audit
 
-Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` as the canonical provider-neutral request contract. The contract carries the Capability identifier, target context, operation input payload, Agent assignment and execution identity, optional Expert identity, approval reference, correlation identity, idempotency key and delegated execution context. The request is scoped to its Agent execution and does not grant authority. `CapabilityRegistry` remains authoritative for Capability availability and Operation resolution, while `AgentCapabilityAuthorizer` remains authoritative for server-side permission and approval checks.
+Model-produced Capability Requests are represented by `App\Data\CapabilityRequest` as the canonical provider-neutral request contract. The contract carries the Capability identifier, target context, operation input payload, Agent assignment and execution identity, mandatory Expert identity, approval reference, correlation identity, idempotency key and delegated execution context. The request is scoped to its Agent execution and does not grant authority. `CapabilityRegistry` remains authoritative for Capability availability and Operation resolution, while `AgentCapabilityAuthorizer` remains authoritative for server-side Agent → Expert → Capability authorization and approval checks.
 
 ### Canonical Agent Context Contract
 
@@ -215,7 +215,7 @@ These are separate concepts and must not be collapsed into a single Expert or Ag
 
 1. **Availability** means an Agent or Expert runtime declares or exposes a Capability as part of its implemented responsibility. The same Capability may be exposed by multiple Experts or Agents.
 2. **Permission** is the server-side authorization granted to an Agent assignment for a Capability within an organization and applicable Enterprise scope. A runtime declaration never creates permission.
-3. **Approval** is an independent governance decision required when the applicable permission is configured as approval-sensitive. A valid Capability permission does not satisfy a required approval.
+3. **Approval** is an independent governance decision required when the Capability definition is approval-sensitive. Expert ownership does not satisfy a required approval.
 
 For Agent-backed Expert execution, CR8OR verifies both sides of the boundary: the Agent must be authorized to invoke the Expert, and the Expert must declare/own the requested Capability. Cross-organization and cross-Enterprise scope checks remain part of the same authorization path. Approval-sensitive Capabilities remain approval-gated. MCP-backed Expert execution uses the same server-side semantics.
 
@@ -318,7 +318,7 @@ AI model capability, prompt instructions, Expert delegation or tool visibility m
 5. Select and coordinate required Experts.
 6. Produce a plan, recommendation or decision.
 7. Request a named Capability when execution is required.
-8. Re-evaluate server-side permission for the requested Capability.
+8. Re-evaluate server-side Agent → Expert → Capability authorization for the requested Capability.
 9. Resolve the Capability to its Operation.
 10. Require approval when policy demands it.
 11. Execute the Operation through its application/domain service.

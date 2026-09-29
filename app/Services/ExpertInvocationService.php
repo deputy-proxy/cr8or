@@ -88,6 +88,7 @@ final class ExpertInvocationService
 
                 if (! $this->capabilityAuthorizer->allowsExpertCapability(
                     $request->assignment,
+                    $request->expertSlug,
                     $runtime,
                     $capability,
                     $request->assignment->organization,

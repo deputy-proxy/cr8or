@@ -11,7 +11,6 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\KnowledgeContext;
@@ -70,11 +69,6 @@ it('completes a governed Marketing Agent execution through Capability, Operation
     $fixture = marketingEndToEndFixture();
     extract($fixture);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.plan',
-    ]);
-
     $provider = new FakeModelProvider(function ($request) use ($enterprise, $strategy): ModelResult {
         expect($request->context)->toHaveKeys([
             'enterprise',
@@ -103,6 +97,7 @@ it('completes a governed Marketing Agent execution through Capability, Operation
                 'capability_requests' => [
                     json_encode([
                         'capability' => 'marketing.plan',
+                        'expert_slug' => 'marketing',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                     ], JSON_THROW_ON_ERROR),
                 ],
@@ -157,11 +152,6 @@ it('does not allow an approval-sensitive Marketing capability to bypass approval
     $fixture = marketingEndToEndFixture();
     extract($fixture);
 
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.content.publication-ready',
-    ]);
-
     $provider = new FakeModelProvider(function ($request): ModelResult {
         return new ModelResult(
             text: 'Approval-sensitive work requested.',
@@ -172,6 +162,7 @@ it('does not allow an approval-sensitive Marketing capability to bypass approval
                 'capability_requests' => [
                     json_encode([
                         'capability' => 'marketing.content.publication-ready',
+                        'expert_slug' => 'marketing',
                         'target_context' => ['content_item_id' => 123],
                     ], JSON_THROW_ON_ERROR),
                 ],
@@ -238,22 +229,22 @@ it('denies Marketing execution across organization and Enterprise boundaries', f
         'organization_id' => $otherOrganization->getKey(),
     ]);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.plan',
-    ]);
-
     $authorizer = app(AgentCapabilityAuthorizer::class);
+    $expert = app(\App\Experts\MarketingExpert::class);
 
-    expect($authorizer->allows(
+    expect($authorizer->allowsExpertCapability(
         $assignment,
+        'marketing',
+        $expert,
         'marketing.plan',
         $otherOrganization,
         $enterprise,
         $actor,
     ))->toBeFalse()
-        ->and($authorizer->allows(
+        ->and($authorizer->allowsExpertCapability(
             $assignment,
+            'marketing',
+            $expert,
             'marketing.plan',
             $enterprise->organization,
             $foreignEnterprise,

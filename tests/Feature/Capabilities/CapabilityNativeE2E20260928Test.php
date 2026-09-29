@@ -10,7 +10,6 @@ use App\Models\AgentDelegation;
 use App\Models\AgentDescriptor;
 use App\Models\AgentEpisodicMemory;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\AgentSemanticMemory;
 use App\Models\ApprovalRequest;
 use App\Models\ContentItem;
@@ -306,22 +305,9 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
         ],
         $report['capabilities'],
     );
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $marketingAssignmentId,
-        'capability' => 'agent.delegate',
-    ]);
     foreach (['marketing.plan', 'marketing.strategy.create', 'marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.content.publication-ready', 'strategy.create', 'strategy.update'] as $capability) {
-        AgentPermission::factory()->create([
-            'agent_assignment_id' => $marketingAssignmentId,
-            'capability' => $capability,
-        ]);
     }
     foreach (['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'] as $capability) {
-        AgentPermission::factory()->create([
-            'agent_assignment_id' => $productAssignmentId,
-            'capability' => $capability,
-        ]);
     }
 
     $provider = new FakeModelProvider(function ($request): ModelResult {

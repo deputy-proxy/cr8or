@@ -22,35 +22,24 @@ class AgentCapabilityAuthorizer
     /** Authorize a Capability request through its canonical contract. */
     public function allowsRequest(CapabilityRequest $request, bool $allowPendingApproval = false): bool
     {
-        if ($request->expertSlug !== null) {
-            return $this->allowsExpertRequest($request, $allowPendingApproval);
+        if ($request->expertSlug === '') {
+            return false;
         }
 
-        return $this->allows(
-            $request->assignment,
-            $request->capability,
-            $request->assignment->organization,
-            $request->assignment->enterprise,
-            $request->actor,
-            $request->approval,
-            $request->execution,
-            $request->targetContext,
-            $request->delegation,
-            $allowPendingApproval,
-        );
+        return $this->allowsExpertRequest($request, $allowPendingApproval);
     }
 
     /**
      * Authorize a Capability requested through an Expert runtime.
      *
      * Expert ownership is the Capability authorization boundary after the
-     * Agent has been authorized to invoke that Expert. Direct Agent Capability
-     * authorization remains available through allows().
+     * Agent has been authorized to invoke that Expert.
      *
      * @param  array<string, mixed>  $targetContext
      */
     public function allowsExpertCapability(
         AgentAssignment $assignment,
+        string $expertSlug,
         Expert $expert,
         string $capability,
         ?Organization $organization = null,
@@ -62,6 +51,10 @@ class AgentCapabilityAuthorizer
         ?AgentDelegation $delegation = null,
         bool $allowPendingApproval = false,
     ): bool {
+        if (! $this->agentAllowsExpert($assignment, $expertSlug)) {
+            return false;
+        }
+
         if (! in_array($capability, $expert->capabilities(), true)) {
             return false;
         }
@@ -126,6 +119,7 @@ class AgentCapabilityAuthorizer
 
         return $this->allowsExpertCapability(
             $request->assignment,
+            $request->expertSlug,
             $runtime,
             $request->capability,
             $request->assignment->organization,
@@ -152,61 +146,4 @@ class AgentCapabilityAuthorizer
     }
 
     /** @param array<string, mixed> $targetContext */
-    public function allows(
-        AgentAssignment $assignment,
-        string $capability,
-        ?Organization $organization = null,
-        ?Enterprise $enterprise = null,
-        ?User $actor = null,
-        ?ApprovalRequest $approval = null,
-        ?AgentExecution $execution = null,
-        array $targetContext = [],
-        ?AgentDelegation $delegation = null,
-        bool $allowPendingApproval = false,
-    ): bool {
-        try {
-            $this->capabilities->resolve($capability);
-        } catch (\InvalidArgumentException) {
-            return false;
-        }
-
-        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
-            return false;
-        }
-        if ($organization !== null && $organization->getKey() !== $assignment->organization_id) {
-            return false;
-        }
-        if ($enterprise !== null) {
-            if ($enterprise->organization_id !== $assignment->organization_id) {
-                return false;
-            }
-            if ($assignment->enterprise_id !== null && $enterprise->getKey() !== $assignment->enterprise_id) {
-                return false;
-            }
-        }
-        if ($assignment->enterprise_id !== null && $enterprise === null) {
-            return false;
-        }
-
-        $permission = $assignment->permissions()->where('capability', $capability)->first();
-        if ($permission === null) {
-            return false;
-        }
-        if (! $permission->requires_approval) {
-            return true;
-        }
-        if ($actor === null || $approval === null) {
-            return $allowPendingApproval;
-        }
-
-        return app(ApprovalRequestService::class)->matches(
-            $approval,
-            $actor,
-            $assignment,
-            $capability,
-            $execution,
-            $targetContext,
-            $delegation,
-        );
-    }
 }

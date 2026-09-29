@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\PublishingProvider;
 use App\Data\PublishingProviderResult;
 use App\Exceptions\PublishingProviderException;
+use App\Experts\MarketingExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
@@ -180,8 +181,10 @@ final class PublishingService
             return;
         }
 
-        if (! $this->capabilities->allows(
+        if (! $this->capabilities->allowsExpertCapability(
             $assignment,
+            'marketing',
+            new MarketingExpert,
             'publication.publish',
             $c->enterprise->organization,
             $c->enterprise,

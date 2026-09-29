@@ -23,7 +23,6 @@ use App\Mcp\Tools\PlanMarketingTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\FinancialAccount;
@@ -31,7 +30,6 @@ use App\Models\FinancialPeriod;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
-use App\Services\AgentDelegationService;
 
 beforeEach(function (): void {
     $this->seed([
@@ -259,20 +257,11 @@ it('delegates through AgentDelegationService and preserves idempotency', functio
         'agent_descriptor_id' => AgentDescriptor::query()->where('slug', 'finance')->value('id'),
     ]);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $source->getKey(),
-        'capability' => AgentDelegationService::DELEGATION_CAPABILITY,
-    ]);
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'finance.report.generate',
-    ]);
-
     $payload = [
         'source_agent_assignment_id' => $source->getKey(),
         'target_agent_slug' => 'finance',
         'capability' => 'finance.report.generate',
+        'expert_slugs' => ['finance'],
         'prompt' => 'Create the approved work.',
         'target_context' => ['enterprise_id' => $enterprise->getKey()],
         'idempotency_key' => 'mcp-delegation-123',

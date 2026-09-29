@@ -26,6 +26,7 @@ class ApprovalRequestService
         ?AgentExecution $execution = null,
         array $targetContext = [],
         ?string $correlationId = null,
+        ?string $expertSlug = null,
     ): ApprovalRequest {
         $requestedAt = now();
         $policy = $this->policies->snapshotFor($assignment, $capability);
@@ -44,6 +45,10 @@ class ApprovalRequestService
             'enterprise_name' => $assignment->enterprise?->name,
             'agent_slug' => $assignment->agentDescriptor->slug,
             'agent_runtime_class' => $assignment->agentDescriptor->runtime_class,
+            'expert_slug' => $expertSlug,
+            'expert_runtime_class' => $expertSlug !== null
+                ? \App\Models\ExpertDescriptor::query()->where('slug', $expertSlug)->value('runtime_class')
+                : null,
             'actor_name' => $actor->name,
             'status' => ApprovalRequest::STATUS_PENDING,
             'requested_at' => $requestedAt,

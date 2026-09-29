@@ -33,12 +33,9 @@ final class CapabilityInvocationService
         $this->dispatchRequested($request, $definition);
         $this->authorize($request);
 
-        $permission = $request->expertSlug === null
-            ? $request->assignment?->permissions()->where('capability', $request->capability)->first()
-            : null;
         $requiresApproval = $request->expertSlug !== null
             ? $definition->approvalRequirement === 'required'
-            : $permission?->requires_approval === true;
+            : false;
 
         if ($requiresApproval && $request->approval === null) {
             $approval = $this->approvals->request(
@@ -48,6 +45,7 @@ final class CapabilityInvocationService
                 execution: $request->execution,
                 targetContext: $request->targetContext,
                 correlationId: $request->resolvedCorrelationId(),
+                expertSlug: $request->expertSlug,
             );
 
             return [
@@ -98,6 +96,7 @@ final class CapabilityInvocationService
     private function authorize(CapabilityInvocationRequest $request): void
     {
         if ($request->isAgentBacked()) {
+            $definition = $this->capabilities->resolve($request->capability);
             $agentRequest = new CapabilityRequest(
                 capability: $request->capability,
                 assignment: $request->assignment,
@@ -112,16 +111,12 @@ final class CapabilityInvocationService
                 delegation: $request->delegation,
             );
 
-            $permission = $request->expertSlug === null
-            ? $request->assignment->permissions()->where('capability', $request->capability)->first()
-            : null;
-
             $allowed = $this->authorizer->allowsRequest(
                 $agentRequest,
-                $request->expertSlug !== null || ($permission?->requires_approval === true && $request->approval === null),
+                $request->approval === null && $definition->approvalRequirement === 'required',
             );
 
-            if (! $allowed || ($request->expertSlug === null && $permission === null)) {
+            if (! $allowed) {
                 throw new AuthorizationException(
                     "The Agent is not authorized for capability [{$request->capability}] in this target context.",
                 );

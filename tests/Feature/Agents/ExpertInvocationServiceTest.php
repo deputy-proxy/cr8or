@@ -5,7 +5,6 @@ use App\Agents\AgentDefinition;
 use App\Data\ExpertInvocationRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
@@ -46,11 +45,6 @@ function invocationContractSetup(string $agentClass = ContractTestAgent::class, 
 
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $descriptor->getKey(),
-    ]);
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
     ]);
 
     ExpertDescriptor::factory()->forRuntimeClass(
@@ -168,8 +162,6 @@ it('returns a failed invocation when Expert reasoning fails', function () {
 
 it('returns governed Capability requests when the Expert declares them without duplicate Agent permission', function () {
     [$actor, $assignment, $execution, $enterprise] = invocationContractSetup(expertSlug: 'capability-expert');
-
-    $assignment->permissions()->where('capability', 'work.item.create')->delete();
 
     $result = invokeContract(
         $actor,
