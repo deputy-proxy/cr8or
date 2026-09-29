@@ -282,6 +282,76 @@ it('re-authorizes a state-changing capability and requires approval when configu
         ->and($result->succeeded())->toBeTrue();
 });
 
+it('executes interactive capability requests without invoking a ModelProvider', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+    ]);
+
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Create the requested work item.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        capabilityRequests: [[
+            'capability' => 'work.item.create',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['name' => 'Interactive work item'],
+        ]],
+        correlationId: 'interactive-agent-test',
+    ));
+
+    expect($result->execution->mode)->toBe(\App\Enums\AgentExecutionMode::INTERACTIVE)
+        ->and($result->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($result->capabilityRequests)->toHaveCount(1)
+        ->and($result->execution->last_result['capability_results'][0]['status'])->toBe('executed')
+        ->and(WorkItem::query()->where('name', 'Interactive work item')->exists())->toBeTrue();
+});
+
+it('does not allow an idempotency key to switch Agent execution mode', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+    $provider = new FakeModelProvider(fn () => new \App\AI\Data\ModelResult(
+        text: 'Completed.',
+        structured: ['answer' => 'Completed.', 'capability_requests' => [], 'delegation_requests' => [], 'termination' => 'completed'],
+        provider: 'fake',
+        model: 'test',
+        invocationId: 'mode-test',
+    ));
+    $service = new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    );
+
+    $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Same request.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        idempotencyKey: 'same-mode-key',
+    ));
+
+    expect(fn () => $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Same request.',
+        mode: \App\Enums\AgentExecutionMode::AUTONOMOUS,
+        idempotencyKey: 'same-mode-key',
+    )))->toThrow(LogicException::class, 'does not match required mode');
+});
+
 it('fails the execution when the provider fails', function () {
     $actor = User::factory()->create();
     $assignment = governedAssignment($actor);
