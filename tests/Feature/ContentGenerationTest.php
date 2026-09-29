@@ -24,7 +24,7 @@ function contentAgentRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Content Agent', description: 'Creates governed enterprise content.', responsibilities: ['content'], instructions: 'Create governed enterprise content as a draft within authorized boundaries.', experts: ['copywriting'], requiredContext: ['enterprise'], capabilities: ['marketing.content.create', 'marketing.content.update']);
+            return new \App\Agents\AgentDefinition(name: 'Content Agent', description: 'Creates governed enterprise content.', responsibilities: ['content'], instructions: 'Create governed enterprise content as a draft within authorized boundaries.', experts: ['copywriting'], requiredContext: ['enterprise']);
         }
     });
 }

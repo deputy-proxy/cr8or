@@ -33,8 +33,7 @@ function asyncAgentClass(): string
                 responsibilities: ['execute'],
                 instructions: 'Execute only through governed capabilities.',
                 experts: ['operations'],
-                requiredContext: ['enterprise'],
-                capabilities: ['work.item.create'],
+                requiredContext: ['enterprise']
             );
         }
     });

@@ -38,8 +38,7 @@ function phase10E2EAgentClass(): string
                 responsibilities: ['execute'],
                 instructions: 'Use only authorized capabilities and supplied context.',
                 experts: ['operations'],
-                requiredContext: ['enterprise', 'knowledge', 'memory'],
-                capabilities: ['work.item.create'],
+                requiredContext: ['enterprise', 'knowledge', 'memory']
             );
         }
     });

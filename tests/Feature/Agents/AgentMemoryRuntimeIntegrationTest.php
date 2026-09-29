@@ -35,8 +35,7 @@ it('automatically injects governed memory into Agent and Expert runtime context'
                 responsibilities: ['plan'],
                 instructions: 'Use authorized enterprise context and prior governed memory.',
                 experts: [],
-                requiredContext: ['enterprise'],
-                capabilities: [],
+                requiredContext: ['enterprise']
             );
         }
     });

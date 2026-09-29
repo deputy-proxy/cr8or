@@ -27,7 +27,7 @@ function testAgentRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: ['analyst'], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: ['work.item.create']);
+            return new \App\Agents\AgentDefinition(name: 'Planner', description: 'Plans governed enterprise work.', responsibilities: ['plan'], instructions: 'Plan governed enterprise work within the supplied authorized context.', experts: ['analyst'], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work']);
         }
     });
 }
@@ -736,8 +736,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                     responsibilities: ['delegate'],
                     instructions: 'Delegate governed work only through the execution boundary.',
                     experts: ['business-analysis'],
-                    requiredContext: ['enterprise'],
-                    capabilities: ['agent.delegate'],
+                    requiredContext: ['enterprise']
                 );
             }
         }))
@@ -754,8 +753,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                     responsibilities: ['execute'],
                     instructions: 'Execute delegated work within the supplied authorized context.',
                     experts: ['analyst'],
-                    requiredContext: ['enterprise'],
-                    capabilities: ['work.item.create'],
+                    requiredContext: ['enterprise']
                 );
             }
         }))
@@ -894,7 +892,7 @@ it('rejects a runtime delegation that requests context outside the target Agent 
         {
             public function definition(): \App\Agents\AgentDefinition
             {
-                return new \App\Agents\AgentDefinition(name: 'Source', description: 'Delegates.', responsibilities: ['delegate'], instructions: 'Delegate.', experts: ['business-analysis'], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
+                return new \App\Agents\AgentDefinition(name: 'Source', description: 'Delegates.', responsibilities: ['delegate'], instructions: 'Delegate.', experts: ['business-analysis'], requiredContext: ['enterprise']);
             }
         }))
         ->create(['slug' => 'runtime-source']);
@@ -903,7 +901,7 @@ it('rejects a runtime delegation that requests context outside the target Agent 
         {
             public function definition(): \App\Agents\AgentDefinition
             {
-                return new \App\Agents\AgentDefinition(name: 'Target', description: 'Executes.', responsibilities: ['execute'], instructions: 'Execute.', experts: ['analyst'], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+                return new \App\Agents\AgentDefinition(name: 'Target', description: 'Executes.', responsibilities: ['execute'], instructions: 'Execute.', experts: ['analyst'], requiredContext: ['enterprise']);
             }
         }))
         ->create(['slug' => 'runtime-target']);

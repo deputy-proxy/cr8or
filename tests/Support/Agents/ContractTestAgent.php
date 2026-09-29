@@ -15,8 +15,7 @@ final class ContractTestAgent extends Agent
             responsibilities: ['coordinate'],
             instructions: 'Coordinate Expert reasoning within authorized context.',
             experts: ['contract-expert', 'failing-expert', 'capability-expert'],
-            requiredContext: ['enterprise'],
-            capabilities: [],
+            requiredContext: ['enterprise']
         );
     }
 }

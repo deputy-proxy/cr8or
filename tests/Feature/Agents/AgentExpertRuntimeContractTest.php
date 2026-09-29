@@ -80,9 +80,6 @@ function runtimeContractExecution(string $agentSlug, string $expertSlug): array
     $agent = app($agentDescriptor->resolveRuntimeClass());
     $expert = app(ExpertDescriptor::query()->where('slug', $expertSlug)->firstOrFail()->resolveRuntimeClass());
 
-    foreach (array_unique([...$agent->capabilities(), ...$expert->capabilities()]) as $capability) {
-    }
-
     $execution = AgentExecution::factory()
         ->forAssignment($assignment)
         ->executing()
@@ -113,12 +110,8 @@ it('covers every registered Agent runtime and treats PHP metadata as authoritati
             ->and($definition->instructions)->toBe($agent->instructions())
             ->and($definition->experts)->toBe($agent->experts())
             ->and($definition->requiredContext)->toBe($agent->requiredContext())
-            ->and($definition->capabilities)->toBe($agent->capabilities())
             ->and($definition->decisionBoundaries)->toBe($agent->decisionBoundaries())
             ->and($definition->expectedOutputs)->toBe($agent->expectedOutputs())
-            ->and($definition->capabilityMap)->toBe($agent->capabilityMap())
-            ->and($definition->capabilityGaps)->toBe($agent->capabilityGaps())
-            ->and($definition->approvalSensitiveCapabilities)->toBe($agent->approvalSensitiveCapabilities())
             ->and($agent->name())->not->toBeEmpty()
             ->and($agent->description())->not->toBeEmpty()
             ->and($agent->responsibilities())->not->toBeEmpty()
@@ -290,8 +283,7 @@ it('rejects invalid runtime implementations deterministically', function (): voi
         responsibilities: ['validate'],
         instructions: 'Invalid',
         experts: [],
-        requiredContext: ['enterprise'],
-        capabilities: [],
+        requiredContext: ['enterprise']
     ))->toThrow(InvalidArgumentException::class, 'Agent identity must define a name.');
 
     expect(fn () => new ExpertDefinition(
@@ -330,8 +322,7 @@ it('rejects invalid runtime implementations deterministically', function (): voi
                 responsibilities: ['validate'],
                 instructions: 'Validate invalid Expert output.',
                 experts: ['invalid-contract-expert'],
-                requiredContext: ['enterprise'],
-                capabilities: ['work.item.create'],
+                requiredContext: ['enterprise']
             );
         }
     };

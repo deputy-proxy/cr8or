@@ -36,8 +36,7 @@ function eventAgentClass(): string
                 responsibilities: ['execute'],
                 instructions: 'Execute through governed boundaries.',
                 experts: ['operations'],
-                requiredContext: ['enterprise', 'knowledge'],
-                capabilities: ['work.item.create'],
+                requiredContext: ['enterprise', 'knowledge']
             );
         }
     });
