@@ -18,9 +18,39 @@ final class ResumeAgentExecution implements Operation
     {
         $execution = $input['execution'] ?? AgentExecution::query()->findOrFail((int) $input['agent_execution_id']);
         if ($execution->mode === AgentExecutionMode::INTERACTIVE && isset($input['capability_requests'])) {
-            $execution->execution_context = array_merge($execution->execution_context ?? [], [
-                'interactive_capability_requests' => array_values($input['capability_requests']),
-            ]);
+            $context = is_array($execution->execution_context) ? $execution->execution_context : [];
+            $existing = is_array($context['interactive_capability_requests'] ?? null)
+                ? $context['interactive_capability_requests']
+                : [];
+            $incoming = array_values($input['capability_requests']);
+
+            foreach ($incoming as $request) {
+                $matched = false;
+
+                foreach ($existing as $index => $stored) {
+                    if (! is_array($stored) || ! is_array($request)) {
+                        continue;
+                    }
+
+                    $sameIdempotency = isset($request['idempotency_key'], $stored['idempotency_key'])
+                        && $request['idempotency_key'] === $stored['idempotency_key'];
+                    $sameStep = (int) ($request['step'] ?? 1) === (int) ($stored['step'] ?? 1)
+                        && ($request['capability'] ?? null) === ($stored['capability'] ?? null);
+
+                    if ($sameIdempotency || $sameStep) {
+                        $existing[$index] = array_merge($stored, $request);
+                        $matched = true;
+                        break;
+                    }
+                }
+
+                if (! $matched) {
+                    $existing[] = $request;
+                }
+            }
+
+            $context['interactive_capability_requests'] = array_values($existing);
+            $execution->execution_context = $context;
             $execution->save();
         }
 

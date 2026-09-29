@@ -90,3 +90,23 @@ These Capabilities operate on the durable Assignment resource. They do not turn 
 `E2E-CAPABILITY-20260928` is the definitive application-path validation. It starts at `CapabilityInvocationService` and exercises the persisted Enterprise → Context → Knowledge → Strategy/Work → Agent Assignment → Agent Execution → Expert → Memory → Delegation → Campaign → Content → Review → Approval graph without invoking MCP CRUD/action tools or Railway Sandbox. The test records the resolved Operation for every Capability and emits a machine-readable persisted graph at `storage/app/e2e/E2E-CAPABILITY-20260928.json`.
 
 `enterprise.create` is the bootstrap exception to the normal Enterprise-scoped invocation contract. It may be invoked without a pre-existing Enterprise, provided the actor is authorized for the target Organization. All other human-scoped Capabilities require an Enterprise; Agent-backed Capabilities additionally require the matching Assignment and Execution.
+
+## Agent-backed interactive execution
+
+agent.execute supports two intentionally distinct runtime modes.
+
+### Interactive
+
+Interactive mode is a deterministic, caller-supplied Capability workflow:
+
+AgentExecutionService -> InteractiveCapabilityStepRunner -> CapabilityExecutionService -> CapabilityInvocationService -> CapabilityRegistry -> Operation
+
+The caller supplies the Capability plan. Requests may be grouped into ordered durable steps with the optional step field. Each step is persisted as an AgentExecutionStep before Capability execution. Interactive execution never calls ModelProvider and never dispatches the autonomous execution job.
+
+An empty plan means waiting_for_input. A Capability returning waiting means the current step is waiting and the parent execution is waiting_for_approval. Resume continues from persisted state and can merge updated request data, such as an approved approval_request_id.
+
+### Autonomous
+
+Autonomous mode remains model-driven. The ModelProvider produces structured Capability requests, which are then adapted through the same CapabilityExecutionService and canonical Capability invocation boundary.
+
+Neither mode creates a second authorization or Operation execution path. Interactive completion requires completion of the supplied Capability workflow, not merely creation of an execution context.
