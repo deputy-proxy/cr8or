@@ -26,6 +26,7 @@ final class PublishingService
     public function __construct(
         private readonly PublishingProvider $provider,
         private readonly AgentCapabilityAuthorizer $capabilities,
+        private readonly FailureTranslator $failures,
     ) {}
 
     public function schedule(
@@ -110,14 +111,25 @@ final class PublishingService
                 $p->idempotency_key,
                 ['__type' => $p->channel->type],
             ));
+            $job->external_id = $r->externalId;
+            $job->external_url = $r->externalUrl;
+            $job->save();
             $p->markSubmitted($r->externalId, $r->externalUrl)->save();
             $job->succeed()->save();
             $this->record($p, $job, $r);
 
             return $p->refresh();
         } catch (PublishingProviderException $e) {
-            $job->fail($e->failureCode, $e->getMessage())->save();
-            $p->fail($e->failureCode, $e->getMessage())->save();
+            $failure = $this->failures->translate(
+                $e,
+                correlationId: $p->correlation_id,
+                provenance: new \App\AI\Contracts\FailureProvenance(
+                    operation: 'publication.publish',
+                    capability: 'integration.publishing.publication.publish'
+                ),
+            );
+            $job->fail($failure->message, $failure->code)->save();
+            $p->fail($failure->code, $failure->message)->save();
             $this->recordFailure($p, $job, $e);
             throw $e;
         }

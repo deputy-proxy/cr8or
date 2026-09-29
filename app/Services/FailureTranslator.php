@@ -8,6 +8,8 @@ use App\AI\Contracts\FailureCode;
 use App\AI\Contracts\FailureProvenance;
 use App\AI\Exceptions\ModelProviderException;
 use App\Exceptions\CanvaClientException;
+use App\Exceptions\IntegrationProviderException;
+use App\Exceptions\MediaStorageException;
 use App\Exceptions\PublishingProviderException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -147,6 +149,16 @@ final class FailureTranslator
                 $exception->failureCode,
                 $exception->retryable,
             ),
+            $exception instanceof IntegrationProviderException => $this->externalFailure(
+                $exception->failureCode,
+                $exception->retryable,
+            ),
+            $exception instanceof MediaStorageException => new ExecutionError(
+                ExecutionErrorType::External,
+                $this->storageFailureCode($exception->failureCode),
+                'The external storage service could not complete the operation.',
+                retryable: $exception->retryable,
+            ),
             $exception instanceof JsonException => new ExecutionError(
                 ExecutionErrorType::Serialization,
                 FailureCode::SERIALIZATION_FAILED,
@@ -255,6 +267,19 @@ final class FailureTranslator
             'The model provider could not complete the execution.',
             retryable: in_array($exception->type->value, ['timeout', 'rate_limited', 'unavailable'], true),
         );
+    }
+
+    private function storageFailureCode(string $failureCode): string
+    {
+        return match ($failureCode) {
+            'storage.authentication' => FailureCode::EXTERNAL_AUTHENTICATION,
+            'storage.authorization' => FailureCode::EXTERNAL_AUTHORIZATION,
+            'storage.timeout' => FailureCode::EXTERNAL_TIMEOUT,
+            'storage.rate_limited' => FailureCode::EXTERNAL_RATE_LIMITED,
+            'storage.invalid_response' => FailureCode::EXTERNAL_INVALID_RESPONSE,
+            'storage.unavailable' => FailureCode::EXTERNAL_UNAVAILABLE,
+            default => FailureCode::EXTERNAL_REJECTED,
+        };
     }
 
     private function externalFailure(string $failureCode, bool $retryable): ExecutionError

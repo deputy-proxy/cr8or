@@ -115,7 +115,7 @@ it('records provider timeouts explicitly', function () {
     $provider->shouldTimeout = true;
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     expect(fn () => app(PublishingService::class)->submit($user, $p))->toThrow(PublishingProviderException::class);
-    expect($p->refresh()->status)->toBe(Publication::STATUS_FAILED)->and($p->failure_code)->toBe('timeout');
+    expect($p->refresh()->status)->toBe(Publication::STATUS_FAILED)->and($p->failure_code)->toBe('external.timeout');
 });
 
 it('retries a failed publication idempotently', function () {

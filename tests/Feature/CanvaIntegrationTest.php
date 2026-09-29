@@ -168,3 +168,28 @@ it('never stores a Canva access token in connection records', function () {
         ->and($connection->getAttributes())->not->toHaveKey('client_secret')
         ->and(json_encode($connection->getAttributes()))->not->toContain('CANVA_ACCESS_TOKEN');
 });
+
+it('records a canonical timeout failure without creating a successful external resource', function () {
+    [, $user, , $connection, $asset] = canvaContext();
+
+    $client = app(CanvaClient::class);
+    expect($client)->toBeInstanceOf(FakeCanvaClient::class);
+
+    /** @var FakeCanvaClient $client */
+    $client->shouldTimeout = true;
+
+    expect(fn () => app(CanvaService::class)->createDesign(
+        $user,
+        $connection,
+        canvaRequest(),
+        'timeout-contract',
+        null,
+        $asset,
+    ))->toThrow(CanvaClientException::class);
+
+    $job = IntegrationJob::query()->where('idempotency_key', 'timeout-contract')->firstOrFail();
+
+    expect($job->status)->toBe(IntegrationJob::STATUS_FAILED)
+        ->and($job->failure_code)->toBe('external.timeout')
+        ->and(ExternalResource::query()->count())->toBe(0);
+});

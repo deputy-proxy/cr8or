@@ -5,6 +5,8 @@ use App\AI\Contracts\FailureCode;
 use App\AI\Exceptions\ModelProviderException;
 use App\AI\Exceptions\ModelProviderFailureType;
 use App\Exceptions\CanvaClientException;
+use App\Exceptions\IntegrationProviderException;
+use App\Exceptions\MediaStorageException;
 use App\Exceptions\PublishingProviderException;
 use App\Services\FailureTranslator;
 use GuzzleHttp\Psr7\Response as PsrResponse;
@@ -112,4 +114,24 @@ it('renders unexpected JSON API exceptions through the canonical failure contrac
                 'diagnostic_id',
             ],
         ]);
+});
+
+it('maps external integration and storage failures to canonical retry-aware codes', function () {
+    $translator = app(FailureTranslator::class);
+
+    $rate = $translator->translate(new IntegrationProviderException(
+        'Provider rate limit.',
+        'rate_limited',
+        true,
+    ));
+    $storage = $translator->translate(new MediaStorageException(
+        'Storage unavailable.',
+        'storage.unavailable',
+        true,
+    ));
+
+    expect($rate->code)->toBe(FailureCode::EXTERNAL_RATE_LIMITED)
+        ->and($rate->retryable)->toBeTrue()
+        ->and($storage->code)->toBe(FailureCode::EXTERNAL_UNAVAILABLE)
+        ->and($storage->retryable)->toBeTrue();
 });
