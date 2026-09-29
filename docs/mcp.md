@@ -246,6 +246,8 @@ Agent Executions are durable runtime resources linked to an Enterprise, Agent As
 
 Execution starts are idempotent by organization and idempotency key. Starts through the resource surface require the Assignment to be `ready` or `running`; invalid Assignment state is rejected before dispatch. Execution failures remain durable with structured failure code/category, while structured results are persisted without hidden chain-of-thought.
 
+All execution starts require an explicit `mode`: `interactive` or `autonomous`. `interactive` requests may include `capability_requests`; they execute through the canonical governed Capability path and do not invoke a ModelProvider. `autonomous` follows the existing queued Agent reasoning loop. Resume preserves the persisted mode and may supply additional interactive Capability Requests when the execution is waiting for approval/input.
+
 ## Complete MCP surface contract
 
 The CR8OR server registers every concrete MCP Tool class under `app/Mcp/Tools`; a contract test fails if a concrete tool is added without server registration. Governed action tools resolve through `CapabilityRegistry`, while resource/discovery tools resolve to canonical resource Operations or query services. The server also exposes the Enterprise, Strategy, Knowledge and Work context resources through URI templates.
