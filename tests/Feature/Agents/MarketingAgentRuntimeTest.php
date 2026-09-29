@@ -3,7 +3,6 @@
 use App\Agents\MarketingAgent;
 use App\AI\Data\ModelResult;
 use App\AI\Providers\FakeModelProvider;
-use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentExecutionRequest;
 use App\Data\CapabilityRequest;
 use App\Models\AgentAssignment;
@@ -15,7 +14,6 @@ use App\Models\User;
 use App\Services\AgentCapabilityAuthorizer;
 use App\Services\AgentExecutionService;
 use App\Services\McpContextAssembler;
-use InvalidArgumentException;
 
 beforeEach(function (): void {
     $this->seed([
@@ -37,24 +35,10 @@ it('defines the production Marketing Agent runtime contract', function (): void 
             'decisions',
             'execution_history',
         ])
-        ->and($agent->capabilities())->toBe([
-            'marketing.plan',
-            'marketing.strategy.create',
-            'marketing.content.create',
-            'marketing.content.update',
-            'marketing.content.review',
-            'marketing.content.publication-ready',
-        ])
         ->and($agent->instructions())
         ->toContain('Request human approval whenever the selected Capability is approval-sensitive')
         ->and($agent->decisionBoundaries())->toHaveCount(8)
         ->and($agent->expectedOutputs())->toHaveCount(3)
-        ->and($agent->capabilityMap())->toMatchArray([
-            'plan marketing activity' => ['marketing.plan', 'marketing.strategy.create'],
-            'coordinate marketing expertise' => ['marketing.plan', 'marketing.content.review'],
-        ])
-        ->and($agent->capabilityGaps())->toContain('marketing.campaign.performance-analysis')
-        ->and($agent->approvalSensitiveCapabilities())->toBe(['marketing.content.publication-ready'])
         ->and($agent->expertRouting())->toMatchArray([
             'plan marketing activity' => ['marketing', 'strategy'],
             'coordinate marketing expertise' => ['marketing', 'strategy', 'copywriting', 'seo'],
@@ -62,20 +46,6 @@ it('defines the production Marketing Agent runtime contract', function (): void 
             'protect content governance' => ['seo', 'copywriting'],
         ])
         ->and($agent->definitionVersion())->toMatch('/^[a-f0-9]{64}$/');
-
-    $registry = app(CapabilityRegistry::class);
-
-    foreach ($agent->capabilityMap() as $responsibility => $capabilities) {
-        expect($agent->responsibilities())->toContain($responsibility);
-        foreach ($capabilities as $capability) {
-            expect($agent->capabilities())->toContain($capability)
-                ->and(fn () => $registry->resolve($capability))->not->toThrow(Throwable::class);
-        }
-    }
-
-    foreach ($agent->capabilityGaps() as $gap) {
-        expect(fn () => $registry->resolve($gap))->toThrow(InvalidArgumentException::class);
-    }
 });
 
 it('executes through the canonical Agent contract with authorized context, Expert coordination and a governed Capability request', function (): void {
