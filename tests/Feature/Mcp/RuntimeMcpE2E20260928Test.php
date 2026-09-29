@@ -82,6 +82,35 @@ function e2eCall($server, string $tool, array $input, array &$report): array
     return $structured;
 }
 
+it('runs an interactive Agent execution through the MCP create surface without a ModelProvider', function (): void {
+    Queue::fake();
+    $user = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
+    $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\CeoAgent::class], ['slug' => 'interactive-mcp-test-agent', 'enabled' => true]);
+    $assignment = AgentAssignment::query()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+        'status' => AgentAssignment::STATUS_READY,
+    ]);
+
+    $response = Cr8orServer::actingAs($user, 'api')->tool(CreateAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_assignment_id' => $assignment->getKey(),
+        'prompt' => 'Create an interactive execution context.',
+        'mode' => 'interactive',
+        'idempotency_key' => 'mcp-interactive-mode-test',
+    ]);
+
+    $response->assertOk()->assertSee('mcp-interactive-mode-test');
+    $execution = App\Models\AgentExecution::query()->where('idempotency_key', 'mcp-interactive-mode-test')->firstOrFail();
+
+    expect($execution->mode)->toBe(App\Enums\AgentExecutionMode::INTERACTIVE)
+        ->and(Queue::pushedJobs())->toBeEmpty();
+});
+
 it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function (): void {
     Queue::fake();
 
@@ -270,6 +299,13 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
         'enterprise_id' => $enterpriseId,
         'agent_assignment_id' => $marketingAssignmentId,
         'prompt' => 'Coordinate the E2E governed marketing workflow.',
+        'mode' => 'interactive',
+        'capability_requests' => [[
+            'capability' => 'strategy.create',
+            'target_context' => ['strategy_id' => $strategyId],
+            'input_payload' => ['name' => 'E2E Interactive Strategy'],
+            'idempotency_key' => 'e2e-interactive-strategy',
+        ]],
         'expert_slugs' => ['marketing', 'copywriting'],
         'correlation_id' => 'e2e-parent-execution',
         'idempotency_key' => 'e2e-parent-execution',
