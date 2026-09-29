@@ -48,9 +48,11 @@ final class ExecutionCorrelationService
         Log::warning('CR8OR execution failed.', array_merge([
             'operation' => $operation,
             'correlation_id' => $correlationId,
+            'diagnostic_id' => $error->diagnosticId,
             'failure_type' => $error->type->value,
             'failure_code' => $error->code,
             'retryable' => $error->retryable,
+            'provenance' => $error->provenance->toArray(),
         ], $context));
     }
 }

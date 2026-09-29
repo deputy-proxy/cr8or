@@ -51,3 +51,80 @@ it('returns a normalized MCP error for a business-rule failure', function () {
         ->assertSee('business_rule.rejected')
         ->assertSee('correlation_id');
 });
+it('exposes the canonical failure contract with provenance and diagnostic identity', function () {
+    $error = ExecutionError::from(
+        new LogicException('private implementation detail'),
+        correlationId: 'corr-279',
+        provenance: new \App\AI\Contracts\FailureProvenance(
+            operation: 'CreateAgentAssignment',
+            capability: 'agent.assignment.create',
+            tool: 'create-agent-assignment',
+        ),
+    );
+
+    $payload = $error->toArray();
+
+    expect($payload['error'])->toMatchArray([
+        'type' => 'business_rule',
+        'code' => 'business_rule.rejected',
+        'message' => 'The operation was rejected by a business rule.',
+        'retryable' => false,
+        'correlation_id' => 'corr-279',
+        'operation' => 'CreateAgentAssignment',
+        'capability' => 'agent.assignment.create',
+        'tool' => 'create-agent-assignment',
+        'details' => [],
+    ])->and($payload['error']['diagnostic_id'])->toBeString()->not->toBeEmpty()
+        ->and(json_encode($payload))->not->toContain('private implementation detail');
+});
+
+it('uses stable taxonomy categories for the canonical contract', function () {
+    expect(array_map(
+        static fn (ExecutionErrorType $type): string => $type->value,
+        ExecutionErrorType::cases(),
+    ))->toEqualCanonicalizing([
+        'authentication',
+        'authorization',
+        'validation',
+        'resource',
+        'conflict',
+        'lifecycle',
+        'business_rule',
+        'capability',
+        'approval',
+        'provider',
+        'external',
+        'persistence',
+        'queue',
+        'configuration',
+        'serialization',
+        'internal',
+    ]);
+});
+
+it('defines stable machine-readable failure codes centrally', function () {
+    expect(\App\AI\Contracts\FailureCode::INTERNAL_UNEXPECTED)->toBe('internal.unexpected')
+        ->and(\App\AI\Contracts\FailureCode::VALIDATION_FAILED)->toBe('validation.failed')
+        ->and(\App\AI\Contracts\FailureCode::CAPABILITY_DENIED)->toBe('capability.denied')
+        ->and(\App\AI\Contracts\FailureCode::PERSISTENCE_FAILED)->toBe('persistence.failed')
+        ->and(\App\AI\Contracts\FailureCode::SERIALIZATION_FAILED)->toBe('serialization.failed');
+});
+
+it('preserves field-level validation details without exposing exception data', function () {
+    $exception = \Illuminate\Validation\ValidationException::withMessages([
+        'name' => ['The name field is required.'],
+        'email' => ['The email field is invalid.'],
+    ]);
+
+    $error = ExecutionError::from($exception, correlationId: 'corr-validation');
+
+    expect($error->type)->toBe(ExecutionErrorType::Validation)
+        ->and($error->code)->toBe(\App\AI\Contracts\FailureCode::VALIDATION_FAILED)
+        ->and($error->details)->toBe([
+            'fields' => [
+                'name' => ['The name field is required.'],
+                'email' => ['The email field is invalid.'],
+            ],
+        ])
+        ->and($error->toArray()['error']['correlation_id'])->toBe('corr-validation');
+});

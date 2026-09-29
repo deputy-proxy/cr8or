@@ -7,9 +7,17 @@ enum ExecutionErrorType: string
     case Authentication = 'authentication';
     case Authorization = 'authorization';
     case Validation = 'validation';
-    case UnavailableResource = 'unavailable_resource';
+    case Resource = 'resource';
+    case Conflict = 'conflict';
+    case Lifecycle = 'lifecycle';
     case BusinessRule = 'business_rule';
+    case Capability = 'capability';
+    case Approval = 'approval';
     case Provider = 'provider';
-    case ExternalExecution = 'external_execution';
+    case External = 'external';
+    case Persistence = 'persistence';
+    case Queue = 'queue';
+    case Configuration = 'configuration';
+    case Serialization = 'serialization';
     case Internal = 'internal';
 }

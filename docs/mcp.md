@@ -96,7 +96,7 @@ Phase 4.1 implements the protected MCP transport and authentication boundary. Ph
 
 Every MCP tool execution receives a correlation identifier from `X-Correlation-ID` when supplied, or a generated UUID otherwise. MCP clients may also provide `cr8or.correlation_id` in request metadata. The identifier is returned in MCP error payloads and the HTTP response header and is propagated to AgentExecution and ApprovalRequest records where those records are created.
 
-Tool failures are returned as MCP `isError` responses with a machine-readable error object containing `type`, `code`, `message`, `retryable`, `correlation_id` and, for validation failures, field-level details. Failure classes are authentication, authorization, validation, unavailable-resource, business-rule, provider, external-execution and internal.
+Tool failures are returned as MCP `isError` responses using the canonical provider-neutral CR8OR failure contract documented in `docs/failures.md`. The payload contains `type`, `code`, `message`, `retryable`, `correlation_id`, `diagnostic_id`, optional `operation`/`capability`/`tool` provenance, and safe structured `details`. Validation failures may contain field-level details. MCP serializes the application failure and must not invent transport-specific failure semantics.
 
 Server-side logs contain correlation, actor, organization/execution and failure metadata only. Secrets, credentials, tokens and model prompt/context are not logged.
 
