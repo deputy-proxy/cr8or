@@ -281,3 +281,6 @@ The state-changing Knowledge MCP adapters `create-knowledge-item`, `create-knowl
 ## Capability-native E2E is separate from MCP
 
 `E2E-CAPABILITY-20260928` is the application-path validation for Phase 12. It must not invoke MCP CRUD/action Tools. MCP remains a transport/interface adapter and is validated separately by the MCP E2E contract. The Capability E2E starts at `CapabilityInvocationService` and verifies persisted relationships and governance independently of the MCP surface.
+### Exception translation boundary
+
+MCP tools delegate exception-to-failure mapping to `App\\Services\\FailureTranslator`. MCP is a transport boundary only: it serializes the canonical failure contract and never invents a second exception taxonomy. Unknown exceptions become `internal.unexpected`; internal diagnostics remain server-side.

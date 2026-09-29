@@ -20,6 +20,7 @@ use App\Models\Mission;
 use App\Models\Vision;
 use App\Policies\StrategicRecordPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
+use App\Services\FailureTranslator;
 use App\Services\HmacIntegrationWebhookVerifier;
 use App\Services\KnowledgeHybridRetrievalProvider;
 use App\Services\KnowledgeLexicalRetrievalProvider;
@@ -42,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ModelProvider::class, LaravelAiProvider::class);
+        $this->app->singleton(FailureTranslator::class);
         $this->app->singleton(KnowledgeEmbeddingProvider::class, DeterministicKnowledgeEmbeddingProvider::class);
         $this->app->singleton(KnowledgeRetrievalProvider::class, function ($app): KnowledgeRetrievalProvider {
             return new KnowledgeHybridRetrievalProvider(

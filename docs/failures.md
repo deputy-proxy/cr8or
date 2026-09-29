@@ -108,4 +108,26 @@ Internal diagnostic logging may use the diagnostic ID to locate the authoritativ
 
 ## Synchronization
 
-The same failure contract applies to synchronous and asynchronous execution. Transport-specific wrappers may add protocol metadata, but they must not invent alternate failure codes or categories.
+The same failure contract applies to synchronous and asynchronous execution. Transport-specific wrappers may add protocol metadata, but they must not invent alternate failure codes or categories.## Exception-to-Failure Translation Boundary
+
+All known exception families are translated by `App\Services\FailureTranslator` before they cross an application boundary. `ExecutionError::from()` remains only as a compatibility entry point and delegates to this translator.
+
+The translator is shared by:
+
+- JSON/API exception rendering in `bootstrap/app.php`;
+- MCP tool failure handling;
+- Agent and Expert execution failure paths;
+- queue-facing execution code through the same application service;
+- provider and external integration boundaries.
+
+Known exceptions map deterministically to the canonical taxonomy. Unknown `Throwable` values become `internal.unexpected`.
+
+Each exception object receives one diagnostic ID for the lifetime of the translator service. The internal diagnostic record retains exception class, message, source location and trace metadata. These diagnostics never appear in the client failure payload.
+
+Boundary rules:
+
+1. Do not swallow exceptions silently.
+2. Do not return success after an operation failed.
+3. Do not expose exception messages or stack traces to clients unless explicitly classified as safe details.
+4. Do not translate the same exception object into multiple diagnostic records.
+5. Preserve the original exception as the internal diagnostic source while returning the canonical failure contract externally.
