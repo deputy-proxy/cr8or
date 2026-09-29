@@ -9,9 +9,9 @@ use App\Models\KnowledgeVersion;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\CapabilityExecutionException;
 use App\Services\CapabilityInvocationService;
 use Illuminate\Auth\Access\AuthorizationException;
-use InvalidArgumentException;
 
 function knowledgeCapabilityActor(): array
 {
@@ -176,5 +176,5 @@ it('rejects indexing a Knowledge Item from another Enterprise', function (): voi
         actor: $user,
         enterprise: $enterprise,
         inputPayload: ['knowledge_item_id' => $foreignItem->getKey()],
-    )))->toThrow(InvalidArgumentException::class);
+    )))->toThrow(CapabilityExecutionException::class);
 });

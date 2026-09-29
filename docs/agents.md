@@ -503,3 +503,11 @@ Agent Runtime Policies are exposed as an organization-scoped administrative view
 ## Assignment and Capability E2E boundary
 
 The capability-native E2E workflow treats Agent Assignment as durable authority and Agent Execution as the runtime record. Assignment lifecycle operations are invoked through Capabilities; Agent execution and delegation carry the resulting Assignment/Execution relationships. The test uses the configured Agent and Expert descriptors and does not create substitute runtime records.
+
+## Capability and Operation Failure Contracts
+
+Every governed Capability definition includes a non-empty CapabilityFailureContract. The contract is authoritative for the Capability → Operation → Tool mapping and declares the canonical failure families that may cross the application boundary: validation, authorization, approval, resource, conflict, lifecycle, business, persistence, external/provider, queue, serialization and unexpected internal failure.
+
+Operation execution failures are translated through the shared FailureTranslator. Capability Operation failures add operation and capability provenance before the failure reaches MCP or Agent Execution boundaries. Agent Execution persists that provenance alongside its failure code/category, so a failed execution remains traceable to the governed Operation that failed.
+
+The registry rejects definitions without a failure contract and rejects duplicate Capability, Operation or MCP Tool mappings. MCP remains a transport boundary and does not duplicate Operation business logic.

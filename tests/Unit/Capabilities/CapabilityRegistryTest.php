@@ -1,6 +1,7 @@
 <?php
 
 use App\Capabilities\CapabilityDefinition;
+use App\Capabilities\CapabilityFailureContract;
 use App\Capabilities\CapabilityRegistry;
 use App\Contracts\Operation;
 use App\Mcp\Tools\CreateContentItemTool;
@@ -26,6 +27,7 @@ function capabilityDefinition(
         outputContract: ['success' => 'boolean'],
         authorizationRequirement: 'McpCapabilityAuthorizer::authorizeMutation',
         approvalRequirement: 'permission-dependent',
+        failureContract: CapabilityFailureContract::standard(),
     );
 }
 
@@ -42,7 +44,8 @@ it('resolves every governed Capability to one explicit Operation and Tool contra
             ->and($definition->inputContract)->not->toBeEmpty()
             ->and($definition->outputContract)->not->toBeEmpty()
             ->and($definition->authorizationRequirement)->not->toBeEmpty()
-            ->and($definition->approvalRequirement)->not->toBeEmpty();
+            ->and($definition->approvalRequirement)->not->toBeEmpty()
+            ->and($definition->failureContract->toArray())->not->toBeEmpty();
     }
 });
 
@@ -120,4 +123,17 @@ it('keeps capability definitions independent from Expert ownership', function ()
 
     expect($registry->resolve('work.item.create')->operation)->toBe(CreateWorkItem::class)
         ->and($registry->resolve('marketing.plan')->operation)->toBe(App\Operations\PlanMarketing::class);
+});
+
+it('rejects a Capability definition without an explicit failure contract', function () {
+    expect(fn () => new CapabilityDefinition(
+        key: 'test.missing-failure-contract',
+        operation: CreateContentItem::class,
+        tool: 'create-content-item',
+        toolClass: CreateContentItemTool::class,
+        inputContract: ['value' => 'string|required'],
+        outputContract: ['success' => 'boolean'],
+        authorizationRequirement: 'McpCapabilityAuthorizer::authorizeMutation',
+        approvalRequirement: 'permission-dependent',
+    ))->toThrow(InvalidArgumentException::class, 'A Capability failure contract must define at least one failure category');
 });

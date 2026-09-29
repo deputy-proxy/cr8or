@@ -7,9 +7,8 @@ use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\CapabilityExecutionException;
 use App\Services\CapabilityInvocationService;
-use Illuminate\Auth\Access\AuthorizationException;
-use InvalidArgumentException;
 
 function assignmentCapabilityActor(): array
 {
@@ -131,6 +130,34 @@ it('returns the existing Assignment for a repeated idempotent create', function 
         ->and(AgentAssignment::query()->where('enterprise_id', $enterprise->getKey())->where('idempotency_key', 'assignment-repeat-1')->count())->toBe(1);
 });
 
+it('retains canonical Operation failure provenance when a lifecycle Operation rejects input', function (): void {
+    [$user, $enterprise, $agent] = assignmentCapabilityActor();
+
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'status' => AgentAssignment::STATUS_DRAFT,
+    ]);
+
+    try {
+        app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
+            capability: 'agent.assignment.transition',
+            actor: $user,
+            enterprise: $enterprise,
+            inputPayload: [
+                'agent_assignment_id' => $assignment->getKey(),
+                'status' => AgentAssignment::STATUS_RUNNING,
+            ],
+        ));
+
+        throw new RuntimeException('Expected capability execution failure.');
+    } catch (CapabilityExecutionException $exception) {
+        expect($exception->failure->provenance->toArray())->toMatchArray([
+            'operation' => App\Operations\TransitionAgentAssignment::class,
+            'capability' => 'agent.assignment.transition',
+        ])->and($exception->failure->code)->toBe(App\AI\Contracts\FailureCode::VALIDATION_FAILED);
+    }
+});
+
 it('rejects invalid lifecycle transitions and disabled Agents', function (): void {
     [$user, $enterprise, $agent] = assignmentCapabilityActor();
 
@@ -147,7 +174,7 @@ it('rejects invalid lifecycle transitions and disabled Agents', function (): voi
             'agent_assignment_id' => $assignment->getKey(),
             'status' => AgentAssignment::STATUS_RUNNING,
         ],
-    )))->toThrow(InvalidArgumentException::class);
+    )))->toThrow(CapabilityExecutionException::class);
 
     $disabledAgent = $agent->refresh();
     $disabledAgent->update(['enabled' => false]);
@@ -160,7 +187,7 @@ it('rejects invalid lifecycle transitions and disabled Agents', function (): voi
             'agent_descriptor_id' => $disabledAgent->getKey(),
             'objective' => 'Must not create.',
         ],
-    )))->toThrow(InvalidArgumentException::class);
+    )))->toThrow(CapabilityExecutionException::class);
 });
 
 it('rejects cross-enterprise Assignment relationships and unauthorized users', function (): void {
@@ -178,7 +205,7 @@ it('rejects cross-enterprise Assignment relationships and unauthorized users', f
             'agent_assignment_id' => $foreignAssignment->getKey(),
             'objective' => 'Must not cross the Enterprise boundary.',
         ],
-    )))->toThrow(InvalidArgumentException::class);
+    )))->toThrow(CapabilityExecutionException::class);
 
     $member = User::factory()->create();
     Membership::factory()->create([
@@ -194,5 +221,5 @@ it('rejects cross-enterprise Assignment relationships and unauthorized users', f
             'agent_descriptor_id' => $agent->getKey(),
             'objective' => 'Must not be created by a member.',
         ],
-    )))->toThrow(AuthorizationException::class);
+    )))->toThrow(CapabilityExecutionException::class);
 });

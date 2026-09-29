@@ -21,6 +21,7 @@ final readonly class CapabilityDefinition
         public array $outputContract,
         public string $authorizationRequirement,
         public string $approvalRequirement,
+        public CapabilityFailureContract $failureContract = new CapabilityFailureContract([]),
     ) {
         if ($key === '' || ! preg_match('/^[a-z0-9]+(?:\.[a-z0-9_-]+)+$/', $key)) {
             throw new InvalidArgumentException("Invalid capability identifier [{$key}].");
@@ -44,6 +45,10 @@ final readonly class CapabilityDefinition
 
         if ($authorizationRequirement === '') {
             throw new InvalidArgumentException("Capability [{$key}] must define authorization requirements.");
+        }
+
+        if ($failureContract->toArray() === []) {
+            throw new InvalidArgumentException("Capability [{$key}] must define a failure contract.");
         }
 
         if ($approvalRequirement === '') {

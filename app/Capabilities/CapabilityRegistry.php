@@ -659,6 +659,7 @@ final class CapabilityRegistry
             outputContract: $outputContract,
             authorizationRequirement: $authorizationRequirement,
             approvalRequirement: $approvalRequirement,
+            failureContract: CapabilityFailureContract::standard(),
         );
     }
 

@@ -24,6 +24,7 @@ use LogicException;
  * @property array<array<string, mixed>>|null $capability_requests
  * @property string|null $failure_reason
  * @property string|null $failure_code
+ * @property array<string, mixed>|null $failure_provenance
  * @property string|null $correlation_id
  * @property string $idempotency_key
  */
@@ -40,6 +41,7 @@ use LogicException;
     'capability_requests',
     'failure_reason',
     'failure_code',
+    'failure_provenance',
     'correlation_id',
     'idempotency_key',
     'started_at',
@@ -68,6 +70,7 @@ class AgentExecutionStep extends Model
             'input_context' => 'array',
             'output' => 'array',
             'capability_requests' => 'array',
+            'failure_provenance' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

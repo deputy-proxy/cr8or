@@ -43,6 +43,10 @@ final class FailureTranslator
         ?string $correlationId = null,
         ?FailureProvenance $provenance = null,
     ): ExecutionError {
+        if ($exception instanceof CapabilityExecutionException) {
+            return $this->failureWithContext($exception->failure, $correlationId, $provenance);
+        }
+
         $diagnosticId = $this->diagnosticIds[$exception] ?? null;
 
         if ($diagnosticId === null) {
@@ -62,6 +66,20 @@ final class FailureTranslator
             correlationId: $correlationId ?? (string) Str::uuid(),
             diagnosticId: $diagnosticId,
             provenance: $provenance ?? new FailureProvenance,
+        );
+    }
+
+    private function failureWithContext(ExecutionError $failure, ?string $correlationId, ?FailureProvenance $provenance): ExecutionError
+    {
+        return new ExecutionError(
+            type: $failure->type,
+            code: $failure->code,
+            message: $failure->message,
+            retryable: $failure->retryable,
+            details: $failure->details,
+            correlationId: $correlationId ?? $failure->correlationId ?? (string) Str::uuid(),
+            diagnosticId: $failure->diagnosticId,
+            provenance: $provenance ?? $failure->provenance,
         );
     }
 
