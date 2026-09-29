@@ -23,7 +23,7 @@ function executionFailureAgentClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Failure Test Agent', description: 'Exercises failure handling.', responsibilities: ['test'], instructions: 'Exercise failure handling without granting authority.', experts: [], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work'], capabilities: []);
+            return new \App\Agents\AgentDefinition(name: 'Failure Test Agent', description: 'Exercises failure handling.', responsibilities: ['test'], instructions: 'Exercise failure handling without granting authority.', experts: [], requiredContext: ['enterprise', 'knowledge', 'strategy', 'work']);
         }
     });
 }
