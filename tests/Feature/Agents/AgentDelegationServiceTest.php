@@ -21,7 +21,7 @@ function delegationSourceRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Source Delegation Agent', description: 'Originates governed delegated enterprise work.', responsibilities: ['delegate'], instructions: 'Delegate governed enterprise work without bypassing authorization.', experts: ['business-analysis'], requiredContext: ['enterprise'], capabilities: []);
+            return new \App\Agents\AgentDefinition(name: 'Source Delegation Agent', description: 'Originates governed delegated enterprise work.', responsibilities: ['delegate'], instructions: 'Delegate governed enterprise work without bypassing authorization.', experts: ['business-analysis'], requiredContext: ['enterprise']);
         }
     });
 }
@@ -32,7 +32,7 @@ function delegationTargetRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Target Delegation Agent', description: 'Receives governed delegated enterprise work.', responsibilities: ['execute'], instructions: 'Execute delegated enterprise work only within governed boundaries.', experts: ['delegation-target'], requiredContext: ['enterprise'], capabilities: []);
+            return new \App\Agents\AgentDefinition(name: 'Target Delegation Agent', description: 'Receives governed delegated enterprise work.', responsibilities: ['execute'], instructions: 'Execute delegated enterprise work only within governed boundaries.', experts: ['delegation-target'], requiredContext: ['enterprise']);
         }
     });
 }
@@ -59,7 +59,7 @@ function delegationCrossScopeRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Cross Scope Delegation Agent', description: 'Used to verify delegation scope boundaries.', responsibilities: ['execute'], instructions: 'Execute only within the authorized enterprise scope.', experts: ['delegation-target'], requiredContext: ['enterprise'], capabilities: []);
+            return new \App\Agents\AgentDefinition(name: 'Cross Scope Delegation Agent', description: 'Used to verify delegation scope boundaries.', responsibilities: ['execute'], instructions: 'Execute only within the authorized enterprise scope.', experts: ['delegation-target'], requiredContext: ['enterprise']);
         }
     });
 }
