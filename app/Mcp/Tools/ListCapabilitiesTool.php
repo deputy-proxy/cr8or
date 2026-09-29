@@ -54,7 +54,6 @@ class ListCapabilitiesTool extends AuthorizedTool
 
             ksort($capabilities);
             $items = array_values(array_map(function (array $item): array {
-                $item['experts'] ??= [];
                 sort($item['experts']);
 
                 return $item;
