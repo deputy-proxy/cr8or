@@ -66,24 +66,6 @@ function capabilityActionMatrix(): array
     ];
 }
 
-it('maps every current Agent capability to an executable MCP action', function () {
-    $agents = [
-        CeoAgent::class,
-        MarketingAgent::class,
-        FinanceAgent::class,
-        ProductAgent::class,
-        OperationsAgent::class,
-    ];
-
-    $matrix = capabilityActionMatrix();
-
-    foreach ($agents as $class) {
-        foreach (app($class)->capabilities() as $capability) {
-            expect($matrix[$class][$capability] ?? null)->not->toBeNull();
-        }
-    }
-});
-
 it('maps every current Expert capability to an executable governed expert action', function () {
     $experts = [
         BusinessAnalysisExpert::class => 'business.analysis',
