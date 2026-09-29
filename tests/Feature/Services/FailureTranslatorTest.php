@@ -8,6 +8,7 @@ use App\Exceptions\CanvaClientException;
 use App\Exceptions\IntegrationProviderException;
 use App\Exceptions\MediaStorageException;
 use App\Exceptions\PublishingProviderException;
+use App\Services\DiagnosticSanitizer;
 use App\Services\FailureTranslator;
 use GuzzleHttp\Psr7\Response as PsrResponse;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -134,4 +135,16 @@ it('maps external integration and storage failures to canonical retry-aware code
         ->and($rate->retryable)->toBeTrue()
         ->and($storage->code)->toBe(FailureCode::EXTERNAL_UNAVAILABLE)
         ->and($storage->retryable)->toBeTrue();
+});
+
+it('redacts credentials and model context from diagnostic values', function () {
+    $sanitizer = app(DiagnosticSanitizer::class);
+
+    $message = $sanitizer->message(
+        'Authorization: Bearer super-secret-token prompt=private-model-context',
+    );
+
+    expect($message)->not->toContain('super-secret-token')
+        ->and($message)->not->toContain('private-model-context')
+        ->and($message)->toContain('[REDACTED]');
 });

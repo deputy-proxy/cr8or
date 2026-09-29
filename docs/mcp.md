@@ -288,3 +288,7 @@ MCP tools delegate exception-to-failure mapping to `App\\Services\\FailureTransl
 ### Capability failure provenance
 
 Governed MCP tools resolve their Capability → Operation mapping from CapabilityRegistry. Operation failures are translated through the canonical failure boundary with operation and capability provenance before MCP serialization. Authorization and approval failures remain distinct failure categories and are not collapsed into generic Operation failures.
+
+### Diagnostic workflow
+
+MCP responses expose the correlation ID, diagnostic ID and canonical failure code needed for support correlation. They do not expose exception classes, traces, credentials, provider payloads or model context. Operators use the correlation ID to locate the structured failure event and the diagnostic ID to locate the sanitized internal diagnostic record.

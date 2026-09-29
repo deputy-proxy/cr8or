@@ -11,6 +11,8 @@ final class ExecutionCorrelationService
 {
     public const HEADER = 'X-Correlation-ID';
 
+    public function __construct(private readonly DiagnosticSanitizer $sanitizer) {}
+
     public function resolve(?string $candidate = null): string
     {
         $candidate = trim((string) ($candidate ?? ''));
@@ -45,7 +47,7 @@ final class ExecutionCorrelationService
     /** @param array<string, mixed> $context */
     public function logFailure(string $operation, string $correlationId, ExecutionError $error, array $context = []): void
     {
-        Log::warning('CR8OR execution failed.', array_merge([
+        Log::warning('CR8OR execution failed.', $this->sanitizer->context(array_merge([
             'operation' => $operation,
             'correlation_id' => $correlationId,
             'diagnostic_id' => $error->diagnosticId,
@@ -53,6 +55,6 @@ final class ExecutionCorrelationService
             'failure_code' => $error->code,
             'retryable' => $error->retryable,
             'provenance' => $error->provenance->toArray(),
-        ], $context));
+        ], $context)));
     }
 }
