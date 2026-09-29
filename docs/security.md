@@ -254,3 +254,6 @@ Asynchronous resume revalidates both execution authorization and current runtime
 ## Capability-native E2E security boundary
 
 The Phase 12 capability-native E2E validates Enterprise isolation, Agent/Expert authorization, invalid lifecycle transitions, duplicate/idempotent requests and the human approval boundary. Publication-sensitive work remains blocked while approval is pending. Enterprise bootstrap is authorized against the target Organization because no Enterprise exists at that point; all subsequent business actions require Enterprise scope.
+### Exception diagnostics
+
+Exception translation preserves the original exception internally under a diagnostic ID. Client responses contain only the safe canonical failure contract. Diagnostic records include source location and trace metadata for server-side investigation and are not serialized into MCP/API responses.
