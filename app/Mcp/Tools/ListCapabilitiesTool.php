@@ -3,7 +3,6 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
-use App\Models\AgentDescriptor;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -14,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('list-capabilities')]
-#[Description('Discover the governed capability identifiers exposed by the registered Agent and Expert runtimes.')]
+#[Description('Discover the governed capability identifiers exposed by the registered Expert runtimes.')]
 class ListCapabilitiesTool extends AuthorizedTool
 {
     public function schema(JsonSchema $schema): array
@@ -41,17 +40,6 @@ class ListCapabilitiesTool extends AuthorizedTool
             ]);
 
             $capabilities = [];
-            foreach (AgentDescriptor::query()->where('enabled', true)->get() as $descriptor) {
-                $runtime = app($descriptor->resolveRuntimeClass());
-                foreach ($runtime->capabilities() as $capability) {
-                    $definition = $registry->resolve($capability);
-                    $capabilities[$capability]['id'] = $capability;
-                    $capabilities[$capability]['name'] = $capability;
-                    $capabilities[$capability]['operation'] = $definition->operation;
-                    $capabilities[$capability]['tool'] = $definition->tool;
-                    $capabilities[$capability]['agents'][] = $descriptor->slug;
-                }
-            }
             foreach (ExpertDescriptor::query()->where('enabled', true)->get() as $descriptor) {
                 $runtime = app($descriptor->resolveRuntimeClass());
                 foreach ($runtime->capabilities() as $capability) {
@@ -66,9 +54,7 @@ class ListCapabilitiesTool extends AuthorizedTool
 
             ksort($capabilities);
             $items = array_values(array_map(function (array $item): array {
-                $item['agents'] ??= [];
                 $item['experts'] ??= [];
-                sort($item['agents']);
                 sort($item['experts']);
 
                 return $item;
