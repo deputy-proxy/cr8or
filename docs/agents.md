@@ -511,3 +511,17 @@ Every governed Capability definition includes a non-empty CapabilityFailureContr
 Operation execution failures are translated through the shared FailureTranslator. Capability Operation failures add operation and capability provenance before the failure reaches MCP or Agent Execution boundaries. Agent Execution persists that provenance alongside its failure code/category, so a failed execution remains traceable to the governed Operation that failed.
 
 The registry rejects definitions without a failure contract and rejects duplicate Capability, Operation or MCP Tool mappings. MCP remains a transport boundary and does not duplicate Operation business logic.
+
+## Interactive Agent execution contract
+
+Interactive execution is a durable, Capability-native workflow. It never invokes ModelProvider and never dispatches RunAgentExecutionJob.
+
+An interactive agent.execute request may supply capability_requests as a flat plan. Each request may include a positive step; omitted step means step 1. Requests sharing a step execute in one durable AgentExecutionStep. Steps must be contiguous starting at 1 and are executed in ascending order.
+
+The runtime persists each step before executing it and updates AgentExecution.current_step after completion. Capability execution remains governed by CapabilityExecutionService -> CapabilityInvocationService -> CapabilityRegistry -> Operation.
+
+An empty interactive plan is not successful execution. The execution enters waiting_for_input and can be resumed with a Capability plan. If a Capability returns waiting, the current step becomes waiting, the parent execution becomes waiting_for_approval, and the persisted plan remains available for resume.
+
+Interactive resume may supply updated Capability requests, such as an approved approval_request_id. Resume merges those requests into the persisted plan so unexecuted later steps are not discarded. Idempotency prevents a completed Capability from being executed again; a previously waiting request may be retried when a valid approval is supplied.
+
+Successful interactive completion therefore means the entire persisted Capability plan has completed. Creating an execution context alone is never treated as completed Agent work.

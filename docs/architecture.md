@@ -203,3 +203,17 @@ Enterprise creation is the bootstrap case because no Enterprise exists yet. `Cap
 ### Exception translation
 
 Application boundaries use the shared `FailureTranslator` to convert known exception families into the canonical failure taxonomy. `ExecutionError::from()` is retained only as a compatibility facade. This keeps HTTP, MCP, Agent/Expert execution, provider, integration and queue-facing paths on the same failure semantics.
+
+## Durable interactive Capability workflow boundary
+
+Interactive Agent execution is deliberately separate from the autonomous model-driven execution loop:
+
+MCP/application -> AgentExecutionService -> InteractiveCapabilityStepRunner -> CapabilityExecutionService -> CapabilityInvocationService -> CapabilityRegistry -> Operation -> persistence
+
+InteractiveCapabilityStepRunner owns the durable step mechanics only. It does not authorize Capabilities independently and does not execute Operations directly. The canonical Capability boundary remains the single authority for authorization, approval, idempotency and Operation dispatch.
+
+Interactive plans are persisted in AgentExecution.execution_context. Each plan step becomes an AgentExecutionStep with type capability, correlation identity, request payload and normalized Capability results. The parent current_step records the last durable step reached.
+
+An empty plan produces waiting_for_input, not completed. Approval-sensitive Capability results produce a waiting step and waiting_for_approval parent state. Resume reuses the persisted plan and may merge updated requests, including approval references, without invoking a model provider.
+
+Autonomous execution remains unchanged and continues to use the ModelProvider reasoning loop. max_steps remains an execution safety limit; it is not an interactive workflow definition.

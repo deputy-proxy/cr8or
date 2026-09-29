@@ -41,6 +41,9 @@ final readonly class AgentExecutionRequest
             if (isset($request['input_payload']) && ! is_array($request['input_payload'])) {
                 throw new InvalidArgumentException('Interactive Agent execution Capability input payload must be an object.');
             }
+            if (isset($request['step']) && (filter_var($request['step'], FILTER_VALIDATE_INT) === false || (int) $request['step'] < 1)) {
+                throw new InvalidArgumentException('Interactive Agent execution Capability steps must be positive integers.');
+            }
         }
 
         if ($this->mode !== AgentExecutionMode::INTERACTIVE && $this->capabilityRequests !== []) {

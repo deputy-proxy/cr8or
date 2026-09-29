@@ -10,6 +10,7 @@ use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentExecution;
+use App\Models\AgentExecutionStep;
 use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
@@ -316,6 +317,131 @@ it('executes interactive capability requests without invoking a ModelProvider', 
         ->and($result->capabilityRequests)->toHaveCount(1)
         ->and($result->execution->last_result['capability_results'][0]['status'])->toBe('executed')
         ->and(WorkItem::query()->where('name', 'Interactive work item')->exists())->toBeTrue();
+});
+
+it('keeps an empty interactive Capability plan waiting for input without invoking a ModelProvider', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Await an interactive Capability plan.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        correlationId: 'interactive-empty-plan',
+    ));
+
+    expect($result->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_INPUT)
+        ->and($result->execution->current_step)->toBe(0)
+        ->and($result->execution->steps()->count())->toBe(0)
+        ->and($result->execution->state_reason)->toContain('waiting for a Capability plan');
+});
+
+it('executes an interactive Capability plan as multiple durable steps', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+    ]);
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+
+    $result = (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Execute the two-step interactive plan.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        capabilityRequests: [
+            ['step' => 1, 'capability' => 'work.item.create', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step one'], 'idempotency_key' => 'interactive-step-one'],
+            ['step' => 2, 'capability' => 'work.item.create', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step two'], 'idempotency_key' => 'interactive-step-two'],
+        ],
+        correlationId: 'interactive-multi-step',
+    ));
+
+    expect($result->succeeded())->toBeTrue()
+        ->and($result->execution->current_step)->toBe(2)
+        ->and($result->execution->steps()->count())->toBe(2)
+        ->and($result->execution->steps()->orderBy('sequence')->pluck('status')->all())
+        ->toBe([AgentExecutionStep::STATUS_COMPLETED, AgentExecutionStep::STATUS_COMPLETED])
+        ->and($result->execution->steps()->orderBy('sequence')->pluck('type')->all())
+        ->toBe([AgentExecutionStep::TYPE_CAPABILITY, AgentExecutionStep::TYPE_CAPABILITY])
+        ->and($result->execution->steps()->pluck('correlation_id')->all())
+        ->toBe(['interactive-multi-step', 'interactive-multi-step'])
+        ->and(WorkItem::query()->whereIn('name', ['Interactive step one', 'Interactive step two'])->count())
+        ->toBe(2);
+});
+
+it('resumes an interactive waiting step with approval without invoking a ModelProvider', function () {
+    $actor = User::factory()->create();
+    $approver = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+    Membership::factory()->admin()->create([
+        'user_id' => $approver->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+        'requires_approval' => true,
+    ]);
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+
+    $service = new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    );
+
+    $waiting = $service->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Execute the approval-gated interactive plan.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        capabilityRequests: [[
+            'step' => 1,
+            'capability' => 'work.item.create',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['name' => 'Interactive approved step'],
+            'idempotency_key' => 'interactive-approved-step',
+        ]],
+        correlationId: 'interactive-approval',
+    ));
+
+    $approval = ApprovalRequest::query()->where('agent_execution_id', $waiting->execution->getKey())->where('capability', 'work.item.create')->firstOrFail();
+
+    expect($waiting->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL)
+        ->and($waiting->execution->steps()->count())->toBe(1)
+        ->and($waiting->execution->steps()->first()->status)->toBe(AgentExecutionStep::STATUS_WAITING)
+        ->and(WorkItem::query()->where('name', 'Interactive approved step')->exists())->toBeFalse();
+
+    app(\App\Services\ApprovalRequestService::class)->approve($approval, $approver, 'Approved by the authorized human.');
+
+    $context = $waiting->execution->execution_context;
+    $context['interactive_capability_requests'][0]['approval_request_id'] = $approval->getKey();
+    $waiting->execution->execution_context = $context;
+    $waiting->execution->save();
+
+    $resumed = $service->resume($waiting->execution->refresh(), $actor);
+
+    expect($resumed->succeeded())->toBeTrue()
+        ->and($resumed->execution->current_step)->toBe(1)
+        ->and($resumed->execution->steps()->count())->toBe(1)
+        ->and($resumed->execution->steps()->first()->status)->toBe(AgentExecutionStep::STATUS_COMPLETED)
+        ->and(WorkItem::query()->where('name', 'Interactive approved step')->exists())->toBeTrue()
+        ->and($approval->refresh()->consumed_agent_execution_id)
+        ->toBe($waiting->execution->getKey());
 });
 
 it('does not allow an idempotency key to switch Agent execution mode', function () {

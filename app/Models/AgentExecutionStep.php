@@ -64,6 +64,8 @@ class AgentExecutionStep extends Model
 
     public const TYPE_REASONING = 'reasoning';
 
+    public const TYPE_CAPABILITY = 'capability';
+
     protected function casts(): array
     {
         return [

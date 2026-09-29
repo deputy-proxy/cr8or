@@ -50,6 +50,7 @@ final class AgentExecutionService
         private readonly ?ExpertInvocationService $expertInvocations = null,
         private readonly ?AgentMemoryRuntimeService $memoryRuntime = null,
         private readonly ?CapabilityExecutionService $capabilityExecution = null,
+        private readonly ?InteractiveCapabilityStepRunner $interactiveSteps = null,
         private readonly ?AgentRuntimePolicyService $runtimePolicies = null,
     ) {}
 
@@ -859,7 +860,7 @@ final class AgentExecutionService
     }
 
     /**
-     * Execute client-supplied governed Capability requests without invoking a ModelProvider.
+     * Execute the persisted interactive Capability workflow without invoking a ModelProvider.
      */
     private function runInteractive(
         AgentExecution $execution,
@@ -870,109 +871,48 @@ final class AgentExecutionService
     ): AgentExecutionResult {
         $execution->assertMode(AgentExecutionMode::INTERACTIVE);
         $events = app(AgentExecutionEventService::class);
-        $requests = [];
-        $results = [];
 
         if ($execution->status === AgentExecution::STATUS_REQUESTED) {
             $execution->start()->save();
-            $events->dispatch(AgentExecutionStarted::class, $execution, data: ['mode' => AgentExecutionMode::INTERACTIVE->value]);
-        } elseif (! in_array($execution->status, [AgentExecution::STATUS_REASONING, AgentExecution::STATUS_EXECUTING, AgentExecution::STATUS_WAITING_FOR_APPROVAL], true)) {
+            $events->dispatch(AgentExecutionStarted::class, $execution, data: [
+                'step' => 1,
+                'mode' => AgentExecutionMode::INTERACTIVE->value,
+                'correlation_id' => $correlationId,
+            ]);
+        } elseif (! in_array($execution->status, [
+            AgentExecution::STATUS_REASONING,
+            AgentExecution::STATUS_EXECUTING,
+            AgentExecution::STATUS_WAITING_FOR_INPUT,
+            AgentExecution::STATUS_WAITING_FOR_APPROVAL,
+            AgentExecution::STATUS_DELEGATED,
+            AgentExecution::STATUS_PAUSED,
+        ], true)) {
             $execution->beginReasoning()->save();
         }
 
         $payload = is_array($execution->execution_context['interactive_capability_requests'] ?? null)
-            ? $execution->execution_context['interactive_capability_requests']
+            ? array_values($execution->execution_context['interactive_capability_requests'])
             : [];
+        /**  list<array<string, mixed>> $payload */
+        $runner = $this->interactiveSteps ?? app(InteractiveCapabilityStepRunner::class);
+        $workflow = $runner->run($execution, $actor, $assignment, $enterprise, $correlationId, $payload);
 
-        foreach ($payload as $index => $request) {
-            if (! is_array($request)) {
-                throw new AuthorizationException('Invalid interactive Capability request.');
-            }
-
-            $capability = isset($request['capability']) && is_string($request['capability']) ? trim($request['capability']) : '';
-            if ($capability === '') {
-                throw new AuthorizationException('Interactive Capability requests require a capability identifier.');
-            }
-
-            $approval = isset($request['approval_request_id'])
-                ? ApprovalRequest::query()->findOrFail((int) $request['approval_request_id'])
-                : null;
-            $idempotencyKey = isset($request['idempotency_key']) && is_string($request['idempotency_key'])
-                ? trim($request['idempotency_key'])
-                : hash('sha256', implode('|', [$execution->idempotency_key, $index, $capability]));
-
-            $capabilityRequest = new CapabilityRequest(
-                capability: $capability,
-                assignment: $assignment,
-                execution: $execution,
-                actor: $actor,
-                targetContext: isset($request['target_context']) && is_array($request['target_context']) ? $request['target_context'] : [],
-                inputPayload: isset($request['input_payload']) && is_array($request['input_payload']) ? $request['input_payload'] : [],
-                approval: $approval,
-                correlationId: $correlationId,
-                idempotencyKey: $idempotencyKey,
-            );
-
-            $requests[] = $capabilityRequest;
-        }
-
-        if ($requests === []) {
-            $execution->complete('interactive_context_created')->save();
-            $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['mode' => AgentExecutionMode::INTERACTIVE->value, 'reason' => 'interactive_context_created']);
-
+        if ($workflow['requests'] === []) {
             return new AgentExecutionResult($execution->refresh(), null, null, []);
         }
 
-        $step = AgentExecutionStep::query()->firstOrCreate(
-            ['agent_execution_id' => $execution->getKey(), 'sequence' => max(1, $execution->current_step + 1)],
-            [
-                'organization_id' => $execution->organization_id,
-                'enterprise_id' => $execution->enterprise_id,
-                'status' => AgentExecutionStep::STATUS_PENDING,
-                'type' => AgentExecutionStep::TYPE_REASONING,
-                'intent' => $execution->prompt,
-                'input_context' => $execution->execution_context ?? [],
-                'correlation_id' => $correlationId,
-                'idempotency_key' => $execution->idempotency_key.':interactive:'.($execution->current_step + 1),
-            ],
-        );
-
-        $step->start()->save();
-        $execution->transitionTo(AgentExecution::STATUS_EXECUTING)->save();
-        $executor = $this->capabilityExecution ?? app(CapabilityExecutionService::class);
-
-        foreach ($requests as $request) {
-            $result = $executor->execute($request);
-            $results[] = [
-                'status' => $result['status'],
-                'capability' => $result['capability'],
-                'result' => $result['result'] ?? null,
-                'approval' => $result['approval'] ?? null,
-                'provenance' => $result['provenance'],
-                'idempotency_key' => $request->idempotencyKey,
-            ];
+        if ($execution->status === AgentExecution::STATUS_WAITING_FOR_APPROVAL) {
+            return new AgentExecutionResult($execution->refresh(), null, null, $workflow['requests']);
         }
 
-        $step->capability_requests = array_map(static fn (CapabilityRequest $request): array => $request->toArray(), $requests);
-        $step->output = ['capability_results' => $results];
+        $events->dispatch(AgentExecutionCompleted::class, $execution, data: [
+            'mode' => AgentExecutionMode::INTERACTIVE->value,
+            'reason' => 'interactive_capability_plan_completed',
+            'steps' => $execution->current_step,
+            'correlation_id' => $correlationId,
+        ]);
 
-        $waiting = collect($results)->first(static fn (array $result): bool => ($result['status']) === 'waiting');
-        if (is_array($waiting)) {
-            $reason = 'Approval required for capability ['.$waiting['capability'].'].';
-            $step->wait($reason)->save();
-            $execution->state_reason = $reason;
-            $execution->last_result = ['capability_results' => $results, 'mode' => AgentExecutionMode::INTERACTIVE->value];
-            $execution->waitForApproval($reason)->save();
-
-            return new AgentExecutionResult($execution->refresh(), null, null, $requests);
-        }
-
-        $step->complete()->save();
-        $execution->last_result = ['capability_results' => $results, 'mode' => AgentExecutionMode::INTERACTIVE->value];
-        $execution->complete('interactive_capabilities_executed')->save();
-        $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['mode' => AgentExecutionMode::INTERACTIVE->value, 'reason' => 'interactive_capabilities_executed']);
-
-        return new AgentExecutionResult($execution->refresh(), null, null, $requests);
+        return new AgentExecutionResult($execution->refresh(), null, null, $workflow['requests']);
     }
 
     /** @return array{status: string, next_step: ?string, reason: ?string} */

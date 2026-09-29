@@ -110,6 +110,8 @@ it('runs an interactive Agent execution through the MCP create surface without a
     $execution = App\Models\AgentExecution::query()->where('idempotency_key', 'mcp-interactive-mode-test')->firstOrFail();
 
     expect($execution->mode)->toBe(App\Enums\AgentExecutionMode::INTERACTIVE)
+        ->and($execution->status)->toBe(App\Models\AgentExecution::STATUS_WAITING_FOR_INPUT)
+        ->and($execution->steps()->count())->toBe(0)
         ->and(Queue::pushedJobs())->toBeEmpty();
 });
 
@@ -127,12 +129,23 @@ it('routes the governed agent.execute MCP entrypoint explicitly to interactive m
         'enabled' => true,
         'status' => AgentAssignment::STATUS_READY,
     ]);
+    AgentPermission::factory()->create([
+        'agent_assignment_id' => $assignment->getKey(),
+        'capability' => 'work.item.create',
+    ]);
 
     $response = Cr8orServer::actingAs($user, 'api')->tool(ExecuteAgentTool::class, [
         'enterprise_id' => $enterprise->getKey(),
         'agent_assignment_id' => $assignment->getKey(),
         'prompt' => 'Create an interactive execution through the governed capability.',
         'mode' => 'interactive',
+        'capability_requests' => [[
+            'step' => 1,
+            'capability' => 'work.item.create',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['name' => 'MCP interactive capability'],
+            'idempotency_key' => 'mcp-interactive-boundary-step',
+        ]],
         'correlation_id' => 'mcp-interactive-boundary',
         'idempotency_key' => 'mcp-interactive-boundary',
     ]);
