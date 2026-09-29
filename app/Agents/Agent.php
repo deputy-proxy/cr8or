@@ -43,12 +43,6 @@ abstract class Agent
     }
 
     /** @return list<string> */
-    final public function capabilities(): array
-    {
-        return $this->definition()->capabilities;
-    }
-
-    /** @return list<string> */
     final public function decisionBoundaries(): array
     {
         return $this->definition()->decisionBoundaries;
@@ -58,24 +52,6 @@ abstract class Agent
     final public function expectedOutputs(): array
     {
         return $this->definition()->expectedOutputs;
-    }
-
-    /** @return array<string, list<string>> */
-    final public function capabilityMap(): array
-    {
-        return $this->definition()->capabilityMap;
-    }
-
-    /** @return list<string> */
-    final public function capabilityGaps(): array
-    {
-        return $this->definition()->capabilityGaps;
-    }
-
-    /** @return list<string> */
-    final public function approvalSensitiveCapabilities(): array
-    {
-        return $this->definition()->approvalSensitiveCapabilities;
     }
 
     /** @return array<string, list<string>> */
