@@ -98,6 +98,7 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
             actor: $actor,
             assignment: $assignment,
             prompt: (string) $execution->prompt,
+            mode: $execution->mode,
             targetContext: is_array($execution->target_context) ? $execution->target_context : [],
             expertSlugs: is_array($execution->expert_slugs) ? $execution->expert_slugs : [],
             options: is_array($execution->model_options) ? $execution->model_options : [],
