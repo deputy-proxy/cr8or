@@ -223,7 +223,8 @@ final class AgentExecutionService
 
         if ($existing !== null) {
             $existing->assertMode($request->mode);
-            if (! in_array($existing->status, [AgentExecution::STATUS_COMPLETED, AgentExecution::STATUS_FAILED, AgentExecution::STATUS_CANCELLED], true)
+            if ($request->mode === AgentExecutionMode::AUTONOMOUS
+                && ! in_array($existing->status, [AgentExecution::STATUS_COMPLETED, AgentExecution::STATUS_FAILED, AgentExecution::STATUS_CANCELLED], true)
                 && ! in_array($existing->status, [
                     AgentExecution::STATUS_WAITING_FOR_INPUT,
                     AgentExecution::STATUS_WAITING_FOR_APPROVAL,
@@ -436,6 +437,8 @@ final class AgentExecutionService
                 $execution->start()->save();
                 $events->dispatch(AgentExecutionStarted::class, $execution, data: [
                     'step' => 1,
+                    'mode' => $execution->mode->value,
+                    'correlation_id' => $execution->correlation_id,
                 ]);
 
                 if (isset($contextData['knowledge']) || isset($contextData['retrieved_knowledge'])) {

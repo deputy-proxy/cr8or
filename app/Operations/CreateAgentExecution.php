@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\AgentExecutionResourceService;
 use App\Services\AgentExecutionService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Log;
 
 final class CreateAgentExecution implements Operation
 {
@@ -32,6 +33,13 @@ final class CreateAgentExecution implements Operation
             options: is_array($input['options'] ?? null) ? $input['options'] : [],
             correlationId: $input['correlation_id'] ?? null, idempotencyKey: $input['idempotency_key'] ?? null,
         );
+
+        Log::info('CR8OR Agent execution request received at MCP/application boundary.', [
+            'execution_mode' => $request->mode->value,
+            'correlation_id' => $request->correlationId,
+            'agent_assignment_id' => $assignment->getKey(),
+            'enterprise_id' => $assignment->enterprise_id,
+        ]);
         $execution = $request->mode === AgentExecutionMode::INTERACTIVE
             ? $this->executions->execute($request)->execution
             : $this->executions->queue($request);

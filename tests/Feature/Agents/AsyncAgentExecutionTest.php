@@ -99,6 +99,32 @@ it('persists a requested execution before dispatching it to the Agent queue', fu
     Queue::assertPushed(RunAgentExecutionJob::class, fn (RunAgentExecutionJob $job): bool => $job->executionId === $execution->getKey());
 });
 
+it('does not dispatch an existing interactive execution to the autonomous worker', function () {
+    Queue::fake();
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = asyncAgentAssignment($actor, $enterprise);
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+    $service = asyncAgentService($provider);
+
+    $request = new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Interactive durable request.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        correlationId: 'interactive-existing-queue',
+        idempotencyKey: 'interactive-existing-queue',
+    );
+
+    $execution = $service->queue($request);
+    expect($execution->mode)->toBe(\App\Enums\AgentExecutionMode::INTERACTIVE)
+        ->and(Queue::pushedJobs())->toBeEmpty();
+
+    $service->queue($request);
+
+    expect(Queue::pushedJobs())->toBeEmpty();
+});
+
 it('retries a retryable worker failure from durable execution state without failing the execution', function () {
     Queue::fake();
     $actor = User::factory()->create();

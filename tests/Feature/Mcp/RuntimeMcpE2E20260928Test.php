@@ -19,6 +19,7 @@ use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
+use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GetAgentDelegationTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetCampaignTool;
@@ -50,6 +51,7 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Mcp\Server\Testing\TestResponse;
 use ReflectionMethod;
@@ -109,6 +111,44 @@ it('runs an interactive Agent execution through the MCP create surface without a
 
     expect($execution->mode)->toBe(App\Enums\AgentExecutionMode::INTERACTIVE)
         ->and(Queue::pushedJobs())->toBeEmpty();
+});
+
+it('routes the governed agent.execute MCP entrypoint explicitly to interactive mode', function (): void {
+    Queue::fake();
+    Log::spy();
+    $user = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
+    $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\CeoAgent::class], ['slug' => 'governed-interactive-mcp-test-agent', 'enabled' => true]);
+    $assignment = AgentAssignment::query()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+        'status' => AgentAssignment::STATUS_READY,
+    ]);
+
+    $response = Cr8orServer::actingAs($user, 'api')->tool(ExecuteAgentTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_assignment_id' => $assignment->getKey(),
+        'prompt' => 'Create an interactive execution through the governed capability.',
+        'mode' => 'interactive',
+        'correlation_id' => 'mcp-interactive-boundary',
+        'idempotency_key' => 'mcp-interactive-boundary',
+    ]);
+
+    $response->assertOk()->assertSee('mcp-interactive-boundary');
+    $execution = AgentExecution::query()->where('idempotency_key', 'mcp-interactive-boundary')->firstOrFail();
+
+    expect($execution->mode)->toBe(App\Enums\AgentExecutionMode::INTERACTIVE)
+        ->and($execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and(Queue::pushedJobs())->toBeEmpty();
+
+    Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+        return $message === 'CR8OR Agent execution request received at MCP/application boundary.'
+            && $context['execution_mode'] === 'interactive'
+            && $context['correlation_id'] === 'mcp-interactive-boundary';
+    });
 });
 
 it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function (): void {
