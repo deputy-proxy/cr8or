@@ -60,6 +60,7 @@ it('starts through the governed agent.execute capability and cancels durably', f
         'enterprise_id' => $enterprise->getKey(),
         'agent_assignment_id' => $assignment->getKey(),
         'prompt' => 'Execute through the governed capability.',
+        'mode' => 'autonomous',
         'idempotency_key' => 'governed-execution-1',
     ]);
     $response->assertOk()->assertSee('governed-execution-1');
