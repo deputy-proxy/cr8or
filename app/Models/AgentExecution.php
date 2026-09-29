@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\AI\Contracts\ExecutionError;
+use App\AI\Contracts\ExecutionErrorType;
+use App\AI\Contracts\FailureCode;
+use App\AI\Contracts\FailureProvenance;
 use App\Enums\AgentExecutionMode;
 use Database\Factories\AgentExecutionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +41,7 @@ use LogicException;
  * @property string|null $failure_code
  * @property string|null $failure_category
  * @property array<string, mixed>|null $failure_provenance
+ * @property list<array<string, mixed>>|null $failure_history
  * @property int $retry_count
  * @property int $max_retries
  * @property int $max_steps
@@ -77,6 +82,7 @@ use LogicException;
     'failure_code',
     'failure_category',
     'failure_provenance',
+    'failure_history',
     'retry_count',
     'max_retries',
     'max_steps',
@@ -229,6 +235,7 @@ class AgentExecution extends Model
             'execution_context' => 'array',
             'last_result' => 'array',
             'failure_provenance' => 'array',
+            'failure_history' => 'array',
         ];
     }
 
@@ -295,7 +302,42 @@ class AgentExecution extends Model
     {
         $this->state_reason = $reason;
 
+        if ($this->status !== self::STATUS_CANCELLED) {
+            $error = new ExecutionError(
+                type: ExecutionErrorType::Lifecycle,
+                code: FailureCode::LIFECYCLE_CANCELLED,
+                message: 'The Agent execution was cancelled.',
+                retryable: false,
+                correlationId: $this->correlation_id,
+                diagnosticId: (string) \Illuminate\Support\Str::uuid(),
+                provenance: new FailureProvenance(operation: 'AgentExecution.cancel'),
+            );
+            $this->failure_category = 'non_retryable';
+            $this->failure_code = $error->code;
+            $this->failure_provenance = $error->provenance->toArray();
+            $this->recordFailure($error, 'agent.cancel');
+        }
+
         return $this->transitionTo(self::STATUS_CANCELLED);
+    }
+
+    public function recordFailure(ExecutionError $error, ?string $source = null): static
+    {
+        $history = is_array($this->failure_history) ? $this->failure_history : [];
+        $history[] = [
+            'occurred_at' => now()->toIso8601String(),
+            'source' => $source,
+            'category' => $this->failure_category,
+            'code' => $error->code,
+            'message' => $error->message,
+            'retryable' => $error->retryable,
+            'retry_count' => $this->retry_count,
+            'provenance' => $error->provenance->toArray(),
+            'diagnostic_id' => $error->diagnosticId,
+        ];
+        $this->failure_history = $history;
+
+        return $this;
     }
 
     public function fail(?string $reason = null): static

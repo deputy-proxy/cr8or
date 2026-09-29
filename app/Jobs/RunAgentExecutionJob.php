@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\AI\Contracts\ExecutionError;
 use App\Data\AgentExecutionRequest;
 use App\Events\AgentExecutionFailed;
 use App\Models\AgentDelegation;
@@ -121,13 +122,18 @@ final class RunAgentExecutionJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $message = $exception->getMessage() !== '' ? $exception->getMessage() : 'Agent execution worker failed.';
-        $isTimeout = str_contains(strtolower($exception::class), 'timeout')
-            || str_contains(strtolower($message), 'timeout');
+        $error = ExecutionError::from(
+            $exception,
+            correlationId: $execution->correlation_id,
+        );
+        $policy = app(AgentFailurePolicy::class);
+        $classification = $policy->classify($error);
 
-        $execution->failure_code = $isTimeout ? 'timeout' : 'queue_failed';
-        $execution->failure_category = 'external_service_failed';
-        $execution->fail($message)->save();
+        $execution->failure_code = $error->code;
+        $execution->failure_category = $classification['category']->value;
+        $execution->failure_provenance = $error->provenance->toArray();
+        $execution->recordFailure($error, 'agent.queue.failed');
+        $execution->fail($error->message)->save();
         app(\App\Services\AgentExecutionEventService::class)->dispatch(AgentExecutionFailed::class, $execution, data: [
             'failure_category' => $execution->failure_category,
             'failure_code' => $execution->failure_code,

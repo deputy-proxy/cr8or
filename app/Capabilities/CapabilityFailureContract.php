@@ -29,7 +29,7 @@ final readonly class CapabilityFailureContract
             'approval' => [FailureCode::APPROVAL_REQUIRED, FailureCode::APPROVAL_DENIED, FailureCode::APPROVAL_EXPIRED],
             'resource' => [FailureCode::RESOURCE_NOT_FOUND, FailureCode::RESOURCE_UNAVAILABLE],
             'conflict' => [FailureCode::CONFLICT_DETECTED],
-            'lifecycle' => [FailureCode::LIFECYCLE_INVALID_TRANSITION],
+            'lifecycle' => [FailureCode::LIFECYCLE_INVALID_TRANSITION, FailureCode::LIFECYCLE_TIMEOUT, FailureCode::LIFECYCLE_CANCELLED],
             'business' => [FailureCode::BUSINESS_RULE_REJECTED],
             'persistence' => [FailureCode::PERSISTENCE_FAILED],
             'external' => [FailureCode::EXTERNAL_AUTHENTICATION, FailureCode::EXTERNAL_AUTHORIZATION, FailureCode::EXTERNAL_TIMEOUT, FailureCode::EXTERNAL_RATE_LIMITED, FailureCode::EXTERNAL_UNAVAILABLE, FailureCode::EXTERNAL_INVALID_RESPONSE, FailureCode::EXTERNAL_REJECTED],
