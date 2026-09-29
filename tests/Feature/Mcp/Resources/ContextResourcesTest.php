@@ -117,6 +117,18 @@ it('rejects invalid enterprise identifiers', function () {
         ->assertHasErrors();
 });
 
+it('serializes resource failures through the canonical contract', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    mcpMember($user, $organization);
+
+    AuthenticatedTestServer::actingAs($user, 'api')
+        ->resource(EnterpriseContextResource::class, ['enterprise' => 'not-an-id'])
+        ->assertHasErrors()
+        ->assertSee('validation.failed')
+        ->assertSee('mcp.resource.enterprise_context');
+});
+
 it('does not expose persistence metadata in resource output', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
