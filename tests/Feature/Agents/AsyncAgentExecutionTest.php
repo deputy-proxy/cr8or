@@ -1,6 +1,7 @@
 <?php
 
 use App\Agents\Agent;
+use App\AI\Contracts\FailureCode;
 use App\AI\Data\ModelResult;
 use App\AI\Exceptions\ModelProviderException;
 use App\AI\Exceptions\ModelProviderFailureType;
@@ -140,12 +141,46 @@ it('retries a retryable worker failure from durable execution state without fail
 
     expect($execution->refresh()->status)->toBe(AgentExecution::STATUS_EXECUTING)
         ->and($execution->failure_code)->toBe('provider.unavailable')
+        ->and($execution->failure_history)->toHaveCount(1)
+        ->and($execution->failure_history[0]['code'])->toBe('provider.unavailable')
         ->and($execution->steps()->firstOrFail()->status)->toBe(AgentExecutionStep::STATUS_RUNNING);
 
     $job->handle($service);
 
     expect($calls)->toBe(2)
         ->and($execution->refresh()->status)->toBe(AgentExecution::STATUS_COMPLETED);
+});
+
+it('preserves the original canonical failure when the retry limit is exhausted', function () {
+    Queue::fake();
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = asyncAgentAssignment($actor, $enterprise);
+
+    $provider = new FakeModelProvider(function () {
+        throw new ModelProviderException(ModelProviderFailureType::Unavailable, 'fake', 'provider unavailable');
+    });
+
+    $service = asyncAgentService($provider);
+    $execution = $service->queue(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Exhaust retries.',
+        correlationId: 'retry-limit',
+    ));
+    $execution->max_retries = 1;
+    $execution->save();
+
+    $job = new RunAgentExecutionJob($execution->getKey(), $actor->getKey());
+
+    expect(fn () => $job->handle($service))->toThrow(ModelProviderException::class);
+
+    $execution->refresh();
+    expect($execution->status)->toBe(AgentExecution::STATUS_FAILED)
+        ->and($execution->failure_code)->toBe('provider.unavailable')
+        ->and($execution->failure_history)->toHaveCount(1)
+        ->and($execution->failure_history[0]['code'])->toBe('provider.unavailable')
+        ->and($execution->retry_count)->toBe(1);
 });
 
 it('reuses persisted capability results when a worker retries a running step', function () {
@@ -286,5 +321,5 @@ it('cancels queued executions durably and marks timed-out workers explicitly', f
     (new RunAgentExecutionJob($timedOut->getKey(), $actor->getKey()))->failed(new RuntimeException('Worker timeout.'));
 
     expect($timedOut->refresh()->status)->toBe(AgentExecution::STATUS_FAILED)
-        ->and($timedOut->failure_code)->toBe('timeout');
+        ->and($timedOut->failure_code)->toBe(FailureCode::LIFECYCLE_TIMEOUT);
 });

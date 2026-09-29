@@ -157,6 +157,12 @@ final class FailureTranslator
                 FailureCode::VALIDATION_FAILED,
                 'The supplied value is invalid.',
             ),
+            $exception instanceof \RuntimeException && str_contains(strtolower($exception->getMessage()), 'timeout') => new ExecutionError(
+                ExecutionErrorType::Lifecycle,
+                FailureCode::LIFECYCLE_TIMEOUT,
+                'The Agent execution timed out.',
+                retryable: false,
+            ),
             $exception instanceof LogicException => new ExecutionError(
                 ExecutionErrorType::BusinessRule,
                 FailureCode::BUSINESS_RULE_REJECTED,

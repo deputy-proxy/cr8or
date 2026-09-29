@@ -24,6 +24,10 @@ final class FailureCode
 
     public const LIFECYCLE_INVALID_TRANSITION = 'lifecycle.invalid_transition';
 
+    public const LIFECYCLE_TIMEOUT = 'lifecycle.timeout';
+
+    public const LIFECYCLE_CANCELLED = 'lifecycle.cancelled';
+
     public const BUSINESS_RULE_REJECTED = 'business_rule.rejected';
 
     public const CAPABILITY_DENIED = 'capability.denied';

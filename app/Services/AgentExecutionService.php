@@ -787,12 +787,13 @@ final class AgentExecutionService
             return new AgentExecutionResult($execution->refresh(), $lastResult, $lastDecision, $authorizedRequests);
         } catch (Throwable $exception) {
             if (in_array($execution->status, [AgentExecution::STATUS_REASONING, AgentExecution::STATUS_EXECUTING], true)) {
-                $error = ExecutionError::from($exception);
+                $error = ExecutionError::from($exception, correlationId: $execution->correlation_id ?? $correlationId);
                 $failurePolicy = app(AgentFailurePolicy::class);
                 $classification = $failurePolicy->classify($error);
                 $execution->failure_category = $classification['category']->value;
                 $execution->failure_code = $error->code;
                 $execution->failure_provenance = $error->provenance->toArray();
+                $execution->recordFailure($error, 'agent.execute');
 
                 if ($allowWorkerRetry && $classification['retryable']) {
                     $execution->retry_count = min($execution->retry_count + 1, $execution->max_retries);
@@ -807,7 +808,7 @@ final class AgentExecutionService
                             'retryable' => false,
                             'retry_count' => $execution->retry_count,
                         ]);
-                        throw new \RuntimeException('Agent execution retry limit reached.');
+                        throw $exception;
                     }
                     $execution->state_reason = $error->message;
                     $execution->save();
@@ -1337,7 +1338,30 @@ final class AgentExecutionService
             }
 
             if ($child->status === AgentExecution::STATUS_FAILED) {
-                $execution->fail('Delegated Agent execution failed.')->save();
+                $failureCode = $child->failure_code ?? 'internal.unexpected';
+                $failureCategory = $child->failure_category ?? 'non_retryable';
+                $childProvenance = is_array($child->failure_provenance) ? $child->failure_provenance : [];
+                $childHistory = is_array($child->failure_history) ? $child->failure_history : [];
+
+                $execution->failure_code = $failureCode;
+                $execution->failure_category = $failureCategory;
+                $execution->failure_provenance = array_merge($childProvenance, [
+                    'parent_execution_id' => $execution->getKey(),
+                    'delegation_id' => $delegation->getKey(),
+                ]);
+                if ($childHistory !== []) {
+                    $execution->failure_history = array_merge(
+                        is_array($execution->failure_history) ? $execution->failure_history : [],
+                        array_map(
+                            static fn (array $failure): array => array_merge($failure, [
+                                'source' => 'delegated_child',
+                                'child_execution_id' => $child->getKey(),
+                            ]),
+                            $childHistory,
+                        ),
+                    );
+                }
+                $execution->fail('Delegated Agent execution failed: '.$failureCode)->save();
 
                 return false;
             }
