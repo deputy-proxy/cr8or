@@ -18,7 +18,7 @@ it('classifies every documented Agent failure category and keeps policy determin
         ->toBe(ExecutionFailureCategory::ModelFailed)
         ->and($policy->classify(ExecutionError::from(new ModelProviderException(ModelProviderFailureType::Configuration, 'fake', 'bad config')))['retryable'])
         ->toBeFalse()
-        ->and($policy->classify(new ExecutionError(ExecutionErrorType::ExternalExecution, 'delegation.failed', 'delegation failed'))['category'])
+        ->and($policy->classify(new ExecutionError(ExecutionErrorType::External, 'delegation.failed', 'delegation failed'))['category'])
         ->toBe(ExecutionFailureCategory::DelegationFailed)
         ->and($policy->classify(new ExecutionError(ExecutionErrorType::BusinessRule, 'business_rule.rejected', 'rejected'))['category'])
         ->toBe(ExecutionFailureCategory::NonRetryable)

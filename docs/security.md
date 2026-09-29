@@ -176,6 +176,14 @@ Candidates for immutable or append-only treatment include:
 
 Phase 1 Enterprise Decisions currently preserve actor identity and decision time while allowing substantive content to remain mutable. A later implementation must explicitly choose the required immutable/versioned model before Agents depend on these records as durable historical evidence.
 
+## Failure Contract
+
+CR8OR uses one canonical provider-neutral failure contract documented in . Client-visible failures contain stable type/code values, explicit retryability, correlation and diagnostic identifiers, and only safe structured details. Internal exception messages, stack traces, credentials, tokens and hidden model context remain outside the client contract.
+
+## Failure Contract
+
+CR8OR uses one canonical provider-neutral failure contract documented in `docs/failures.md`. Client-visible failures contain stable type/code values, explicit retryability, correlation and diagnostic identifiers, and only safe structured details. Internal exception messages, stack traces, credentials, tokens and hidden model context remain outside the client contract.
+
 ## Failure, Retry and Recovery
 
 Security boundaries must survive failures and retries.

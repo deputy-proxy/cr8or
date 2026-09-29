@@ -18,8 +18,8 @@ final class AgentFailurePolicy
             $error->type->value === 'authentication', $error->type->value === 'authorization' => ExecutionFailureCategory::AuthorizationFailed,
             $error->type->value === 'validation' => ExecutionFailureCategory::ValidationFailed,
             $error->type->value === 'provider' => ExecutionFailureCategory::ModelFailed,
-            $error->type->value === 'unavailable_resource' => ExecutionFailureCategory::ContextMissing,
-            $error->type->value === 'external_execution' => ExecutionFailureCategory::ExternalServiceFailed,
+            $error->type->value === 'resource' => ExecutionFailureCategory::ContextMissing,
+            $error->type->value === 'external' => ExecutionFailureCategory::ExternalServiceFailed,
             $error->type->value === 'business_rule' => ExecutionFailureCategory::NonRetryable,
             default => $error->retryable ? ExecutionFailureCategory::Retryable : ExecutionFailureCategory::NonRetryable,
         };

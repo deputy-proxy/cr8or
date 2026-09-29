@@ -162,7 +162,7 @@ it('returns a failed invocation when Expert reasoning fails', function () {
     );
 
     expect($result->failed())->toBeTrue()
-        ->and($result->failure?->code)->toBe('internal.error')
+        ->and($result->failure?->code)->toBe('internal.unexpected')
         ->and($result->metadata['failure_reason'])->toBe('reasoning failed');
 });
 
