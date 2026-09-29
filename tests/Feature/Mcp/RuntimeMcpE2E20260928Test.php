@@ -224,7 +224,7 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
     ], $report)['result'];
     $productAssignmentId = $productAssignment['id'];
 
-    foreach (['agent.delegate', 'marketing.plan'] as $capability) {
+    foreach (['agent.delegate', 'marketing.plan', 'strategy.create'] as $capability) {
         AgentPermission::factory()->create(['agent_assignment_id' => $marketingAssignmentId, 'capability' => $capability]);
     }
     foreach (['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'] as $capability) {
