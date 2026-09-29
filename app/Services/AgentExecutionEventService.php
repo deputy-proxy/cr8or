@@ -27,7 +27,7 @@ final class AgentExecutionEventService
             correlationId: $execution->correlation_id,
             causationId: $causationId,
             provenance: $provenance,
-            data: $data,
+            data: array_merge(['mode' => $execution->mode->value], $data),
             organizationId: (int) $execution->organization_id,
         ));
     }
