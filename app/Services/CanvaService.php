@@ -20,6 +20,7 @@ final class CanvaService
     public function __construct(
         private readonly CanvaClient $client,
         private readonly IntegrationBoundaryService $boundary,
+        private readonly FailureTranslator $failures,
     ) {}
 
     public function createDesign(
@@ -114,6 +115,9 @@ final class CanvaService
         try {
             $result = $this->client->createDesign($connection, $request);
 
+            $job->external_job_id = $result->externalId;
+            $job->save();
+
             $resource = ExternalResource::query()->firstOrCreate(
                 [
                     'provider' => $context->provider,
@@ -133,12 +137,19 @@ final class CanvaService
                 ],
             );
 
-            $job->external_job_id = $result->externalId;
             $job->transitionTo(IntegrationJob::STATUS_SUCCEEDED)->save();
 
             return $resource;
         } catch (CanvaClientException $e) {
-            $job->fail($e->getMessage(), $e->failureCode)->save();
+            $failure = $this->failures->translate(
+                $e,
+                correlationId: $context->correlationId,
+                provenance: new \App\AI\Contracts\FailureProvenance(
+                    operation: 'design.create',
+                    capability: 'integration.creative.design.create'
+                ),
+            );
+            $job->fail($failure->message, $failure->code)->save();
             throw $e;
         }
     }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'publication_id', 'idempotency_key', 'attempts', 'status', 'failure_code', 'failure_reason', 'started_at', 'completed_at'])]
+#[Fillable(['enterprise_id', 'publication_id', 'idempotency_key', 'attempts', 'status', 'failure_code', 'failure_reason', 'started_at', 'completed_at', 'external_id', 'external_url'])]
 class PublishingJob extends Model
 {
     public const STATUS_PENDING = 'pending';

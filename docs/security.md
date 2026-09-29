@@ -257,3 +257,7 @@ The Phase 12 capability-native E2E validates Enterprise isolation, Agent/Expert 
 ### Exception diagnostics
 
 Exception translation preserves the original exception internally under a diagnostic ID. Client responses contain only the safe canonical failure contract. Diagnostic records include source location and trace metadata for server-side investigation and are not serialized into MCP/API responses.
+
+### External failure handling
+
+External failures are translated into the canonical failure contract before they cross an application or MCP boundary. Retryability is explicit, provider credentials are excluded from diagnostics, and partial external execution is represented by a non-terminal integration job with its external identifier persisted before CR8OR finalizes authoritative success.

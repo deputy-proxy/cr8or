@@ -99,3 +99,19 @@ Polling is represented by the provider-neutral IntegrationResultFetcher contract
 ## Integration Events vs Webhooks
 
 An Integration Event is a CR8OR-normalized fact at the integration boundary and carries an explicit `inbound` or `outbound` direction. An External Webhook Event represents the provider's delivery envelope before reconciliation. Webhook authentication and normalization happen before the result reaches IntegrationResultService; the webhook is not itself authoritative state.
+
+## Failure and partial-execution contract
+
+All current external providers use the canonical CR8OR failure taxonomy. Provider adapters may retain provider-specific exception classes internally, but FailureTranslator maps them to stable client/application codes and explicit retryability.
+
+| Boundary | Failure families | Retry guidance | Authoritative state rule |
+|---|---|---|---|
+| Canva | authentication, timeout, rate limit, unavailable, invalid response, rejection | retry timeout/rate-limit/unavailable | external design ID is persisted before a job becomes succeeded |
+| Postiz | authentication/configuration, timeout, rate limit, unavailable, invalid response, rejection | retry transient provider failures | external publication ID is persisted on the publishing job before publication success |
+| R2 | unavailable, timeout/provider/storage rejection | retry transient storage failures | storage failure cannot create successful authoritative media state |
+| Webhooks/polling | authentication, validation, correlation/resource, persistence | retry transport delivery; never guess ambiguous correlation | IntegrationResult is immutable and only applies permitted lifecycle transitions |
+| Queue workers | timeout, exhausted attempts, dispatch failure | governed by durable execution retry policy | failed/partial execution remains observable and cannot become false success |
+
+When an external system may have accepted work before CR8OR receives or persists the response, the integration job remains non-terminal with the external identifier recorded. This makes the partial execution observable and allows reconciliation rather than silently retrying an operation whose external side effect may already exist.
+
+Credentials, tokens, authorization headers and model context are never included in client-visible failure payloads or integration metadata. External systems remain non-authoritative for CR8OR business state.
