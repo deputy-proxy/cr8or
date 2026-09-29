@@ -349,6 +349,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
         [
             'agent_assignment_id' => $marketingAssignmentId,
             'prompt' => 'Coordinate the E2E capability-native marketing workflow using the persisted Enterprise, Knowledge, Strategy and Work context.',
+            'mode' => 'autonomous',
             'expert_slugs' => ['marketing', 'strategy', 'copywriting'],
         ],
         $report['capabilities'],
