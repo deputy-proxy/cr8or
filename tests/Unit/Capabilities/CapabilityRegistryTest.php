@@ -137,3 +137,14 @@ it('rejects a Capability definition without an explicit failure contract', funct
         approvalRequirement: 'permission-dependent',
     ))->toThrow(InvalidArgumentException::class, 'A Capability failure contract must define at least one failure category');
 });
+
+it('declares every canonical failure code in the standard Capability contract', function () {
+    $declared = collect(CapabilityFailureContract::standard()->toArray())
+        ->flatten()
+        ->values()
+        ->all();
+
+    $reflection = new ReflectionClass(\App\AI\Contracts\FailureCode::class);
+
+    expect($declared)->toContain(...array_values($reflection->getConstants()));
+});
