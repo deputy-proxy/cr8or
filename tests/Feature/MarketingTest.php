@@ -124,12 +124,8 @@ it('requires explicit approval for publication readiness', function () {
     $enterprise = Enterprise::factory()->create();
     $actor = User::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
-    $descriptor = App\Models\AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\Agent::class], ['slug' => 'content-test-agent', 'enabled' => true]);
+    $descriptor = App\Models\AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\MarketingAgent::class], ['slug' => 'content-test-agent', 'enabled' => true]);
     $assignment = App\Models\AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    App\Models\AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment,
-        'capability' => 'marketing.content.publication-ready',
-    ]);
     $execution = App\Models\AgentExecution::factory()->forAssignment($assignment)->executing()->create(['actor_id' => $actor]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
@@ -143,6 +139,8 @@ it('requires explicit approval for publication readiness', function () {
         'agent_execution_id' => $execution->id,
         'actor_id' => $actor->id,
         'capability' => 'marketing.content.publication-ready',
+        'expert_slug' => 'marketing',
+        'expert_runtime_class' => App\Experts\MarketingExpert::class,
         'target_context' => ['content_item_id' => $item->id],
         'organization_name' => $enterprise->organization->name,
         'enterprise_name' => $enterprise->name,

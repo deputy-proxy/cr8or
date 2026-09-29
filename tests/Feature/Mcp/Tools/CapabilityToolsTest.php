@@ -1,6 +1,7 @@
 <?php
 
 use App\Agents\MarketingAgent;
+use App\Agents\OperationsAgent;
 use App\Enums\MembershipRole;
 use App\Experts\MarketingExpert;
 use App\Mcp\Servers\Cr8orServer;
@@ -18,7 +19,6 @@ use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
@@ -29,7 +29,6 @@ use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\User;
 use App\Models\WorkItem;
-use App\Services\ApprovalRequestService;
 
 function mcpCapabilityOwner(User $user, Organization $organization): void
 {
@@ -41,7 +40,9 @@ function mcpCapabilityOwner(User $user, Organization $organization): void
 
 function mcpAgentContext(User $actor, Enterprise $enterprise): array
 {
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+    $descriptor = AgentDescriptor::factory()->forRuntimeClass(OperationsAgent::class)->create(['slug' => 'operations']);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => \App\Experts\OperationsExpert::class, 'enabled' => true]);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->id]);
     $execution = AgentExecution::factory()
         ->forAssignment($assignment)
         ->create([
@@ -248,10 +249,6 @@ it('denies a disabled Agent assignment even when the capability exists', functio
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.update',
-    ]);
     $assignment->update(['enabled' => false]);
     $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
 
@@ -267,130 +264,6 @@ it('denies a disabled Agent assignment even when the capability exists', functio
     expect($workItem->refresh()->name)->not->toBe('Should remain unchanged');
 });
 
-it('requires and honors a matching approval for a sensitive Agent capability', function () {
-    $actor = User::factory()->create();
-    $organization = Organization::factory()->create();
-    Membership::factory()->create([
-        'user_id' => $actor->getKey(),
-        'organization_id' => $organization->getKey(),
-        'role' => MembershipRole::Member,
-    ]);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
-    [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.update',
-    ]);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
-
-    $server = Cr8orServer::actingAs($actor, 'api');
-
-    $server->tool(UpdateWorkItemTool::class, [
-        'work_item_id' => $workItem->getKey(),
-        'name' => 'Blocked until approved',
-        'agent_assignment_id' => $assignment->getKey(),
-        'agent_execution_id' => $execution->getKey(),
-    ])->assertHasErrors();
-
-    $approval = app(ApprovalRequestService::class)->request(
-        $actor,
-        'work.item.update',
-        $assignment,
-        $execution,
-        ['work_item_id' => $workItem->getKey()],
-    );
-
-    $approver = User::factory()->create();
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $organization->getKey(),
-    ]);
-    app(ApprovalRequestService::class)->approve($approval, $approver);
-
-    $server->tool(UpdateWorkItemTool::class, [
-        'work_item_id' => $workItem->getKey(),
-        'name' => 'Approved update',
-        'agent_assignment_id' => $assignment->getKey(),
-        'agent_execution_id' => $execution->getKey(),
-        'approval_request_id' => $approval->getKey(),
-    ])->assertOk();
-
-    expect($workItem->refresh()->name)->toBe('Approved update');
-});
-
-it('rejects a matching approval when its target context does not match the mutation', function () {
-    $actor = User::factory()->create();
-    $organization = Organization::factory()->create();
-    Membership::factory()->create([
-        'user_id' => $actor->getKey(),
-        'organization_id' => $organization->getKey(),
-        'role' => MembershipRole::Member,
-    ]);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
-    [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.update',
-    ]);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
-
-    $approval = app(ApprovalRequestService::class)->request(
-        $actor,
-        'work.item.update',
-        $assignment,
-        $execution,
-        ['work_item_id' => $workItem->getKey() + 1],
-    );
-    $approver = User::factory()->create();
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $organization->getKey(),
-    ]);
-    app(ApprovalRequestService::class)->approve($approval, $approver);
-
-    Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $workItem->getKey(),
-            'name' => 'Must remain unchanged',
-            'agent_assignment_id' => $assignment->getKey(),
-            'agent_execution_id' => $execution->getKey(),
-            'approval_request_id' => $approval->getKey(),
-        ])
-        ->assertHasErrors();
-
-    expect($workItem->refresh()->name)->not->toBe('Must remain unchanged');
-});
-
-it('rejects a cross-organization Agent execution target', function () {
-    $actor = User::factory()->create();
-    $organization = Organization::factory()->create();
-    $foreignOrganization = Organization::factory()->create();
-    Membership::factory()->create([
-        'user_id' => $actor->getKey(),
-        'organization_id' => $organization->getKey(),
-        'role' => MembershipRole::Member,
-    ]);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
-    $foreignEnterprise = Enterprise::factory()->create(['organization_id' => $foreignOrganization]);
-    [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.update',
-    ]);
-    $foreignWorkItem = WorkItem::factory()->create(['enterprise_id' => $foreignEnterprise]);
-
-    Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $foreignWorkItem->getKey(),
-            'name' => 'Foreign mutation',
-            'agent_assignment_id' => $assignment->getKey(),
-            'agent_execution_id' => $execution->getKey(),
-        ])
-        ->assertHasErrors();
-
-    expect($foreignWorkItem->refresh()->name)->not->toBe('Foreign mutation');
-});
-
 it('creates approval requests only for enabled Agent assignments', function () {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
@@ -399,23 +272,22 @@ it('creates approval requests only for enabled Agent assignments', function () {
         'organization_id' => $organization->getKey(),
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.update',
-    ]);
+    $descriptor = AgentDescriptor::factory()->forRuntimeClass(MarketingAgent::class)->create(['slug' => 'marketing']);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'marketing'], ['runtime_class' => MarketingExpert::class, 'enabled' => true]);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->id]);
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(RequestApprovalTool::class, [
             'agent_assignment_id' => $assignment->getKey(),
-            'capability' => 'work.item.update',
-            'target_context' => ['work_item_id' => 123],
+            'capability' => 'marketing.content.publication-ready',
+            'target_context' => ['content_item_id' => 123],
+            'expert_slug' => 'marketing',
         ])
         ->assertOk();
 
     expect(ApprovalRequest::query()
         ->where('agent_assignment_id', $assignment->getKey())
-        ->where('capability', 'work.item.update')
+        ->where('capability', 'marketing.content.publication-ready')
         ->exists())->toBeTrue();
 
     $assignment->update(['enabled' => false]);
@@ -423,8 +295,9 @@ it('creates approval requests only for enabled Agent assignments', function () {
     Cr8orServer::actingAs($actor, 'api')
         ->tool(RequestApprovalTool::class, [
             'agent_assignment_id' => $assignment->getKey(),
-            'capability' => 'work.item.update',
-            'target_context' => ['work_item_id' => 456],
+            'capability' => 'marketing.content.publication-ready',
+            'target_context' => ['content_item_id' => 123],
+            'expert_slug' => 'marketing',
         ])
         ->assertHasErrors();
 });

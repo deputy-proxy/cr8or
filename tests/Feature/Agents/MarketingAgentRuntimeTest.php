@@ -9,7 +9,6 @@ use App\Data\CapabilityRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\User;
@@ -29,7 +28,7 @@ it('defines the production Marketing Agent runtime contract', function (): void 
     $agent = app(MarketingAgent::class);
 
     expect($agent->name())->toBe('Marketing')
-        ->and($agent->experts())->toBe(['marketing', 'strategy', 'copywriting', 'seo'])
+        ->and($agent->experts())->toBe(['marketing', 'strategy', 'copywriting', 'seo', 'business-analysis'])
         ->and($agent->requiredContext())->toBe([
             'enterprise',
             'strategy',
@@ -96,11 +95,6 @@ it('executes through the canonical Agent contract with authorized context, Exper
             'agent_descriptor_id' => $descriptor->getKey(),
         ]);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.plan',
-    ]);
-
     $provider = new FakeModelProvider(function ($request) use ($enterprise): ModelResult {
         expect($request->context)->toHaveKeys([
             'enterprise',
@@ -129,6 +123,7 @@ it('executes through the canonical Agent contract with authorized context, Exper
                 'capability_requests' => [
                     json_encode([
                         'capability' => 'marketing.plan',
+                        'expert_slug' => 'marketing',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                     ], JSON_THROW_ON_ERROR),
                 ],

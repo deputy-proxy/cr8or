@@ -15,7 +15,7 @@ Business intent, configuration, knowledge, planning, or maintainable business st
 Consequential state changes use an application/domain path rather than arbitrary field mutation.
 
 - AgentDescriptor / ExpertDescriptor: registry controls only. Runtime identity, description, responsibilities, capabilities, required context, and methodology remain authoritative in PHP and are displayed read-only.
-- AgentAssignment / AgentPermission: governed assignment and permission administration.
+- AgentAssignment: governed Agent assignment administration; Expert composition and Capability ownership are the authorization boundary.
 - ApprovalRequest: approve/reject through `ApprovalRequestService` and policy authorization.
 - SocialAccount: connection/account administration; raw credentials/tokens are never exposed.
 - IntegrationConnection: connection configuration and state, not operational history.

@@ -124,7 +124,7 @@ The existing Phase 3 Job/Execution idempotency model remains authoritative for b
 
 Phase 8.5 establishes `App\Data\ExpertInvocationRequest` and `App\Data\ExpertInvocationResult` as the canonical Agent-to-Expert runtime boundary. The request carries the actor, receiving Agent assignment, parent `AgentExecution`, runtime Agent, Expert identifier, business objective, authorized context, expected reasoning output, target context and correlation identity.
 
-`ExpertInvocationService` resolves the Expert identity from the authoritative `ExpertDescriptor` registry and runtime class, verifies that the Expert is declared by the receiving Agent, verifies required context, and re-validates each declared Capability through the existing Agent assignment permission and approval boundary. It does not grant authority or execute Capabilities.
+`ExpertInvocationService` resolves the Expert identity from the authoritative `ExpertDescriptor` registry and runtime class, verifies that the Expert is declared by the receiving Agent, verifies required context, and re-validates each declared Capability through the Agent → Expert → Capability authorization boundary and approval rules. It does not grant authority or execute Capabilities.
 
 The result separates reasoning output, requested Capability Requests, decisions, recommendations, execution metadata and normalized failure state. Every successful result carries the parent `AgentExecution` identifier and correlation identity. Authorization failures preserve the existing authorization exception semantics; reasoning failures are represented as a failed invocation result so the parent Agent execution can record the failure.
 

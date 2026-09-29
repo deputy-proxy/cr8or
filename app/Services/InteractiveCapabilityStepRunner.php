@@ -229,6 +229,7 @@ final class InteractiveCapabilityStepRunner
                     actor: $actor,
                     targetContext: isset($request['target_context']) && is_array($request['target_context']) ? $request['target_context'] : [],
                     inputPayload: isset($request['input_payload']) && is_array($request['input_payload']) ? $request['input_payload'] : [],
+                    expertSlug: isset($request['expert_slug']) && is_string($request['expert_slug']) ? trim($request['expert_slug']) : '',
                     approval: $approval,
                     correlationId: $correlationId,
                     idempotencyKey: $idempotencyKey,

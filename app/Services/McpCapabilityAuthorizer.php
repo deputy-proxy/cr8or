@@ -61,29 +61,22 @@ class McpCapabilityAuthorizer
             ? null
             : ApprovalRequest::query()->findOrFail($approvalId);
 
-        $authorizer = app(AgentCapabilityAuthorizer::class);
-        $allowed = $expertSlug !== null
-            ? (function () use ($authorizer, $assignment, $expertSlug, $capability, $enterprise, $actor, $approval, $execution, $targetContext): bool {
-                $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->first();
-                if ($descriptor === null || ! $descriptor->enabled) {
-                    return false;
-                }
-                if (! $authorizer->agentAllowsExpert($assignment, $expertSlug)) {
-                    return false;
-                }
-                $expert = app($descriptor->resolveRuntimeClass());
+        if ($expertSlug === null) {
+            throw new AuthorizationException('Agent-backed MCP capabilities require Expert provenance.');
+        }
 
-                return $expert instanceof \App\Experts\Expert
-                    && $authorizer->allowsExpertCapability(
-                        $assignment, $expert, $capability,
-                        Organization::query()->find($assignment->organization_id),
-                        $enterprise, $actor, $approval, $execution, $targetContext, null,
-                    );
-            })()
-            : $authorizer->allows(
-                $assignment, $capability,
+        $authorizer = app(AgentCapabilityAuthorizer::class);
+        $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->first();
+        if ($descriptor === null || ! $descriptor->enabled) {
+            throw new AuthorizationException("The Expert [{$expertSlug}] is not available.");
+        }
+
+        $expert = app($descriptor->resolveRuntimeClass());
+        $allowed = $expert instanceof \App\Experts\Expert
+            && $authorizer->allowsExpertCapability(
+                $assignment, $expertSlug, $expert, $capability,
                 Organization::query()->find($assignment->organization_id),
-                $enterprise, $actor, $approval, $execution, $targetContext,
+                $enterprise, $actor, $approval, $execution, $targetContext, null,
             );
 
         if (! $allowed) {
@@ -133,6 +126,7 @@ class McpCapabilityAuthorizer
         AgentAssignment $assignment,
         ?AgentExecution $execution,
         string $capability,
+        ?string $expertSlug = null,
     ): void {
         Gate::forUser($actor)->authorize('view', $assignment);
 
@@ -140,9 +134,40 @@ class McpCapabilityAuthorizer
             throw new AuthorizationException('The Agent assignment is disabled.');
         }
 
-        $permission = $assignment->permissions()->where('capability', $capability)->first();
+        if ($expertSlug === null) {
+            throw new AuthorizationException('Agent approval requests require Expert provenance.');
+        }
 
-        if ($permission === null || ! $permission->requires_approval) {
+        $descriptor = ExpertDescriptor::query()->where('slug', $expertSlug)->first();
+        if ($descriptor === null || ! $descriptor->enabled) {
+            throw new AuthorizationException("The Expert [{$expertSlug}] is not available.");
+        }
+
+        $expert = app($descriptor->resolveRuntimeClass());
+        if (! $expert instanceof \App\Experts\Expert) {
+            throw new AuthorizationException("The Expert [{$expertSlug}] has an invalid runtime.");
+        }
+
+        $authorizer = app(AgentCapabilityAuthorizer::class);
+        if (! $authorizer->allowsExpertCapability(
+            $assignment,
+            $expertSlug,
+            $expert,
+            $capability,
+            $assignment->organization,
+            $assignment->enterprise,
+            $actor,
+            null,
+            $execution,
+            [],
+            null,
+            true,
+        )) {
+            throw new AuthorizationException("The Agent is not authorized for capability [{$capability}] through Expert [{$expertSlug}].");
+        }
+
+        $definition = app(\App\Capabilities\CapabilityRegistry::class)->resolve($capability);
+        if ($definition->approvalRequirement !== 'required') {
             throw new AuthorizationException('The requested capability is not configured to require approval.');
         }
 

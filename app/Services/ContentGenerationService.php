@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentExecutionRequest;
+use App\Experts\CopywritingExpert;
 use App\Models\AgentAssignment;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
@@ -38,8 +39,10 @@ final class ContentGenerationService
             options: $modelOptions,
         ));
 
-        if (! $this->capabilities->allows(
+        if (! $this->capabilities->allowsExpertCapability(
             $assignment,
+            'copywriting',
+            new CopywritingExpert,
             'marketing.content.create',
             $assignment->organization,
             $enterprise,
@@ -81,8 +84,10 @@ final class ContentGenerationService
             options: $modelOptions,
         ));
 
-        if (! $this->capabilities->allows(
+        if (! $this->capabilities->allowsExpertCapability(
             $assignment,
+            'copywriting',
+            new CopywritingExpert,
             'marketing.content.update',
             $assignment->organization,
             $item->enterprise,

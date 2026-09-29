@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Experts\MarketingExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentExecution;
@@ -98,8 +99,10 @@ final class ContentItemService
             throw new LogicException('Publication readiness requires an Agent execution approval context.');
         }
 
-        if (! app(AgentCapabilityAuthorizer::class)->allows(
+        if (! app(AgentCapabilityAuthorizer::class)->allowsExpertCapability(
             $assignment,
+            'marketing',
+            new MarketingExpert,
             'marketing.content.publication-ready',
             $item->enterprise->organization,
             $item->enterprise,

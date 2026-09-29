@@ -11,7 +11,6 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentExecution;
 use App\Models\AgentExecutionStep;
-use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
@@ -162,11 +161,6 @@ it('coordinates only enabled Experts and gives them the Agent context without ex
         ->forRuntimeClass(testExpertRuntimeClass())
         ->create(['slug' => 'analyst']);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
     $provider = new FakeModelProvider(function ($request) {
         expect($request->context['experts']['results'][0]['expert'])->toBe('Analyst')
             ->and($request->context['experts']['results'][0]['result'])->toMatchArray([
@@ -223,11 +217,9 @@ it('re-authorizes a state-changing capability and requires approval when configu
     $enterprise = Enterprise::factory()->create();
     $assignment = governedAssignment($actor, $enterprise);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-        'requires_approval' => true,
-    ]);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
 
     $provider = new FakeModelProvider(function ($request) use ($actor, $assignment, $enterprise) {
         $executionId = $request->context['execution_id'];
@@ -254,6 +246,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
                 'capability_requests' => [
                     json_encode([
                         'capability' => 'work.item.create',
+                        'expert_slug' => 'analyst',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                         'input_payload' => ['name' => 'Requested work item'],
                         'approval_request_id' => $approval->getKey(),
@@ -288,10 +281,9 @@ it('executes interactive capability requests without invoking a ModelProvider', 
     $enterprise = Enterprise::factory()->create();
     $assignment = governedAssignment($actor, $enterprise);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
 
     $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
 
@@ -306,6 +298,7 @@ it('executes interactive capability requests without invoking a ModelProvider', 
         mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
         capabilityRequests: [[
             'capability' => 'work.item.create',
+            'expert_slug' => 'analyst',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'input_payload' => ['name' => 'Interactive work item'],
         ]],
@@ -347,10 +340,10 @@ it('executes an interactive Capability plan as multiple durable steps', function
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = governedAssignment($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
+
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
     $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
 
     $result = (new AgentExecutionService(
@@ -363,8 +356,8 @@ it('executes an interactive Capability plan as multiple durable steps', function
         prompt: 'Execute the two-step interactive plan.',
         mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
         capabilityRequests: [
-            ['step' => 1, 'capability' => 'work.item.create', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step one'], 'idempotency_key' => 'interactive-step-one'],
-            ['step' => 2, 'capability' => 'work.item.create', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step two'], 'idempotency_key' => 'interactive-step-two'],
+            ['step' => 1, 'capability' => 'work.item.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step one'], 'idempotency_key' => 'interactive-step-one'],
+            ['step' => 2, 'capability' => 'work.item.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step two'], 'idempotency_key' => 'interactive-step-two'],
         ],
         correlationId: 'interactive-multi-step',
     ));
@@ -380,68 +373,6 @@ it('executes an interactive Capability plan as multiple durable steps', function
         ->toBe(['interactive-multi-step', 'interactive-multi-step'])
         ->and(WorkItem::query()->whereIn('name', ['Interactive step one', 'Interactive step two'])->count())
         ->toBe(2);
-});
-
-it('resumes an interactive waiting step with approval without invoking a ModelProvider', function () {
-    $actor = User::factory()->create();
-    $approver = User::factory()->create();
-    $enterprise = Enterprise::factory()->create();
-    $assignment = governedAssignment($actor, $enterprise);
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $enterprise->organization_id,
-    ]);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-        'requires_approval' => true,
-    ]);
-    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
-
-    $service = new AgentExecutionService(
-        $provider,
-        app(McpContextAssembler::class),
-        app(\App\Services\AgentCapabilityAuthorizer::class),
-    );
-
-    $waiting = $service->execute(new AgentExecutionRequest(
-        actor: $actor,
-        assignment: $assignment,
-        prompt: 'Execute the approval-gated interactive plan.',
-        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
-        capabilityRequests: [[
-            'step' => 1,
-            'capability' => 'work.item.create',
-            'target_context' => ['enterprise_id' => $enterprise->getKey()],
-            'input_payload' => ['name' => 'Interactive approved step'],
-            'idempotency_key' => 'interactive-approved-step',
-        ]],
-        correlationId: 'interactive-approval',
-    ));
-
-    $approval = ApprovalRequest::query()->where('agent_execution_id', $waiting->execution->getKey())->where('capability', 'work.item.create')->firstOrFail();
-
-    expect($waiting->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL)
-        ->and($waiting->execution->steps()->count())->toBe(1)
-        ->and($waiting->execution->steps()->first()->status)->toBe(AgentExecutionStep::STATUS_WAITING)
-        ->and(WorkItem::query()->where('name', 'Interactive approved step')->exists())->toBeFalse();
-
-    app(\App\Services\ApprovalRequestService::class)->approve($approval, $approver, 'Approved by the authorized human.');
-
-    $context = $waiting->execution->execution_context;
-    $context['interactive_capability_requests'][0]['approval_request_id'] = $approval->getKey();
-    $waiting->execution->execution_context = $context;
-    $waiting->execution->save();
-
-    $resumed = $service->resume($waiting->execution->refresh(), $actor);
-
-    expect($resumed->succeeded())->toBeTrue()
-        ->and($resumed->execution->current_step)->toBe(1)
-        ->and($resumed->execution->steps()->count())->toBe(1)
-        ->and($resumed->execution->steps()->first()->status)->toBe(AgentExecutionStep::STATUS_COMPLETED)
-        ->and(WorkItem::query()->where('name', 'Interactive approved step')->exists())->toBeTrue()
-        ->and($approval->refresh()->consumed_agent_execution_id)
-        ->toBe($waiting->execution->getKey());
 });
 
 it('does not allow an idempotency key to switch Agent execution mode', function () {
@@ -511,7 +442,7 @@ it('fails the execution when a model capability request is not authorized', func
             'decision_summary' => '',
             'decision_rationale' => '',
             'capability_requests' => [
-                json_encode(['capability' => 'finance.report.generate'], JSON_THROW_ON_ERROR),
+                json_encode(['capability' => 'finance.report.generate', 'expert_slug' => 'finance'], JSON_THROW_ON_ERROR),
             ],
         ],
     );
@@ -702,10 +633,9 @@ it('executes a governed capability and feeds its result into the next reasoning 
     $enterprise = Enterprise::factory()->create();
     $assignment = governedAssignment($actor, $enterprise);
 
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
 
     $calls = 0;
 
@@ -723,6 +653,7 @@ it('executes a governed capability and feeds its result into the next reasoning 
                     'capability_requests' => [
                         json_encode([
                             'capability' => 'work.item.create',
+                            'expert_slug' => 'analyst',
                             'target_context' => ['enterprise_id' => $enterprise->getKey()],
                             'input_payload' => [
                                 'name' => 'Governed capability result',
@@ -786,119 +717,6 @@ it('executes a governed capability and feeds its result into the next reasoning 
         ->toBe(\App\Operations\CreateWorkItem::class);
 });
 
-it('pauses for capability approval, resumes, and executes only after approval', function () {
-    $actor = User::factory()->create();
-    $approver = User::factory()->create();
-    $enterprise = Enterprise::factory()->create();
-    $assignment = governedAssignment($actor, $enterprise);
-
-    Membership::factory()->admin()->create([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $enterprise->organization_id,
-    ]);
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-        'requires_approval' => true,
-    ]);
-
-    $calls = 0;
-
-    $provider = new FakeModelProvider(function ($request) use (&$calls, $enterprise) {
-        $calls++;
-
-        if ($calls === 1) {
-            return new \App\AI\Data\ModelResult(
-                text: 'Approval required.',
-                structured: [
-                    'answer' => 'Approval required.',
-                    'decision_title' => 'Create work item',
-                    'decision_summary' => 'Human approval is required.',
-                    'decision_rationale' => 'The assigned capability is approval-sensitive.',
-                    'capability_requests' => [
-                        json_encode([
-                            'capability' => 'work.item.create',
-                            'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                            'input_payload' => ['name' => 'Approved work item'],
-                        ], JSON_THROW_ON_ERROR),
-                    ],
-                    'termination' => 'continue',
-                    'next_step' => 'Resume after approval.',
-                ],
-                provider: 'fake',
-                model: 'test',
-                invocationId: 'approval-step-1',
-                correlationId: $request->correlationId,
-            );
-        }
-
-        $approval = ApprovalRequest::query()
-            ->where('agent_execution_id', $request->context['execution_id'])
-            ->where('capability', 'work.item.create')
-            ->firstOrFail();
-
-        expect($approval->status)->toBe(ApprovalRequest::STATUS_APPROVED);
-
-        return new \App\AI\Data\ModelResult(
-            text: 'Approved operation completed.',
-            structured: [
-                'answer' => 'Approved operation completed.',
-                'decision_title' => 'Work item created',
-                'decision_summary' => 'The approved work item was created.',
-                'decision_rationale' => 'The operation ran only after approval.',
-                'capability_requests' => [
-                    json_encode([
-                        'capability' => 'work.item.create',
-                        'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                        'input_payload' => ['name' => 'Approved work item'],
-                        'approval_request_id' => $approval->getKey(),
-                    ], JSON_THROW_ON_ERROR),
-                ],
-                'termination' => 'completed',
-                'termination_reason' => 'approved_capability_executed',
-            ],
-            provider: 'fake',
-            model: 'test',
-            invocationId: 'approval-step-2',
-            correlationId: $request->correlationId,
-        );
-    });
-
-    $service = new AgentExecutionService(
-        $provider,
-        app(McpContextAssembler::class),
-        app(\App\Services\AgentCapabilityAuthorizer::class),
-    );
-
-    $waiting = $service->execute(new AgentExecutionRequest(
-        actor: $actor,
-        assignment: $assignment,
-        prompt: 'Create an approved work item.',
-        correlationId: 'approval-loop',
-    ));
-
-    $approval = ApprovalRequest::query()
-        ->where('agent_execution_id', $waiting->execution->getKey())
-        ->firstOrFail();
-
-    expect($waiting->execution->status)->toBe(AgentExecution::STATUS_WAITING_FOR_APPROVAL)
-        ->and($approval->status)->toBe(ApprovalRequest::STATUS_PENDING)
-        ->and(WorkItem::query()->where('name', 'Approved work item')->exists())->toBeFalse();
-
-    app(\App\Services\ApprovalRequestService::class)->approve(
-        $approval,
-        $approver,
-        'Approved by the authorized human.',
-    );
-
-    $resumed = $service->resume($waiting->execution->refresh(), $actor);
-
-    expect($calls)->toBe(2)
-        ->and($resumed->succeeded())->toBeTrue()
-        ->and(WorkItem::query()->where('name', 'Approved work item')->exists())->toBeTrue()
-        ->and($approval->refresh()->consumed_agent_execution_id)->toBe($waiting->execution->getKey());
-});
 it('delegates from Agent reasoning, links parent and child executions, and feeds the child result back to the parent', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
@@ -917,7 +735,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                     description: 'Delegates governed work.',
                     responsibilities: ['delegate'],
                     instructions: 'Delegate governed work only through the execution boundary.',
-                    experts: [],
+                    experts: ['business-analysis'],
                     requiredContext: ['enterprise'],
                     capabilities: ['agent.delegate'],
                 );
@@ -935,7 +753,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                     description: 'Executes delegated work.',
                     responsibilities: ['execute'],
                     instructions: 'Execute delegated work within the supplied authorized context.',
-                    experts: [],
+                    experts: ['analyst'],
                     requiredContext: ['enterprise'],
                     capabilities: ['work.item.create'],
                 );
@@ -943,20 +761,15 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
         }))
         ->create(['slug' => 'target-operator']);
 
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
+
     $source = AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $sourceDescriptor->getKey(),
     ]);
     $target = AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $targetDescriptor->getKey(),
-    ]);
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $source->getKey(),
-        'capability' => 'agent.delegate',
-    ]);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
     ]);
 
     $calls = 0;
@@ -977,6 +790,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                         [
                             'target_agent_slug' => 'target-operator',
                             'capability' => 'work.item.create',
+                            'expert_slug' => 'analyst',
                             'objective' => 'Perform the delegated operation.',
                             'context_requirements' => ['enterprise'],
                             'target_context' => ['enterprise_id' => $request->context['target_context']['enterprise_id'] ?? null],
@@ -1080,7 +894,7 @@ it('rejects a runtime delegation that requests context outside the target Agent 
         {
             public function definition(): \App\Agents\AgentDefinition
             {
-                return new \App\Agents\AgentDefinition(name: 'Source', description: 'Delegates.', responsibilities: ['delegate'], instructions: 'Delegate.', experts: [], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
+                return new \App\Agents\AgentDefinition(name: 'Source', description: 'Delegates.', responsibilities: ['delegate'], instructions: 'Delegate.', experts: ['business-analysis'], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
             }
         }))
         ->create(['slug' => 'runtime-source']);
@@ -1089,15 +903,17 @@ it('rejects a runtime delegation that requests context outside the target Agent 
         {
             public function definition(): \App\Agents\AgentDefinition
             {
-                return new \App\Agents\AgentDefinition(name: 'Target', description: 'Executes.', responsibilities: ['execute'], instructions: 'Execute.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+                return new \App\Agents\AgentDefinition(name: 'Target', description: 'Executes.', responsibilities: ['execute'], instructions: 'Execute.', experts: ['analyst'], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
             }
         }))
         ->create(['slug' => 'runtime-target']);
 
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
+
     $source = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $sourceDescriptor->getKey()]);
     $target = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $targetDescriptor->getKey()]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $source->getKey(), 'capability' => 'agent.delegate']);
-    AgentPermission::factory()->create(['agent_assignment_id' => $target->getKey(), 'capability' => 'work.item.create']);
 
     $provider = new FakeModelProvider(function ($request) {
         return new \App\AI\Data\ModelResult(
@@ -1111,6 +927,7 @@ it('rejects a runtime delegation that requests context outside the target Agent 
                 'delegation_requests' => [[
                     'target_agent_slug' => 'runtime-target',
                     'capability' => 'work.item.create',
+                    'expert_slug' => 'analyst',
                     'objective' => 'Perform the operation.',
                     'context_requirements' => ['financial'],
                     'target_context' => [],

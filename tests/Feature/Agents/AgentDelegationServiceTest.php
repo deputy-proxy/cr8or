@@ -4,8 +4,8 @@ use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\FakeModelProvider;
 use App\Data\AgentDelegationRequest;
 use App\Models\AgentAssignment;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\AgentDelegationService;
@@ -21,7 +21,7 @@ function delegationSourceRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Source Delegation Agent', description: 'Originates governed delegated enterprise work.', responsibilities: ['delegate'], instructions: 'Delegate governed enterprise work without bypassing authorization.', experts: [], requiredContext: ['enterprise'], capabilities: ['agent.delegate']);
+            return new \App\Agents\AgentDefinition(name: 'Source Delegation Agent', description: 'Originates governed delegated enterprise work.', responsibilities: ['delegate'], instructions: 'Delegate governed enterprise work without bypassing authorization.', experts: ['business-analysis'], requiredContext: ['enterprise'], capabilities: []);
         }
     });
 }
@@ -32,7 +32,23 @@ function delegationTargetRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Target Delegation Agent', description: 'Receives governed delegated enterprise work.', responsibilities: ['execute'], instructions: 'Execute delegated enterprise work only within governed boundaries.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+            return new \App\Agents\AgentDefinition(name: 'Target Delegation Agent', description: 'Receives governed delegated enterprise work.', responsibilities: ['execute'], instructions: 'Execute delegated enterprise work only within governed boundaries.', experts: ['delegation-target'], requiredContext: ['enterprise'], capabilities: []);
+        }
+    });
+}
+
+function delegationTargetExpertRuntimeClass(): string
+{
+    return get_class(new class extends \App\Experts\Expert
+    {
+        public function definition(): \App\Experts\ExpertDefinition
+        {
+            return new \App\Experts\ExpertDefinition(name: 'Delegation Target', description: 'Test delegated work expert.', responsibilities: ['execute delegated work'], methodology: 'Execute only within enterprise context.', requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+        }
+
+        public function analyze(array $context): array
+        {
+            return ['focus' => 'delegated work', 'available_context' => array_keys($context)];
         }
     });
 }
@@ -43,7 +59,7 @@ function delegationCrossScopeRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Cross Scope Delegation Agent', description: 'Used to verify delegation scope boundaries.', responsibilities: ['execute'], instructions: 'Execute only within the authorized enterprise scope.', experts: [], requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+            return new \App\Agents\AgentDefinition(name: 'Cross Scope Delegation Agent', description: 'Used to verify delegation scope boundaries.', responsibilities: ['execute'], instructions: 'Execute only within the authorized enterprise scope.', experts: ['delegation-target'], requiredContext: ['enterprise'], capabilities: []);
         }
     });
 }
@@ -103,6 +119,8 @@ function delegationAssignment(User $actor, Enterprise $enterprise, string $slug)
         str_contains($slug, 'same-org') => delegationCrossScopeRuntimeClass(),
         default => delegationTargetRuntimeClass(),
     };
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'business-analysis'], ['runtime_class' => \App\Experts\BusinessAnalysisExpert::class, 'enabled' => true]);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'delegation-target'], ['runtime_class' => delegationTargetExpertRuntimeClass(), 'enabled' => true]);
 
     $descriptor = \App\Models\AgentDescriptor::factory()
         ->forRuntimeClass($runtimeClass)
@@ -127,18 +145,13 @@ function delegationRequest(
         capability: $capability,
         prompt: 'Perform the delegated work.',
         targetContext: $targetContext,
+        expertSlugs: ['delegation-target'],
         correlationId: 'delegation-test-123',
         idempotencyKey: 'delegation-'.$targetSlug.'-'.$capability,
     );
 }
 
-function grantDelegationPermission(AgentAssignment $source): void
-{
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $source->getKey(),
-        'capability' => AgentDelegationService::DELEGATION_CAPABILITY,
-    ]);
-}
+function grantDelegationPermission(AgentAssignment $source): void {}
 
 it('authorizes same-scope delegation without persisting a second workflow record', function () {
     $actor = User::factory()->create();
@@ -148,10 +161,6 @@ it('authorizes same-scope delegation without persisting a second workflow record
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
 
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $response = app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'target-agent', targetContext: ['enterprise_id' => $enterprise->getKey()]),
@@ -177,10 +186,6 @@ it('rejects a disabled target Agent', function () {
     $target->update(['enabled' => false]);
 
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'target-agent'),
@@ -208,10 +213,6 @@ it('rejects cross-organization and cross-Enterprise targets', function () {
     $otherOrgTarget = delegationAssignment($actor, $otherEnterprise, 'target-agent');
 
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $otherOrgTarget->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'target-agent'),
@@ -221,11 +222,6 @@ it('rejects cross-organization and cross-Enterprise targets', function () {
         'organization_id' => $enterprise->organization_id,
     ]);
     $sameOrgTarget = delegationAssignment($actor, $sameOrgOtherEnterprise, 'same-org-target');
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $sameOrgTarget->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'same-org-target'),
@@ -240,96 +236,24 @@ it('does not allow the target Agent to inherit a capability it does not already 
     delegationAssignment($actor, $enterprise, 'target-agent');
 
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $source->getKey(),
-        'capability' => 'finance.report.generate',
-    ]);
 
     expect(fn () => app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'target-agent', 'finance.report.generate'),
     ))->toThrow(AuthorizationException::class, 'target Agent is not authorized');
 });
 
-it('preserves approval requirements for source delegation and target capability', function () {
+it('does not use AgentPermission approval flags to authorize delegated capabilities', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $source = delegationAssignment($actor, $enterprise, 'source-agent');
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
 
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $source->getKey(),
-        'capability' => AgentDelegationService::DELEGATION_CAPABILITY,
-    ]);
-    AgentPermission::factory()->requiresApproval()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
-
-    $request = delegationRequest($actor, $source, 'target-agent', targetContext: ['job' => 'job-7']);
-
-    expect(fn () => app(AgentDelegationService::class)->delegate($request))
-        ->toThrow(AuthorizationException::class);
-
-    $sourceApproval = app(\App\Services\ApprovalRequestService::class)->request(
-        $actor,
-        AgentDelegationService::DELEGATION_CAPABILITY,
-        $source,
-        null,
-        ['job' => 'job-7', 'target_agent_slug' => 'target-agent', 'target_capability' => 'work.item.create'],
-    );
-    $targetApproval = app(\App\Services\ApprovalRequestService::class)->request(
-        $actor,
-        'work.item.create',
-        $target,
-        null,
-        ['job' => 'job-7'],
+    $response = app(AgentDelegationService::class)->delegate(
+        delegationRequest($actor, $source, 'target-agent', targetContext: ['job' => 'job-7']),
     );
 
-    $approver = User::factory()->create();
-    Membership::query()->firstOrCreate([
-        'user_id' => $approver->getKey(),
-        'organization_id' => $enterprise->organization_id,
-    ], [
-        'role' => 'owner',
-    ]);
-    $service = app(AgentDelegationService::class);
-    expect(fn () => $service->delegate(new AgentDelegationRequest(
-        actor: $actor,
-        sourceAssignment: $source,
-        targetAgentSlug: 'target-agent',
-        capability: 'work.item.create',
-        prompt: 'Perform the delegated work.',
-        targetContext: ['job' => 'job-7'],
-        sourceApproval: $sourceApproval,
-        targetApproval: $targetApproval,
-        correlationId: 'approval-delegation',
-        idempotencyKey: 'approval-delegation-key',
-    )))->toThrow(AuthorizationException::class);
-
-    $delegation = \App\Models\AgentDelegation::query()
-        ->where('idempotency_key', 'approval-delegation-key')
-        ->firstOrFail();
-
-    app(\App\Services\ApprovalRequestService::class)->bindToDelegation($sourceApproval, $delegation);
-    app(\App\Services\ApprovalRequestService::class)->bindToDelegation($targetApproval, $delegation);
-    app(\App\Services\ApprovalRequestService::class)->approve($sourceApproval, $approver);
-    app(\App\Services\ApprovalRequestService::class)->approve($targetApproval, $approver);
-
-    $response = $service->delegate(new AgentDelegationRequest(
-        actor: $actor,
-        sourceAssignment: $source,
-        targetAgentSlug: 'target-agent',
-        capability: 'work.item.create',
-        prompt: 'Perform the delegated work.',
-        targetContext: ['job' => 'job-7'],
-        sourceApproval: $sourceApproval,
-        targetApproval: $targetApproval,
-        correlationId: 'approval-delegation',
-        idempotencyKey: 'approval-delegation-key',
-    ));
-
-    expect($response->correlationId)->toBe('approval-delegation')
-        ->and($sourceApproval->refresh()->consumed_agent_delegation_id)->toBe($delegation->getKey());
+    expect($response->delegation->status)->toBe(\App\Models\AgentDelegation::STATUS_SUCCEEDED)
+        ->and($response->execution)->not->toBeNull();
 });
 
 it('preserves actor and correlation attribution in the delegation response', function () {
@@ -339,10 +263,6 @@ it('preserves actor and correlation attribution in the delegation response', fun
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
 
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $response = app(AgentDelegationService::class)->delegate(
         delegationRequest($actor, $source, 'target-agent'),
@@ -360,10 +280,6 @@ it('returns the existing successful delegation for an idempotent retry without e
     $source = delegationAssignment($actor, $enterprise, 'source-agent');
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $request = delegationRequest($actor, $source, 'target-agent');
     $first = app(AgentDelegationService::class)->delegate($request);
@@ -379,10 +295,6 @@ it('preserves parent execution linkage and historical identity', function () {
     $source = delegationAssignment($actor, $enterprise, 'source-agent');
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $parent = \App\Models\AgentExecution::factory()->forAssignment($source)->create();
 
@@ -392,6 +304,7 @@ it('preserves parent execution linkage and historical identity', function () {
         targetAgentSlug: 'target-agent',
         capability: 'work.item.create',
         prompt: 'Perform the delegated work.',
+        expertSlugs: ['delegation-target'],
         parentExecution: $parent,
         idempotencyKey: 'parent-key',
     ))->delegation;
@@ -431,10 +344,6 @@ it('links a failed delegation to the failed target Agent execution', function ()
     $source = delegationAssignment($actor, $enterprise, 'source-agent');
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
     grantDelegationPermission($source);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $target->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     app()->bind(ModelProvider::class, fn (): FakeModelProvider => new FakeModelProvider(
         fn () => throw new \App\AI\Exceptions\ModelProviderException(

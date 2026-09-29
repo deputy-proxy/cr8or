@@ -6,6 +6,7 @@ use App\Agents\Agent;
 use App\Data\AgentDelegationRequest;
 use App\Data\AgentDelegationResponse;
 use App\Data\AgentExecutionRequest;
+use App\Experts\BusinessAnalysisExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
@@ -82,8 +83,10 @@ final class AgentDelegationService
             $this->approvalRequests->bindToDelegation($request->targetApproval, $delegation);
         }
 
-        if (! $this->capabilityAuthorizer->allows(
+        if (! $this->capabilityAuthorizer->allowsExpertCapability(
             $source,
+            'business-analysis',
+            new BusinessAnalysisExpert,
             self::DELEGATION_CAPABILITY,
             $source->organization,
             $source->enterprise,
@@ -100,8 +103,25 @@ final class AgentDelegationService
             $this->approvalRequests->consumeForDelegation($request->sourceApproval, $delegation);
         }
 
-        if (! $this->capabilityAuthorizer->allows(
+        $targetExpertSlug = $request->expertSlugs[0] ?? null;
+        if ($targetExpertSlug === null) {
+            throw new AuthorizationException('Delegated capability execution requires Expert provenance.');
+        }
+
+        $targetDescriptor = \App\Models\ExpertDescriptor::query()->where('slug', $targetExpertSlug)->first();
+        if ($targetDescriptor === null || ! $targetDescriptor->enabled) {
+            throw new AuthorizationException("The delegated Expert [{$targetExpertSlug}] is not available.");
+        }
+
+        $targetExpert = app($targetDescriptor->resolveRuntimeClass());
+        if (! $targetExpert instanceof \App\Experts\Expert) {
+            throw new AuthorizationException("The delegated Expert [{$targetExpertSlug}] has an invalid runtime.");
+        }
+
+        if (! $this->capabilityAuthorizer->allowsExpertCapability(
             $target,
+            $targetExpertSlug,
+            $targetExpert,
             $request->capability,
             $target->organization,
             $target->enterprise,

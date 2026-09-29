@@ -15,8 +15,8 @@ use App\Events\OperationExecuted;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\AgentCapabilityAuthorizer;
@@ -35,7 +35,7 @@ function eventAgentClass(): string
                 description: 'Exercises execution event emission.',
                 responsibilities: ['execute'],
                 instructions: 'Execute through governed boundaries.',
-                experts: [],
+                experts: ['operations'],
                 requiredContext: ['enterprise', 'knowledge'],
                 capabilities: ['work.item.create'],
             );
@@ -52,6 +52,7 @@ function eventAgentAssignment(User $actor, Enterprise $enterprise): AgentAssignm
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(eventAgentClass())->create([
         'slug' => 'event-test-agent',
     ]);
+    ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => \App\Experts\OperationsExpert::class, 'enabled' => true]);
 
     return AgentAssignment::factory()->forEnterprise($enterprise)->create([
         'agent_descriptor_id' => $descriptor->getKey(),
@@ -128,10 +129,6 @@ it('emits governed capability and operation events without exposing model output
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = eventAgentAssignment($actor, $enterprise);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
-    ]);
 
     $provider = new FakeModelProvider(fn ($request) => new ModelResult(
         text: 'Secret internal reasoning that must not enter lifecycle events.',
@@ -139,6 +136,7 @@ it('emits governed capability and operation events without exposing model output
             'answer' => 'Safe answer.',
             'capability_requests' => [[
                 'capability' => 'work.item.create',
+                'expert_slug' => 'operations',
                 'target_context' => ['enterprise_id' => $enterprise->getKey()],
                 'input_payload' => ['name' => 'Event work item'],
             ]],

@@ -20,9 +20,9 @@ final readonly class CapabilityRequest
         public AgentAssignment $assignment,
         public AgentExecution $execution,
         public User $actor,
-        public array $targetContext = [],
-        public array $inputPayload = [],
-        public ?string $expertSlug = null,
+        public array $targetContext,
+        public array $inputPayload,
+        public string $expertSlug,
         public ?ApprovalRequest $approval = null,
         public ?string $correlationId = null,
         public ?string $idempotencyKey = null,
@@ -40,7 +40,7 @@ final readonly class CapabilityRequest
             throw new InvalidArgumentException('A Capability request execution must belong to its actor.');
         }
 
-        if ($this->expertSlug !== null && trim($this->expertSlug) === '') {
+        if (trim($this->expertSlug) === '') {
             throw new InvalidArgumentException('A Capability request Expert identifier must be non-empty.');
         }
 

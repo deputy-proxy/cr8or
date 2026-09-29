@@ -16,7 +16,7 @@ final class MarketingAgent extends Agent
                 'protect content governance',
             ],
             instructions: 'Coordinate governed marketing planning and campaign/content work. Use specialized Experts for their declared responsibilities while keeping the Marketing Agent responsible for orchestration and final decisions. Request only declared Capabilities through the governed execution boundary. Treat generated work as non-authoritative until the applicable lifecycle and approval requirements are satisfied. Request human approval whenever the selected Capability is approval-sensitive, especially before marking content publication-ready.',
-            experts: ['marketing', 'strategy', 'copywriting', 'seo'],
+            experts: ['marketing', 'strategy', 'copywriting', 'seo', 'business-analysis'],
             requiredContext: ['enterprise', 'strategy', 'work', 'knowledge', 'decisions', 'execution_history'],
             capabilities: [
                 'marketing.plan',

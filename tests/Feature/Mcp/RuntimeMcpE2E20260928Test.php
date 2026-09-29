@@ -1,5 +1,6 @@
 <?php
 
+use App\Agents\OperationsAgent;
 use App\AI\Contracts\ModelProvider;
 use App\AI\Data\ModelResult;
 use App\AI\Providers\FakeModelProvider;
@@ -44,7 +45,6 @@ use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
@@ -121,17 +121,13 @@ it('routes the governed agent.execute MCP entrypoint explicitly to interactive m
     $user = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
-    $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\CeoAgent::class], ['slug' => 'governed-interactive-mcp-test-agent', 'enabled' => true]);
+    $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => OperationsAgent::class], ['slug' => 'governed-interactive-mcp-test-agent', 'enabled' => true]);
     $assignment = AgentAssignment::query()->create([
         'agent_descriptor_id' => $agent->getKey(),
         'organization_id' => $enterprise->organization_id,
         'enterprise_id' => $enterprise->getKey(),
         'enabled' => true,
         'status' => AgentAssignment::STATUS_READY,
-    ]);
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'work.item.create',
     ]);
 
     $response = Cr8orServer::actingAs($user, 'api')->tool(ExecuteAgentTool::class, [
@@ -142,6 +138,7 @@ it('routes the governed agent.execute MCP entrypoint explicitly to interactive m
         'capability_requests' => [[
             'step' => 1,
             'capability' => 'work.item.create',
+            'expert_slug' => 'operations',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'input_payload' => ['name' => 'MCP interactive capability'],
             'idempotency_key' => 'mcp-interactive-boundary-step',
@@ -278,10 +275,8 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
     $productAssignmentId = $productAssignment['id'];
 
     foreach (['agent.delegate', 'marketing.plan', 'strategy.create'] as $capability) {
-        AgentPermission::factory()->create(['agent_assignment_id' => $marketingAssignmentId, 'capability' => $capability]);
     }
     foreach (['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'] as $capability) {
-        AgentPermission::factory()->create(['agent_assignment_id' => $productAssignmentId, 'capability' => $capability]);
     }
 
     $objective = e2eCall($server, CreateObjectiveTool::class, [
@@ -355,6 +350,7 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
         'mode' => 'interactive',
         'capability_requests' => [[
             'capability' => 'strategy.create',
+            'expert_slug' => 'strategy',
             'target_context' => ['objective_id' => $objective['id']],
             'input_payload' => ['objective_id' => $objective['id'], 'name' => 'E2E Interactive Strategy'],
             'idempotency_key' => 'e2e-interactive-strategy',

@@ -7,7 +7,6 @@ use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\Providers\FakeModelProvider;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
-use App\Models\AgentPermission;
 use App\Models\Campaign;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
@@ -25,7 +24,7 @@ function contentAgentRuntimeClass(): string
     {
         public function definition(): \App\Agents\AgentDefinition
         {
-            return new \App\Agents\AgentDefinition(name: 'Content Agent', description: 'Creates governed enterprise content.', responsibilities: ['content'], instructions: 'Create governed enterprise content as a draft within authorized boundaries.', experts: [], requiredContext: ['enterprise'], capabilities: ['marketing.content.create', 'marketing.content.update']);
+            return new \App\Agents\AgentDefinition(name: 'Content Agent', description: 'Creates governed enterprise content.', responsibilities: ['content'], instructions: 'Create governed enterprise content as a draft within authorized boundaries.', experts: ['copywriting'], requiredContext: ['enterprise'], capabilities: ['marketing.content.create', 'marketing.content.update']);
         }
     });
 }
@@ -36,7 +35,7 @@ it('keeps AI-generated content as a draft with execution and decision provenance
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.create']);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(['slug' => 'copywriting'], ['runtime_class' => \App\Experts\CopywritingExpert::class, 'enabled' => true]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),
@@ -89,7 +88,7 @@ it('rejects AI revision of approved content', function () {
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.update']);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(['slug' => 'copywriting'], ['runtime_class' => \App\Experts\CopywritingExpert::class, 'enabled' => true]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),
@@ -106,7 +105,7 @@ it('does not create content when the governed Agent provider fails', function ()
     Membership::factory()->owner()->create(['user_id' => $actor, 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(contentAgentRuntimeClass())->create(['slug' => 'content-failure-agent']);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment, 'capability' => 'marketing.content.create']);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(['slug' => 'copywriting'], ['runtime_class' => \App\Experts\CopywritingExpert::class, 'enabled' => true]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise,
         'marketing_strategy_id' => MarketingStrategy::factory()->create(['enterprise_id' => $enterprise]),

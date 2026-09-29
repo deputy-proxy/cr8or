@@ -40,7 +40,7 @@ Capability discovery remains derived from enabled runtime Agent and Expert decla
 
 ## Scope
 
-The registry covers every state-changing MCP Tool. Human authorization still uses the target domain Policy, while Agent-backed authorization additionally requires the Tool's explicit Capability permission. The generic mutation/transition fallbacks are not registered and cannot be used as Agent authority; governed mutation and transition Tools must resolve directly through their explicit CapabilityRegistry definitions.
+The registry covers every state-changing MCP Tool. Human authorization still uses the target domain Policy, while Agent-backed authorization additionally requires the Tool's explicit Expert-owned Capability authorization. The generic mutation/transition fallbacks are not registered and cannot be used as Agent authority; governed mutation and transition Tools must resolve directly through their explicit CapabilityRegistry definitions.
 ## Application invocation boundary
 
 Application code invokes a governed Capability through `App\\Services\\CapabilityInvocationService` using `App\\Data\\CapabilityInvocationRequest`.
@@ -55,7 +55,7 @@ The invocation service is transport-independent. It resolves the Capability only
 
 MCP governed Tools are interface adapters and delegate execution through the application invocation boundary. MCP remains a transport/interface surface and is not required for application-level Capability execution.
 
-An application invocation may be human-scoped to an Enterprise or Agent-backed with an Assignment and Execution. Agent-backed requests retain Enterprise isolation and Agent Capability permissions. Approval-sensitive Agent requests return a resumable `waiting` result until a valid approval is supplied.
+An application invocation may be human-scoped to an Enterprise or Agent-backed with an Assignment and Execution. Agent-backed requests retain Enterprise isolation and Expert-owned Capability authorization. Approval-sensitive Agent requests return a resumable `waiting` result until a valid approval is supplied.
 ### Enterprise Context
 
 | Capability | Operation | MCP adapter | Purpose |

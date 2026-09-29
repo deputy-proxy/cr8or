@@ -4,8 +4,8 @@ use App\Contracts\PublishingProvider;
 use App\Data\PublishingProviderResult;
 use App\Exceptions\PublishingProviderException;
 use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
-use App\Models\AgentPermission;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
@@ -57,33 +57,22 @@ it('requires publication-ready content and same-enterprise active accounts', fun
 
 it('requires matching approval for an Agent publication capability', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+    $descriptor = AgentDescriptor::factory()->forRuntimeClass(\App\Agents\MarketingAgent::class)->create(['slug' => 'marketing']);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->id]);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(['slug' => 'marketing'], ['runtime_class' => \App\Experts\MarketingExpert::class, 'enabled' => true]);
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $user->id, 'actor_name' => $user->name]);
-    AgentPermission::factory()->requiresApproval()->create(['agent_assignment_id' => $assignment->id, 'capability' => 'publication.publish']);
 
     expect(fn () => app(PublishingService::class)->schedule(
-        $user,
-        $content,
-        $account,
-        now()->addHour(),
-        null,
-        $assignment,
-        $execution,
+        $user, $content, $account, now()->addHour(), null, $assignment, $execution,
     ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
 
-    $approval = app(ApprovalRequestService::class)->request($user, 'publication.publish', $assignment, $execution, ['content_item_id' => $content->id]);
+    $approval = app(ApprovalRequestService::class)->request($user, 'publication.publish', $assignment, $execution, ['content_item_id' => $content->id], null, 'marketing');
     $approver = User::factory()->create();
     Membership::factory()->admin()->create(['user_id' => $approver->id, 'organization_id' => $org->id]);
     app(ApprovalRequestService::class)->approve($approval, $approver);
 
     $p = app(PublishingService::class)->schedule(
-        $user,
-        $content,
-        $account,
-        now()->addHour(),
-        $approval,
-        $assignment,
-        $execution,
+        $user, $content, $account, now()->addHour(), $approval, $assignment, $execution,
     );
     expect($p->approval_request_id)->toBe($approval->id);
 });
@@ -100,10 +89,7 @@ it('reconciles a submitted publication and preserves result history', function (
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     $p = app(PublishingService::class)->submit($user, $p);
     $p = app(PublishingService::class)->reconcile($p, new PublishingProviderResult(
-        $p->external_id,
-        $p->external_url,
-        'succeeded',
-        ['source' => 'reconciliation'],
+        $p->external_id, $p->external_url, 'succeeded', ['source' => 'reconciliation'],
     ));
     expect($p->status)->toBe(Publication::STATUS_SUCCEEDED)->and($p->results()->count())->toBe(2);
 });
@@ -127,17 +113,13 @@ it('retries a failed publication idempotently', function () {
     expect(fn () => app(PublishingService::class)->submit($user, $p))->toThrow(PublishingProviderException::class);
     $provider->shouldFail = false;
     $p = app(PublishingService::class)->submit($user, $p->refresh());
-    expect($p->id)->toBeGreaterThan(0)
-        ->and(Publication::query()->count())->toBe(1)
-        ->and($p->publishingJobs()->first()->attempts)->toBe(2);
+    expect($p->id)->toBeGreaterThan(0)->and(Publication::query()->count())->toBe(1)->and($p->publishingJobs()->first()->attempts)->toBe(2);
 });
 
 it('does not allow direct publication status mutation to bypass the lifecycle service', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
-
     $publication->status = Publication::STATUS_SUCCEEDED;
-
     expect(fn () => $publication->save())->toThrow(LogicException::class);
 });
 
@@ -151,11 +133,15 @@ it('keeps publication results immutable and organization scoped', function () {
     expect(PublicationResult::query()->where('publication_id', $p->id)->count())->toBe(1);
 });
 
-it('uses the same server-side capability boundary for MCP publication authorization', function () {
+it('requires Expert provenance and approval for MCP publication authorization', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
-    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
+    $descriptor = AgentDescriptor::factory()->forRuntimeClass(\App\Agents\MarketingAgent::class)->create(['slug' => 'marketing']);
+    $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->id]);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(['slug' => 'marketing'], ['runtime_class' => \App\Experts\MarketingExpert::class, 'enabled' => true]);
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $user->id]);
-    AgentPermission::factory()->create(['agent_assignment_id' => $assignment->id, 'capability' => 'publication.publish']);
 
-    expect(app(McpCapabilityAuthorizer::class)->authorizeMutation($user, 'publication.publish', $enterprise, $assignment->id, $execution->id, null, ['content_item_id' => $content->id], ['update', $content]))->toBeNull();
+    expect(fn () => app(McpCapabilityAuthorizer::class)->authorizeMutation(
+        $user, 'publication.publish', $enterprise, $assignment->id, $execution->id, null,
+        ['content_item_id' => $content->id], ['update', $content], 'marketing',
+    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
 });

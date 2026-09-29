@@ -63,10 +63,10 @@ Authorization is enforced by CR8OR server-side for the relevant actor, organizat
 Capability authorization has three independent dimensions:
 
 - **Availability:** the Agent or Expert runtime declares the Capability it can use. This is runtime metadata, not authority.
-- **Permission:** the Agent assignment has an explicit server-side permission for the Capability in the applicable organization and Enterprise scope.
-- **Approval:** a separate approval decision is required when that permission is configured to require approval. Approval never follows merely from Capability availability or permission.
+- **Authorization:** the Agent assignment must authorize the referenced Expert, and that Expert must own the Capability in the applicable organization and Enterprise scope.
+- **Approval:** a separate approval decision is required when the Capability definition requires approval. Approval never follows merely from Capability availability or permission.
 
-An Expert-owned Capability does not require duplicate Agent permission. An Agent that is not authorized to use the Expert is denied, and an Expert cannot request a Capability it does not declare. Multiple Experts may reuse a Capability only where the registry explicitly permits that ownership model.
+An Expert-owned Capability is authorized through its owning Expert; no separate AgentPermission authority exists. An Agent that is not authorized to use the Expert is denied, and an Expert cannot request a Capability it does not declare. Multiple Experts may reuse a Capability only where the registry explicitly permits that ownership model.
 
 ## Invocation Boundary
 
