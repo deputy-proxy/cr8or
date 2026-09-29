@@ -166,8 +166,10 @@ it('returns a failed invocation when Expert reasoning fails', function () {
         ->and($result->metadata['failure_reason'])->toBe('reasoning failed');
 });
 
-it('returns governed Capability requests only when the Expert declares and the Agent permits them', function () {
+it('returns governed Capability requests when the Expert declares them without duplicate Agent permission', function () {
     [$actor, $assignment, $execution, $enterprise] = invocationContractSetup(expertSlug: 'capability-expert');
+
+    $assignment->permissions()->where('capability', 'work.item.create')->delete();
 
     $result = invokeContract(
         $actor,

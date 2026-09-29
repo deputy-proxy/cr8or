@@ -96,6 +96,8 @@ final class ExpertInvocationService
                     null,
                     $request->execution,
                     $request->targetContext,
+                    null,
+                    true,
                 )) {
                     throw new AuthorizationException(sprintf(
                         'The Agent is not authorized to use capability [%s] through Expert [%s].',

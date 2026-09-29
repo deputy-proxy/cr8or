@@ -1,5 +1,6 @@
 <?php
 
+use App\Agents\MarketingAgent;
 use App\Enums\MembershipRole;
 use App\Experts\MarketingExpert;
 use App\Mcp\Servers\Cr8orServer;
@@ -15,6 +16,7 @@ use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Models\AgentAssignment;
+use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
 use App\Models\AgentPermission;
 use App\Models\ApprovalRequest;
@@ -68,7 +70,7 @@ it('registers the initial governed capability catalogue for an organization memb
     ]);
 });
 
-it('uses the same Agent capability authorization boundary for Expert MCP execution', function () {
+it('uses the Agent to Expert and Expert to Capability boundaries for Expert MCP execution', function () {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
     Membership::factory()->owner()->create([
@@ -77,22 +79,11 @@ it('uses the same Agent capability authorization boundary for Expert MCP executi
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
+    $assignment->update(['agent_descriptor_id' => AgentDescriptor::factory()->forRuntimeClass(MarketingAgent::class)->create()->getKey()]);
+    $assignment->load('agentDescriptor');
     ExpertDescriptor::factory()
         ->forRuntimeClass(MarketingExpert::class)
         ->create(['slug' => 'marketing']);
-
-    Cr8orServer::actingAs($actor, 'api')
-        ->tool(PlanMarketingTool::class, [
-            'enterprise_id' => $enterprise->getKey(),
-            'agent_assignment_id' => $assignment->getKey(),
-            'agent_execution_id' => $execution->getKey(),
-        ])
-        ->assertHasErrors();
-
-    AgentPermission::factory()->create([
-        'agent_assignment_id' => $assignment->getKey(),
-        'capability' => 'marketing.plan',
-    ]);
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(PlanMarketingTool::class, [

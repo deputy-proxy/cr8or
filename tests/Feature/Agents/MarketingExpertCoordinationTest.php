@@ -142,21 +142,21 @@ it('denies a missing routed Expert before business reasoning continues', functio
     ))->toThrow(AuthorizationException::class, 'could not be resolved');
 });
 
-it('denies an Expert Capability that the parent Agent assignment does not permit', function (): void {
+it('allows an Expert-owned Capability without duplicate parent Agent permission', function (): void {
     [$actor, $enterprise, $assignment, $execution] = marketingExpertCoordinationSetup([
         'marketing.plan',
     ]);
 
-    expect(fn () => invokeMarketingExpert(
+    $result = invokeMarketingExpert(
         $actor,
         $enterprise,
         $assignment,
         $execution,
         'copywriting',
-    ))->toThrow(
-        AuthorizationException::class,
-        'not authorized to use capability [marketing.content.create]',
     );
+
+    expect($result->succeeded())->toBeTrue()
+        ->and($result->requestedCapabilities[0]->capability)->toBe('marketing.content.create');
 });
 
 it('preserves the parent AgentExecution correlation for successful Expert Capability requests', function (): void {

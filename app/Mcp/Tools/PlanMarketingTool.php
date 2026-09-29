@@ -17,6 +17,11 @@ use Laravel\Mcp\Server\Attributes\Name;
 #[Description('Create a structured marketing plan from authorized Enterprise, strategy and knowledge context.')]
 final class PlanMarketingTool extends GovernedCapabilityTool
 {
+    protected function expertSlug(): string
+    {
+        return 'marketing';
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [

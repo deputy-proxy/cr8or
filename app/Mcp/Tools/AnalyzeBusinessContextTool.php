@@ -17,6 +17,11 @@ use Laravel\Mcp\Server\Attributes\Name;
 #[Description('Analyze authorized Enterprise, strategy, work and financial context with the Business Analysis Expert.')]
 final class AnalyzeBusinessContextTool extends GovernedCapabilityTool
 {
+    protected function expertSlug(): string
+    {
+        return 'business-analysis';
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [

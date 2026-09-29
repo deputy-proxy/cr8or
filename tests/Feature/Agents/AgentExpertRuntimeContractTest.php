@@ -248,6 +248,9 @@ it('propagates the canonical correlation and Capability Request through Expert e
         ->create(['slug' => 'runtime-contract-expert']);
 
     $agent->definition();
+    $agentDescriptor = AgentDescriptor::factory()->forRuntimeClass(RuntimeContractTestAgent::class)->create(['slug' => 'runtime-contract-test-agent']);
+    $assignment->update(['agent_descriptor_id' => $agentDescriptor->getKey()]);
+    $assignment->load('agentDescriptor');
 
     AgentPermission::query()->firstOrCreate([
         'agent_assignment_id' => $assignment->getKey(),
