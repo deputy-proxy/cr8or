@@ -284,3 +284,7 @@ The state-changing Knowledge MCP adapters `create-knowledge-item`, `create-knowl
 ### Exception translation boundary
 
 MCP tools delegate exception-to-failure mapping to `App\\Services\\FailureTranslator`. MCP is a transport boundary only: it serializes the canonical failure contract and never invents a second exception taxonomy. Unknown exceptions become `internal.unexpected`; internal diagnostics remain server-side.
+
+### Capability failure provenance
+
+Governed MCP tools resolve their Capability → Operation mapping from CapabilityRegistry. Operation failures are translated through the canonical failure boundary with operation and capability provenance before MCP serialization. Authorization and approval failures remain distinct failure categories and are not collapsed into generic Operation failures.

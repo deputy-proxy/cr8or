@@ -792,6 +792,7 @@ final class AgentExecutionService
                 $classification = $failurePolicy->classify($error);
                 $execution->failure_category = $classification['category']->value;
                 $execution->failure_code = $error->code;
+                $execution->failure_provenance = $error->provenance->toArray();
 
                 if ($allowWorkerRetry && $classification['retryable']) {
                     $execution->retry_count = min($execution->retry_count + 1, $execution->max_retries);
@@ -834,6 +835,7 @@ final class AgentExecutionService
                 $this->consolidateMemory($memoryRuntime, $actor, $execution, $lastResult, $lastDecision, $correlation);
 
                 if ($step instanceof AgentExecutionStep && $step->status === AgentExecutionStep::STATUS_RUNNING) {
+                    $step->failure_provenance = $error->provenance->toArray();
                     $step->fail($error->message, $error->code)->save();
                 }
 

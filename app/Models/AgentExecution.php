@@ -36,6 +36,7 @@ use LogicException;
  * @property string|null $external_execution_id
  * @property string|null $failure_code
  * @property string|null $failure_category
+ * @property array<string, mixed>|null $failure_provenance
  * @property int $retry_count
  * @property int $max_retries
  * @property int $max_steps
@@ -75,6 +76,7 @@ use LogicException;
     'external_execution_id',
     'failure_code',
     'failure_category',
+    'failure_provenance',
     'retry_count',
     'max_retries',
     'max_steps',
@@ -226,6 +228,7 @@ class AgentExecution extends Model
             'runtime_policy' => 'array',
             'execution_context' => 'array',
             'last_result' => 'array',
+            'failure_provenance' => 'array',
         ];
     }
 

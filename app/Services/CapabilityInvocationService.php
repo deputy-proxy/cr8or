@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\AI\Contracts\FailureProvenance;
 use App\Capabilities\CapabilityDefinition;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\CapabilityInvocationRequest;
@@ -15,6 +16,7 @@ use App\Models\ApprovalRequest;
 use App\Models\Organization;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 final class CapabilityInvocationService
 {
@@ -177,7 +179,22 @@ final class CapabilityInvocationService
             $input['delegation'] ??= null;
         }
 
-        return $this->capabilities->operation($definition->key)->execute($request->actor, $input);
+        try {
+            return $this->capabilities->operation($definition->key)->execute($request->actor, $input);
+        } catch (CapabilityExecutionException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            $failure = app(FailureTranslator::class)->translate(
+                $exception,
+                correlationId: $request->resolvedCorrelationId(),
+                provenance: new FailureProvenance(
+                    operation: $definition->operation,
+                    capability: $definition->key,
+                ),
+            );
+
+            throw new CapabilityExecutionException($failure, $exception);
+        }
     }
 
     private function dispatchRequested(CapabilityInvocationRequest $request, CapabilityDefinition $definition): void
