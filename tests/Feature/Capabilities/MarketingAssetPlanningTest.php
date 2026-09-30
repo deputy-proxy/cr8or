@@ -184,3 +184,30 @@ it('executes planning through the Agent and Copywriting Expert without invoking 
 
     expect($asset->status)->toBe(App\Models\Asset::STATUS_PENDING)->and($asset->script_id)->toBe($script->getKey());
 });
+it('persists structured asset requirements through governed script creation', function (): void {
+    $fixture = assetPlanningFixture();
+    extract($fixture);
+
+    $script = app(App\Operations\CreateScript::class)->execute($actor, [
+        'content_item' => $item,
+        'content_item_id' => $item->getKey(),
+        'agent_assignment_id' => $assignment->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'title' => 'Script with asset requirements',
+        'body' => 'Draft copy.',
+        'asset_requirements' => [[
+            'type' => 'video',
+            'purpose' => 'launch reel',
+            'channel' => 'social',
+            'platform' => 'instagram',
+            'format' => 'reel',
+            'dimensions' => ['width' => 1080, 'height' => 1920, 'aspect_ratio' => '9:16'],
+            'duration_seconds' => 30,
+            'creative_brief' => 'Short vertical launch video.',
+        ]],
+    ]);
+
+    expect($script->asset_requirements)->toHaveCount(1)
+        ->and($script->asset_requirements[0]['format'])->toBe('reel')
+        ->and($script->asset_requirements[0]['duration_seconds'])->toBe(30);
+});
