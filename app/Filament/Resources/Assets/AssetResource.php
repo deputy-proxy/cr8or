@@ -37,10 +37,10 @@ class AssetResource extends Resource
     {
         return $schema->components([
             Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
-            Select::make('content_item_id')->relationship('contentItem', 'title')->searchable()->preload()->required(),
+            Select::make('content_item_id')->relationship('contentItem', 'title')->searchable()->preload()->required(), Select::make('script_id')->relationship('script', 'title')->searchable()->preload(),
             TextInput::make('name')->maxLength(255),
             TextInput::make('type')->maxLength(255),
-            Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->required(),
+            Select::make('status')->options(['pending' => 'Pending', 'active' => 'Active', 'archived' => 'Archived'])->required(),
         ]);
     }
 

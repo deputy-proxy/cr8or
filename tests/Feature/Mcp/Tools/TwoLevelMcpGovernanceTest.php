@@ -6,6 +6,7 @@ use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
 use App\Mcp\Tools\ConnectSocialAccountTool;
+use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
@@ -59,6 +60,7 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         CreateContentSeriesTool::class,
         UpdateContentSeriesTool::class,
         TransitionContentSeriesTool::class,
+        CreateAssetTool::class,
         CreateAudienceTool::class,
         UpdateAudienceTool::class,
         ArchiveAudienceTool::class,

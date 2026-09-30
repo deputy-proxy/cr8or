@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
+use App\Models\Asset;
 use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
@@ -204,6 +205,59 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
+    public function createPlannedAsset(User $actor, Script $script, array $attributes): Asset
+    {
+        Gate::forUser($actor)->authorize('createForScript', [Asset::class, $script]);
+
+        $assignmentId = $attributes['agent_assignment_id'] ?? null;
+        $executionId = $attributes['agent_execution_id'] ?? null;
+        if ($assignmentId === null || $executionId === null) {
+            throw new LogicException('Planned assets require Agent assignment and execution provenance.');
+        }
+
+        $execution = AgentExecution::query()->findOrFail((int) $executionId);
+        if ((int) $assignmentId !== (int) $script->agent_assignment_id
+            || (int) $execution->agent_assignment_id !== (int) $assignmentId
+            || (int) $execution->enterprise_id !== (int) $script->contentItem->enterprise_id
+        ) {
+            throw new LogicException('Planned asset provenance must match the script assignment and enterprise.');
+        }
+
+        $requirement = [
+            'type' => $attributes['type'],
+            'purpose' => $attributes['purpose'],
+            'channel' => $attributes['channel'],
+            'platform' => $attributes['platform'],
+            'format' => $attributes['format'],
+            'dimensions' => array_filter([
+                'width' => $attributes['width'] ?? null,
+                'height' => $attributes['height'] ?? null,
+                'aspect_ratio' => $attributes['aspect_ratio'] ?? null,
+            ], static fn ($value) => $value !== null),
+            'duration_seconds' => $attributes['duration_seconds'] ?? null,
+            'creative_brief' => $attributes['creative_brief'],
+        ];
+
+        return $script->assets()->create([
+            'enterprise_id' => $script->contentItem->enterprise_id,
+            'content_item_id' => $script->content_item_id,
+            'script_id' => $script->getKey(),
+            'agent_assignment_id' => $assignmentId,
+            'agent_execution_id' => $executionId,
+            'name' => $attributes['name'],
+            'type' => $attributes['type'],
+            'status' => Asset::STATUS_PENDING,
+            'purpose' => $attributes['purpose'],
+            'channel' => $attributes['channel'],
+            'platform' => $attributes['platform'],
+            'format' => $attributes['format'],
+            'dimensions' => $requirement['dimensions'],
+            'duration_seconds' => $attributes['duration_seconds'] ?? null,
+            'creative_brief' => $attributes['creative_brief'],
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
     public function createScript(User $actor, ContentItem $item, array $attributes): Script
     {
         Gate::forUser($actor)->authorize('createForContentItem', [Script::class, $item]);
@@ -232,6 +286,7 @@ final class DomainResourceService
             'agent_execution_id' => $executionId,
             'title' => $attributes['title'],
             'body' => $attributes['body'],
+            'asset_requirements' => $attributes['asset_requirements'] ?? null,
         ]);
     }
 

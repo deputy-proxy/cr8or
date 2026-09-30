@@ -16,6 +16,7 @@ use App\Mcp\Tools\CancelAgentExecutionTool;
 use App\Mcp\Tools\ConnectSocialAccountTool;
 use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\CreateAgentExecutionTool;
+use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
@@ -212,6 +213,7 @@ class Cr8orServer extends Server
         UpdateCampaignTool::class,
         TransitionCampaignTool::class,
         CreateContentSeriesTool::class,
+        CreateAssetTool::class,
         CreateEnterpriseTool::class,
         CreateEnterpriseContextTool::class,
         UpdateContentSeriesTool::class,
