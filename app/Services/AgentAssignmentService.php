@@ -154,6 +154,7 @@ final class AgentAssignmentService
             'id' => $assignment->getKey(),
             'organization_id' => $assignment->organization_id,
             'enterprise_id' => $assignment->enterprise_id,
+            'enterprise_slug' => $assignment->enterprise?->slug,
             'agent_descriptor_id' => $assignment->agent_descriptor_id,
             'enabled' => $assignment->enabled,
             'status' => $assignment->status,

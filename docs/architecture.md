@@ -44,6 +44,8 @@ Agent and Expert runtime components use canonical immutable definition objects f
 
 MCP translates AI-facing requests into controlled CR8OR capabilities. MCP must authenticate the caller, establish authorization context, validate inputs, and invoke application/domain services. MCP is not a second domain layer.
 
+Enterprise identity is resolved through `EnterpriseIdentityResolver` at the application boundary. The human-facing canonical identity is the Enterprise slug; the database id is an internal reference. A named-enterprise request must preserve the resolved id/slug pair through execution context, and an id/slug mismatch fails closed rather than switching Enterprise scope.
+
 ## Orchestration and Execution Boundaries
 
 n8n is an optional future automation capability that may be exposed through MCP and used by an Automatiser Expert. If connected, it may coordinate external steps, but CR8OR remains the source of truth for resulting business state.

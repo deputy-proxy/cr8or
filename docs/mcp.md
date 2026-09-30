@@ -127,6 +127,8 @@ List tools return `result.items` plus a bounded `pagination` object containing `
 
 Get tools return a single `result` object and first resolve the requested record inside the actor's authorized organization/enterprise scope, followed by the resource policy's `view` authorization.
 
+`get-enterprise` is the canonical enterprise identity lookup. It accepts either the internal `id` or a canonical `slug`; named-enterprise workflows should use `slug`. Human-entered values such as `valid.guide` are normalized to the canonical slug `valid-guide`. When both `id` and `slug` are supplied, they must identify the same Enterprise. Slug-only resolution is rejected when the actor can access multiple organizations containing the same slug. The result always includes the authoritative `id` and `slug`.
+
 Agent and Expert descriptors use their existing policy boundary. Capability discovery is runtime-derived rather than backed by a persistent Capability model: a capability identifier is the stable capability string exposed by enabled Agent/Expert runtimes, and `get-capability` accepts that string as its `id`. This avoids inventing a second persistent source of truth for runtime capability metadata.
 
 Discovery responses expose stable identifiers, human-readable names/titles where the underlying resource has them, relevant status and parent identifiers, and timestamps. They do not return raw Eloquent models or persistence internals.
@@ -292,3 +294,7 @@ Governed MCP tools resolve their Capability → Operation mapping from Capabilit
 ### Diagnostic workflow
 
 MCP responses expose the correlation ID, diagnostic ID and canonical failure code needed for support correlation. They do not expose exception classes, traces, credentials, provider payloads or model context. Operators use the correlation ID to locate the structured failure event and the diagnostic ID to locate the sanitized internal diagnostic record.
+
+## Named-enterprise strategy workflow
+
+When a strategy request names an Enterprise rather than providing an internal id, resolve the Enterprise first with `get-enterprise` using its canonical slug. For example, `valid.guide` normalizes to `valid-guide`. Continue the strategy workflow using the resolved Enterprise id and preserve the resolved id/slug pair through Agent assignment and execution context. Never derive an Enterprise id by inference or silently substitute a different Enterprise.
