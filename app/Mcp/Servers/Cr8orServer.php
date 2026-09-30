@@ -117,6 +117,7 @@ use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
+use App\Mcp\Tools\VerifyMarketingGraphTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -214,6 +215,7 @@ class Cr8orServer extends Server
         TransitionCampaignTool::class,
         CreateContentSeriesTool::class,
         CreateAssetTool::class,
+        VerifyMarketingGraphTool::class,
         CreateEnterpriseTool::class,
         CreateEnterpriseContextTool::class,
         UpdateContentSeriesTool::class,
