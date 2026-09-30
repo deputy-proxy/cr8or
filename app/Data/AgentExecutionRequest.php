@@ -29,6 +29,7 @@ final readonly class AgentExecutionRequest
         public ?string $correlationId = null,
         public ?AgentDelegation $delegation = null,
         public ?Workflow $workflow = null,
+        public ?string $workflowTemplate = null,
         public ?string $expertRoutingKey = null,
         public ?string $idempotencyKey = null,
         public bool $allowWorkerRetry = false,
@@ -60,6 +61,10 @@ final readonly class AgentExecutionRequest
             if (trim($slug) === '') {
                 throw new InvalidArgumentException('Agent execution Expert identifiers must be non-empty strings.');
             }
+        }
+
+        if ($this->workflowTemplate !== null && trim($this->workflowTemplate) === '') {
+            throw new InvalidArgumentException('Agent execution workflow templates must be non-empty strings.');
         }
 
         if ($this->expertRoutingKey !== null && trim($this->expertRoutingKey) === '') {
