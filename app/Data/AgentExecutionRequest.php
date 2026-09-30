@@ -6,6 +6,7 @@ use App\Enums\AgentExecutionMode;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\User;
+use App\Models\Workflow;
 use InvalidArgumentException;
 
 final readonly class AgentExecutionRequest
@@ -27,6 +28,7 @@ final readonly class AgentExecutionRequest
         public array $options = [],
         public ?string $correlationId = null,
         public ?AgentDelegation $delegation = null,
+        public ?Workflow $workflow = null,
         public ?string $expertRoutingKey = null,
         public ?string $idempotencyKey = null,
         public bool $allowWorkerRetry = false,

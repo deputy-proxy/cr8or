@@ -98,6 +98,8 @@ use LogicException;
     'next_step',
     'state_reason',
     'idempotency_key',
+    'workflow_id',
+    'workflow_version',
 ])]
 class AgentExecution extends Model
 {
@@ -170,6 +172,12 @@ class AgentExecution extends Model
                 $execution->{$field} = $execution->getRawOriginal($field);
             }
         });
+    }
+
+    /** @return BelongsTo<Workflow, $this> */
+    public function workflow(): BelongsTo
+    {
+        return $this->belongsTo(Workflow::class);
     }
 
     /** @return BelongsTo<Organization, $this> */
@@ -415,6 +423,18 @@ class AgentExecution extends Model
 
     private function validateState(): void
     {
+        if ($this->workflow_id !== null) {
+            $workflow = Workflow::query()->find($this->workflow_id);
+            if ($workflow === null || $workflow->enterprise_id !== $this->enterprise_id) {
+                throw new LogicException('Agent execution workflow must belong to its enterprise.');
+            }
+            if ($this->workflow_version !== null && $this->workflow_version !== $workflow->version) {
+                throw new LogicException('Agent execution workflow version must match the bound Workflow.');
+            }
+            if ($this->status === self::STATUS_COMPLETED && $this->exists && ! $workflow->completionSatisfied($this)) {
+                throw new LogicException('A Workflow-bound Agent execution cannot complete before its Workflow criteria pass.');
+            }
+        }
         if (! in_array($this->status, self::STATUSES, true)) {
             throw new LogicException("Invalid Agent execution status [{$this->status}].");
         }

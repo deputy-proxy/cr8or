@@ -35,6 +35,8 @@ use App\Models\AgentExecutionStep;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Models\Workflow;
+use App\Models\WorkflowStage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
@@ -69,6 +71,13 @@ final class AgentExecutionService
         $enterprise = $assignment->enterprise;
         if (! $enterprise instanceof Enterprise || $enterprise->organization_id !== $assignment->organization_id) {
             throw new AuthorizationException('Agent execution requires an enterprise-scoped assignment.');
+        }
+        $workflow = $request->workflow;
+        if ($workflow !== null) {
+            Gate::forUser($actor)->authorize('view', $workflow);
+            if ($workflow->enterprise_id !== $enterprise->getKey()) {
+                throw new AuthorizationException('Workflow must belong to the Agent execution enterprise.');
+            }
         }
 
         $descriptor = $assignment->agentDescriptor;
@@ -141,6 +150,8 @@ final class AgentExecutionService
             'organization_id' => $assignment->organization_id,
             'enterprise_id' => $enterprise->getKey(),
             'agent_descriptor_id' => $descriptor->getKey(),
+            'workflow_id' => $workflow?->getKey(),
+            'workflow_version' => $workflow?->version,
             'agent_assignment_id' => $assignment->getKey(),
             'actor_id' => $actor->getKey(),
             'organization_name' => $assignment->organization->name,
@@ -206,6 +217,13 @@ final class AgentExecutionService
         }
 
         $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
+        $workflow = $request->workflow;
+        if ($workflow !== null) {
+            Gate::forUser($actor)->authorize('view', $workflow);
+            if ($workflow->enterprise_id !== $enterprise->getKey()) {
+                throw new AuthorizationException('Workflow must belong to the Agent execution enterprise.');
+            }
+        }
         $runtimePolicy = $runtimePolicies->resolveForAssignment($actor, $assignment);
         $runtimePolicies->assertCanExecute($runtimePolicy);
         $runtimeOptions = $runtimePolicies->enforceOptions($runtimePolicy, $request->options);
@@ -253,6 +271,8 @@ final class AgentExecutionService
             'enterprise_id' => $enterprise->getKey(),
             'agent_descriptor_id' => $assignment->agentDescriptor->getKey(),
             'agent_assignment_id' => $assignment->getKey(),
+            'workflow_id' => $workflow?->getKey(),
+            'workflow_version' => $workflow?->version,
             'actor_id' => $actor->getKey(),
             'organization_name' => $assignment->organization->name,
             'enterprise_name' => $enterprise->name,
@@ -433,6 +453,9 @@ final class AgentExecutionService
                     $correlationId,
                 );
             }
+            if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_PENDING) {
+                $execution->workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
+            }
 
             if ($execution->status === AgentExecution::STATUS_REQUESTED) {
                 $execution->start()->save();
@@ -454,6 +477,7 @@ final class AgentExecutionService
 
             while ($execution->current_step < $execution->max_steps) {
                 $sequence = $execution->current_step + 1;
+                $workflowStage = $this->nextWorkflowStage($execution);
 
                 $step = AgentExecutionStep::query()->firstOrCreate(
                     ['agent_execution_id' => $execution->getKey(), 'sequence' => $sequence],
@@ -461,7 +485,8 @@ final class AgentExecutionService
                         'organization_id' => $execution->organization_id,
                         'enterprise_id' => $execution->enterprise_id,
                         'status' => AgentExecutionStep::STATUS_PENDING,
-                        'type' => AgentExecutionStep::TYPE_REASONING,
+                        'type' => $workflowStage !== null ? AgentExecutionStep::TYPE_WORKFLOW : AgentExecutionStep::TYPE_REASONING,
+                        'workflow_stage_id' => $workflowStage?->getKey(),
                         'correlation_id' => $correlationId,
                         'idempotency_key' => $execution->idempotency_key.':'.$sequence,
                     ],
@@ -476,7 +501,7 @@ final class AgentExecutionService
 
                 $stepWasRunning = $step->status === AgentExecutionStep::STATUS_RUNNING;
                 $step->intent = $execution->next_step ?? ($sequence === 1 ? $prompt : 'Continue the current task using the prior structured result.');
-                $step->input_context = $this->stepContext($execution, $contextData);
+                $step->input_context = array_merge($this->stepContext($execution, $contextData), $this->workflowStageContext($execution, $workflowStage));
                 if (! $stepWasRunning) {
                     $step->start()->save();
                 }
@@ -487,11 +512,13 @@ final class AgentExecutionService
                     ? $step->output['model_result']
                     : null;
 
+                $stageExpertSlugs = $workflowStage !== null ? array_filter((array) $workflowStage->expert_slugs, 'is_string') : array_filter((array) $expertSlugs, 'is_string');
+                /** @var list<string> $stageExpertSlugs */
                 $expertResults = $persistedModel === null
                     ? $this->coordinateExperts(
                         $agent,
                         $contextData,
-                        $expertSlugs,
+                        $stageExpertSlugs,
                         $assignment,
                         $actor,
                         $execution,
@@ -631,6 +658,7 @@ final class AgentExecutionService
                     $execution,
                     $modelResult,
                     $targetContext,
+                    $workflowStage,
                 );
 
                 $capabilityResults = $this->executeCapabilityRequests(
@@ -670,6 +698,9 @@ final class AgentExecutionService
                     fn (CapabilityRequest $request): array => $request->toArray(),
                     $authorizedRequests,
                 );
+                if ($workflowStage !== null && ! $workflowStage->completionSatisfied(is_array($modelResult->structured) ? $modelResult->structured : [], $capabilityResults) && $termination['status'] === AgentExecution::STATUS_COMPLETED) {
+                    throw new AuthorizationException(sprintf('Workflow stage [%s] cannot complete because its completion criteria are not satisfied.', $workflowStage->key));
+                }
 
                 $approvalWait = collect($capabilityResults)->first(
                     static fn (array $result): bool => ($result['status']) === 'waiting',
@@ -761,10 +792,19 @@ final class AgentExecutionService
                 $step->complete()->save();
                 $execution->save();
 
+                if ($workflowStage !== null && ! $execution->workflow->completionSatisfied($execution)) {
+                    $execution->next_step = 'Continue with the next governed Workflow stage.';
+                    $execution->beginReasoning()->save();
+
+                    continue;
+                }
                 if ($termination['status'] === AgentExecution::STATUS_COMPLETED) {
                     $execution->complete($termination['reason'])->save();
                     $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => $termination['reason']]);
                     $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
+                    if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_RUNNING) {
+                        $execution->workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
+                    }
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
@@ -772,11 +812,17 @@ final class AgentExecutionService
                 if ($sequence >= $execution->max_steps) {
                     $execution->complete('max_steps_reached')->save();
                     $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => 'max_steps_reached']);
+                    if ($workflowStage !== null) {
+                        throw new AuthorizationException('Workflow cannot complete because its max-step budget was reached before all stages completed.');
+                    }
                     $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
 
+                if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_RUNNING) {
+                    $execution->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
+                }
                 $execution->next_step = $termination['next_step'] ?? 'Continue the current task.';
                 $execution->beginReasoning()->save();
             }
@@ -1177,6 +1223,7 @@ final class AgentExecutionService
         AgentExecution $execution,
         ModelResult $result,
         array $targetContext,
+        ?WorkflowStage $workflowStage = null,
         ?AgentDelegation $delegation = null,
     ): array {
         $requests = $result->structured['capability_requests'] ?? [];
@@ -1205,6 +1252,9 @@ final class AgentExecutionService
             }
 
             $capability = $request['capability'];
+            if ($workflowStage !== null && ! in_array($capability, (array) $workflowStage->capability_slugs, true)) {
+                throw new AuthorizationException(sprintf('Capability [%s] is not allowed by Workflow stage [%s].', $capability, $workflowStage->key));
+            }
             $capabilities->resolve($capability);
             $requestContext = isset($request['target_context']) && is_array($request['target_context'])
                 ? $request['target_context']
@@ -1537,5 +1587,78 @@ final class AgentExecutionService
                 : null,
             'decided_at' => now(),
         ]);
+    }
+
+    private function nextWorkflowStage(AgentExecution $execution): ?WorkflowStage
+    {
+        $workflow = $execution->workflow;
+
+        if ($workflow === null) {
+            return null;
+        }
+
+        $completedStageKeys = $execution->steps()
+            /** @var list<string> $completedStageKeys */
+            ->where('type', AgentExecutionStep::TYPE_WORKFLOW)
+            ->where('status', AgentExecutionStep::STATUS_COMPLETED)
+            ->with('workflowStage')
+            ->get()
+            ->map(fn (AgentExecutionStep $step): ?string => $step->workflowStage?->key)
+            ->filter()
+            ->values()
+            ->all();
+
+        foreach ($workflow->stages()->get() as $stage) {
+            if (in_array($stage->key, $completedStageKeys, true)) {
+                continue;
+            }
+
+            $stage->assertDependenciesSatisfied(array_values($completedStageKeys));
+
+            return $stage;
+        }
+
+        return null;
+    }
+
+    /** @return array<string, mixed> */
+    private function workflowStageContext(AgentExecution $execution, ?WorkflowStage $stage): array
+    {
+        if ($stage === null || $execution->workflow === null) {
+            return [];
+        }
+
+        $completedOutputs = $execution->steps()
+            ->where('type', AgentExecutionStep::TYPE_WORKFLOW)
+            ->where('status', AgentExecutionStep::STATUS_COMPLETED)
+            ->orderBy('sequence')
+            ->get()
+            ->mapWithKeys(fn (AgentExecutionStep $step): array => [
+                $step->workflowStage->key ?? (string) $step->sequence => $step->output ?? [],
+            ])
+            ->all();
+
+        return [
+            'workflow' => [
+                'id' => $execution->workflow->getKey(),
+                'name' => $execution->workflow->name,
+                'purpose' => $execution->workflow->purpose,
+                'version' => $execution->workflow->version,
+                'execution_policy' => $execution->workflow->execution_policy ?? [],
+            ],
+            'workflow_stage' => [
+                'id' => $stage->getKey(),
+                'key' => $stage->key,
+                'name' => $stage->name,
+                'sequence' => $stage->sequence,
+                'dependencies' => $stage->dependencies ?? [],
+                'input_contract' => $stage->input_contract ?? [],
+                'output_contract' => $stage->output_contract ?? [],
+                'completion_criteria' => $stage->completion_criteria ?? [],
+                'allowed_experts' => $stage->expert_slugs ?? [],
+                'allowed_capabilities' => $stage->capability_slugs ?? [],
+            ],
+            'workflow_completed_stage_outputs' => $completedOutputs,
+        ];
     }
 }
