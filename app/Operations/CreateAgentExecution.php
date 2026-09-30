@@ -27,6 +27,7 @@ final class CreateAgentExecution implements Operation
 
         $request = new AgentExecutionRequest(
             workflow: isset($input['workflow_id']) ? Workflow::query()->findOrFail((int) $input['workflow_id']) : null,
+            workflowTemplate: isset($input['workflow_template']) ? (string) $input['workflow_template'] : null,
             actor: $actor, assignment: $assignment, prompt: (string) $input['prompt'],
             mode: AgentExecutionMode::from((string) $input['mode']),
             capabilityRequests: is_array($input['capability_requests'] ?? null) ? array_values($input['capability_requests']) : [],
