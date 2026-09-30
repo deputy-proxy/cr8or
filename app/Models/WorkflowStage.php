@@ -40,17 +40,39 @@ class WorkflowStage extends Model
     public function completionSatisfied(array $output, array $capabilityResults = []): bool
     {
         $criteriaValue = $this->getAttribute('completion_criteria');
-        $c = is_array($criteriaValue) ? $criteriaValue : [];
-        if (($c['requires_termination_completed'] ?? true) && ($output['termination'] ?? null) !== 'completed') {
+        $criteria = is_array($criteriaValue) ? $criteriaValue : [];
+        if (($criteria['requires_termination_completed'] ?? true) && ($output['termination'] ?? 'completed') !== 'completed') {
             return false;
-        }foreach (($c['required_output_keys'] ?? []) as $k) {
-            if (! is_string($k) || ! array_key_exists($k, $output)) {
+        }
+        foreach (($criteria['required_output_keys'] ?? []) as $key) {
+            if (! is_string($key) || ! array_key_exists($key, $output)) {
                 return false;
             }
-        }$ok = collect($capabilityResults)->filter(fn (array $r): bool => ($r['status'] ?? null) === 'succeeded')->pluck('capability')->all();
-        foreach (($c['required_capability_results'] ?? []) as $k) {
-            if (! is_string($k) || ! in_array($k, $ok, true)) {
+        }
+
+        $successful = collect($capabilityResults)->filter(
+            fn (array $result): bool => in_array($result['status'] ?? null, ['succeeded', 'executed'], true),
+        );
+        foreach (($criteria['required_capability_results'] ?? []) as $required) {
+            if (is_string($required)) {
+                if (! $successful->contains(fn (array $result): bool => ($result['capability'] ?? null) === $required)) {
+                    return false;
+                }
+
+                continue;
+            }
+            if (! is_array($required) || ! is_string($required['capability'] ?? null)) {
                 return false;
+            }
+            $matched = $successful->first(fn (array $result): bool => ($result['capability'] ?? null) === $required['capability']);
+            if (! is_array($matched)) {
+                return false;
+            }
+            if (isset($required['result_key'])) {
+                $result = is_array($matched['result'] ?? null) ? $matched['result'] : [];
+                if (($result[$required['result_key']] ?? null) !== ($required['result_value'] ?? null)) {
+                    return false;
+                }
             }
         }
 
