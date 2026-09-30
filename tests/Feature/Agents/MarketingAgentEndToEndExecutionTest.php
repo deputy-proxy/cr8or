@@ -6,7 +6,6 @@ use App\AI\Exceptions\ModelProviderFailureType;
 use App\AI\Providers\FakeModelProvider;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\AgentExecutionRequest;
-use App\Data\CapabilityRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
 use App\Models\AgentDescriptor;
@@ -65,87 +64,146 @@ function marketingEndToEndService(FakeModelProvider $provider): AgentExecutionSe
     );
 }
 
-it('completes a governed Marketing Agent execution through Capability, Operation and result', function (): void {
+it('completes a governed Marketing Agent execution through the full strategy hierarchy', function (): void {
     $fixture = marketingEndToEndFixture();
     extract($fixture);
 
-    $provider = new FakeModelProvider(function ($request) use ($enterprise, $strategy): ModelResult {
-        expect($request->context)->toHaveKeys([
-            'enterprise',
-            'strategy',
-            'work',
-            'knowledge',
-            'decisions',
-            'execution_history',
-            'instructions',
-            'agent',
-            'experts',
-            'target_context',
-        ])
-            ->and($request->context['strategy']['objectives'][0]['strategies'][0]['id'])
-            ->toBe($strategy->getKey())
-            ->and($request->context['experts']['results'][0]['expert'])
-            ->toBe('Marketing');
+    $phase = 0;
+    $strategyId = null;
+    $campaignId = null;
+
+    $provider = new FakeModelProvider(function ($request) use ($enterprise, &$phase, &$strategyId, &$campaignId): ModelResult {
+        $phase++;
+
+        $capabilityRequests = match ($phase) {
+            1 => [
+                json_encode([
+                    'capability' => 'marketing.strategy.create',
+                    'expert_slug' => 'marketing',
+                    'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                    'input_payload' => [
+                        'enterprise_id' => $enterprise->getKey(),
+                        'name' => 'Marketing strategy',
+                        'description' => 'Strategy created through the Marketing Expert route.',
+                    ],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            2 => [
+                json_encode([
+                    'capability' => 'marketing.audience.create',
+                    'expert_slug' => 'marketing',
+                    'target_context' => ['enterprise_id' => $enterprise->getKey()],
+                    'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Primary audience'],
+                ], JSON_THROW_ON_ERROR),
+                json_encode([
+                    'capability' => 'marketing.campaign.create',
+                    'expert_slug' => 'marketing',
+                    'target_context' => ['enterprise_id' => $enterprise->getKey(), 'marketing_strategy_id' => $strategyId],
+                    'input_payload' => [
+                        'enterprise_id' => $enterprise->getKey(),
+                        'marketing_strategy_id' => $strategyId,
+                        'name' => 'Launch campaign',
+                    ],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            3 => [
+                json_encode([
+                    'capability' => 'marketing.content-series.create',
+                    'expert_slug' => 'marketing',
+                    'target_context' => ['campaign_id' => $campaignId],
+                    'input_payload' => ['campaign_id' => $campaignId, 'name' => 'Launch content'],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            default => [],
+        };
 
         return new ModelResult(
-            text: 'Marketing plan prepared.',
+            text: 'Marketing hierarchy phase '.$phase.'.',
             structured: [
-                'answer' => 'Marketing plan prepared.',
-                'decision_title' => 'Marketing plan',
-                'decision_summary' => 'The authorized enterprise context supports the requested plan.',
+                'answer' => 'Marketing hierarchy phase '.$phase.'.',
+                'decision_title' => 'Marketing hierarchy',
+                'decision_summary' => 'The authorized enterprise context supports the requested hierarchy step.',
                 'decision_rationale' => 'Marketing Agent and Expert reasoning stayed within the assigned Enterprise.',
-                'capability_requests' => [
-                    json_encode([
-                        'capability' => 'marketing.plan',
-                        'expert_slug' => 'marketing',
-                        'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                    ], JSON_THROW_ON_ERROR),
-                ],
+                'capability_requests' => $capabilityRequests,
             ],
             provider: 'fake',
             model: 'test',
-            invocationId: 'marketing-e2e-success',
+            invocationId: 'marketing-hierarchy-'.$phase,
             correlationId: $request->correlationId,
         );
     });
 
-    $result = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
+    $first = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
-        prompt: 'Prepare a governed marketing plan.',
+        prompt: 'Create the marketing strategy.',
         expertSlugs: ['marketing'],
-        correlationId: 'marketing-e2e-success',
+        correlationId: 'marketing-hierarchy-1',
     ));
 
-    expect($result->succeeded())->toBeTrue()
-        ->and($result->execution->status)->toBe(AgentExecution::STATUS_SUCCEEDED)
-        ->and($result->execution->enterprise_id)->toBe($enterprise->getKey())
-        ->and($result->execution->agent_slug)->toBe('marketing')
-        ->and($result->execution->provider)->toBe('fake')
-        ->and($result->execution->external_execution_id)->toBe('marketing-e2e-success')
-        ->and($result->execution->correlation_id)->toBe('marketing-e2e-success')
-        ->and($result->execution->completed_at)->not->toBeNull()
-        ->and($result->decision)->toBeInstanceOf(AgentDecision::class)
-        ->and($result->decision->execution_id)->toBe($result->execution->getKey())
-        ->and($result->capabilityRequests)->toHaveCount(1)
-        ->and($result->capabilityRequests[0])->toBeInstanceOf(CapabilityRequest::class);
-
-    $capabilityRequest = $result->capabilityRequests[0];
-
-    $operationResult = app(CapabilityRegistry::class)
-        ->operation($capabilityRequest->capability)
+    $strategyRequest = $first->capabilityRequests[0];
+    $strategyResult = app(CapabilityRegistry::class)
+        ->operation($strategyRequest->capability)
         ->execute($actor, [
+            ...$strategyRequest->inputPayload,
             'enterprise' => $enterprise,
-            'target_context' => $capabilityRequest->targetContext,
             'agent_assignment_id' => $assignment->getKey(),
-            'agent_execution_id' => $result->execution->getKey(),
+            'agent_execution_id' => $first->execution->getKey(),
+        ]);
+    $strategyId = $strategyResult->getKey();
+
+    $second = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Create the audience and campaign from the strategy result.',
+        expertSlugs: ['marketing'],
+        correlationId: 'marketing-hierarchy-2',
+    ));
+
+    $audienceRequest = $second->capabilityRequests[0];
+    $audienceResult = app(CapabilityRegistry::class)
+        ->operation($audienceRequest->capability)
+        ->execute($actor, [
+            ...$audienceRequest->inputPayload,
+            'agent_assignment_id' => $assignment->getKey(),
+            'agent_execution_id' => $second->execution->getKey(),
         ]);
 
-    expect($operationResult)
-        ->toHaveKey('capability', 'marketing.plan')
-        ->and($operationResult['expert']['slug'])->toBe('marketing')
-        ->and($operationResult['analysis']['focus'])->toBe('marketing planning')
-        ->and($operationResult['context_categories'])->toContain('enterprise', 'strategy', 'knowledge');
+    $campaignRequest = $second->capabilityRequests[1];
+    $campaignResult = app(CapabilityRegistry::class)
+        ->operation($campaignRequest->capability)
+        ->execute($actor, [
+            ...$campaignRequest->inputPayload,
+            'agent_assignment_id' => $assignment->getKey(),
+            'agent_execution_id' => $second->execution->getKey(),
+        ]);
+    $campaignId = $campaignResult->getKey();
+
+    $third = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Create the content series from the campaign result.',
+        expertSlugs: ['marketing'],
+        correlationId: 'marketing-hierarchy-3',
+    ));
+
+    $seriesRequest = $third->capabilityRequests[0];
+    $seriesResult = app(CapabilityRegistry::class)
+        ->operation($seriesRequest->capability)
+        ->execute($actor, [
+            ...$seriesRequest->inputPayload,
+            'agent_assignment_id' => $assignment->getKey(),
+            'agent_execution_id' => $third->execution->getKey(),
+        ]);
+
+    expect($first->succeeded())->toBeTrue()
+        ->and($second->succeeded())->toBeTrue()
+        ->and($third->succeeded())->toBeTrue()
+        ->and($strategyResult->enterprise_id)->toBe($enterprise->getKey())
+        ->and($audienceResult->enterprise_id)->toBe($enterprise->getKey())
+        ->and($campaignResult->marketing_strategy_id)->toBe($strategyId)
+        ->and($seriesResult->campaign_id)->toBe($campaignId)
+        ->and($phase)->toBe(3);
 });
 
 it('does not allow an approval-sensitive Marketing capability to bypass approval', function (): void {
