@@ -24,6 +24,9 @@ use LogicException;
     'started_at',
     'completed_at',
 ])]
+/**
+ * @property array<string, mixed>|null $context
+ */
 class AgentAssignment extends Model
 {
     /** @use HasFactory<AgentAssignmentFactory> */
@@ -121,6 +124,25 @@ class AgentAssignment extends Model
 
                 if ($agent === null || ! $agent->enabled) {
                     throw new LogicException('Agent Assignment requires an enabled Agent descriptor.');
+                }
+
+                /** @var array<string, mixed>|null $context */
+                $context = $assignment->getAttribute('context');
+                $identity = is_array($context) && is_array($context['enterprise_identity'] ?? null)
+                    ? $context['enterprise_identity']
+                    : null;
+
+                if ($identity !== null) {
+                    if ((int) ($identity['id'] ?? 0) !== (int) $enterprise->getKey() || ($identity['slug'] ?? null) !== $enterprise->slug) {
+                        throw new LogicException('Agent Assignment enterprise identity does not match its enterprise scope.');
+                    }
+                } else {
+                    $context ??= [];
+                    $context['enterprise_identity'] = [
+                        'id' => $enterprise->getKey(),
+                        'slug' => $enterprise->slug,
+                    ];
+                    $assignment->setAttribute('context', $context);
                 }
             }
 

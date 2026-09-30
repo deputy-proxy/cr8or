@@ -525,3 +525,7 @@ An empty interactive plan is not successful execution. The execution enters wait
 Interactive resume may supply updated Capability requests, such as an approved approval_request_id. Resume merges those requests into the persisted plan so unexecuted later steps are not discarded. Idempotency prevents a completed Capability from being executed again; a previously waiting request may be retried when a valid approval is supplied.
 
 Successful interactive completion therefore means the entire persisted Capability plan has completed. Creating an execution context alone is never treated as completed Agent work.
+
+## Enterprise identity integrity
+
+Enterprise identity is a paired `id` + canonical `slug`. Named-enterprise resolution must occur before Agent assignment/execution begins. The resolved pair is persisted in Agent Assignment and Agent Execution context and is validated on persistence; a conflicting pair fails closed. The human-facing slug is the preferred selector, while the numeric id remains an internal compatibility reference.

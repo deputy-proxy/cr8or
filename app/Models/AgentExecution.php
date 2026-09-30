@@ -449,5 +449,25 @@ class AgentExecution extends Model
                 throw new LogicException('Agent execution assignment must belong to its organization and enterprise scope.');
             }
         }
+
+        if ($this->enterprise_id !== null) {
+            $enterprise = Enterprise::query()->find($this->enterprise_id);
+            $identity = is_array($this->execution_context) && is_array($this->execution_context['enterprise_identity'] ?? null)
+                ? $this->execution_context['enterprise_identity']
+                : null;
+
+            if ($identity !== null) {
+                if ((int) ($identity['id'] ?? 0) !== (int) $enterprise->getKey() || ($identity['slug'] ?? null) !== $enterprise->slug) {
+                    throw new LogicException('Agent execution enterprise identity does not match its enterprise scope.');
+                }
+            } else {
+                $context = is_array($this->execution_context) ? $this->execution_context : [];
+                $context['enterprise_identity'] = [
+                    'id' => $enterprise->getKey(),
+                    'slug' => $enterprise->slug,
+                ];
+                $this->execution_context = $context;
+            }
+        }
     }
 }
