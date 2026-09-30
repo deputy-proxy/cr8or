@@ -12,7 +12,15 @@ final class MarketingExpert extends Expert
             responsibilities: ['analyze audience and positioning', 'identify campaign opportunities', 'support content planning'],
             methodology: 'Audience-first, strategy-aligned marketing analysis.',
             requiredContext: ['enterprise', 'strategy', 'knowledge'],
-            capabilities: ['marketing.plan', 'marketing.content.publication-ready', 'publication.publish'],
+            capabilities: [
+                'marketing.plan',
+                'marketing.strategy.create',
+                'marketing.audience.create',
+                'marketing.campaign.create',
+                'marketing.content-series.create',
+                'marketing.content.publication-ready',
+                'publication.publish',
+            ],
         );
     }
 
