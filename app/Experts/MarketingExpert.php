@@ -18,6 +18,7 @@ final class MarketingExpert extends Expert
                 'marketing.audience.create',
                 'marketing.campaign.create',
                 'marketing.content-series.create',
+                'marketing.graph.verify',
                 'marketing.content.publication-ready',
                 'publication.publish',
             ],
