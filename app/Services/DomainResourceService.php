@@ -286,6 +286,7 @@ final class DomainResourceService
             'agent_execution_id' => $executionId,
             'title' => $attributes['title'],
             'body' => $attributes['body'],
+            'asset_requirements' => $attributes['asset_requirements'] ?? null,
         ]);
     }
 
