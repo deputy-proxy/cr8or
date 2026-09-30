@@ -32,6 +32,7 @@ use LogicException;
     'organization_id',
     'enterprise_id',
     'agent_execution_id',
+    'workflow_stage_id',
     'sequence',
     'status',
     'type',
@@ -66,6 +67,8 @@ class AgentExecutionStep extends Model
 
     public const TYPE_CAPABILITY = 'capability';
 
+    public const TYPE_WORKFLOW = 'workflow';
+
     protected function casts(): array
     {
         return [
@@ -82,6 +85,12 @@ class AgentExecutionStep extends Model
     public function execution(): BelongsTo
     {
         return $this->belongsTo(AgentExecution::class, 'agent_execution_id');
+    }
+
+    /** @return BelongsTo<WorkflowStage, $this> */
+    public function workflowStage(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowStage::class);
     }
 
     public function start(): static
@@ -147,6 +156,16 @@ class AgentExecutionStep extends Model
 
             if ($execution === null) {
                 throw new LogicException('Agent execution step requires a valid Agent execution.');
+            }
+            if ($step->type === self::TYPE_WORKFLOW && $step->workflow_stage_id === null) {
+                throw new LogicException('Workflow execution steps require a workflow stage.');
+            }
+
+            if ($step->workflow_stage_id !== null) {
+                $stage = WorkflowStage::query()->find($step->workflow_stage_id);
+                if ($stage === null || $execution->workflow_id !== $stage->workflow_id) {
+                    throw new LogicException('Agent execution workflow steps must reference their execution workflow.');
+                }
             }
 
             if (

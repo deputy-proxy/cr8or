@@ -8,6 +8,7 @@ use App\Enums\AgentExecutionMode;
 use App\Models\AgentAssignment;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Models\Workflow;
 use App\Services\AgentExecutionResourceService;
 use App\Services\AgentExecutionService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,6 +26,7 @@ final class CreateAgentExecution implements Operation
         }
 
         $request = new AgentExecutionRequest(
+            workflow: isset($input['workflow_id']) ? Workflow::query()->findOrFail((int) $input['workflow_id']) : null,
             actor: $actor, assignment: $assignment, prompt: (string) $input['prompt'],
             mode: AgentExecutionMode::from((string) $input['mode']),
             capabilityRequests: is_array($input['capability_requests'] ?? null) ? array_values($input['capability_requests']) : [],

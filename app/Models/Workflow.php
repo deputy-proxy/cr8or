@@ -10,10 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'status'])]
-/**
- * A business-level composition of governed work. It is distinct from an Operation,
- * a runtime Execution attempt, and an asynchronous Job.
+#[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'purpose', 'version', 'execution_policy', 'completion_criteria', 'status'])]
+/** @property int|null $version
+ * @property array<string, mixed>|null $completion_criteria
+ * @property array<string, mixed>|null $execution_policy
  */
 class Workflow extends Model
 {
@@ -28,20 +28,19 @@ class Workflow extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    /** @var list<string> */
-    private const STATUSES = [
-        self::STATUS_PENDING,
-        self::STATUS_RUNNING,
-        self::STATUS_SUCCEEDED,
-        self::STATUS_FAILED,
-    ];
-
     protected static function booted(): void
     {
-        static::saving(function (Workflow $workflow): void {
-            $workflow->validateState();
-            $workflow->validateScope();
+        static::saving(function (Workflow $w): void {
+            $w->version = $w->version ?? 1;
+            $w->status = $w->status ?? self::STATUS_PENDING;
+            $w->validateState();
+            $w->validateScope();
         });
+    }
+
+    protected function casts(): array
+    {
+        return ['execution_policy' => 'array', 'completion_criteria' => 'array'];
     }
 
     /** @return BelongsTo<Enterprise, $this> */
@@ -68,60 +67,74 @@ class Workflow extends Model
         return $this->belongsTo(WorkItem::class);
     }
 
+    /** @return HasMany<WorkflowStage, $this> */
+    public function stages(): HasMany
+    {
+        return $this->hasMany(WorkflowStage::class)->orderBy('sequence');
+    }
+
     /** @return HasMany<Job, $this> */
     public function jobs(): HasMany
     {
         return $this->hasMany(Job::class);
     }
 
+    /** @return HasMany<AgentExecution, $this> */
+    public function agentExecutions(): HasMany
+    {
+        return $this->hasMany(AgentExecution::class);
+    }
+
     public function transitionTo(string $status): static
     {
-        if (! in_array($status, self::STATUSES, true)) {
-            throw new LogicException("Invalid workflow status [{$status}].");
-        }
-
         $allowed = match ($this->status) {
-            self::STATUS_PENDING => [self::STATUS_RUNNING, self::STATUS_FAILED],
-            self::STATUS_RUNNING => [self::STATUS_SUCCEEDED, self::STATUS_FAILED],
-            self::STATUS_SUCCEEDED, self::STATUS_FAILED => [],
-            default => throw new LogicException('Workflow has no valid lifecycle state.'),
+            self::STATUS_PENDING => [self::STATUS_RUNNING, self::STATUS_FAILED],self::STATUS_RUNNING => [self::STATUS_SUCCEEDED, self::STATUS_FAILED],self::STATUS_SUCCEEDED,self::STATUS_FAILED => [],default => throw new LogicException('Workflow has no valid lifecycle state.')
         };
-
-        if (! in_array($status, $allowed, true)) {
-            throw new LogicException(sprintf(
-                'Workflow cannot transition from [%s] to [%s].',
-                $this->status,
-                $status,
-            ));
-        }
-
-        $this->status = $status;
+        if (! in_array($status, [self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
+            throw new LogicException("Invalid workflow status [{$status}].");
+        }if (! in_array($status, $allowed, true)) {
+            throw new LogicException(sprintf('Workflow cannot transition from [%s] to [%s].', $this->status, $status));
+        }$this->status = $status;
 
         return $this;
     }
 
+    public function completionSatisfied(AgentExecution $execution): bool
+    {
+        $stages = $this->stages()->get();
+        if ($stages->isEmpty()) {
+            return false;
+        }$completed = $execution->steps()->where('type', AgentExecutionStep::TYPE_WORKFLOW)->where('status', AgentExecutionStep::STATUS_COMPLETED)->pluck('workflow_stage_id')->filter()->all();
+        if (! $stages->every(fn (WorkflowStage $s): bool => in_array($s->getKey(), $completed, true))) {
+            return false;
+        }$criteriaValue = $this->getAttribute('completion_criteria');
+        $criteria = is_array($criteriaValue) ? $criteriaValue : [];
+        $keys = $stages->whereIn('id', $completed)->pluck('key')->all();
+        foreach (($criteria['required_stage_keys'] ?? []) as $key) {
+            if (! is_string($key) || ! in_array($key, $keys, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function validateState(): void
     {
-        if (! in_array($this->status, self::STATUSES, true)) {
+        if (! in_array($this->status, [self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
             throw new LogicException("Invalid workflow status [{$this->status}].");
+        }if ((int) $this->version < 1) {
+            throw new LogicException('Workflow version must be positive.');
         }
     }
 
     private function validateScope(): void
     {
-        foreach ([
-            'project_id' => Project::class,
-            'task_id' => Task::class,
-            'work_item_id' => WorkItem::class,
-        ] as $field => $model) {
+        foreach (['project_id' => Project::class, 'task_id' => Task::class, 'work_item_id' => WorkItem::class] as $field => $model) {
             $id = $this->{$field};
-
             if ($id === null) {
                 continue;
-            }
-
-            $record = $model::query()->find($id);
-
+            }$record = $model::query()->find($id);
             if ($record === null || $record->enterprise_id !== $this->enterprise_id) {
                 throw new LogicException("Workflow {$field} must belong to its enterprise.");
             }
