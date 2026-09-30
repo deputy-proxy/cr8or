@@ -30,6 +30,7 @@ use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
+use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
@@ -231,6 +232,7 @@ class Cr8orServer extends Server
         CreateWorkItemTool::class,
         UpdateWorkItemTool::class,
         CreateContentItemTool::class,
+        CreateScriptTool::class,
         UpdateContentItemTool::class,
         SubmitContentForReviewTool::class,
         MarkContentPublicationReadyTool::class,

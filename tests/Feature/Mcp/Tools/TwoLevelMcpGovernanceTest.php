@@ -14,6 +14,7 @@ use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
+use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
 use App\Mcp\Tools\DomainMutationTool;
 use App\Mcp\Tools\RequestApprovalTool;
@@ -70,6 +71,7 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         DisconnectSocialAccountTool::class,
         CreateProjectTool::class,
         UpdateProjectTool::class,
+        CreateScriptTool::class,
         RequestApprovalTool::class,
     ];
 

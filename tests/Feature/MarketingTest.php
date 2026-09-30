@@ -116,7 +116,7 @@ it('keeps the marketing schema explicit and non-polymorphic', function () {
     ])->and(Schema::getColumnListing('content_series'))->toBe([
         'id', 'campaign_id', 'name', 'description', 'status', 'created_at', 'updated_at',
     ])->and(Schema::getColumnListing('scripts'))->toBe([
-        'id', 'content_item_id', 'title', 'body', 'created_at', 'updated_at',
+        'id', 'content_item_id', 'title', 'body', 'created_at', 'updated_at', 'agent_assignment_id', 'agent_execution_id',
     ]);
 });
 

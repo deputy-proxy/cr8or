@@ -237,6 +237,15 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
+                'marketing.script.create',
+                \App\Operations\CreateScript::class,
+                \App\Mcp\Tools\CreateScriptTool::class,
+                ['content_item_id' => 'integer|required', 'title' => 'string|required', 'body' => 'string|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'script'],
+                'McpCapabilityAuthorizer::authorizeMutation + Script policy',
+                'none',
+            ),
+            $this->definition(
                 'marketing.content.update',
                 UpdateContentItem::class,
                 UpdateContentItemTool::class,

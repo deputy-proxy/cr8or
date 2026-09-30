@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\AgentAssignment;
+use App\Models\AgentExecution;
 use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
+use App\Models\ContentItem;
 use App\Models\ContentSeries;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
@@ -16,6 +19,7 @@ use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Project;
+use App\Models\Script;
 use App\Models\SocialAccount;
 use App\Models\Strategy;
 use App\Models\User;
@@ -197,6 +201,38 @@ final class DomainResourceService
         $series->transitionTo($status)->save();
 
         return $series->refresh();
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function createScript(User $actor, ContentItem $item, array $attributes): Script
+    {
+        Gate::forUser($actor)->authorize('createForContentItem', [Script::class, $item]);
+
+        $assignmentId = $attributes['agent_assignment_id'] ?? null;
+        $executionId = $attributes['agent_execution_id'] ?? null;
+
+        if ($assignmentId === null xor $executionId === null) {
+            throw new LogicException('Script Agent assignment and execution provenance must be supplied together.');
+        }
+
+        if ($assignmentId !== null) {
+            $assignment = AgentAssignment::query()->findOrFail((int) $assignmentId);
+            $execution = AgentExecution::query()->findOrFail((int) $executionId);
+
+            if ((int) $assignment->enterprise_id !== (int) $item->enterprise_id
+                || (int) $execution->enterprise_id !== (int) $item->enterprise_id
+                || (int) $execution->agent_assignment_id !== (int) $assignment->getKey()
+            ) {
+                throw new LogicException('Script Agent provenance must belong to the content item enterprise and assignment.');
+            }
+        }
+
+        return $item->scripts()->create([
+            'agent_assignment_id' => $assignmentId,
+            'agent_execution_id' => $executionId,
+            'title' => $attributes['title'],
+            'body' => $attributes['body'],
+        ]);
     }
 
     /** @param array<string, mixed> $attributes */
