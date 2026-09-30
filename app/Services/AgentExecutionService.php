@@ -54,6 +54,7 @@ final class AgentExecutionService
         private readonly ?CapabilityExecutionService $capabilityExecution = null,
         private readonly ?InteractiveCapabilityStepRunner $interactiveSteps = null,
         private readonly ?AgentRuntimePolicyService $runtimePolicies = null,
+        private readonly ?WorkflowTemplateResolver $workflowTemplates = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -127,6 +128,16 @@ final class AgentExecutionService
             );
         }
 
+        $workflow ??= ($this->workflowTemplates ?? app(WorkflowTemplateResolver::class))->resolve($assignment, $request->prompt, $request->mode, $request->workflowTemplate);
+
+        if ($workflow !== null) {
+            $workflowPolicy = (array) $workflow->getAttribute('execution_policy');
+            if (isset($workflowPolicy['max_steps']) && is_int($workflowPolicy['max_steps'])) {
+                $workflowOptions = array_merge($request->options, ['max_steps' => $workflowPolicy['max_steps']]);
+                $runtimeOptions = $runtimePolicies->enforceOptions($runtimePolicy, $workflowOptions);
+            }
+        }
+
         $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt, $runtimePolicy);
 
         $context = $this->contextAssembler->forAgent(
@@ -176,6 +187,10 @@ final class AgentExecutionService
             'runtime_policy_version' => hash('sha256', json_encode($runtimePolicy, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),
             'execution_context' => $runtimeContext,
         ]);
+
+        if ($workflow !== null) {
+            $execution->setRelation('workflow', $workflow);
+        }
 
         return $this->run(
             $execution,
@@ -256,6 +271,16 @@ final class AgentExecutionService
             return $existing->refresh();
         }
 
+        $workflow ??= ($this->workflowTemplates ?? app(WorkflowTemplateResolver::class))->resolve($assignment, $request->prompt, $request->mode, $request->workflowTemplate);
+
+        if ($workflow !== null) {
+            $workflowPolicy = (array) $workflow->getAttribute('execution_policy');
+            if (isset($workflowPolicy['max_steps']) && is_int($workflowPolicy['max_steps'])) {
+                $workflowOptions = array_merge($request->options, ['max_steps' => $workflowPolicy['max_steps']]);
+                $runtimeOptions = $runtimePolicies->enforceOptions($runtimePolicy, $workflowOptions);
+            }
+        }
+
         $executionTargetContext = $this->executionTargetContext($agent, $request->targetContext, $request->prompt, $runtimePolicy);
         $context = $this->contextAssembler->forAgent(
             $actor,
@@ -296,6 +321,10 @@ final class AgentExecutionService
             'runtime_policy_version' => hash('sha256', json_encode($runtimePolicy, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),
             'execution_context' => $context->toArray(),
         ]);
+
+        if ($workflow !== null) {
+            $execution->setRelation('workflow', $workflow);
+        }
 
         if ($request->mode === AgentExecutionMode::AUTONOMOUS) {
             RunAgentExecutionJob::dispatch($execution->getKey(), $actor->getKey(), $request->delegation?->getKey());
@@ -527,7 +556,8 @@ final class AgentExecutionService
                     )
                     : [];
 
-                $stepContext = array_merge($contextData, [
+                $workflowStageContext = $this->workflowStageContext($execution, $workflowStage);
+                $stepContext = array_merge($contextData, $workflowStageContext, [
                     'execution_id' => $execution->getKey(),
                     'step' => $sequence,
                     'max_steps' => $execution->max_steps,
