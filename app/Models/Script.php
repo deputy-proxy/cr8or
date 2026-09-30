@@ -7,17 +7,30 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['content_item_id', 'agent_assignment_id', 'agent_execution_id', 'title', 'body'])]
+#[Fillable(['content_item_id', 'agent_assignment_id', 'agent_execution_id', 'title', 'body', 'asset_requirements'])]
 class Script extends Model
 {
     /** @use HasFactory<ScriptFactory> */
     use HasFactory;
 
+    protected $casts = ['asset_requirements' => 'array'];
+
     protected static function booted(): void
     {
         static::saving(function (Script $script): void {
+            if ($script->asset_requirements !== null) {
+                foreach ($script->asset_requirements as $requirement) {
+                    foreach (['type', 'purpose', 'channel', 'platform', 'format', 'creative_brief'] as $field) {
+                        if (! is_array($requirement) || ! isset($requirement[$field]) || ! is_string($requirement[$field]) || trim($requirement[$field]) === '') {
+                            throw new LogicException("Script asset requirement field [{$field}] is required.");
+                        }
+                    }
+                }
+            }
+
             $item = ContentItem::query()->find($script->content_item_id);
             if ($item === null) {
                 throw new LogicException('Script content item must exist.');
@@ -65,6 +78,13 @@ class Script extends Model
     public function agentAssignment(): BelongsTo
     {
         return $this->belongsTo(AgentAssignment::class);
+    }
+
+    /** @return BelongsTo<AgentExecution, $this> */
+    /** @return HasMany<Asset, $this> */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
     }
 
     /** @return BelongsTo<AgentExecution, $this> */

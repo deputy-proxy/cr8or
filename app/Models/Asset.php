@@ -10,20 +10,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'content_item_id', 'name', 'type', 'status'])]
+#[Fillable(['enterprise_id', 'content_item_id', 'script_id', 'agent_assignment_id', 'agent_execution_id', 'name', 'type', 'status', 'purpose', 'channel', 'platform', 'format', 'dimensions', 'duration_seconds', 'creative_brief'])]
 class Asset extends Model
 {
     /** @use HasFactory<AssetFactory> */
     use HasFactory;
 
+    public const STATUS_PENDING = 'pending';
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_ARCHIVED = 'archived';
 
+    protected $casts = [
+        'dimensions' => 'array',
+        'duration_seconds' => 'decimal:3',
+    ];
+
     protected static function booted(): void
     {
         static::saving(function (Asset $asset): void {
-            if (! in_array($asset->status, [self::STATUS_ACTIVE, self::STATUS_ARCHIVED], true)) {
+            if (! in_array($asset->status, [self::STATUS_PENDING, self::STATUS_ACTIVE, self::STATUS_ARCHIVED], true)) {
                 throw new LogicException("Invalid asset status [{$asset->status}].");
             }
             if ($asset->content_item_id !== null) {
@@ -31,6 +38,33 @@ class Asset extends Model
                 if ($item === null || (int) $item->enterprise_id !== (int) $asset->enterprise_id) {
                     throw new LogicException('Asset content item must belong to its enterprise.');
                 }
+            }
+            if ($asset->script_id !== null) {
+                $script = Script::query()->find($asset->script_id);
+                if ($script === null || (int) $script->contentItem->enterprise_id !== (int) $asset->enterprise_id) {
+                    throw new LogicException('Asset script must belong to its enterprise.');
+                }
+                if ((int) $asset->content_item_id !== (int) $script->content_item_id) {
+                    throw new LogicException('Planned asset content item must match its script.');
+                }
+                if ($asset->status !== self::STATUS_PENDING) {
+                    throw new LogicException('Script-planned assets must remain pending until media generation is requested.');
+                }
+                if ($asset->agent_assignment_id === null || $asset->agent_execution_id === null) {
+                    throw new LogicException('Script-planned assets require Agent assignment and execution provenance.');
+                }
+                $execution = AgentExecution::query()->find($asset->agent_execution_id);
+                if ((int) $asset->agent_assignment_id !== (int) $script->agent_assignment_id
+                    || $execution === null
+                    || (int) $execution->agent_assignment_id !== (int) $asset->agent_assignment_id
+                    || (int) $execution->enterprise_id !== (int) $asset->enterprise_id
+                ) {
+                    throw new LogicException('Planned asset provenance must match its script assignment and enterprise.');
+                }
+            }
+
+            if ($asset->agent_assignment_id !== null xor $asset->agent_execution_id !== null) {
+                throw new LogicException('Asset Agent assignment and execution provenance must be supplied together.');
             }
             if ($asset->exists && $asset->isDirty('enterprise_id')) {
                 throw new LogicException('Asset enterprise ownership cannot be changed.');
@@ -42,6 +76,25 @@ class Asset extends Model
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<ContentItem, $this> */
+    /** @return BelongsTo<Script, $this> */
+    public function script(): BelongsTo
+    {
+        return $this->belongsTo(Script::class);
+    }
+
+    /** @return BelongsTo<AgentAssignment, $this> */
+    public function agentAssignment(): BelongsTo
+    {
+        return $this->belongsTo(AgentAssignment::class);
+    }
+
+    /** @return BelongsTo<AgentExecution, $this> */
+    public function agentExecution(): BelongsTo
+    {
+        return $this->belongsTo(AgentExecution::class);
     }
 
     /** @return BelongsTo<ContentItem, $this> */

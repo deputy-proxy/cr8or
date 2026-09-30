@@ -13,6 +13,6 @@ class AssetFactory extends Factory
 
     public function definition(): array
     {
-        return ['enterprise_id' => Enterprise::factory(), 'content_item_id' => null, 'name' => fake()->words(3, true), 'type' => 'image', 'status' => Asset::STATUS_ACTIVE];
+        return ['enterprise_id' => Enterprise::factory(), 'content_item_id' => null, 'name' => fake()->words(3, true), 'type' => 'image', 'status' => Asset::STATUS_ACTIVE, 'script_id' => null, 'agent_assignment_id' => null, 'agent_execution_id' => null, 'purpose' => null, 'channel' => null, 'platform' => null, 'format' => null, 'dimensions' => null, 'duration_seconds' => null, 'creative_brief' => null];
     }
 }

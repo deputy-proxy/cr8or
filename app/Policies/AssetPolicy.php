@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Asset;
 use App\Models\Enterprise;
+use App\Models\Script;
 use App\Models\User;
 
 class AssetPolicy
@@ -16,6 +17,13 @@ class AssetPolicy
     public function create(User $u): bool
     {
         return (new EnterprisePolicy)->create($u);
+    }
+
+    public function createForScript(User $u, Script $script): bool
+    {
+        return (new EnterprisePolicy)->createForOrganization($u, $script->contentItem->enterprise->organization)
+            && $script->agent_assignment_id !== null
+            && $script->agent_execution_id !== null;
     }
 
     public function createForEnterprise(User $u, Enterprise $e): bool

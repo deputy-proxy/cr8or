@@ -16,7 +16,7 @@ final class CopywritingExpert extends Expert
             ],
             methodology: 'Audience-aware messaging analysis grounded in authorized knowledge and marketing context.',
             requiredContext: ['enterprise', 'knowledge'],
-            capabilities: ['marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.script.create'],
+            capabilities: ['marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.script.create', 'marketing.asset.create'],
         );
     }
 
