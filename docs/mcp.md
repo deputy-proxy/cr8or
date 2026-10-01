@@ -248,7 +248,7 @@ Agent Executions are durable runtime resources linked to an Enterprise, Agent As
 
 Execution starts are idempotent by organization and idempotency key. Starts through the resource surface require the Assignment to be `ready` or `running`; invalid Assignment state is rejected before dispatch. Execution failures remain durable with structured failure code/category, while structured results are persisted without hidden chain-of-thought.
 
-All execution starts require an explicit `mode`: `interactive` or `autonomous`. `interactive` requests may include `capability_requests`; they execute through the canonical governed Capability path and do not invoke a ModelProvider. `autonomous` follows the existing queued Agent reasoning loop. Resume preserves the persisted mode and may supply additional interactive Capability Requests when the execution is waiting for approval/input.
+All execution starts require an explicit `mode`: `interactive` or `autonomous`. Interactive starts return a durable continuation contract. ChatGPT submits each next structured reasoning result through `continue-agent-execution`; CR8OR validates the exact execution step and idempotency key, re-authorizes Agent → Expert → Capability and executes the resulting Operations. Interactive never invokes a ModelProvider and normal continuation does not require a worker. `waiting_for_input` and `waiting_for_approval` are explicit human gates. The MCP host controls whether and how the next model turn is chained. Autonomous follows the existing queued Agent → Expert → Capability → Operation → ModelProvider reasoning loop. Resume and approval semantics preserve the persisted execution mode and never convert interactive work into autonomous execution.
 
 ## Complete MCP surface contract
 
