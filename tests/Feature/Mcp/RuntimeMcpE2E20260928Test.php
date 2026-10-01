@@ -6,6 +6,7 @@ use App\AI\Data\ModelResult;
 use App\AI\Providers\FakeModelProvider;
 use App\Mcp\Resources\EnterpriseContextResource;
 use App\Mcp\Servers\Cr8orServer;
+use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\CreateAgentExecutionTool;
 use App\Mcp\Tools\CreateCampaignTool;
@@ -502,4 +503,106 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
     fwrite(STDOUT, PHP_EOL.json_encode($reportDocument, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR).PHP_EOL);
 
     expect($review['status'])->toBe('in_review');
+});
+
+it('runs a multi-step interactive continuation E2E without invoking a ModelProvider', function (): void {
+    Queue::fake();
+    $user = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
+    $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => OperationsAgent::class], ['slug' => 'continuous-interactive-e2e-agent', 'enabled' => true]);
+    $assignment = AgentAssignment::query()->create([
+        'agent_descriptor_id' => $agent->getKey(),
+        'organization_id' => $enterprise->organization_id,
+        'enterprise_id' => $enterprise->getKey(),
+        'enabled' => true,
+        'status' => AgentAssignment::STATUS_READY,
+    ]);
+
+    $providerCalls = 0;
+    app()->bind(ModelProvider::class, function () use (&$providerCalls): ModelProvider {
+        return new FakeModelProvider(function (App\AI\Data\ModelRequest $request) use (&$providerCalls): ModelResult {
+            $providerCalls++;
+            throw new RuntimeException('Interactive E2E invoked a ModelProvider unexpectedly.');
+        });
+    });
+
+    $server = Cr8orServer::actingAs($user, 'api');
+    $start = $server->tool(CreateAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_assignment_id' => $assignment->getKey(),
+        'prompt' => 'Complete a two-step governed interactive workflow.',
+        'mode' => 'interactive',
+        'idempotency_key' => 'continuous-interactive-e2e',
+    ]);
+    $start->assertOk()->assertSee('continue-agent-execution')->assertSee('waiting_for_input');
+
+    $execution = AgentExecution::query()->where('idempotency_key', 'continuous-interactive-e2e')->firstOrFail();
+    $stepOne = $server->tool(ContinueAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 1,
+        'idempotency_key' => 'continuous-interactive-e2e-step-1',
+        'reasoning' => 'Use the Operations Expert to create the first durable work item.',
+        'capability_requests' => [[
+            'capability' => 'work.item.create',
+            'expert_slug' => 'operations',
+            'step' => 1,
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Interactive E2E work item'],
+            'idempotency_key' => 'continuous-interactive-e2e-domain-1',
+        ]],
+        'delegation_requests' => [],
+        'termination' => 'continue',
+        'termination_reason' => 'The first governed operation completed; continue to verification.',
+    ]);
+    $stepOne->assertOk()->assertSee('reasoning')->assertSee('continue-agent-execution');
+
+    expect(App\Models\WorkItem::query()->where('name', 'Interactive E2E work item')->count())->toBe(1)
+        ->and($execution->refresh()->current_step)->toBe(1)
+        ->and($execution->status)->toBe(AgentExecution::STATUS_REASONING);
+
+    $server->tool(ContinueAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 1,
+        'idempotency_key' => 'continuous-interactive-e2e-step-1',
+        'reasoning' => 'Duplicate delivery of the same reasoning result.',
+        'capability_requests' => [],
+        'delegation_requests' => [],
+        'termination' => 'completed',
+        'termination_reason' => 'ignored duplicate',
+    ])->assertOk();
+
+    expect(App\Models\WorkItem::query()->where('name', 'Interactive E2E work item')->count())->toBe(1)
+        ->and($execution->refresh()->status)->toBe(AgentExecution::STATUS_REASONING);
+
+    $server->tool(ContinueAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 2,
+        'idempotency_key' => 'continuous-interactive-e2e-step-2',
+        'reasoning' => 'The authoritative work item exists, so the workflow can terminate.',
+        'capability_requests' => [],
+        'delegation_requests' => [],
+        'termination' => 'completed',
+        'termination_reason' => 'Interactive workflow completed.',
+    ])->assertOk()->assertSee('completed');
+
+    expect($execution->refresh()->status)->toBe(AgentExecution::STATUS_COMPLETED)
+        ->and($execution->current_step)->toBe(2)
+        ->and($execution->steps()->count())->toBe(2)
+        ->and(Queue::pushedJobs())->toBeEmpty()
+        ->and($providerCalls)->toBe(0);
+
+    $server->tool(ContinueAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 1,
+        'idempotency_key' => 'continuous-interactive-e2e-stale',
+        'reasoning' => 'Stale continuation.',
+        'capability_requests' => [],
+        'delegation_requests' => [],
+        'termination' => 'completed',
+    ])->assertHasErrors();
 });
