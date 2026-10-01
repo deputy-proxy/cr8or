@@ -50,14 +50,13 @@ final class InteractiveContinuationService
             throw new AuthorizationException('Interactive continuation no longer matches the persisted pending step.');
         }
 
-        $execution->current_step = $result->expectedStep;
-        $execution->beginReasoning()->save();
-
         $run = ['results' => []];
         if ($result->capabilityRequests !== []) {
             $runner = app(InteractiveCapabilityStepRunner::class);
             $run = $runner->run($execution, $actor, $execution->agentAssignment, $enterprise, (string) $execution->correlation_id, $result->capabilityRequests, false);
         } else {
+            $execution->current_step = $result->expectedStep;
+            $execution->beginReasoning()->save();
             $step = AgentExecutionStep::query()->firstOrCreate(
                 ['agent_execution_id' => $execution->getKey(), 'sequence' => $result->expectedStep],
                 [
