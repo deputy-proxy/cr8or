@@ -1624,6 +1624,24 @@ Operational dashboards will expose queues, approvals, jobs, agent executions, in
 - Sensitive actions must communicate authority and consequences clearly.
 - Operational state should be visible without requiring users to inspect logs.
 - AI-generated work should be distinguishable from approved or executed work.
+## Execution modes: interactive and autonomous
+
+CR8OR has exactly two Agent execution modes.
+
+**Interactive** is the continuous ChatGPT-driven runtime:
+
+`ChatGPT → MCP → CR8OR → Agent → Expert → Capability → Operation → persisted state → MCP continuation → ChatGPT → …`
+
+The initial interactive MCP call creates durable state and returns a machine-readable continuation. ChatGPT submits the next structured reasoning result through `continue-agent-execution`. CR8OR validates scope, exact step ordering and idempotency, re-authorizes Agent → Expert → Capability, executes the governed Operation, persists authoritative results and returns the next continuation or an explicit human/terminal state. Interactive never invokes `ModelProvider` and normal continuation does not require a worker.
+
+**Autonomous** is the worker/model-provider runtime:
+
+`Schedule/Event → CR8OR → Worker → Agent → Expert → Capability → Operation → ModelProvider → …`
+
+The worker drives autonomous progression and the configured ModelProvider supplies reasoning. The two modes share the durable execution and governance model but never cross reasoning boundaries.
+
+The invariant in both modes is **Agent → Expert → Capability → Operation**. MCP Tool availability does not grant authority, Agents do not directly own Capabilities, and approval/human gates remain server-authoritative.
+
 ## Current Agent / Expert Capability / Operation / Tool graph
 
 The current runtime capability graph is exposed through governed MCP Tools. Runtime PHP classes remain authoritative for Capability metadata and Operation bindings; MCP is the transport and authorization coordination layer. The graph below covers the explicit Agent-facing Capability Registry, not every domain CRUD/discovery MCP tool.
