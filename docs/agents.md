@@ -512,19 +512,25 @@ Operation execution failures are translated through the shared FailureTranslator
 
 The registry rejects definitions without a failure contract and rejects duplicate Capability, Operation or MCP Tool mappings. MCP remains a transport boundary and does not duplicate Operation business logic.
 
-## Interactive Agent execution contract
+## Interactive and autonomous execution boundary
 
-Interactive execution is a durable, Capability-native workflow. It never invokes ModelProvider and never dispatches RunAgentExecutionJob.
+CR8OR has exactly two execution modes: `interactive` and `autonomous`.
 
-An interactive agent.execute request may supply capability_requests as a flat plan. Each request may include a positive step; omitted step means step 1. Requests sharing a step execute in one durable AgentExecutionStep. Steps must be contiguous starting at 1 and are executed in ascending order.
+Interactive is the continuous ChatGPT-driven runtime:
 
-The runtime persists each step before executing it and updates AgentExecution.current_step after completion. Capability execution remains governed by CapabilityExecutionService -> CapabilityInvocationService -> CapabilityRegistry -> Operation.
+`ChatGPT → MCP → Agent → Expert → Capability → Operation → persisted state → MCP continuation → ChatGPT → …`
 
-An empty interactive plan is not successful execution. The execution enters waiting_for_input and can be resumed with a Capability plan. If a Capability returns waiting, the current step becomes waiting, the parent execution becomes waiting_for_approval, and the persisted plan remains available for resume.
+The initial interactive execution returns a durable continuation contract. ChatGPT submits the next structured reasoning result through `continue-agent-execution`. Each accepted continuation is bound to one exact execution step, is idempotent, and is re-authorized through Agent → Expert → Capability before the Operation executes. Interactive execution never invokes `ModelProvider` and does not require a worker for normal continuation.
 
-Interactive resume may supply updated Capability requests, such as an approved approval_request_id. Resume merges those requests into the persisted plan so unexecuted later steps are not discarded. Idempotency prevents a completed Capability from being executed again; a previously waiting request may be retried when a valid approval is supplied.
+The continuation contract explicitly represents `continue`, `waiting_for_input`, `waiting_for_approval`, `delegated`, `paused`, `completed` and terminal failure states. Human gates remain server-authoritative. The MCP host decides whether and how to perform the next model turn.
 
-Successful interactive completion therefore means the entire persisted Capability plan has completed. Creating an execution context alone is never treated as completed Agent work.
+Autonomous remains the worker-driven path:
+
+`Schedule/Event → CR8OR → Worker → Agent → Expert → Capability → Operation → ModelProvider → …`
+
+The worker owns autonomous progression and the configured `ModelProvider` supplies reasoning. Interactive and autonomous are separate execution drivers even though they share the same durable execution and governance model.
+
+The invariant for both modes remains `Agent → Expert → Capability → Operation`. There is no direct Agent → Capability authority and no third execution mode.
 
 ## Enterprise identity integrity
 
