@@ -29,6 +29,10 @@ final class AgentExecutionResourceService
             'result' => $execution->last_result ?? null,
         ];
 
+        if ($execution->mode->value === 'interactive') {
+            $inspection['continuation'] = app(InteractiveContinuationService::class)->continuation($actor, $enterprise, $execution);
+        }
+
         return $inspection;
     }
 
