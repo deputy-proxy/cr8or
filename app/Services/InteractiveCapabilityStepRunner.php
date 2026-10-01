@@ -36,6 +36,7 @@ final class InteractiveCapabilityStepRunner
         Enterprise $enterprise,
         string $correlationId,
         array $payload,
+        bool $completeWhenFinished = true,
     ): array {
         $plan = $this->normalizePlan($payload);
 
@@ -146,7 +147,7 @@ final class InteractiveCapabilityStepRunner
                 'completed_step' => $sequence,
             ];
 
-            if ($sequence < max($stepNumbers)) {
+            if ($sequence < max($stepNumbers) || ! $completeWhenFinished) {
                 $execution->beginReasoning()->save();
             } else {
                 $execution->complete('interactive_capability_plan_completed')->save();
