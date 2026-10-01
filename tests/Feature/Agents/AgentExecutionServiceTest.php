@@ -375,6 +375,42 @@ it('executes an interactive Capability plan as multiple durable steps', function
         ->toBe(2);
 });
 
+it('rejects an interactive Capability plan with missing required inputs before advancing execution state', function () {
+    $actor = User::factory()->create();
+    $enterprise = Enterprise::factory()->create();
+    $assignment = governedAssignment($actor, $enterprise);
+
+    ExpertDescriptor::factory()
+        ->forRuntimeClass(testExpertRuntimeClass())
+        ->create(['slug' => 'analyst']);
+    $provider = new FakeModelProvider(fn () => throw new RuntimeException('Interactive execution must not invoke a ModelProvider.'));
+
+    expect(fn () => (new AgentExecutionService(
+        $provider,
+        app(McpContextAssembler::class),
+        app(\App\Services\AgentCapabilityAuthorizer::class),
+    ))->execute(new AgentExecutionRequest(
+        actor: $actor,
+        assignment: $assignment,
+        prompt: 'Reject an invalid interactive Capability plan.',
+        mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
+        capabilityRequests: [[
+            'step' => 1,
+            'capability' => 'work.item.create',
+            'expert_slug' => 'analyst',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => [],
+        ]],
+        correlationId: 'interactive-invalid-plan',
+    )))->toThrow(AuthorizationException::class, 'missing required input [name]');
+
+    $execution = AgentExecution::query()->where('correlation_id', 'interactive-invalid-plan')->firstOrFail();
+
+    expect($execution->current_step)->toBe(0)
+        ->and($execution->steps()->count())->toBe(0)
+        ->and(WorkItem::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(0);
+});
+
 it('does not allow an idempotency key to switch Agent execution mode', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Data\CapabilityRequest;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
@@ -13,7 +14,10 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 final class InteractiveCapabilityStepRunner
 {
-    public function __construct(private readonly CapabilityExecutionService $capabilities) {}
+    public function __construct(
+        private readonly CapabilityExecutionService $capabilities,
+        private readonly CapabilityRegistry $registry,
+    ) {}
 
     /**
      * Execute the persisted interactive Capability plan as durable steps.
@@ -62,6 +66,8 @@ final class InteractiveCapabilityStepRunner
         $allResults = [];
 
         foreach ($plan as $sequence => $entries) {
+            $this->validateStepPlan($entries, $execution);
+
             $step = AgentExecutionStep::query()->firstOrCreate(
                 ['agent_execution_id' => $execution->getKey(), 'sequence' => $sequence],
                 [
@@ -155,6 +161,48 @@ final class InteractiveCapabilityStepRunner
         }
 
         return ['requests' => $allRequests, 'results' => $allResults];
+    }
+
+    /**
+     * Validate each interactive request against the governed Capability contract before
+     * creating or starting the durable step. This keeps malformed plans at the
+     * Agent/Capability boundary instead of surfacing as opaque Operation failures.
+     *
+     * @param  list<array<string, mixed>>  $entries
+     */
+    private function validateStepPlan(array $entries, AgentExecution $execution): void
+    {
+        foreach ($entries as $index => $request) {
+            $capability = trim((string) ($request['capability'] ?? ''));
+            $definition = $this->registry->resolve($capability);
+            $provided = array_merge(
+                is_array($request['target_context'] ?? null) ? $request['target_context'] : [],
+                is_array($request['input_payload'] ?? null) ? $request['input_payload'] : [],
+                [
+                    'enterprise_id' => $execution->enterprise_id,
+                    'agent_assignment_id' => $execution->agent_assignment_id,
+                    'agent_execution_id' => $execution->getKey(),
+                    'correlation_id' => $execution->correlation_id,
+                    'idempotency_key' => $request['idempotency_key'] ?? null,
+                    'approval_request_id' => $request['approval_request_id'] ?? null,
+                ],
+            );
+
+            foreach ($definition->inputContract as $field => $contract) {
+                if (! str_contains($contract, '|required')) {
+                    continue;
+                }
+
+                if (! array_key_exists($field, $provided) || $provided[$field] === null || $provided[$field] === '') {
+                    throw new AuthorizationException(sprintf(
+                        'Interactive Capability request [%d] for [%s] is missing required input [%s]. Provide it in input_payload or target_context.',
+                        $index,
+                        $capability,
+                        $field,
+                    ));
+                }
+            }
+        }
     }
 
     /**
