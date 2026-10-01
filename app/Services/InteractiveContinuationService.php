@@ -50,51 +50,45 @@ final class InteractiveContinuationService
             throw new AuthorizationException('Interactive continuation no longer matches the persisted pending step.');
         }
 
-        $step = AgentExecutionStep::query()->firstOrCreate(
-            ['agent_execution_id' => $execution->getKey(), 'sequence' => $result->expectedStep],
-            [
-                'organization_id' => $execution->organization_id,
-                'enterprise_id' => $execution->enterprise_id,
-                'status' => AgentExecutionStep::STATUS_PENDING,
-                'type' => AgentExecutionStep::TYPE_CAPABILITY,
-                'intent' => $execution->prompt,
-                'correlation_id' => $execution->correlation_id,
-                'idempotency_key' => $execution->idempotency_key.':reasoning:'.$result->expectedStep,
-            ],
-        );
-
-        if ($step->status === AgentExecutionStep::STATUS_COMPLETED) {
-            throw new AuthorizationException('Interactive continuation step has already been completed.');
-        }
-
-        $step->input_context = ['reasoning' => $result->reasoning, 'submitted_at' => now()->toISOString()];
-        $step->capability_requests = $result->capabilityRequests;
-        $step->start()->save();
-
-        $context['last_reasoning_result'] = [
-            'step' => $result->expectedStep,
-            'reasoning' => $result->reasoning,
-            'idempotency_key' => $result->idempotencyKey,
-        ];
-        $context['pending_continuation'] = [
-            'expected_step' => $result->expectedStep,
-            'idempotency_key' => $result->idempotencyKey,
-        ];
-        $execution->execution_context = $context;
         $execution->current_step = $result->expectedStep;
         $execution->beginReasoning()->save();
 
+        $run = ['results' => []];
         if ($result->capabilityRequests !== []) {
             $runner = app(InteractiveCapabilityStepRunner::class);
-            $run = $runner->run($execution, $actor, $execution->agentAssignment, $enterprise, (string) $execution->correlation_id, $result->capabilityRequests);
-            $execution->last_result = ['reasoning' => $result->reasoning, 'capability_results' => $run['results'], 'reasoning_step' => $result->expectedStep];
+            $run = $runner->run($execution, $actor, $execution->agentAssignment, $enterprise, (string) $execution->correlation_id, $result->capabilityRequests, false);
+        } else {
+            $step = AgentExecutionStep::query()->firstOrCreate(
+                ['agent_execution_id' => $execution->getKey(), 'sequence' => $result->expectedStep],
+                [
+                    'organization_id' => $execution->organization_id,
+                    'enterprise_id' => $execution->enterprise_id,
+                    'status' => AgentExecutionStep::STATUS_PENDING,
+                    'type' => AgentExecutionStep::TYPE_REASONING,
+                    'intent' => $execution->prompt,
+                    'input_context' => ['mode' => $execution->mode->value, 'step' => $result->expectedStep],
+                    'correlation_id' => $execution->correlation_id,
+                    'idempotency_key' => $execution->idempotency_key.':reasoning:'.$result->expectedStep,
+                ],
+            );
+            if ($step->status !== AgentExecutionStep::STATUS_COMPLETED) {
+                $step->start()->save();
+            }
+        }
+        $step = AgentExecutionStep::query()->where('agent_execution_id', $execution->getKey())->where('sequence', $result->expectedStep)->first();
+        $execution->last_result = ['reasoning' => $result->reasoning, 'capability_results' => $run['results'], 'reasoning_step' => $result->expectedStep];
+
+        if ($step !== null) {
+            $step->input_context = array_merge((array) $step->input_context, ['reasoning' => $result->reasoning]);
+            $step->output = array_merge((array) $step->output, ['reasoning' => $result->reasoning, 'termination' => $result->termination, 'termination_reason' => $result->terminationReason]);
+            if ($step->status === AgentExecutionStep::STATUS_RUNNING && $result->termination !== 'continue') {
+                $step->complete()->save();
+            } else {
+                $step->save();
+            }
         }
 
         $this->applyTermination($execution, $result);
-        $step->output = ['reasoning' => $result->reasoning, 'termination' => $result->termination, 'termination_reason' => $result->terminationReason];
-        if ($step->status === AgentExecutionStep::STATUS_RUNNING) {
-            $step->complete()->save();
-        }
 
         $context = is_array($execution->execution_context) ? $execution->execution_context : [];
         $context['continuation_results'][$result->idempotencyKey] = true;
