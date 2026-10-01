@@ -131,3 +131,56 @@ it('accepts exactly one structured continuation and rejects stale steps', functi
     $stale = [...$input, 'expected_step' => 1, 'idempotency_key' => 'reasoning-turn-stale'];
     $server->tool(ContinueAgentExecutionTool::class, $stale)->assertHasErrors();
 });
+it('uses resume-execution as the interactive continuation boundary without invoking a ModelProvider', function (): void {
+    [$user, $enterprise, $assignment] = executionMcpActor();
+    $server = Cr8orServer::actingAs($user, 'api');
+
+    $server->tool(CreateAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_assignment_id' => $assignment->getKey(),
+        'prompt' => 'Run governed interactive steps.',
+        'mode' => 'interactive',
+        'idempotency_key' => 'interactive-resume-boundary',
+    ])->assertOk();
+
+    $execution = App\Models\AgentExecution::query()->firstOrFail();
+
+    $server->tool(ResumeAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 1,
+        'idempotency_key' => 'interactive-resume-boundary-step-1',
+        'reasoning' => 'Use the Business Analysis Expert for the first persisted step.',
+        'capability_requests' => [[
+            'step' => 1,
+            'capability' => 'business.analysis',
+            'expert_slug' => 'business-analysis',
+            'target_context' => ['enterprise_id' => $enterprise->getKey()],
+            'input_payload' => ['enterprise_id' => $enterprise->getKey()],
+            'idempotency_key' => 'interactive-resume-boundary-capability-1',
+        ]],
+        'delegation_requests' => [],
+        'termination' => 'continue',
+        'termination_reason' => 'Continue to the next persisted step.',
+    ])->assertOk()->assertSee('reasoning');
+
+    expect($execution->refresh()->status)->toBe(App\Models\AgentExecution::STATUS_REASONING)
+        ->and($execution->current_step)->toBe(1)
+        ->and($execution->steps()->count())->toBe(1);
+
+    $server->tool(ResumeAgentExecutionTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'expected_step' => 2,
+        'idempotency_key' => 'interactive-resume-boundary-step-2',
+        'reasoning' => 'The persisted capability result is sufficient to complete the workflow.',
+        'capability_requests' => [],
+        'delegation_requests' => [],
+        'termination' => 'completed',
+        'termination_reason' => 'Interactive workflow completed.',
+    ])->assertOk()->assertSee('completed');
+
+    expect($execution->refresh()->status)->toBe(App\Models\AgentExecution::STATUS_COMPLETED)
+        ->and($execution->current_step)->toBe(2)
+        ->and($execution->steps()->count())->toBe(2);
+});
