@@ -9,53 +9,46 @@ use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\AgentExecutionResourceService;
 use App\Services\AgentExecutionService;
+use App\Services\InteractiveContinuationService;
 
 final class ResumeAgentExecution implements Operation
 {
-    public function __construct(private readonly AgentExecutionService $executions, private readonly AgentExecutionResourceService $resources) {}
+    public function __construct(
+        private readonly AgentExecutionService $executions,
+        private readonly AgentExecutionResourceService $resources,
+        private readonly InteractiveContinuationService $continuations,
+    ) {}
 
     public function execute(User $actor, array $input): mixed
     {
         $execution = $input['execution'] ?? AgentExecution::query()->findOrFail((int) $input['agent_execution_id']);
-        if ($execution->mode === AgentExecutionMode::INTERACTIVE && isset($input['capability_requests'])) {
-            $context = is_array($execution->execution_context) ? $execution->execution_context : [];
-            $existing = is_array($context['interactive_capability_requests'] ?? null)
-                ? $context['interactive_capability_requests']
-                : [];
-            $incoming = array_values($input['capability_requests']);
+        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
 
-            foreach ($incoming as $request) {
-                $matched = false;
+        if ($execution->mode === AgentExecutionMode::INTERACTIVE && array_key_exists('capability_requests', $input)) {
+            $expectedStep = isset($input['expected_step'])
+                ? (int) $input['expected_step']
+                : $execution->current_step + 1;
+            $idempotencyKey = isset($input['idempotency_key']) && is_string($input['idempotency_key'])
+                ? trim($input['idempotency_key'])
+                : $execution->idempotency_key.':continuation:'.$expectedStep;
 
-                foreach ($existing as $index => $stored) {
-                    if (! is_array($stored) || ! is_array($request)) {
-                        continue;
-                    }
-
-                    $sameIdempotency = isset($request['idempotency_key'], $stored['idempotency_key'])
-                        && $request['idempotency_key'] === $stored['idempotency_key'];
-                    $sameStep = (int) ($request['step'] ?? 1) === (int) ($stored['step'] ?? 1)
-                        && ($request['capability'] ?? null) === ($stored['capability'] ?? null);
-
-                    if ($sameIdempotency || $sameStep) {
-                        $existing[$index] = array_merge($stored, $request);
-                        $matched = true;
-                        break;
-                    }
-                }
-
-                if (! $matched) {
-                    $existing[] = $request;
-                }
-            }
-
-            $context['interactive_capability_requests'] = array_values($existing);
-            $execution->execution_context = $context;
-            $execution->save();
+            return $this->continuations->continue(
+                $actor,
+                $enterprise,
+                InteractiveReasoningResult::from([
+                    'agent_execution_id' => $execution->getKey(),
+                    'expected_step' => $expectedStep,
+                    'idempotency_key' => $idempotencyKey,
+                    'reasoning' => (string) ($input['reasoning'] ?? ''),
+                    'capability_requests' => array_values($input['capability_requests'] ?? []),
+                    'delegation_requests' => array_values($input['delegation_requests'] ?? []),
+                    'termination' => (string) ($input['termination'] ?? 'continue'),
+                    'termination_reason' => isset($input['termination_reason']) ? (string) $input['termination_reason'] : null,
+                ]),
+            );
         }
 
         $this->executions->queueResume($execution, $actor);
-        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
 
         return $this->resources->get($actor, $enterprise, $execution->refresh());
     }
