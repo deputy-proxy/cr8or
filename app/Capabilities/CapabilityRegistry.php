@@ -4,6 +4,7 @@ namespace App\Capabilities;
 
 use App\Contracts\Operation;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
+use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -26,6 +27,7 @@ use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
 use App\Operations\CampaignLifecycle;
 use App\Operations\ContentSeriesLifecycle;
+use App\Operations\ContinueAgentExecution;
 use App\Operations\CreateAgentAssignment;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateKnowledgeIndex;
@@ -153,6 +155,25 @@ final class CapabilityRegistry
     private function defaultDefinitions(): array
     {
         return [
+            $this->definition(
+                'agent.continue',
+                ContinueAgentExecution::class,
+                ContinueAgentExecutionTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'agent_execution_id' => 'integer|required',
+                    'expected_step' => 'integer|min:1|required',
+                    'idempotency_key' => 'string|min:1|max:128|required',
+                    'reasoning' => 'string|nullable',
+                    'capability_requests' => 'array|nullable',
+                    'delegation_requests' => 'array|nullable',
+                    'termination' => 'string|required',
+                    'termination_reason' => 'string|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'interactive-continuation'],
+                'InteractiveContinuationService + governed Capability execution',
+                'none',
+            ),
             $this->definition(
                 'agent.execute',
                 ExecuteAgent::class,
