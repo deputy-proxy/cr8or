@@ -31,6 +31,8 @@ class CanonicalWorkflowSeeder extends Seeder
             ['role' => MembershipRole::Owner]
         );
 
-        app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+        $provisioner = app(CanonicalWorkflowProvisioner::class);
+        $provisioner->provisionStrategyCreation($enterprise, $actor);
+        $provisioner->provisionMarketingStrategy($enterprise, $actor);
     }
 }
