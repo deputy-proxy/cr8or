@@ -13,9 +13,12 @@ use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
+use App\Models\Workflow;
 use App\Models\WorkflowExecution;
+use App\Policies\WorkflowPolicy;
 use App\Services\CanonicalWorkflowProvisioner;
 use App\Services\MarketingStrategyWorkflowDefinition;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 
 function workflowMcpOwner(User $user, Organization $organization): void
@@ -68,6 +71,10 @@ it('registers the canonical Workflow MCP entry points', function (): void {
     ]);
 });
 
+it('registers WorkflowPolicy for governed Workflow authorization', function (): void {
+    expect(Gate::getPolicyFor(new Workflow))->toBeInstanceOf(WorkflowPolicy::class);
+});
+
 it('creates publishes discovers starts inspects and resumes a Workflow without AgentExecution', function (): void {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
@@ -83,7 +90,7 @@ it('creates publishes discovers starts inspects and resumes a Workflow without A
         'stages' => workflowMcpInput(),
     ])->assertOk();
 
-    $workflow = \App\Models\Workflow::query()->where('enterprise_id', $enterprise->id)->where('name', 'MCP deterministic workflow')->firstOrFail();
+    $workflow = Workflow::query()->where('enterprise_id', $enterprise->id)->where('name', 'MCP deterministic workflow')->firstOrFail();
 
     $server->tool(PublishWorkflowTool::class, [
         'enterprise_id' => $enterprise->id,
@@ -178,7 +185,7 @@ it('keeps Workflow start idempotent through the MCP entry point', function (): v
         'stages' => workflowMcpInput(),
     ])->assertOk();
 
-    $workflow = \App\Models\Workflow::query()->where('name', 'Idempotent workflow')->firstOrFail();
+    $workflow = Workflow::query()->where('name', 'Idempotent workflow')->firstOrFail();
     $server->tool(PublishWorkflowTool::class, [
         'enterprise_id' => $enterprise->id,
         'workflow_id' => $workflow->id,
