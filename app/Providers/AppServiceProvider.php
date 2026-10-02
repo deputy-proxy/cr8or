@@ -18,7 +18,9 @@ use App\Listeners\RecordAgentExecutionEvent;
 use App\Models\Competitor;
 use App\Models\Mission;
 use App\Models\Vision;
+use App\Models\Workflow;
 use App\Policies\StrategicRecordPolicy;
+use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\FailureTranslator;
 use App\Services\HmacIntegrationWebhookVerifier;
@@ -93,9 +95,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureDefaults();
         Event::listen(AgentExecutionEvent::class, [RecordAgentExecutionEvent::class, 'handle']);
-        Gate::policy(Vision::class, StrategicRecordPolicy::class);
-        Gate::policy(Mission::class, StrategicRecordPolicy::class);
         Gate::policy(Competitor::class, StrategicRecordPolicy::class);
+        Gate::policy(Mission::class, StrategicRecordPolicy::class);
+        Gate::policy(Vision::class, StrategicRecordPolicy::class);
+        Gate::policy(Workflow::class, WorkflowPolicy::class);
     }
 
     /**
@@ -116,7 +119,7 @@ class AppServiceProvider extends ServiceProvider
                 ->numbers()
                 ->symbols()
                 ->uncompromised()
-            : null,
+                : null,
         );
     }
 }
