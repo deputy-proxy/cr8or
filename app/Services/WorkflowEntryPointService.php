@@ -52,9 +52,32 @@ final class WorkflowEntryPointService
     }
 
     /** @return array{items: list<array<string, mixed>>, pagination: array<string, int>} */
-    public function discover(User $actor, Enterprise $enterprise, ?string $search = null, int $perPage = 20, int $page = 1): array
+    public function discover(User $actor, Enterprise $enterprise, ?string $canonicalKey = null, ?string $search = null, int $perPage = 20, int $page = 1): array
     {
         Gate::forUser($actor)->authorize('view', $enterprise);
+
+        if ($canonicalKey !== null && $canonicalKey !== '') {
+            $workflow = Workflow::query()
+                ->where('enterprise_id', $enterprise->getKey())
+                ->where('canonical_key', $canonicalKey)
+                ->with('publishedVersion')
+                ->first();
+
+            return [
+                'items' => $workflow === null ? [] : [[
+                    'id' => $workflow->getKey(),
+                    'name' => $workflow->name,
+                    'purpose' => $workflow->purpose,
+                    'status' => $workflow->status,
+                    'canonical_key' => $workflow->canonical_key,
+                    'published_version_id' => $workflow->published_version_id,
+                    'published_version' => $workflow->publishedVersion?->version,
+                    'published_version_status' => $workflow->publishedVersion?->status,
+                    'has_published_version' => $workflow->publishedVersion?->status === WorkflowVersion::STATUS_PUBLISHED,
+                ]],
+                'pagination' => ['page' => 1, 'per_page' => 1, 'total' => $workflow === null ? 0 : 1, 'last_page' => 1],
+            ];
+        }
 
         $query = Workflow::query()->where('enterprise_id', $enterprise->getKey())->with('publishedVersion');
 
@@ -73,6 +96,7 @@ final class WorkflowEntryPointService
             'name' => $workflow->name,
             'purpose' => $workflow->purpose,
             'status' => $workflow->status,
+            'canonical_key' => $workflow->canonical_key,
             'published_version_id' => $workflow->published_version_id,
             'published_version' => $workflow->publishedVersion?->version,
             'has_published_version' => $workflow->publishedVersion?->status === WorkflowVersion::STATUS_PUBLISHED,

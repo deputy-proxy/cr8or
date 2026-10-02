@@ -18,13 +18,13 @@ class ListWorkflowsTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
-        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'search' => $schema->string()->max(255), 'per_page' => $schema->integer()->min(1)->max(50)->default(20), 'page' => $schema->integer()->min(1)->default(1)];
+        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'canonical_key' => $schema->string()->max(255), 'search' => $schema->string()->max(255), 'per_page' => $schema->integer()->min(1)->max(50)->default(20), 'page' => $schema->integer()->min(1)->default(1)];
     }
 
     public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
         return $this->executeWithErrors($request, 'mcp.workflow.discover', function () use ($request, $registry) {
-            $v = $request->validate(['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'search' => ['nullable', 'string', 'max:255'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:50'], 'page' => ['nullable', 'integer', 'min:1']]);
+            $v = $request->validate(['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'canonical_key' => ['nullable', 'string', 'max:255'], 'search' => ['nullable', 'string', 'max:255'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:50'], 'page' => ['nullable', 'integer', 'min:1']]);
             $actor = $request->user();
             if (! $actor instanceof User) {
                 throw new AuthenticationException;

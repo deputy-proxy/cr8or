@@ -15,6 +15,6 @@ final class DiscoverWorkflows implements Operation
     {
         $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
 
-        return $this->workflows->discover($actor, $enterprise, $input['search'] ?? null, (int) ($input['per_page'] ?? 20), (int) ($input['page'] ?? 1));
+        return $this->workflows->discover($actor, $enterprise, $input['canonical_key'] ?? null, $input['search'] ?? null, (int) ($input['per_page'] ?? 20), (int) ($input['page'] ?? 1));
     }
 }

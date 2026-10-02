@@ -14,6 +14,8 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
 use App\Models\WorkflowExecution;
+use App\Services\CanonicalWorkflowProvisioner;
+use App\Services\MarketingStrategyWorkflowDefinition;
 use Illuminate\Support\Facades\Queue;
 
 function workflowMcpOwner(User $user, Organization $organization): void
@@ -120,6 +122,47 @@ it('creates publishes discovers starts inspects and resumes a Workflow without A
     expect($execution->refresh()->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and(AgentExecution::query()->count())->toBe(0)
         ->and(Queue::pushedJobs())->toBeEmpty();
+});
+
+it('discovers a canonical Workflow by exact enterprise and canonical key', function (): void {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    workflowMcpOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    $workflow = app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListWorkflowsTool::class, [
+            'enterprise_id' => $enterprise->id,
+            'canonical_key' => MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE,
+        ])
+        ->assertOk()
+        ->assertSee($workflow->name)
+        ->assertSee(MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE)
+        ->assertSee((string) $workflow->published_version_id);
+
+    expect(AgentExecution::query()->count())->toBe(0);
+});
+
+it('returns no result for a canonical key belonging to another enterprise', function (): void {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    workflowMcpOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $otherEnterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListWorkflowsTool::class, [
+            'enterprise_id' => $otherEnterprise->id,
+            'canonical_key' => MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE,
+        ])
+        ->assertOk()
+        ->assertSee('"items":[]');
+
+    expect(AgentExecution::query()->count())->toBe(0);
 });
 
 it('keeps Workflow start idempotent through the MCP entry point', function (): void {
