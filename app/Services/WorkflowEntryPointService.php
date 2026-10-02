@@ -25,6 +25,7 @@ final class WorkflowEntryPointService
                 'task_id' => $input['task_id'] ?? null,
                 'work_item_id' => $input['work_item_id'] ?? null,
                 'name' => $input['name'],
+                'canonical_key' => $input['canonical_key'] ?? null,
                 'purpose' => $input['purpose'] ?? null,
                 'execution_policy' => $input['execution_policy'] ?? [],
                 'completion_criteria' => $input['completion_criteria'] ?? [],
