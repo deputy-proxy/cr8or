@@ -13,11 +13,11 @@ A deterministic Workflow does not require an Agent, a ModelProvider, or a worker
 
 ## Workflow vs WorkflowVersion
 
-Workflow is the mutable process definition owned by an Enterprise. It identifies the process, its purpose, policy and current published version.
+Workflow is the mutable process definition owned by an Enterprise. It identifies the process, its purpose, policy and current published version. Canonical Workflows may also declare a stable enterprise-scoped `canonical_key`, such as `marketing.strategy.create`. The canonical key is the deterministic identity used by provisioning and exact discovery; names and prompts are not canonical identifiers.
 
 WorkflowVersion is an immutable release snapshot. A published version contains the exact stage definitions that future executions use. Publishing a new version never rewrites historical executions.
 
-An execution always binds to one exact published WorkflowVersion.
+An execution always binds to one exact published WorkflowVersion. A canonical key is unique within an Enterprise when present, while existing non-canonical Workflows remain valid.
 
 ## WorkflowExecution vs AgentExecution
 
