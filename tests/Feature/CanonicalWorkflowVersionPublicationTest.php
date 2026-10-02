@@ -22,7 +22,8 @@ it('keeps the published canonical WorkflowVersion immutable and stable', functio
         ->and(fn () => $version->update(['stage_definitions' => [['key' => 'mutated']]]))
         ->toThrow(LogicException::class);
 
+    $stable = app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+
     expect($version->refresh()->stage_definitions)->toBe($originalStages)
-        ->and(app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor)->published_version_id)
-            ->toBe($version->getKey());
+        ->and($stable->published_version_id)->toBe($version->getKey());
 });
