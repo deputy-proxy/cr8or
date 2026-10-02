@@ -19,7 +19,6 @@ use App\Filament\Resources\RenderJobs\RenderJobResource;
 use App\Filament\Resources\RenderOutputs\RenderOutputResource;
 use App\Filament\Resources\RenderRequests\RenderRequestResource;
 use App\Filament\Resources\Transformations\TransformationResource;
-use App\Filament\Resources\Workflows\WorkflowResource;
 
 it('keeps operational and historical resources free of unrestricted CRUD pages', function () {
     foreach ([
@@ -42,7 +41,6 @@ it('keeps operational and historical resources free of unrestricted CRUD pages',
         RenderOutputResource::class,
         RenderRequestResource::class,
         TransformationResource::class,
-        WorkflowResource::class,
     ] as $resource) {
         expect($resource::canCreate())->toBeFalse()
             ->and($resource::getPages())->not->toHaveKey('create')

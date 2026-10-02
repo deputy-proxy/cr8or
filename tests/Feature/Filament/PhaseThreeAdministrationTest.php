@@ -102,7 +102,8 @@ it('limits phase 3 administration actions to enterprise managers', function () {
     expect(AssignmentResource::canCreate())->toBeTrue()
         ->and(DependencyResource::canCreate())->toBeTrue()
         ->and(KnowledgeVersionResource::canCreate())->toBeTrue()
-        ->and(WorkflowResource::canCreate())->toBeFalse()
+        ->and(WorkflowResource::canCreate())->toBeTrue()
+        ->and(WorkflowResource::getPages())->toHaveKeys(['create', 'edit'])
         ->and(JobResource::canCreate())->toBeFalse()
         ->and(ExecutionResource::canCreate())->toBeFalse();
 
@@ -110,7 +111,8 @@ it('limits phase 3 administration actions to enterprise managers', function () {
 
     expect(AssignmentResource::canCreate())->toBeFalse()
         ->and(DependencyResource::canCreate())->toBeFalse()
-        ->and(KnowledgeVersionResource::canCreate())->toBeFalse();
+        ->and(KnowledgeVersionResource::canCreate())->toBeFalse()
+        ->and(WorkflowResource::canCreate())->toBeFalse();
 });
 
 it('keeps historical knowledge versions read-only after creation', function () {
