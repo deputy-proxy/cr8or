@@ -15,6 +15,6 @@ final class ResumeWorkflowExecution implements Operation
     {
         $execution = $input['execution'] ?? WorkflowExecution::query()->findOrFail((int) $input['workflow_execution_id']);
 
-        return $this->workflows->resume($actor, $execution);
+        return $this->workflows->resume($actor, $execution, (string) $input['continuation_token']);
     }
 }

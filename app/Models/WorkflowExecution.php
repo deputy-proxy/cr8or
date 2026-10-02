@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use LogicException;
 
-#[Fillable(['workflow_id', 'workflow_version_id', 'workflow_version', 'organization_id', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'current_stage_key', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
+#[Fillable(['workflow_id', 'workflow_version_id', 'workflow_version', 'organization_id', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'current_stage_key', 'continuation_token', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
 /**
  * @property int $id
  * @property int $workflow_id
@@ -23,6 +23,7 @@ use LogicException;
  * @property string $idempotency_key
  * @property int|null $current_stage_id
  * @property string|null $current_stage_key
+ * @property string $continuation_token
  * @property string|null $failure_reason
  * @property string|null $state_reason
  */
@@ -124,6 +125,18 @@ class WorkflowExecution extends Model
         return $this->transitionTo(self::STATUS_COMPLETED);
     }
 
+    public function retry(): static
+    {
+        if ($this->status !== self::STATUS_FAILED) {
+            throw new LogicException('Only failed WorkflowExecutions can be retried.');
+        }
+        $this->failure_reason = null;
+        $this->completed_at = null;
+        $this->continuation_token = (string) str()->uuid();
+
+        return $this->transitionTo(self::STATUS_RUNNING);
+    }
+
     public function transitionTo(string $status): static
     {
         $allowed = match ($this->status) {
@@ -131,7 +144,8 @@ class WorkflowExecution extends Model
             self::STATUS_RUNNING => [self::STATUS_WAITING_FOR_INPUT, self::STATUS_WAITING_FOR_APPROVAL, self::STATUS_PAUSED, self::STATUS_FAILED, self::STATUS_COMPLETED],
             self::STATUS_WAITING_FOR_INPUT,self::STATUS_WAITING_FOR_APPROVAL => [self::STATUS_RUNNING, self::STATUS_FAILED, self::STATUS_PAUSED],
             self::STATUS_PAUSED => [self::STATUS_RUNNING, self::STATUS_FAILED],
-            self::STATUS_FAILED,self::STATUS_COMPLETED => [],
+            self::STATUS_FAILED => [self::STATUS_RUNNING],
+            self::STATUS_COMPLETED => [],
             default => throw new LogicException('Workflow execution has no valid lifecycle state.'),
         };
         if (! in_array($status, $allowed, true)) {

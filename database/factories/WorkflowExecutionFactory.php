@@ -34,6 +34,7 @@ class WorkflowExecutionFactory extends Factory
             'status' => WorkflowExecution::STATUS_PENDING,
             'correlation_id' => fake()->uuid(),
             'idempotency_key' => fake()->unique()->uuid(),
+            'continuation_token' => fake()->uuid(),
             'input' => [],
             'outputs' => [],
             'context' => [],

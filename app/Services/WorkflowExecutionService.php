@@ -50,6 +50,7 @@ final class WorkflowExecutionService
                 'status' => WorkflowExecution::STATUS_PENDING,
                 'correlation_id' => $correlationId ?? str()->uuid()->toString(),
                 'idempotency_key' => $idempotencyKey,
+                'continuation_token' => (string) str()->uuid(),
                 'input' => $input,
                 'outputs' => [],
                 'context' => [
@@ -91,10 +92,25 @@ final class WorkflowExecutionService
             'next_stage_key' => $next?->key,
             'correlation_id' => $execution->correlation_id,
             'idempotency_key' => $execution->idempotency_key,
+            'continuation_token' => $execution->continuation_token,
         ];
     }
 
-    public function continue(User $actor, WorkflowExecution $execution): WorkflowExecution
+    public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null): WorkflowExecution
+    {
+        return DB::transaction(function () use ($actor, $execution, $continuationToken): WorkflowExecution {
+            /** @var WorkflowExecution $locked */
+            $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
+
+            if ($continuationToken !== null && ! hash_equals((string) $locked->continuation_token, $continuationToken)) {
+                throw new AuthorizationException('Workflow continuation token is stale or invalid.');
+            }
+
+            return $this->continueLocked($actor, $locked);
+        });
+    }
+
+    private function continueLocked(User $actor, WorkflowExecution $execution): WorkflowExecution
     {
         $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
 
@@ -104,11 +120,15 @@ final class WorkflowExecutionService
 
         Gate::forUser($actor)->authorize('view', $execution->workflow);
 
-        if (in_array($execution->status, [WorkflowExecution::STATUS_COMPLETED, WorkflowExecution::STATUS_FAILED], true)) {
+        if ($execution->status === WorkflowExecution::STATUS_COMPLETED) {
             return $execution;
         }
 
-        $execution->start()->save();
+        if ($execution->status === WorkflowExecution::STATUS_FAILED) {
+            $execution->retry()->save();
+        } else {
+            $execution->start()->save();
+        }
 
         try {
             while ($stage = $this->nextStage($execution)) {
@@ -125,7 +145,8 @@ final class WorkflowExecutionService
                     $approval = $result['approval'] ?? null;
                     $context['pending_approval_request_id'] = $approval instanceof ApprovalRequest ? $approval->getKey() : null;
                     $execution->setAttribute('context', $context);
-                    $execution->waitForApproval('Workflow stage is waiting for approval.')->save();
+                    $execution->continuation_token = (string) str()->uuid();
+                    $execution->waitForApproval($result['reason'] ?? 'Workflow stage is waiting for approval.')->save();
 
                     return $execution->refresh();
                 }
@@ -142,6 +163,7 @@ final class WorkflowExecutionService
                 $outputs = is_array($outputsValue) ? $outputsValue : [];
                 $outputs[$stage->key] = $stageOutput;
                 $execution->setAttribute('outputs', $outputs);
+                $execution->continuation_token = (string) str()->uuid();
 
                 $contextValue = $execution->getAttribute('context');
                 /** @var array<string, mixed> $context */
@@ -163,6 +185,7 @@ final class WorkflowExecutionService
 
             return $execution->refresh();
         } catch (Throwable $exception) {
+            $execution->continuation_token = (string) str()->uuid();
             $execution->fail($exception->getMessage())->save();
 
             if ($execution->workflow->status === Workflow::STATUS_RUNNING) {
@@ -173,7 +196,7 @@ final class WorkflowExecutionService
         }
     }
 
-    /** @return array{status: string, result?: mixed, approval?: ApprovalRequest} */
+    /** @return array{status: string, result?: mixed, approval?: ApprovalRequest, reason?: string} */
     private function executeStage(User $actor, WorkflowExecution $execution, WorkflowStage $stage): array
     {
         $expertSlugsValue = $stage->getAttribute('expert_slugs');
@@ -203,7 +226,8 @@ final class WorkflowExecutionService
         $inputValue = $execution->getAttribute('input');
         /** @var array<string, mixed> $input */
         $input = is_array($inputValue) ? $inputValue : [];
-        $available = array_merge($input, $context);
+        $mappedInput = $this->resolveMappedInput($stage, $context);
+        $available = array_merge($input, $mappedInput, $context);
 
         foreach ($required as $key) {
             if (is_string($key) && ! array_key_exists($key, $available)) {
@@ -221,7 +245,7 @@ final class WorkflowExecutionService
                 'workflow_stage_key' => $stage->key,
                 ...$context,
             ],
-            inputPayload: $input,
+            inputPayload: array_merge($input, $mappedInput),
             correlationId: $execution->correlation_id,
             idempotencyKey: $execution->idempotency_key.':'.$stage->key,
             expertSlug: $expertSlug,
@@ -231,6 +255,38 @@ final class WorkflowExecutionService
         );
 
         return $this->capabilities->invoke($request);
+    }
+
+    /** @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function resolveMappedInput(WorkflowStage $stage, array $context): array
+    {
+        $contractValue = $stage->getAttribute('input_contract');
+        $contract = is_array($contractValue) ? $contractValue : [];
+        $mappings = is_array($contract['mappings'] ?? null) ? $contract['mappings'] : [];
+        $resolved = [];
+
+        foreach ($mappings as $target => $source) {
+            if (! is_string($target) || ! is_string($source)) {
+                continue;
+            }
+
+            $value = $context;
+            foreach (explode('.', $source) as $segment) {
+                if (! is_array($value) || ! array_key_exists($segment, $value)) {
+                    $value = null;
+                    break;
+                }
+                $value = $value[$segment];
+            }
+
+            if ($value !== null) {
+                $resolved[$target] = $value;
+            }
+        }
+
+        return $resolved;
     }
 
     private function nextStage(WorkflowExecution $execution): ?WorkflowStage
