@@ -3,6 +3,7 @@
 namespace App\Operations;
 
 use App\Contracts\Operation;
+use App\Data\InteractiveReasoningResult;
 use App\Enums\AgentExecutionMode;
 use App\Models\AgentExecution;
 use App\Models\Enterprise;

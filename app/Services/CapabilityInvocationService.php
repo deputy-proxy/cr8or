@@ -95,6 +95,38 @@ final class CapabilityInvocationService
 
     private function authorize(CapabilityInvocationRequest $request): void
     {
+        if ($request->isWorkflowBacked()) {
+            $stage = $request->workflowStage;
+            $expertSlug = $request->expertSlug;
+
+            $expertSlugsValue = $stage?->getAttribute('expert_slugs');
+            $capabilitySlugsValue = $stage?->getAttribute('capability_slugs');
+            $expertSlugs = is_array($expertSlugsValue) ? $expertSlugsValue : [];
+            $capabilitySlugs = is_array($capabilitySlugsValue) ? $capabilitySlugsValue : [];
+
+            if ($stage === null || $expertSlug === null || ! in_array($expertSlug, $expertSlugs, true)) {
+                throw new AuthorizationException('Workflow Capability invocation requires an Expert declared by the Workflow stage.');
+            }
+
+            if (! in_array($request->capability, $capabilitySlugs, true)) {
+                throw new AuthorizationException('Workflow Capability invocation requires a Capability declared by the Workflow stage.');
+            }
+
+            $descriptor = \App\Models\ExpertDescriptor::query()->where('slug', $expertSlug)->first();
+            if ($descriptor === null || ! $descriptor->enabled) {
+                throw new AuthorizationException("Workflow Expert [{$expertSlug}] is not available.");
+            }
+
+            $expert = app($descriptor->resolveRuntimeClass());
+            if (! $expert instanceof \App\Experts\Expert || ! in_array($request->capability, $expert->capabilities(), true)) {
+                throw new AuthorizationException("Expert [{$expertSlug}] does not expose capability [{$request->capability}].");
+            }
+
+            Gate::forUser($request->actor)->authorize('view', $request->enterprise);
+
+            return;
+        }
+
         if ($request->isAgentBacked()) {
             $definition = $this->capabilities->resolve($request->capability);
             $agentRequest = new CapabilityRequest(
@@ -219,6 +251,8 @@ final class CapabilityInvocationService
                 data: [
                     'idempotency_key' => $request->idempotencyKey,
                     'approval_request_id' => $request->approval?->getKey(),
+                    'workflow_execution_id' => $request->workflowExecution?->getKey(),
+                    'workflow_stage_id' => $request->workflowStage?->getKey(),
                 ],
             );
         }
@@ -248,6 +282,8 @@ final class CapabilityInvocationService
             'agent_execution_id' => $request->execution?->getKey(),
             'correlation_id' => $request->resolvedCorrelationId(),
             'approval_request_id' => $request->approval?->getKey(),
+            'workflow_execution_id' => $request->workflowExecution?->getKey(),
+            'workflow_stage_id' => $request->workflowStage?->getKey(),
         ];
     }
 }
