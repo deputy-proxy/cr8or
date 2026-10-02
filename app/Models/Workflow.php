@@ -85,6 +85,12 @@ class Workflow extends Model
         return $this->hasMany(AgentExecution::class);
     }
 
+    /** @return HasMany<WorkflowExecution, $this> */
+    public function executions(): HasMany
+    {
+        return $this->hasMany(WorkflowExecution::class);
+    }
+
     public function transitionTo(string $status): static
     {
         $allowed = match ($this->status) {

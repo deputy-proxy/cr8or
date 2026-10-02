@@ -1,0 +1,43 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Enterprise;
+use App\Models\User;
+use App\Models\Workflow;
+use App\Models\WorkflowExecution;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/** @extends Factory<WorkflowExecution> */
+class WorkflowExecutionFactory extends Factory
+{
+    protected $model = WorkflowExecution::class;
+
+    public function definition(): array
+    {
+        $enterprise = Enterprise::factory();
+
+        return [
+            'workflow_id' => Workflow::factory()->state(['enterprise_id' => $enterprise]),
+            'workflow_version' => 1,
+            'organization_id' => 1,
+            'enterprise_id' => $enterprise,
+            'actor_id' => User::factory(),
+            'status' => WorkflowExecution::STATUS_PENDING,
+            'correlation_id' => fake()->uuid(),
+            'idempotency_key' => fake()->unique()->uuid(),
+            'input' => [],
+            'outputs' => [],
+            'context' => [],
+        ];
+    }
+
+    public function forEnterprise(Enterprise $enterprise): static
+    {
+        return $this->state([
+            'enterprise_id' => $enterprise,
+            'organization_id' => $enterprise->organization_id,
+            'workflow_id' => Workflow::factory()->state(['enterprise_id' => $enterprise]),
+        ]);
+    }
+}

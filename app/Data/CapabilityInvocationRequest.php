@@ -8,6 +8,8 @@ use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Models\WorkflowExecution;
+use App\Models\WorkflowStage;
 use InvalidArgumentException;
 
 final readonly class CapabilityInvocationRequest
@@ -26,6 +28,8 @@ final readonly class CapabilityInvocationRequest
         public ?AgentExecution $execution = null,
         public ?ApprovalRequest $approval = null,
         public ?AgentDelegation $delegation = null,
+        public ?WorkflowExecution $workflowExecution = null,
+        public ?WorkflowStage $workflowStage = null,
         public ?string $correlationId = null,
         public ?string $idempotencyKey = null,
         public ?string $expertSlug = null,
@@ -36,6 +40,18 @@ final readonly class CapabilityInvocationRequest
 
         if (($this->assignment === null) !== ($this->execution === null)) {
             throw new InvalidArgumentException('Agent-backed Capability invocation requires both an assignment and execution context.');
+        }
+
+        if ($this->workflowExecution !== null && $this->workflowStage === null) {
+            throw new InvalidArgumentException('Workflow-backed Capability invocation requires a Workflow stage.');
+        }
+
+        if ($this->workflowExecution !== null && $this->enterprise === null) {
+            throw new InvalidArgumentException('Workflow-backed Capability invocation requires an Enterprise context.');
+        }
+
+        if ($this->workflowStage !== null && $this->workflowExecution !== null && $this->workflowStage->workflow_id !== $this->workflowExecution->workflow_id) {
+            throw new InvalidArgumentException('A Workflow stage must belong to the executed Workflow.');
         }
 
         if ($this->assignment !== null && $this->execution !== null) {
@@ -93,6 +109,11 @@ final readonly class CapabilityInvocationRequest
     public function isAgentBacked(): bool
     {
         return $this->assignment !== null && $this->execution !== null;
+    }
+
+    public function isWorkflowBacked(): bool
+    {
+        return $this->workflowExecution !== null && $this->workflowStage !== null;
     }
 
     /** @return array<string, mixed> */

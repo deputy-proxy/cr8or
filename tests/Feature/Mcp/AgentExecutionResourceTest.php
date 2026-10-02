@@ -11,6 +11,7 @@ use App\Mcp\Tools\ResumeAgentExecutionTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\Enterprise;
+use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -21,6 +22,10 @@ function executionMcpActor(): array
     $enterprise = Enterprise::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $enterprise->organization_id]);
     $agent = AgentDescriptor::query()->firstOrCreate(['runtime_class' => App\Agents\CeoAgent::class], ['slug' => 'execution-test-agent', 'enabled' => true]);
+    ExpertDescriptor::query()->updateOrCreate(
+        ['slug' => 'business-analysis'],
+        ['runtime_class' => App\Experts\BusinessAnalysisExpert::class, 'enabled' => true],
+    );
     $assignment = AgentAssignment::query()->create(['agent_descriptor_id' => $agent->getKey(), 'organization_id' => $enterprise->organization_id, 'enterprise_id' => $enterprise->getKey(), 'enabled' => true, 'status' => AgentAssignment::STATUS_READY]);
 
     return [$user, $enterprise, $assignment];
