@@ -220,6 +220,7 @@ final class MarketingStrategyWorkflowDefinition
         $workflow = Workflow::query()->create([
             'enterprise_id' => $enterprise->getKey(),
             'name' => 'Canonical Marketing Strategy Workflow',
+            'canonical_key' => self::CANONICAL_TEMPLATE,
             'purpose' => 'Create a new deterministic marketing strategy from canonical enterprise context.',
             'execution_policy' => [
                 'template' => self::CANONICAL_TEMPLATE,
