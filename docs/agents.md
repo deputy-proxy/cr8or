@@ -514,7 +514,7 @@ The registry rejects definitions without a failure contract and rejects duplicat
 
 ## Interactive and autonomous execution boundary
 
-CR8OR has exactly two execution modes: `interactive` and `autonomous`.
+CR8OR has exactly two Agent execution modes: `interactive` and `autonomous`. Deterministic Workflow execution is a complementary execution strategy, not a third Agent mode.
 
 Interactive is the continuous ChatGPT-driven runtime:
 
@@ -530,7 +530,7 @@ Autonomous remains the worker-driven path:
 
 The worker owns autonomous progression and the configured `ModelProvider` supplies reasoning. Interactive and autonomous are separate execution drivers even though they share the same durable execution and governance model.
 
-The invariant for both modes remains `Agent → Expert → Capability → Operation`. There is no direct Agent → Capability authority and no third execution mode.
+The Agent governance invariant remains `Agent → Expert → Capability → Operation`, while deterministic Workflow execution uses `Workflow → Expert → Capability → Operation` without an Agent. There is no direct Agent → Capability authority and no third Agent execution mode.
 
 ## Enterprise identity integrity
 

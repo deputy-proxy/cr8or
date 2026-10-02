@@ -95,9 +95,9 @@ final class WorkflowEntryPointService
     }
 
     /** @param array<string, mixed> $input */
-    public function start(User $actor, Workflow $workflow, array $input, string $idempotencyKey, ?string $correlationId = null): WorkflowExecution
+    public function start(User $actor, Workflow $workflow, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false): WorkflowExecution
     {
-        return app(WorkflowExecutionService::class)->start($actor, $workflow, $input, $idempotencyKey, $correlationId);
+        return app(WorkflowExecutionService::class)->start($actor, $workflow, $input, $idempotencyKey, $correlationId, $returnFailed);
     }
 
     /** @return array<string, mixed> */

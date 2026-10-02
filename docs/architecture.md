@@ -219,3 +219,43 @@ Interactive plans are persisted in AgentExecution.execution_context. Each plan s
 An empty plan produces waiting_for_input, not completed. Approval-sensitive Capability results produce a waiting step and waiting_for_approval parent state. Resume reuses the persisted plan and may merge updated requests, including approval references, without invoking a model provider.
 
 Autonomous execution remains unchanged and continues to use the ModelProvider reasoning loop. max_steps remains an execution safety limit; it is not an interactive workflow definition.
+
+## Workflow-first execution model
+
+CR8OR has two complementary execution strategies, not three execution modes.
+
+### Deterministic work
+
+Known, repeatable business processes use:
+
+Workflow → WorkflowVersion → WorkflowExecution → WorkflowStage → Expert → Capability → Operation → authoritative state
+
+A Workflow is the durable process definition. WorkflowVersion is the immutable published snapshot selected for execution. WorkflowExecution is the durable runtime state, including stage progress, inputs, outputs, idempotency and continuation state. A deterministic Workflow does not require AgentExecution, a ModelProvider, or an autonomous worker.
+
+Each Workflow stage declares explicit dependencies, input/output contracts, completion criteria, Expert ownership and governed Capabilities. Workflow runtime never invokes domain Operations or MCP Tools directly. MCP is an entry/continuation interface over the same application boundary.
+
+### Agentic work
+
+Ambiguous work uses:
+
+Agent → select/create Workflow or governed capability path → Expert → Capability → Operation
+
+The Agent is responsible for intent interpretation, dynamic planning, workflow selection, exception handling and adaptive decisions. It is not required merely because a business process exists.
+
+An Agent may wrap a deterministic Workflow for provenance. In that case the Agent delegates the complete Workflow execution to WorkflowExecutionService, records the resulting WorkflowExecution identity, and reasons over the persisted result. The Workflow remains valid and executable without the Agent. A Workflow failure remains a Workflow failure; the Agent may decide what governed recovery action to take without rewriting the Workflow result.
+
+AgentExecutionStep therefore supports both an individual Workflow-stage step for legacy Agent-driven orchestration and a Workflow wrapper step whose workflow_stage_id is intentionally null when the Agent is delegating a deterministic Workflow as a unit.
+
+### Choosing the boundary
+
+| Situation | Execution boundary |
+|---|---|
+| Known business process with stable stages | Workflow |
+| Human continuation of a known process | WorkflowExecution continuation |
+| Scheduled/event-driven known process | Workflow + worker/event trigger |
+| Ambiguous intent requiring planning | Agent |
+| Agent chooses a known process | Agent → Workflow |
+| Agent needs adaptive recovery after a Workflow result | Agent → Workflow → Agent reasoning |
+| Direct business mutation | Expert → Capability → Operation |
+
+The invariant is that neither Agent nor Workflow bypasses Expert-owned Capabilities and Operations. Agents are optional planners over deterministic Workflows, not a universal prerequisite for business execution.
