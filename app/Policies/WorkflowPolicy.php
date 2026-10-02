@@ -38,10 +38,8 @@ class WorkflowPolicy
 
     private function organizationRole(User $user, Workflow $record): ?MembershipRole
     {
-        $role = $user->memberships()
+        return $user->memberships()
             ->where('organization_id', $record->enterprise->organization_id)
-            ->value('role');
-
-        return $role === null ? null : MembershipRole::tryFrom($role);
+            ->first()?->role;
     }
 }
