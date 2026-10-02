@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
+#[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'canonical_key', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
 /** @property int|null $version
  * @property array<string, mixed>|null $completion_criteria
  * @property array<string, mixed>|null $execution_policy
@@ -41,6 +41,15 @@ class Workflow extends Model
     protected function casts(): array
     {
         return ['execution_policy' => 'array', 'completion_criteria' => 'array'];
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Workflow>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Workflow>
+     */
+    public function scopeForCanonicalKey(\Illuminate\Database\Eloquent\Builder $query, Enterprise $enterprise, string $canonicalKey): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('enterprise_id', $enterprise->getKey())->where('canonical_key', $canonicalKey);
     }
 
     /** @return BelongsTo<Enterprise, $this> */
