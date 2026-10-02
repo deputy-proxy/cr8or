@@ -34,6 +34,7 @@ use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
@@ -64,6 +65,7 @@ use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
+use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkItemTool;
 use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDelegationsTool;
@@ -90,16 +92,20 @@ use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProjectTool;
 use App\Mcp\Tools\ListSocialAccountTool;
 use App\Mcp\Tools\ListStrategyTool;
+use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\ListWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
+use App\Mcp\Tools\PublishWorkflowTool;
 use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\ResumeAgentExecutionTool;
+use App\Mcp\Tools\ResumeWorkflowExecutionTool;
 use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
+use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\TransitionAgentAssignmentTool;
 use App\Mcp\Tools\TransitionCampaignTool;
@@ -236,6 +242,12 @@ class Cr8orServer extends Server
         UpdateProjectTool::class,
 
         CreateWorkItemTool::class,
+        CreateWorkflowTool::class,
+        PublishWorkflowTool::class,
+        ListWorkflowsTool::class,
+        StartWorkflowTool::class,
+        GetWorkflowExecutionTool::class,
+        ResumeWorkflowExecutionTool::class,
         UpdateWorkItemTool::class,
         CreateContentItemTool::class,
         CreateScriptTool::class,

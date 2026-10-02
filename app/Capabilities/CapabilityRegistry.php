@@ -8,17 +8,23 @@ use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
+use App\Mcp\Tools\GetWorkflowExecutionTool;
+use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
+use App\Mcp\Tools\PublishWorkflowTool;
 use App\Mcp\Tools\RecordMemoryTool;
+use App\Mcp\Tools\ResumeWorkflowExecutionTool;
 use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
+use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
@@ -35,13 +41,16 @@ use App\Operations\CreateKnowledgeItem;
 use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
+use App\Operations\CreateWorkflow;
 use App\Operations\CreateWorkItem;
 use App\Operations\DelegateAgent;
+use App\Operations\DiscoverWorkflows;
 use App\Operations\EnterpriseContextCreate;
 use App\Operations\EnterpriseContextRetrieve;
 use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
+use App\Operations\InspectWorkflowExecution;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingAudienceArchive;
 use App\Operations\MarketingAudienceCreate;
@@ -60,12 +69,15 @@ use App\Operations\PlanMarketing;
 use App\Operations\ProjectCreate;
 use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
+use App\Operations\PublishWorkflow;
 use App\Operations\RecordMemory;
+use App\Operations\ResumeWorkflowExecution;
 use App\Operations\RetrieveKnowledge;
 use App\Operations\RetrieveMemory;
 use App\Operations\SocialAccountConnect;
 use App\Operations\SocialAccountDisconnect;
 use App\Operations\SocialAccountUpdate;
+use App\Operations\StartWorkflow;
 use App\Operations\SubmitContentForReview;
 use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
@@ -155,6 +167,60 @@ final class CapabilityRegistry
     private function defaultDefinitions(): array
     {
         return [
+            $this->definition(
+                'workflow.create',
+                CreateWorkflow::class,
+                CreateWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'stages' => 'array|required', 'purpose' => 'string|nullable', 'execution_policy' => 'object|nullable', 'completion_criteria' => 'object|nullable'],
+                ['success' => 'boolean', 'result' => 'workflow'],
+                'WorkflowPolicy::create + enterprise scope',
+                'none',
+            ),
+            $this->definition(
+                'workflow.publish',
+                PublishWorkflow::class,
+                PublishWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required', 'idempotency_key' => 'string|required'],
+                ['success' => 'boolean', 'result' => 'workflow-version'],
+                'WorkflowPolicy::view + immutable version publication',
+                'none',
+            ),
+            $this->definition(
+                'workflow.discover',
+                DiscoverWorkflows::class,
+                ListWorkflowsTool::class,
+                ['enterprise_id' => 'integer|required', 'search' => 'string|nullable', 'per_page' => 'integer|nullable', 'page' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'workflow-list'],
+                'Enterprise view authorization',
+                'none',
+            ),
+            $this->definition(
+                'workflow.execute',
+                StartWorkflow::class,
+                StartWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required', 'input' => 'object|nullable', 'idempotency_key' => 'string|required', 'correlation_id' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'workflow-execution'],
+                'Published Workflow view authorization',
+                'none',
+            ),
+            $this->definition(
+                'workflow.inspect',
+                InspectWorkflowExecution::class,
+                GetWorkflowExecutionTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_execution_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'workflow-execution-state'],
+                'WorkflowExecution enterprise/workflow authorization',
+                'none',
+            ),
+            $this->definition(
+                'workflow.resume',
+                ResumeWorkflowExecution::class,
+                ResumeWorkflowExecutionTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_execution_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'workflow-execution'],
+                'WorkflowExecution enterprise/workflow authorization',
+                'none',
+            ),
             $this->definition(
                 'agent.continue',
                 ContinueAgentExecution::class,

@@ -63,6 +63,37 @@ final class WorkflowExecutionService
         });
     }
 
+    /** @return array<string, mixed> */
+    public function inspect(User $actor, WorkflowExecution $execution): array
+    {
+        $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
+        Gate::forUser($actor)->authorize('view', $execution->workflow);
+
+        $outputsValue = $execution->getAttribute('outputs');
+        $outputs = is_array($outputsValue) ? $outputsValue : [];
+        $next = $this->nextStage($execution);
+
+        return [
+            'id' => $execution->getKey(),
+            'workflow_id' => $execution->workflow_id,
+            'workflow_version_id' => $execution->workflow_version_id,
+            'workflow_version' => $execution->workflow_version,
+            'status' => $execution->status,
+            'current_stage_key' => $execution->current_stage_key,
+            'completed_stage_keys' => array_keys($outputs),
+            'waiting' => in_array($execution->status, [
+                WorkflowExecution::STATUS_WAITING_FOR_INPUT,
+                WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
+            ], true),
+            'state_reason' => $execution->state_reason,
+            'failure_reason' => $execution->failure_reason,
+            'outputs' => $outputs,
+            'next_stage_key' => $next?->key,
+            'correlation_id' => $execution->correlation_id,
+            'idempotency_key' => $execution->idempotency_key,
+        ];
+    }
+
     public function continue(User $actor, WorkflowExecution $execution): WorkflowExecution
     {
         $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
