@@ -89,9 +89,17 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [MarketingStrategy::class, $enterprise]);
 
+        $name = (string) $attributes['name'];
+
+        if (($attributes['new_only'] ?? false)
+            && $enterprise->marketingStrategies()->where('name', $name)->exists()) {
+            throw new LogicException("A marketing strategy named [{$name}] already exists for this enterprise.");
+        }
+
         return $enterprise->marketingStrategies()->create([
-            'name' => $attributes['name'],
+            'name' => $name,
             'description' => $attributes['description'] ?? null,
+            'sections' => is_array($attributes['sections'] ?? null) ? $attributes['sections'] : [],
             'status' => MarketingStrategy::STATUS_DRAFT,
         ]);
     }

@@ -227,7 +227,11 @@ final class WorkflowExecutionService
         /** @var array<string, mixed> $input */
         $input = is_array($inputValue) ? $inputValue : [];
         $mappedInput = $this->resolveMappedInput($stage, $context);
-        $available = array_merge($input, $mappedInput, $context);
+        $defaultsValue = $inputContract['defaults'] ?? [];
+        /** @var array<string, mixed> $defaults */
+        $defaults = is_array($defaultsValue) ? $defaultsValue : [];
+        $available = array_merge($input, $mappedInput, $defaults, $context);
+        $inputPayload = array_merge($defaults, $input, $mappedInput);
 
         foreach ($required as $key) {
             if (is_string($key) && ! array_key_exists($key, $available)) {
@@ -245,7 +249,7 @@ final class WorkflowExecutionService
                 'workflow_stage_key' => $stage->key,
                 ...$context,
             ],
-            inputPayload: array_merge($input, $mappedInput),
+            inputPayload: $inputPayload,
             correlationId: $execution->correlation_id,
             idempotencyKey: $execution->idempotency_key.':'.$stage->key,
             expertSlug: $expertSlug,

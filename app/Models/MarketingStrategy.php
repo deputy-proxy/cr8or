@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'name', 'description', 'status'])]
+#[Fillable(['enterprise_id', 'name', 'description', 'sections', 'status'])]
 class MarketingStrategy extends Model
 {
     /** @use HasFactory<MarketingStrategyFactory> */
@@ -24,6 +24,11 @@ class MarketingStrategy extends Model
 
     /** @var list<string> */
     private const STATUSES = [self::STATUS_DRAFT, self::STATUS_ACTIVE, self::STATUS_ARCHIVED];
+
+    protected function casts(): array
+    {
+        return ['sections' => 'array'];
+    }
 
     protected static function booted(): void
     {

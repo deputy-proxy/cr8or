@@ -36,6 +36,7 @@ use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\DefineMarketingStrategySectionTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
 use App\Mcp\Tools\ExecuteAgentTool;
@@ -217,6 +218,7 @@ class Cr8orServer extends Server
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
         CreateMarketingStrategyTool::class,
+        DefineMarketingStrategySectionTool::class,
         UpdateStrategyTool::class,
         CreateCampaignTool::class,
         UpdateCampaignTool::class,

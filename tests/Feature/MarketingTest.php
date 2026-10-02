@@ -110,7 +110,7 @@ it('enforces the enterprise organization boundary through marketing policies', f
 
 it('keeps the marketing schema explicit and non-polymorphic', function () {
     expect(Schema::getColumnListing('marketing_strategies'))->toBe([
-        'id', 'enterprise_id', 'name', 'description', 'status', 'created_at', 'updated_at',
+        'id', 'enterprise_id', 'name', 'description', 'status', 'created_at', 'updated_at', 'sections',
     ])->and(Schema::getColumnListing('campaigns'))->toBe([
         'id', 'enterprise_id', 'marketing_strategy_id', 'name', 'description', 'status', 'created_at', 'updated_at',
     ])->and(Schema::getColumnListing('content_series'))->toBe([
