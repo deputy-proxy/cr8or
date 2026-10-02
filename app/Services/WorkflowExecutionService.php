@@ -19,7 +19,7 @@ final class WorkflowExecutionService
     public function __construct(private readonly CapabilityInvocationService $capabilities) {}
 
     /** @param array<string, mixed> $input */
-    public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null): WorkflowExecution
+    public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false): WorkflowExecution
     {
         $version = $definition instanceof WorkflowVersion ? $definition : $definition->publishedVersion;
 
@@ -39,7 +39,7 @@ final class WorkflowExecutionService
             return $existing;
         }
 
-        return DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId): WorkflowExecution {
+        return DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId, $returnFailed): WorkflowExecution {
             $execution = WorkflowExecution::query()->create([
                 'workflow_id' => $workflow->getKey(),
                 'workflow_version_id' => $version->getKey(),
@@ -60,7 +60,7 @@ final class WorkflowExecutionService
                 ],
             ]);
 
-            return $this->continue($actor, $execution);
+            return $this->continue($actor, $execution, null, $returnFailed);
         });
     }
 
@@ -96,9 +96,9 @@ final class WorkflowExecutionService
         ];
     }
 
-    public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null): WorkflowExecution
+    public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false): WorkflowExecution
     {
-        return DB::transaction(function () use ($actor, $execution, $continuationToken): WorkflowExecution {
+        return DB::transaction(function () use ($actor, $execution, $continuationToken, $returnFailed): WorkflowExecution {
             /** @var WorkflowExecution $locked */
             $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
@@ -106,11 +106,11 @@ final class WorkflowExecutionService
                 throw new AuthorizationException('Workflow continuation token is stale or invalid.');
             }
 
-            return $this->continueLocked($actor, $locked);
+            return $this->continueLocked($actor, $locked, $returnFailed);
         });
     }
 
-    private function continueLocked(User $actor, WorkflowExecution $execution): WorkflowExecution
+    private function continueLocked(User $actor, WorkflowExecution $execution, bool $returnFailed = false): WorkflowExecution
     {
         $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
 
@@ -190,6 +190,10 @@ final class WorkflowExecutionService
 
             if ($execution->workflow->status === Workflow::STATUS_RUNNING) {
                 $execution->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
+            }
+
+            if ($returnFailed) {
+                return $execution->refresh();
             }
 
             throw $exception;

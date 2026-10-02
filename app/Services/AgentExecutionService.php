@@ -506,7 +506,9 @@ final class AgentExecutionService
 
             while ($execution->current_step < $execution->max_steps) {
                 $sequence = $execution->current_step + 1;
-                $workflowStage = $this->nextWorkflowStage($execution);
+                $deterministicWorkflow = $this->hasDeterministicWorkflow($execution);
+                $workflowStarted = $this->hasStartedDeterministicWorkflow($execution);
+                $workflowStage = $deterministicWorkflow ? null : $this->nextWorkflowStage($execution);
 
                 $step = AgentExecutionStep::query()->firstOrCreate(
                     ['agent_execution_id' => $execution->getKey(), 'sequence' => $sequence],
@@ -514,7 +516,9 @@ final class AgentExecutionService
                         'organization_id' => $execution->organization_id,
                         'enterprise_id' => $execution->enterprise_id,
                         'status' => AgentExecutionStep::STATUS_PENDING,
-                        'type' => $workflowStage !== null ? AgentExecutionStep::TYPE_WORKFLOW : AgentExecutionStep::TYPE_REASONING,
+                        'type' => $deterministicWorkflow && ! $workflowStarted
+                            ? AgentExecutionStep::TYPE_WORKFLOW
+                            : ($workflowStage !== null ? AgentExecutionStep::TYPE_WORKFLOW : AgentExecutionStep::TYPE_REASONING),
                         'workflow_stage_id' => $workflowStage?->getKey(),
                         'correlation_id' => $correlationId,
                         'idempotency_key' => $execution->idempotency_key.':'.$sequence,
@@ -536,6 +540,71 @@ final class AgentExecutionService
                 }
                 $execution->current_step = $sequence;
                 $execution->beginReasoning()->save();
+
+                if ($deterministicWorkflow && ! $workflowStarted) {
+                    $workflowExecution = app(\App\Services\WorkflowEntryPointService::class)->start(
+                        $actor,
+                        $execution->workflow->refresh(),
+                        array_merge(
+                            is_array($execution->target_context) ? $execution->target_context : [],
+                            ['prompt' => $prompt, 'agent_execution_id' => $execution->getKey()],
+                        ),
+                        $execution->idempotency_key.':workflow',
+                        null,
+                        true,
+                    );
+
+                    $workflowSummary = [
+                        'workflow_execution_id' => $workflowExecution->getKey(),
+                        'workflow_id' => $workflowExecution->workflow_id,
+                        'workflow_version_id' => $workflowExecution->workflow_version_id,
+                        'status' => $workflowExecution->status,
+                        'current_stage_key' => $workflowExecution->current_stage_key,
+                        'failure_reason' => $workflowExecution->failure_reason,
+                    ];
+
+                    $execution->execution_context = array_merge(
+                        is_array($execution->execution_context) ? $execution->execution_context : [],
+                        ['workflow_execution_id' => $workflowExecution->getKey()],
+                    );
+                    $execution->last_result = [
+                        'workflow_execution' => $workflowSummary,
+                        'answer' => 'The selected deterministic Workflow has completed its execution boundary.',
+                    ];
+                    $step->output = ['workflow_execution' => $workflowSummary];
+                    $step->complete()->save();
+                    $execution->save();
+
+                    if (in_array($workflowExecution->status, [
+                        \App\Models\WorkflowExecution::STATUS_WAITING_FOR_INPUT,
+                        \App\Models\WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
+                    ], true)) {
+                        $reason = $workflowExecution->state_reason ?? 'Selected Workflow is waiting for external input.';
+                        if ($workflowExecution->status === \App\Models\WorkflowExecution::STATUS_WAITING_FOR_APPROVAL) {
+                            $execution->waitForApproval($reason)->save();
+                        } else {
+                            $execution->waitForInput($reason)->save();
+                        }
+
+                        $workflowResult = new ModelResult(
+                            text: $reason,
+                            structured: $execution->last_result,
+                            provider: 'workflow',
+                            model: 'deterministic',
+                            invocationId: (string) $workflowExecution->getKey(),
+                            correlationId: $correlationId,
+                        );
+
+                        return new AgentExecutionResult($execution->refresh(), $workflowResult, null, []);
+                    }
+
+                    $execution->next_step = $workflowExecution->status === \App\Models\WorkflowExecution::STATUS_FAILED
+                        ? 'Inspect the failed Workflow result and decide whether governed recovery work is required.'
+                        : 'Inspect the completed Workflow result and decide whether another governed Workflow or capability is required.';
+                    $execution->beginReasoning()->save();
+
+                    continue;
+                }
 
                 $persistedModel = $stepWasRunning && is_array($step->output['model_result'] ?? null)
                     ? $step->output['model_result']
@@ -656,9 +725,13 @@ final class AgentExecutionService
                     ? $execution->last_result['delegation_results']
                     : [];
 
+                $workflowResult = is_array($execution->last_result['workflow_execution'] ?? null)
+                    ? $execution->last_result['workflow_execution']
+                    : null;
                 $execution->provider = $modelResult->provider;
                 $execution->external_execution_id = $modelResult->invocationId;
                 $execution->last_result = [
+                    'workflow_execution' => $workflowResult,
                     'expert_results' => array_map(static function (array $result): array {
                         $invocation = is_array($result['invocation'] ?? null) ? $result['invocation'] : [];
 
@@ -1619,11 +1692,32 @@ final class AgentExecutionService
         ]);
     }
 
+    private function hasDeterministicWorkflow(AgentExecution $execution): bool
+    {
+        $workflow = $execution->workflow;
+
+        $workflowPolicyValue = $workflow?->getAttribute('execution_policy');
+        /** @var array<string, mixed> $workflowPolicy */
+        $workflowPolicy = is_array($workflowPolicyValue) ? $workflowPolicyValue : [];
+
+        return $workflow !== null
+            && (($workflowPolicy['mode'] ?? null) === 'deterministic');
+    }
+
+    private function hasStartedDeterministicWorkflow(AgentExecution $execution): bool
+    {
+        $context = is_array($execution->execution_context) ? $execution->execution_context : [];
+        $workflowExecutionId = $context['workflow_execution_id'] ?? null;
+
+        return is_int($workflowExecutionId)
+            || (is_string($workflowExecutionId) && $workflowExecutionId !== '');
+    }
+
     private function nextWorkflowStage(AgentExecution $execution): ?WorkflowStage
     {
         $workflow = $execution->workflow;
 
-        if ($workflow === null) {
+        if ($workflow === null || $this->hasDeterministicWorkflow($execution)) {
             return null;
         }
 

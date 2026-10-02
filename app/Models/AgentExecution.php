@@ -431,8 +431,31 @@ class AgentExecution extends Model
             if ($this->workflow_version !== null && $this->workflow_version !== $workflow->version) {
                 throw new LogicException('Agent execution workflow version must match the bound Workflow.');
             }
-            if ($this->status === self::STATUS_COMPLETED && $this->exists && ! $workflow->completionSatisfied($this)) {
-                throw new LogicException('A Workflow-bound Agent execution cannot complete before its Workflow criteria pass.');
+            if ($this->status === self::STATUS_COMPLETED && $this->exists) {
+                $workflowPolicyValue = $workflow->getAttribute('execution_policy');
+                /** @var array<string, mixed> $workflowPolicy */
+                $workflowPolicy = is_array($workflowPolicyValue) ? $workflowPolicyValue : [];
+                $deterministic = ($workflowPolicy['mode'] ?? null) === 'deterministic';
+                $workflowExecutionId = is_array($this->execution_context)
+                    ? $this->execution_context['workflow_execution_id'] ?? null
+                    : null;
+
+                if ($deterministic) {
+                    $workflowExecution = is_int($workflowExecutionId) || is_string($workflowExecutionId)
+                        ? WorkflowExecution::query()->find((int) $workflowExecutionId)
+                        : null;
+
+                    if ($workflowExecution === null || in_array($workflowExecution->status, [
+                        WorkflowExecution::STATUS_RUNNING,
+                        WorkflowExecution::STATUS_WAITING_FOR_INPUT,
+                        WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
+                        WorkflowExecution::STATUS_PENDING,
+                    ], true)) {
+                        throw new LogicException('A Workflow-bound Agent execution cannot complete before its deterministic Workflow reaches a terminal state.');
+                    }
+                } elseif (! $workflow->completionSatisfied($this)) {
+                    throw new LogicException('A Workflow-bound Agent execution cannot complete before its Workflow criteria pass.');
+                }
             }
         }
         if (! in_array($this->status, self::STATUSES, true)) {

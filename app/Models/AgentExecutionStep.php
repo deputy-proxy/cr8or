@@ -157,8 +157,13 @@ class AgentExecutionStep extends Model
             if ($execution === null) {
                 throw new LogicException('Agent execution step requires a valid Agent execution.');
             }
-            if ($step->type === self::TYPE_WORKFLOW && $step->workflow_stage_id === null) {
-                throw new LogicException('Workflow execution steps require a workflow stage.');
+            $workflowPolicyValue = $execution->workflow?->getAttribute('execution_policy');
+            /** @var array<string, mixed> $workflowPolicy */
+            $workflowPolicy = is_array($workflowPolicyValue) ? $workflowPolicyValue : [];
+
+            if ($step->type === self::TYPE_WORKFLOW && $step->workflow_stage_id === null
+                && ($workflowPolicy['mode'] ?? null) !== 'deterministic') {
+                throw new LogicException('Agent Workflow stage steps require a workflow stage unless the Agent is wrapping a deterministic Workflow.');
             }
 
             if ($step->workflow_stage_id !== null) {
