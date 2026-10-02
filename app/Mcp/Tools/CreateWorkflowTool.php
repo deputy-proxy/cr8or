@@ -21,6 +21,7 @@ class CreateWorkflowTool extends GovernedCapabilityTool
         return [
             'enterprise_id' => $schema->integer()->min(1)->required(),
             'name' => $schema->string()->min(1)->max(255)->required(),
+            'canonical_key' => $schema->string()->min(1)->max(150),
             'purpose' => $schema->string()->max(10000),
             'stages' => $schema->array()->min(1)->required(),
             'execution_policy' => $schema->object(),
@@ -37,6 +38,7 @@ class CreateWorkflowTool extends GovernedCapabilityTool
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
+                'canonical_key' => ['nullable', 'string', 'min:1', 'max:150', 'regex:/^[a-z0-9][a-z0-9._-]*$/'],
                 'purpose' => ['nullable', 'string', 'max:10000'],
                 'stages' => ['required', 'array', 'min:1'],
                 'stages.*.key' => ['required', 'string', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
