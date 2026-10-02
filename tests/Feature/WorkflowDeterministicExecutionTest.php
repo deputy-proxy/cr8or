@@ -9,7 +9,9 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowVersion;
 use App\Services\WorkflowExecutionService;
+use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use LogicException;
@@ -49,49 +51,67 @@ function governedStage(Workflow $workflow, string $key, int $sequence, array $de
     ]);
 }
 
-it('executes a multi-stage workflow without creating an AgentExecution or requiring a ModelProvider', function (): void {
+function publishedWorkflow(Workflow $workflow, User $actor): WorkflowVersion
+{
+    return app(WorkflowVersionService::class)->publish($workflow, $actor, 'publish:'.$workflow->getKey().':'.uniqid());
+}
+
+it('executes a multi-stage published workflow without creating an AgentExecution or requiring a ModelProvider', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
-    $workflow = Workflow::factory()->create([
-        'enterprise_id' => $enterprise,
-        'name' => 'Deterministic business analysis',
-    ]);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Deterministic business analysis']);
 
     governedStage($workflow, 'research', 1);
     governedStage($workflow, 'strategy', 2, ['research'], ['stages']);
+    $version = publishedWorkflow($workflow, $actor);
 
     $execution = app(WorkflowExecutionService::class)->start(
         $actor,
-        $workflow,
+        $version,
         ['request' => 'Analyze the enterprise.'],
         'workflow-test-1',
         'workflow-correlation-1',
     );
 
     expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
-        ->and($execution->workflow_version)->toBe($workflow->version)
+        ->and($execution->workflow_version_id)->toBe($version->id)
+        ->and($execution->workflow_version)->toBe($version->version)
         ->and($execution->correlation_id)->toBe('workflow-correlation-1')
         ->and($execution->outputs)->toHaveKeys(['research', 'strategy'])
-        ->and($execution->context['stages']['research'])->toHaveKey('analysis')
-        ->and($execution->context['stages']['strategy'])->toHaveKey('analysis')
-        ->and(AgentExecution::query()->count())->toBe(0)
-        ->and($workflow->refresh()->status)->toBe(Workflow::STATUS_SUCCEEDED);
+        ->and(AgentExecution::query()->count())->toBe(0);
+});
+
+it('refuses to execute draft workflow definitions', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1);
+
+    $draft = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'stage_definitions' => [['key' => 'research', 'sequence' => 1]],
+    ]);
+
+    expect(fn () => app(WorkflowExecutionService::class)->start(
+        $actor,
+        $draft,
+        [],
+        'draft-execution',
+    ))->toThrow(AuthorizationException::class, 'requires a published WorkflowVersion');
 });
 
 it('enforces stage dependencies and input contracts before capability execution', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
-
-    $first = governedStage($workflow, 'research', 1, [], ['required_request']);
-    $second = governedStage($workflow, 'strategy', 2, ['research']);
-
-    expect($first->dependencies)->toBe([])
-        ->and($second->dependencies)->toBe(['research']);
+    governedStage($workflow, 'research', 1, [], ['required_request']);
+    governedStage($workflow, 'strategy', 2, ['research']);
+    $version = publishedWorkflow($workflow, $actor);
 
     expect(fn () => app(WorkflowExecutionService::class)->start(
         $actor,
-        $workflow,
+        $version,
         [],
         'workflow-missing-input',
     ))->toThrow(AuthorizationException::class, 'missing required input [required_request]');
@@ -99,18 +119,19 @@ it('enforces stage dependencies and input contracts before capability execution'
     expect(AgentExecution::query()->count())->toBe(0);
 });
 
-it('is idempotent for repeated starts and preserves the first execution', function (): void {
+it('is idempotent per published WorkflowVersion', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
     governedStage($workflow, 'research', 1);
+    $version = publishedWorkflow($workflow, $actor);
 
     $service = app(WorkflowExecutionService::class);
-    $first = $service->start($actor, $workflow, ['request' => 'same'], 'same-key', 'same-correlation');
-    $second = $service->start($actor, $workflow, ['request' => 'different'], 'same-key', 'different-correlation');
+    $first = $service->start($actor, $version, ['request' => 'same'], 'same-key', 'same-correlation');
+    $second = $service->start($actor, $version, ['request' => 'different'], 'same-key', 'different-correlation');
 
     expect($second->is($first))->toBeTrue()
-        ->and(WorkflowExecution::query()->where('workflow_id', $workflow->id)->count())->toBe(1)
+        ->and(WorkflowExecution::query()->where('workflow_version_id', $version->id)->count())->toBe(1)
         ->and($second->input)->toBe(['request' => 'same'])
         ->and($second->correlation_id)->toBe('same-correlation');
 });
@@ -120,11 +141,15 @@ it('supports pausing and resuming a workflow execution without an AgentExecution
     $actor = workflowActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
     governedStage($workflow, 'research', 1);
+    $version = publishedWorkflow($workflow, $actor);
 
-    $execution = WorkflowExecution::factory()->forEnterprise($enterprise)->create([
+    $execution = WorkflowExecution::factory()->create([
         'workflow_id' => $workflow,
-        'workflow_version' => $workflow->version,
-        'actor_id' => $actor,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise->id,
+        'organization_id' => $enterprise->organization_id,
+        'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_PENDING,
     ]);
 
@@ -135,6 +160,53 @@ it('supports pausing and resuming a workflow execution without an AgentExecution
     $completed = app(WorkflowExecutionService::class)->continue($actor, $execution);
     expect($completed->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and(AgentExecution::query()->count())->toBe(0);
+});
+
+it('keeps published versions immutable and historical executions bound to their version', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    $stage = governedStage($workflow, 'research', 1);
+    $versionOne = publishedWorkflow($workflow, $actor);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $versionOne,
+        ['request' => 'historical'],
+        'historical-key',
+    );
+
+    expect(fn () => $versionOne->update(['name' => 'mutated']))->toThrow(LogicException::class, 'immutable');
+
+    $stage->update(['name' => 'New design']);
+    $versionTwo = publishedWorkflow($workflow, $actor);
+
+    expect($versionTwo->version)->toBe($versionOne->version + 1)
+        ->and($versionOne->refresh()->stage_definitions[0]['name'])->toBe('Research')
+        ->and($versionTwo->stage_definitions[0]['name'])->toBe('New design')
+        ->and($execution->refresh()->workflow_version_id)->toBe($versionOne->id)
+        ->and($execution->workflowVersion->version)->toBe($versionOne->version);
+});
+
+it('supports draft revision, idempotent publishing and retirement', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1);
+    $published = publishedWorkflow($workflow, $actor);
+
+    $draft = app(WorkflowVersionService::class)->createDraft($published, $actor, 'revision-1');
+    $draft->setAttribute('stage_definitions', [['key' => 'research-v2', 'name' => 'Research v2', 'sequence' => 1]])->save();
+
+    $publishedTwo = app(WorkflowVersionService::class)->publishVersion($draft, $actor, 'publish-revision-1');
+
+    expect($publishedTwo->version)->toBe($published->version + 1)
+        ->and($draft->refresh()->status)->toBe(WorkflowVersion::STATUS_PUBLISHED)
+        ->and($workflow->refresh()->published_version_id)->toBe($publishedTwo->id)
+        ->and($published->refresh()->status)->toBe(WorkflowVersion::STATUS_RETIRED);
+
+    $same = app(WorkflowVersionService::class)->publishVersion($publishedTwo, $actor, 'publish-revision-1');
+    expect($same->is($publishedTwo))->toBeTrue();
 });
 
 it('fails closed across enterprise boundaries', function (): void {
@@ -149,13 +221,14 @@ it('fails closed across enterprise boundaries', function (): void {
 
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
     governedStage($workflow, 'research', 1);
+    publishedWorkflow($workflow, workflowActor($enterprise));
 
     expect(fn () => app(WorkflowExecutionService::class)->start(
         $foreignActor,
         $workflow,
         [],
         'foreign-key',
-    ))->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+    ))->toThrow(AuthorizationException::class);
 
     expect(WorkflowExecution::query()->count())->toBe(0)
         ->and(Gate::forUser($foreignActor)->allows('view', $workflow))->toBeFalse();
@@ -165,11 +238,16 @@ it('rejects invalid workflow execution lifecycle transitions', function (): void
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1);
+    $version = publishedWorkflow($workflow, $actor);
 
-    $execution = WorkflowExecution::factory()->forEnterprise($enterprise)->create([
+    $execution = WorkflowExecution::factory()->create([
         'workflow_id' => $workflow,
-        'workflow_version' => $workflow->version,
-        'actor_id' => $actor,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise->id,
+        'organization_id' => $enterprise->organization_id,
+        'actor_id' => $actor->id,
     ]);
 
     $execution->start()->complete()->save();

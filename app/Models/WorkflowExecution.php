@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use LogicException;
 
-#[Fillable(['workflow_id', 'workflow_version', 'organization_id', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
+#[Fillable(['workflow_id', 'workflow_version_id', 'workflow_version', 'organization_id', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'current_stage_key', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
 /**
  * @property int $id
  * @property int $workflow_id
+ * @property int|null $workflow_version_id
  * @property int $workflow_version
  * @property int $organization_id
  * @property int $enterprise_id
@@ -21,6 +22,7 @@ use LogicException;
  * @property string $correlation_id
  * @property string $idempotency_key
  * @property int|null $current_stage_id
+ * @property string|null $current_stage_key
  * @property string|null $failure_reason
  * @property string|null $state_reason
  */
@@ -52,6 +54,12 @@ class WorkflowExecution extends Model
     public function workflow(): BelongsTo
     {
         return $this->belongsTo(Workflow::class);
+    }
+
+    /** @return BelongsTo<WorkflowVersion, $this> */
+    public function workflowVersion(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowVersion::class, 'workflow_version_id');
     }
 
     /** @return BelongsTo<WorkflowStage, $this> */
@@ -150,8 +158,15 @@ class WorkflowExecution extends Model
             if ($workflow === null || $workflow->enterprise_id !== $execution->enterprise_id) {
                 throw new LogicException('Workflow execution must belong to its Enterprise.');
             }
-            if ((int) $execution->workflow_version !== (int) $workflow->version) {
-                throw new LogicException('Workflow execution version must match its Workflow.');
+            $version = WorkflowVersion::query()->find($execution->workflow_version_id);
+            if ($version === null || $version->workflow_id !== $workflow->getKey() || $version->enterprise_id !== $execution->enterprise_id) {
+                throw new LogicException('Workflow execution must reference an exact WorkflowVersion in its Enterprise.');
+            }
+            if ($version->status !== WorkflowVersion::STATUS_PUBLISHED && $execution->status === self::STATUS_PENDING) {
+                throw new LogicException('Workflow execution can only start from a published WorkflowVersion.');
+            }
+            if ((int) $execution->workflow_version !== (int) $version->version) {
+                throw new LogicException('Workflow execution version snapshot must match its WorkflowVersion.');
             }
             $enterprise = Enterprise::query()->find($execution->enterprise_id);
             if ($enterprise === null || $enterprise->organization_id !== $execution->organization_id) {

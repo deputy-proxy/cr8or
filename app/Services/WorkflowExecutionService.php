@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowVersion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,12 +19,19 @@ final class WorkflowExecutionService
     public function __construct(private readonly CapabilityInvocationService $capabilities) {}
 
     /** @param array<string, mixed> $input */
-    public function start(User $actor, Workflow $workflow, array $input, string $idempotencyKey, ?string $correlationId = null): WorkflowExecution
+    public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null): WorkflowExecution
     {
+        $version = $definition instanceof WorkflowVersion ? $definition : $definition->publishedVersion;
+
+        if (! $version instanceof WorkflowVersion || $version->status !== WorkflowVersion::STATUS_PUBLISHED) {
+            throw new AuthorizationException('Deterministic Workflow execution requires a published WorkflowVersion.');
+        }
+
+        $workflow = $version->workflow;
         Gate::forUser($actor)->authorize('view', $workflow);
 
         $existing = WorkflowExecution::query()
-            ->where('workflow_id', $workflow->getKey())
+            ->where('workflow_version_id', $version->getKey())
             ->where('idempotency_key', $idempotencyKey)
             ->first();
 
@@ -31,10 +39,11 @@ final class WorkflowExecutionService
             return $existing;
         }
 
-        return DB::transaction(function () use ($actor, $workflow, $input, $idempotencyKey, $correlationId): WorkflowExecution {
+        return DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId): WorkflowExecution {
             $execution = WorkflowExecution::query()->create([
                 'workflow_id' => $workflow->getKey(),
-                'workflow_version' => $workflow->version,
+                'workflow_version_id' => $version->getKey(),
+                'workflow_version' => $version->version,
                 'organization_id' => $workflow->enterprise->organization_id,
                 'enterprise_id' => $workflow->enterprise_id,
                 'actor_id' => $actor->getKey(),
@@ -43,7 +52,11 @@ final class WorkflowExecutionService
                 'idempotency_key' => $idempotencyKey,
                 'input' => $input,
                 'outputs' => [],
-                'context' => $input,
+                'context' => [
+                    ...$input,
+                    'workflow_version_id' => $version->getKey(),
+                    'workflow_version' => $version->version,
+                ],
             ]);
 
             return $this->continue($actor, $execution);
@@ -52,7 +65,12 @@ final class WorkflowExecutionService
 
     public function continue(User $actor, WorkflowExecution $execution): WorkflowExecution
     {
-        $execution->loadMissing(['workflow.enterprise', 'currentStage']);
+        $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
+
+        if (! $execution->workflowVersion instanceof WorkflowVersion || $execution->workflowVersion->status === WorkflowVersion::STATUS_DRAFT) {
+            throw new AuthorizationException('Workflow execution must reference a published WorkflowVersion.');
+        }
+
         Gate::forUser($actor)->authorize('view', $execution->workflow);
 
         if (in_array($execution->status, [WorkflowExecution::STATUS_COMPLETED, WorkflowExecution::STATUS_FAILED], true)) {
@@ -63,7 +81,7 @@ final class WorkflowExecutionService
 
         try {
             while ($stage = $this->nextStage($execution)) {
-                $execution->current_stage_id = $stage->getKey();
+                $execution->current_stage_key = $stage->key;
                 $execution->state_reason = null;
                 $execution->save();
 
@@ -83,6 +101,7 @@ final class WorkflowExecutionService
 
                 $stageOutput = is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
                 $stageOutput['termination'] = 'completed';
+
                 if (! $stage->completionSatisfied($stageOutput, [$result])) {
                     throw new AuthorizationException("Workflow stage [{$stage->key}] did not satisfy its completion criteria.");
                 }
@@ -149,10 +168,12 @@ final class WorkflowExecutionService
         $inputContract = is_array($inputContractValue) ? $inputContractValue : [];
         $requiredValue = $inputContract['required'] ?? [];
         $required = is_array($requiredValue) ? $requiredValue : [];
+
         $inputValue = $execution->getAttribute('input');
         /** @var array<string, mixed> $input */
         $input = is_array($inputValue) ? $inputValue : [];
         $available = array_merge($input, $context);
+
         foreach ($required as $key) {
             if (is_string($key) && ! array_key_exists($key, $available)) {
                 throw new AuthorizationException("Workflow stage [{$stage->key}] is missing required input [{$key}].");
@@ -165,7 +186,8 @@ final class WorkflowExecutionService
             enterprise: $execution->enterprise,
             targetContext: [
                 'workflow_execution_id' => $execution->getKey(),
-                'workflow_stage_id' => $stage->getKey(),
+                'workflow_version_id' => $execution->workflow_version_id,
+                'workflow_stage_key' => $stage->key,
                 ...$context,
             ],
             inputPayload: $input,
@@ -182,20 +204,62 @@ final class WorkflowExecutionService
 
     private function nextStage(WorkflowExecution $execution): ?WorkflowStage
     {
-        $stages = $execution->workflow->stages()->get();
+        $definitionsRaw = $execution->workflowVersion?->getRawOriginal('stage_definitions');
+        if (is_array($definitionsRaw)) {
+            $definitions = $definitionsRaw;
+        } elseif (is_string($definitionsRaw) && $definitionsRaw !== '') {
+            $decoded = json_decode($definitionsRaw, true);
+            $definitions = is_array($decoded) ? $decoded : [];
+        } else {
+            $definitions = [];
+        }
         $outputsValue = $execution->getAttribute('outputs');
         /** @var array<string, mixed> $outputs */
         $outputs = is_array($outputsValue) ? $outputsValue : [];
         $completed = array_keys($outputs);
 
-        return $stages->first(function (WorkflowStage $stage) use ($completed): bool {
-            if (in_array($stage->key, $completed, true) && ! $stage->repeatable) {
-                return false;
+        foreach ($definitions as $definition) {
+            if (! is_array($definition) || ! is_string($definition['key'] ?? null)) {
+                continue;
             }
 
-            $stage->assertDependenciesSatisfied($completed);
+            $key = $definition['key'];
 
-            return true;
-        });
+            if (in_array($key, $completed, true) && ! ($definition['repeatable'] ?? false)) {
+                continue;
+            }
+
+            $dependencies = is_array($definition['dependencies'] ?? null) ? $definition['dependencies'] : [];
+            $ready = true;
+            foreach ($dependencies as $dependency) {
+                if (! is_string($dependency) || ! in_array($dependency, $completed, true)) {
+                    $ready = false;
+                    break;
+                }
+            }
+
+            if (! $ready) {
+                continue;
+            }
+
+            $stage = new WorkflowStage;
+            $stage->setRawAttributes([
+                'workflow_id' => $execution->workflow_id,
+                'key' => $key,
+                'name' => $definition['name'] ?? $key,
+                'sequence' => $definition['sequence'] ?? 0,
+                'dependencies' => json_encode($dependencies, JSON_THROW_ON_ERROR),
+                'expert_slugs' => json_encode($definition['expert_slugs'] ?? [], JSON_THROW_ON_ERROR),
+                'capability_slugs' => json_encode($definition['capability_slugs'] ?? [], JSON_THROW_ON_ERROR),
+                'input_contract' => json_encode($definition['input_contract'] ?? [], JSON_THROW_ON_ERROR),
+                'output_contract' => json_encode($definition['output_contract'] ?? [], JSON_THROW_ON_ERROR),
+                'repeatable' => (bool) ($definition['repeatable'] ?? false),
+                'completion_criteria' => json_encode($definition['completion_criteria'] ?? [], JSON_THROW_ON_ERROR),
+            ]);
+
+            return $stage;
+        }
+
+        return null;
     }
 }
