@@ -101,6 +101,24 @@ it('refuses to execute draft workflow definitions', function (): void {
     ))->toThrow(AuthorizationException::class, 'requires a published WorkflowVersion');
 });
 
+it('refuses to start a retired WorkflowVersion', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1);
+    $version = publishedWorkflow($workflow, $actor);
+    $version->retire()->save();
+
+    expect(fn () => app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version->refresh(),
+        ['request' => 'retired'],
+        'retired-execution',
+    ))->toThrow(AuthorizationException::class, 'requires a published WorkflowVersion');
+
+    expect(WorkflowExecution::query()->count())->toBe(0);
+});
+
 it('enforces stage dependencies and input contracts before capability execution', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
