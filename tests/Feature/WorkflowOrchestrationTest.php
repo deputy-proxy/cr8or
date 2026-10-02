@@ -52,6 +52,36 @@ it('associates a workflow with a WorkItem inside the same enterprise', function 
         ->and($workflow->version)->toBe(1);
 });
 
+it('evaluates deterministic Workflow completion from WorkflowExecution state', function () {
+    $enterprise = Enterprise::factory()->create();
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    WorkflowStage::factory()->create(['workflow_id' => $workflow, 'key' => 'research', 'sequence' => 1]);
+    WorkflowStage::factory()->create(['workflow_id' => $workflow, 'key' => 'strategy', 'sequence' => 2, 'dependencies' => ['research']]);
+
+    $version = \App\Models\WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => \App\Models\WorkflowVersion::STATUS_PUBLISHED,
+    ]);
+    $execution = \App\Models\WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise,
+        'organization_id' => $enterprise->organization_id,
+        'outputs' => ['research' => ['termination' => 'completed']],
+    ]);
+
+    expect($workflow->completionSatisfied($execution))->toBeFalse();
+
+    $execution->setAttribute('outputs', [
+        'research' => ['termination' => 'completed'],
+        'strategy' => ['termination' => 'completed'],
+    ])->save();
+
+    expect($workflow->completionSatisfied($execution))->toBeTrue();
+});
+
 it('does not consider a workflow complete until every stage has completed', function () {
     $enterprise = Enterprise::factory()->create();
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
