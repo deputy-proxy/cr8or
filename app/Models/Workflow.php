@@ -126,17 +126,42 @@ class Workflow extends Model
         return $this;
     }
 
-    public function completionSatisfied(AgentExecution $execution): bool
+    public function completionSatisfied(AgentExecution|WorkflowExecution $execution): bool
     {
         $stages = $this->stages()->get();
         if ($stages->isEmpty()) {
             return false;
-        }$completed = $execution->steps()->where('type', AgentExecutionStep::TYPE_WORKFLOW)->where('status', AgentExecutionStep::STATUS_COMPLETED)->pluck('workflow_stage_id')->filter()->all();
-        if (! $stages->every(fn (WorkflowStage $s): bool => in_array($s->getKey(), $completed, true))) {
-            return false;
-        }$criteriaValue = $this->getAttribute('completion_criteria');
+        }
+
+        if ($execution instanceof WorkflowExecution) {
+            if (! $execution->workflow_id || $execution->workflow_id !== $this->getKey()) {
+                return false;
+            }
+
+            $outputsValue = $execution->getAttribute('outputs');
+            $outputs = is_array($outputsValue) ? $outputsValue : [];
+            $keys = array_values(array_filter(array_keys($outputs), 'is_string'));
+
+            if (! $stages->every(fn (WorkflowStage $stage): bool => in_array($stage->key, $keys, true))) {
+                return false;
+            }
+        } else {
+            $completed = $execution->steps()
+                ->where('type', AgentExecutionStep::TYPE_WORKFLOW)
+                ->where('status', AgentExecutionStep::STATUS_COMPLETED)
+                ->pluck('workflow_stage_id')
+                ->filter()
+                ->all();
+
+            if (! $stages->every(fn (WorkflowStage $stage): bool => in_array($stage->getKey(), $completed, true))) {
+                return false;
+            }
+
+            $keys = $stages->whereIn('id', $completed)->pluck('key')->all();
+        }
+
+        $criteriaValue = $this->getAttribute('completion_criteria');
         $criteria = is_array($criteriaValue) ? $criteriaValue : [];
-        $keys = $stages->whereIn('id', $completed)->pluck('key')->all();
         foreach (($criteria['required_stage_keys'] ?? []) as $key) {
             if (! is_string($key) || ! in_array($key, $keys, true)) {
                 return false;
