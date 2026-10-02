@@ -11,6 +11,12 @@ class MarketingStrategyFactory extends Factory
 {
     public function definition(): array
     {
-        return ['enterprise_id' => Enterprise::factory(), 'name' => fake()->sentence(3), 'description' => fake()->optional()->paragraph(), 'status' => 'draft'];
+        return [
+            'enterprise_id' => Enterprise::factory(),
+            'name' => fake()->sentence(3),
+            'description' => fake()->optional()->paragraph(),
+            'sections' => [],
+            'status' => 'draft',
+        ];
     }
 }

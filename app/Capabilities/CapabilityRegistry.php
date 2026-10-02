@@ -43,6 +43,7 @@ use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkflow;
 use App\Operations\CreateWorkItem;
+use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
 use App\Operations\DiscoverWorkflows;
 use App\Operations\EnterpriseContextCreate;
@@ -309,9 +310,18 @@ final class CapabilityRegistry
                 'marketing.strategy.create',
                 CreateMarketingStrategy::class,
                 CreateMarketingStrategyTool::class,
-                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'sections' => 'object|nullable', 'new_only' => 'boolean|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
+                'none',
+            ),
+            $this->definition(
+                'marketing.strategy.section.define',
+                DefineMarketingStrategySection::class,
+                \App\Mcp\Tools\DefineMarketingStrategySectionTool::class,
+                ['enterprise_id' => 'integer|required', 'section_key' => 'string|required', 'context' => 'object|nullable'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'Workflow Expert declaration + Enterprise view authorization',
                 'none',
             ),
             $this->definition(

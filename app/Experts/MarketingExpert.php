@@ -14,6 +14,7 @@ final class MarketingExpert extends Expert
             requiredContext: ['enterprise', 'strategy', 'knowledge'],
             capabilities: [
                 'marketing.plan',
+                'marketing.strategy.section.define',
                 'marketing.strategy.create',
                 'marketing.audience.create',
                 'marketing.campaign.create',
