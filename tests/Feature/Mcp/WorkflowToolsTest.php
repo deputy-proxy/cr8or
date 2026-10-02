@@ -103,15 +103,18 @@ it('creates publishes discovers starts inspects and resumes a Workflow without A
     ])->assertOk();
 
     $execution = WorkflowExecution::query()->where('workflow_id', $workflow->id)->firstOrFail();
+    $continuationToken = $execution->continuation_token;
 
     $server->tool(GetWorkflowExecutionTool::class, [
         'enterprise_id' => $enterprise->id,
         'workflow_execution_id' => $execution->id,
+        'continuation_token' => $continuationToken,
     ])->assertOk();
 
     $server->tool(ResumeWorkflowExecutionTool::class, [
         'enterprise_id' => $enterprise->id,
         'workflow_execution_id' => $execution->id,
+        'continuation_token' => $continuationToken,
     ])->assertOk();
 
     expect($execution->refresh()->status)->toBe(WorkflowExecution::STATUS_COMPLETED)

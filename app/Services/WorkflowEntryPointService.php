@@ -106,8 +106,8 @@ final class WorkflowEntryPointService
         return app(WorkflowExecutionService::class)->inspect($actor, $execution);
     }
 
-    public function resume(User $actor, WorkflowExecution $execution): WorkflowExecution
+    public function resume(User $actor, WorkflowExecution $execution, ?string $continuationToken = null): WorkflowExecution
     {
-        return app(WorkflowExecutionService::class)->continue($actor, $execution);
+        return app(WorkflowExecutionService::class)->continue($actor, $execution, $continuationToken);
     }
 }

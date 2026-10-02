@@ -216,7 +216,7 @@ final class CapabilityRegistry
                 'workflow.resume',
                 ResumeWorkflowExecution::class,
                 ResumeWorkflowExecutionTool::class,
-                ['enterprise_id' => 'integer|required', 'workflow_execution_id' => 'integer|required'],
+                ['enterprise_id' => 'integer|required', 'workflow_execution_id' => 'integer|required', 'continuation_token' => 'string|required'],
                 ['success' => 'boolean', 'result' => 'workflow-execution'],
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
