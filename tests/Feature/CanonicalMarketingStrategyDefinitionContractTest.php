@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Enterprise;
 use App\Services\MarketingStrategyWorkflowDefinition;
 
 it('defines exactly 18 stable canonical marketing stages with governed contracts', function (): void {
@@ -9,10 +8,10 @@ it('defines exactly 18 stable canonical marketing stages with governed contracts
     expect($stages)->toHaveCount(18)
         ->and(array_column($stages, 'sequence'))->toBe(range(1, 18))
         ->and(array_column($stages, 'key'))->toEqualCanonicalizing([
-            'enterprise_context','business_market_context','target_audiences','positioning',
-            'value_proposition','competitive_landscape','product_service_strategy','marketing_objectives',
-            'acquisition_channels','content_strategy','seo_strategy','social_strategy','conversion_strategy',
-            'retention_strategy','measurement_kpis','roadmap_90_days','completeness_validation','persist_strategy',
+            'enterprise_context', 'business_market_context', 'target_audiences', 'positioning',
+            'value_proposition', 'competitive_landscape', 'product_service_strategy', 'marketing_objectives',
+            'acquisition_channels', 'content_strategy', 'seo_strategy', 'social_strategy', 'conversion_strategy',
+            'retention_strategy', 'measurement_kpis', 'roadmap_90_days', 'completeness_validation', 'persist_strategy',
         ]);
 
     foreach ($stages as $stage) {
