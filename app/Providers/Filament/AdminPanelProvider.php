@@ -33,14 +33,15 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->navigationGroups([
-                'Organization',
-                'Strategy',
-                'Intelligence',
-                'Integrations',
-                'Content',
-                'Media',
-                'Publishing',
-                'Operations',
+                'Organization & Enterprise Scope',
+                'Enterprise Context',
+                'Knowledge Management',
+                'Agentic Flow',
+                'Workflow Flow',
+                'Marketing',
+                'Finance',
+                'Reporting & Analytics',
+                'Integrations & External Systems',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

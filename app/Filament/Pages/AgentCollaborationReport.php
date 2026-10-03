@@ -17,7 +17,7 @@ class AgentCollaborationReport extends Page
 
     protected static ?string $navigationLabel = 'Agent Collaboration Report';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Intelligence';
+    protected static string|UnitEnum|null $navigationGroup = 'Reporting & Analytics';
 
     protected static ?int $navigationSort = 120;
 

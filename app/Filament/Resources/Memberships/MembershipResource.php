@@ -24,7 +24,7 @@ class MembershipResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';
 
     protected static ?string $navigationLabel = 'Memberships';
 

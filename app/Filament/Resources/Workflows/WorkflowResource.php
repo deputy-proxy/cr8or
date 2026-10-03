@@ -30,7 +30,7 @@ class WorkflowResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';
 
     protected static ?string $navigationLabel = 'Workflows';
 

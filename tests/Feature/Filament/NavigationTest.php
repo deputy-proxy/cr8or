@@ -21,46 +21,59 @@ use Filament\Facades\Filament;
 
 it('defines the CR8OR navigation groups in the required order', function () {
     expect(Filament::getNavigationGroups())->toBe([
-        'Organization',
-        'Strategy',
-        'Intelligence',
-        'Integrations',
-        'Content',
-        'Media',
-        'Publishing',
-        'Operations',
+        'Organization & Enterprise Scope',
+        'Enterprise Context',
+        'Knowledge Management',
+        'Agentic Flow',
+        'Workflow Flow',
+        'Marketing',
+        'Finance',
+        'Reporting & Analytics',
+        'Integrations & External Systems',
     ]);
 });
 
-it('groups every discovered resource into an approved domain', function () {
-    $allowedGroups = [
-        'Organization',
-        'Strategy',
-        'Intelligence',
-        'Integrations',
-        'Content',
-        'Media',
-        'Publishing',
-        'Operations',
+it('maps every discovered Filament resource to exactly one current navigation group', function () {
+    $expectedGroups = [
+        'Organizations' => 'Organization & Enterprise Scope', 'Users' => 'Organization & Enterprise Scope', 'Memberships' => 'Organization & Enterprise Scope', 'Enterprises' => 'Organization & Enterprise Scope', 'Assignments' => 'Organization & Enterprise Scope',
+        'EnterpriseContexts' => 'Enterprise Context', 'Visions' => 'Enterprise Context', 'Missions' => 'Enterprise Context', 'Goals' => 'Enterprise Context', 'Objectives' => 'Enterprise Context', 'Kpis' => 'Enterprise Context', 'MetricDefinitions' => 'Enterprise Context', 'Strategies' => 'Enterprise Context', 'Plans' => 'Enterprise Context', 'Initiatives' => 'Enterprise Context', 'Projects' => 'Enterprise Context', 'Milestones' => 'Enterprise Context', 'Tasks' => 'Enterprise Context', 'WorkItems' => 'Enterprise Context', 'Decisions' => 'Enterprise Context', 'EnterpriseDecisions' => 'Enterprise Context', 'Competitors' => 'Enterprise Context', 'Products' => 'Enterprise Context',
+        'KnowledgeContexts' => 'Knowledge Management', 'KnowledgeSources' => 'Knowledge Management', 'KnowledgeDocuments' => 'Knowledge Management', 'KnowledgeItems' => 'Knowledge Management', 'KnowledgeVersions' => 'Knowledge Management', 'KnowledgeSpecifications' => 'Knowledge Management', 'KnowledgeReferences' => 'Knowledge Management', 'KnowledgeIndexRecords' => 'Knowledge Management', 'KnowledgeIndexUnits' => 'Knowledge Management', 'KnowledgeEmbeddings' => 'Knowledge Management',
+        'AgentDescriptors' => 'Agentic Flow', 'ExpertDescriptors' => 'Agentic Flow', 'AgentRuntimePolicies' => 'Agentic Flow', 'AgentAssignments' => 'Agentic Flow', 'AgentExecutions' => 'Agentic Flow', 'AgentExecutionSteps' => 'Agentic Flow', 'AgentExecutionEventRecords' => 'Agentic Flow', 'AgentDelegations' => 'Agentic Flow', 'AgentDecisions' => 'Agentic Flow', 'AgentEpisodicMemories' => 'Agentic Flow', 'AgentSemanticMemories' => 'Agentic Flow', 'AgentSemanticMemoryVersions' => 'Agentic Flow', 'ApprovalPolicies' => 'Agentic Flow', 'ApprovalRequests' => 'Agentic Flow', 'ApprovalDecisions' => 'Agentic Flow',
+        'Workflows' => 'Workflow Flow', 'WorkflowVersions' => 'Workflow Flow', 'WorkflowStages' => 'Workflow Flow', 'WorkflowExecutions' => 'Workflow Flow', 'Jobs' => 'Workflow Flow', 'Executions' => 'Workflow Flow', 'Dependencies' => 'Workflow Flow',
+        'MarketingStrategies' => 'Marketing', 'Campaigns' => 'Marketing', 'ContentSeries' => 'Marketing', 'ContentItems' => 'Marketing', 'Scripts' => 'Marketing', 'Audiences' => 'Marketing', 'Channels' => 'Marketing', 'SocialAccounts' => 'Marketing', 'Publications' => 'Marketing', 'PublicationSchedules' => 'Marketing', 'PublishingJobs' => 'Marketing', 'PublicationResults' => 'Marketing', 'Assets' => 'Marketing', 'AssetVersions' => 'Marketing', 'MediaMetadata' => 'Marketing', 'RenderRequests' => 'Marketing', 'RenderJobs' => 'Marketing', 'RenderOutputs' => 'Marketing', 'Transformations' => 'Marketing', 'GenerationRequests' => 'Marketing', 'GenerationJobs' => 'Marketing',
+        'FinancialAccounts' => 'Finance', 'FinancialPeriods' => 'Finance', 'TransactionCategories' => 'Finance', 'Transactions' => 'Finance', 'Revenues' => 'Finance', 'Expenses' => 'Finance', 'Budgets' => 'Finance', 'Statements' => 'Finance', 'StatementEntries' => 'Finance', 'Customers' => 'Finance', 'Partners' => 'Finance', 'Invoices' => 'Finance', 'FinancialReports' => 'Finance', 'BusinessHealthResults' => 'Finance',
+        'Reports' => 'Reporting & Analytics', 'ReportSnapshots' => 'Reporting & Analytics', 'ReportMetricValues' => 'Reporting & Analytics',
+        'IntegrationConnections' => 'Integrations & External Systems', 'IntegrationJobs' => 'Integrations & External Systems', 'IntegrationResults' => 'Integrations & External Systems', 'ExternalResources' => 'Integrations & External Systems', 'CommandWebhookDeliveries' => 'Integrations & External Systems',
     ];
 
     $resourceFiles = glob(app_path('Filament/Resources/*/*Resource.php'));
-
     expect($resourceFiles)->not->toBeFalse();
 
-    foreach ($resourceFiles as $resourceFile) {
-        $directory = basename(dirname($resourceFile));
-        $class = basename($resourceFile, '.php');
-        $resourceClass = "App\\Filament\\Resources\\{$directory}\\{$class}";
+    $directories = array_map(fn (string $file): string => basename(dirname($file)), $resourceFiles);
+    sort($directories);
+    $expectedDirectories = array_keys($expectedGroups);
+    sort($expectedDirectories);
 
-        expect(class_exists($resourceClass))->toBeTrue();
-        expect($resourceClass::getNavigationGroup())->toBeIn($allowedGroups);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
+
+    foreach ($expectedGroups as $directory => $group) {
+        $resourceFilesForDirectory = glob(app_path("Filament/Resources/{$directory}/*Resource.php"));
+        expect($resourceFilesForDirectory)->toHaveCount(1);
+
+        $class = 'App\\Filament\\Resources\\'.$directory.'\\'.basename($resourceFilesForDirectory[0], '.php');
+
+        expect(class_exists($class))->toBeTrue();
+        expect($class::getNavigationGroup())->toBe($group);
     }
+});
+
+it('keeps non-resource Filament pages inside the current navigation taxonomy', function () {
+    expect(AgentCollaborationReport::getNavigationGroup())->toBe('Reporting & Analytics');
 });
 
 it('uses the agreed domain labels for the primary navigation resources', function () {
     expect(OrganizationResource::getNavigationLabel())->toBe('Organization')
-        ->and(EnterpriseResource::getNavigationGroup())->toBe('Organization')
+        ->and(EnterpriseResource::getNavigationGroup())->toBe('Organization & Enterprise Scope')
         ->and(ObjectiveResource::getNavigationLabel())->toBe('Objectives')
         ->and(StrategyResource::getNavigationLabel())->toBe('Strategies')
         ->and(InitiativeResource::getNavigationLabel())->toBe('Initiatives')
@@ -74,6 +87,5 @@ it('uses the agreed domain labels for the primary navigation resources', functio
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
         ->and(ExecutionResource::getNavigationLabel())->toBe('Executions')
         ->and(JobResource::getNavigationLabel())->toBe('Jobs')
-        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approvals')
-        ->and(AgentCollaborationReport::getNavigationGroup())->toBe('Intelligence');
+        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approvals');
 });

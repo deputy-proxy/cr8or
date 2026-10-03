@@ -26,7 +26,7 @@ class PlanResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Organization';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
     protected static ?string $navigationLabel = 'Plans';
 

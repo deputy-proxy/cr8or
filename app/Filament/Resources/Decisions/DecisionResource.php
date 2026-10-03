@@ -27,7 +27,7 @@ class DecisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
     protected static ?string $navigationLabel = 'Decisions';
 

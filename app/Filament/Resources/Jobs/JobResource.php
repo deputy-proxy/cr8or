@@ -20,7 +20,7 @@ class JobResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';
 
     protected static ?string $navigationLabel = 'Jobs';
 
