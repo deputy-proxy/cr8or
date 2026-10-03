@@ -19,8 +19,10 @@ use App\Models\Competitor;
 use App\Models\Mission;
 use App\Models\Vision;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
 use App\Policies\StrategicRecordPolicy;
 use App\Policies\WorkflowPolicy;
+use App\Policies\WorkflowExecutionPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\FailureTranslator;
 use App\Services\HmacIntegrationWebhookVerifier;
@@ -98,7 +100,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Competitor::class, StrategicRecordPolicy::class);
         Gate::policy(Mission::class, StrategicRecordPolicy::class);
         Gate::policy(Vision::class, StrategicRecordPolicy::class);
-        Gate::policy(Workflow::class, WorkflowPolicy::class);\n        Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
+        Gate::policy(Workflow::class, WorkflowPolicy::class);
+        Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }
 
     /**
