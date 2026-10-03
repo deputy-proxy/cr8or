@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\GenerationJobs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\GenerationJobs\Pages\ListGenerationJobs;
 use App\Models\GenerationJob;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GenerationJobResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = GenerationJob::class;
 
