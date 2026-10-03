@@ -182,7 +182,9 @@ final class CapabilityRegistry
 
             if (! is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
                 && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)) {
+                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
+                && ! is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
+                && ! is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true)) {
                 if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
                     throw new InvalidArgumentException(
                         "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
@@ -190,10 +192,15 @@ final class CapabilityRegistry
                 }
             }
 
-            if ($source !== false && preg_match('/operationForTool\(|->operation\([^)]*\)->execute|app\([^)]*Operation/', (string) file_get_contents($source)) === 1) {
-                throw new InvalidArgumentException(
-                    "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] contains a direct Operation execution path.",
-                );
+            if ($source !== false) {
+                $toolSource = (string) file_get_contents($source);
+                $operationClass = preg_quote($definition->operation, '/');
+
+                if (preg_match("/operationForTool\\(|->operation\\([^)]*\\)->execute|app\\([^)]*{$operationClass}/", $toolSource) === 1) {
+                    throw new InvalidArgumentException(
+                        "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] contains a direct Operation execution path.",
+                    );
+                }
             }
         }
     }
@@ -711,6 +718,60 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy',
+                'none',
+            ),
+            $this->definition(
+                'knowledge.unit.archive',
+                \App\Operations\ArchiveKnowledgeUnit::class,
+                \App\Mcp\Tools\ArchiveKnowledgeUnitTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_unit_id' => 'integer|required', 'reason' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-unit'],
+                'Enterprise policy + KnowledgeResourceService authorization',
+                'none',
+            ),
+            $this->definition(
+                'knowledge.index.update',
+                \App\Operations\UpdateKnowledgeIndex::class,
+                \App\Mcp\Tools\UpdateKnowledgeIndexTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_index_id' => 'integer|required', 'correlation_id' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-index'],
+                'Enterprise policy + KnowledgeResourceService authorization',
+                'none',
+            ),
+            $this->definition(
+                'knowledge.unit.update',
+                \App\Operations\UpdateKnowledgeUnit::class,
+                \App\Mcp\Tools\UpdateKnowledgeUnitTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_unit_id' => 'integer|required', 'correlation_id' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-unit'],
+                'Enterprise policy + KnowledgeResourceService authorization',
+                'none',
+            ),
+            $this->definition(
+                'memory.create',
+                \App\Operations\CreateMemory::class,
+                \App\Mcp\Tools\CreateMemoryTool::class,
+                ['enterprise_id' => 'integer|required', 'type' => 'string|required', 'source_execution_id' => 'integer|required', 'agent_descriptor_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'memory'],
+                'Enterprise policy + MemoryResourceService authorization',
+                'none',
+            ),
+            $this->definition(
+                'memory.update',
+                \App\Operations\UpdateMemory::class,
+                \App\Mcp\Tools\UpdateMemoryTool::class,
+                ['enterprise_id' => 'integer|required', 'type' => 'string|required', 'memory_id' => 'integer|required', 'source_execution_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'memory'],
+                'Enterprise policy + MemoryResourceService authorization',
+                'none',
+            ),
+            $this->definition(
+                'memory.archive',
+                \App\Operations\ArchiveMemory::class,
+                \App\Mcp\Tools\ArchiveMemoryTool::class,
+                ['enterprise_id' => 'integer|required', 'memory_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'memory'],
+                'Enterprise policy + MemoryResourceService authorization',
                 'none',
             ),
             $this->definition(

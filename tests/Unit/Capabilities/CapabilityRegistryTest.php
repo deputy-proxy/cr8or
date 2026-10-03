@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(59);
+    expect($registry->all())->toHaveCount(65);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
@@ -66,7 +66,7 @@ it('uses the dedicated mcp_ namespace for lifecycle MCP Tools', function () {
 it('enforces the Capability boundary for every business MCP Tool', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->business())->toHaveCount(42);
+    expect($registry->business())->toHaveCount(48);
 
     $registry->assertBusinessToolSurface();
 
@@ -161,6 +161,17 @@ it('rejects a Tool class mapped to multiple Operations', function () {
 
     expect(fn () => (new CapabilityRegistry($definitions))->all())
         ->toThrow(InvalidArgumentException::class, 'Duplicate MCP Tool class [App\\Mcp\\Tools\\CreateContentItemTool]');
+});
+
+it('maps all previously unmapped mutating resource Tools to explicit business Capabilities', function () {
+    $registry = app(CapabilityRegistry::class);
+
+    expect($registry->forTool(App\Mcp\Tools\ArchiveKnowledgeUnitTool::class)->key)->toBe('knowledge.unit.archive')
+        ->and($registry->forTool(App\Mcp\Tools\UpdateKnowledgeIndexTool::class)->key)->toBe('knowledge.index.update')
+        ->and($registry->forTool(App\Mcp\Tools\UpdateKnowledgeUnitTool::class)->key)->toBe('knowledge.unit.update')
+        ->and($registry->forTool(App\Mcp\Tools\CreateMemoryTool::class)->key)->toBe('memory.create')
+        ->and($registry->forTool(App\Mcp\Tools\UpdateMemoryTool::class)->key)->toBe('memory.update')
+        ->and($registry->forTool(App\Mcp\Tools\ArchiveMemoryTool::class)->key)->toBe('memory.archive');
 });
 
 it('keeps Expert ownership in the Agent-to-Expert execution context', function () {

@@ -64,8 +64,7 @@ it('keeps AI-generated content as a draft with execution and decision provenance
 
     $item = (new ContentGenerationService(
         $executions,
-        app(App\Services\AgentCapabilityAuthorizer::class),
-        app(App\Capabilities\CapabilityRegistry::class),
+        app(App\Services\CapabilityInvocationService::class),
     ))->generate(
         $actor,
         $assignment,

@@ -11,6 +11,7 @@ it('keeps non-MCP execution layers free of direct business Operation invocation'
         app_path('Services/ExpertInvocationService.php'),
         app_path('Services/WorkflowExecutionService.php'),
         app_path('Services/InteractiveContinuationService.php'),
+        app_path('Services/ContentGenerationService.php'),
         app_path('Http/Controllers/CommandWebhookController.php'),
     ];
 
