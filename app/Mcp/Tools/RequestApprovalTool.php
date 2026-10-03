@@ -17,7 +17,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('request-approval')]
+#[Name('mcp_agent_approval_request')]
 #[Description('Create a governed approval request for an Agent capability and target context.')]
 class RequestApprovalTool extends AuthorizedTool
 {

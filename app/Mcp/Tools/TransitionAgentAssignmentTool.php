@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('transition-agent-assignment')]
+#[Name('mcp_agent_assignment_transition')]
 #[Description('Transition an Enterprise-scoped Agent Assignment through its explicit lifecycle state machine.')]
 class TransitionAgentAssignmentTool extends AgentAssignmentResourceTool
 {

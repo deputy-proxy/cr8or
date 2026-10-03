@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('cancel-execution')] #[Description('Cancel an Agent Execution through the canonical runtime lifecycle.') ] class CancelAgentExecutionTool extends AgentExecutionResourceTool
+#[Name('mcp_agent_execution_cancel')] #[Description('Cancel an Agent Execution through the canonical runtime lifecycle.') ] class CancelAgentExecutionTool extends AgentExecutionResourceTool
 {
     protected function operationClass(): string
     {

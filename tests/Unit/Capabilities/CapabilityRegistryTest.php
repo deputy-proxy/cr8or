@@ -44,12 +44,22 @@ it('resolves every governed Capability to one explicit Operation and Tool contra
         expect($definition->key)->toBe($key)
             ->and(is_a($definition->operation, Operation::class, true))->toBeTrue()
             ->and(is_a($definition->toolClass, Laravel\Mcp\Server\Tool::class, true))->toBeTrue()
-            ->and($definition->tool)->toMatch('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+            ->and($definition->tool)->toMatch('/^[a-z0-9_]+(?:-[a-z0-9_]+)*$/')
             ->and($definition->inputContract)->not->toBeEmpty()
             ->and($definition->outputContract)->not->toBeEmpty()
             ->and($definition->authorizationRequirement)->not->toBeEmpty()
             ->and($definition->approvalRequirement)->not->toBeEmpty()
             ->and($definition->failureContract->toArray())->not->toBeEmpty();
+    }
+});
+
+it('uses the dedicated mcp_ namespace for lifecycle MCP Tools', function () {
+    $registry = app(CapabilityRegistry::class);
+
+    foreach ($registry->all() as $definition) {
+        if ($definition->category === 'lifecycle') {
+            expect($definition->tool)->toStartWith('mcp_');
+        }
     }
 });
 

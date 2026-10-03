@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('create-agent-assignment')]
+#[Name('mcp_agent_assignment_create')]
 #[Description('Create an Enterprise-scoped Agent Assignment with durable objective, requirements, context and idempotency state.')]
 class CreateAgentAssignmentTool extends AgentAssignmentResourceTool
 {

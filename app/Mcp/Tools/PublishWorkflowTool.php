@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('publish-workflow')]
+#[Name('mcp_workflow_publish')]
 #[Description('Publish a new immutable WorkflowVersion for an enterprise Workflow.')]
 class PublishWorkflowTool extends GovernedCapabilityTool
 {

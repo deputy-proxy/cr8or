@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('update-agent-assignment')]
+#[Name('mcp_agent_assignment_update')]
 #[Description('Update an Enterprise-scoped Agent Assignment definition without bypassing lifecycle rules.')]
 class UpdateAgentAssignmentTool extends AgentAssignmentResourceTool
 {
