@@ -5,7 +5,7 @@ namespace App\Filament\Resources\AgentAssignments;
 use App\Filament\Resources\AgentAssignments\Pages\CreateAgentAssignment;
 use App\Filament\Resources\AgentAssignments\Pages\EditAgentAssignment;
 use App\Filament\Resources\AgentAssignments\Pages\ListAgentAssignments;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentAssignment;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgentAssignmentResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AgentAssignment::class;
 
