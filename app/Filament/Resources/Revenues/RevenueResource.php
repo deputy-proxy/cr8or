@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Revenues;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\Revenues\Pages\CreateRevenues;
 use App\Filament\Resources\Revenues\Pages\EditRevenues;
 use App\Filament\Resources\Revenues\Pages\ListRevenues;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RevenueResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Revenue::class;
 
