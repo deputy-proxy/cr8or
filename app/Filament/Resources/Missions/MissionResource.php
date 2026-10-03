@@ -28,7 +28,8 @@ class MissionResource extends Resource
 
     protected static ?string $navigationLabel = 'Mission';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 30;
+
 
     public static function form(Schema $schema): Schema
     {
