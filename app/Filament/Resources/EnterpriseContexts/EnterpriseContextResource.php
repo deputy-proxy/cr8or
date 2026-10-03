@@ -32,7 +32,6 @@ class EnterpriseContextResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), Textarea::make('description')->rows(4), TextInput::make('industry')->maxLength(255), TextInput::make('business_model')->maxLength(255), TextInput::make('target_market')->maxLength(255), TextInput::make('geography')->maxLength(255)]);
