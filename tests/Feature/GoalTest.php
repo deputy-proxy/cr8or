@@ -52,7 +52,7 @@ it('enforces goal authorization through the enterprise organization', function (
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Goal::class, $enterprise]))->toBeFalse();
 });
 
-it('keeps the goal schema limited to phase 1 fields', function () {
+it('keeps the goal schema limited to supported fields', function () {
     expect(Schema::getColumnListing('goals'))->toBe([
         'id', 'enterprise_id', 'name', 'description', 'status', 'created_at', 'updated_at',
     ]);
