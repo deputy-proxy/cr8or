@@ -31,7 +31,8 @@ class SocialAccountResource extends Resource
 
     protected static ?string $navigationLabel = 'Social Accounts';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 60;
+
 
     public static function form(Schema $schema): Schema
     {
