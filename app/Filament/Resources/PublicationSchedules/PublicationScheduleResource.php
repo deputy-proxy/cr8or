@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\PublicationSchedules;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\PublicationSchedules\Pages\ListPublicationSchedules;
 use App\Models\PublicationSchedule;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PublicationScheduleResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = PublicationSchedule::class;
 
