@@ -171,6 +171,9 @@ final class CapabilityRegistry
     public function assertBusinessToolSurface(): void
     {
         foreach ($this->business() as $definition) {
+            /** @var class-string $toolClass */
+            $toolClass = $definition->toolClass;
+            $source = (new \ReflectionClass($toolClass))->getFileName();
             if (! is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
                 throw new InvalidArgumentException(
                     "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not implement the Capability boundary.",
@@ -180,14 +183,17 @@ final class CapabilityRegistry
             if (! is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
                 && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
                 && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)) {
-                $reflection = new \ReflectionClass($definition->toolClass);
-                $source = $reflection->getFileName();
-
                 if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
                     throw new InvalidArgumentException(
                         "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
                     );
                 }
+            }
+
+            if ($source !== false && preg_match('/operationForTool\(|->operation\([^)]*\)->execute|app\([^)]*Operation/', (string) file_get_contents($source)) === 1) {
+                throw new InvalidArgumentException(
+                    "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] contains a direct Operation execution path.",
+                );
             }
         }
     }
