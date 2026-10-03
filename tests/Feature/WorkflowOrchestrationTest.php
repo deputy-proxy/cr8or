@@ -68,7 +68,6 @@ it('evaluates deterministic Workflow completion from WorkflowExecution state', f
         'workflow_version_id' => $version,
         'workflow_version' => $version->version,
         'enterprise_id' => $enterprise,
-        'organization_id' => $enterprise->organization_id,
         'outputs' => ['research' => ['termination' => 'completed']],
     ]);
 
