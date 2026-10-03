@@ -192,7 +192,6 @@ it('supports pausing and resuming a workflow execution without an AgentExecution
         'workflow_version_id' => $version,
         'workflow_version' => $version->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_PENDING,
     ]);
@@ -290,7 +289,6 @@ it('rejects invalid workflow execution lifecycle transitions', function (): void
         'workflow_version_id' => $version,
         'workflow_version' => $version->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
     ]);
 
