@@ -44,7 +44,6 @@ final class WorkflowExecutionService
                 'workflow_id' => $workflow->getKey(),
                 'workflow_version_id' => $version->getKey(),
                 'workflow_version' => $version->version,
-                'organization_id' => $workflow->enterprise->organization_id,
                 'enterprise_id' => $workflow->enterprise_id,
                 'actor_id' => $actor->getKey(),
                 'status' => WorkflowExecution::STATUS_PENDING,
