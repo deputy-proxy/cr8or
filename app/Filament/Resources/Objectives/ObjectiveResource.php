@@ -30,7 +30,8 @@ class ObjectiveResource extends Resource
 
     protected static ?string $navigationLabel = 'Objectives';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 50;
+
 
     public static function form(Schema $schema): Schema
     {
