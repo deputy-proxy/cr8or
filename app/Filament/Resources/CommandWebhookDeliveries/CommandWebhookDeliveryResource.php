@@ -17,6 +17,7 @@ class CommandWebhookDeliveryResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';
+
     protected static ?int $navigationSort = 50;
 
     protected static ?string $navigationLabel = 'CommandWebhookDeliveries';
