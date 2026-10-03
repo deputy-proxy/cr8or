@@ -73,7 +73,7 @@ it('enforces product authorization through the enterprise organization', functio
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Product::class, $product->enterprise]))->toBeFalse();
 });
 
-it('keeps the product schema limited to phase 1 fields', function () {
+it('keeps the product schema limited to supported fields', function () {
     expect(Schema::getColumnListing('products'))->toBe([
         'id', 'enterprise_id', 'name', 'slug', 'status', 'created_at', 'updated_at',
     ]);
