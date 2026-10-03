@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\RenderRequests;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\RenderRequests\Pages\ListRenderRequests;
 use App\Models\RenderRequest;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RenderRequestResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = RenderRequest::class;
 
