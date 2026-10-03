@@ -20,6 +20,8 @@ class ReportResource extends Resource
 
     protected static ?string $navigationLabel = 'Reports';
 
+    protected static ?int $navigationSort = 10;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
