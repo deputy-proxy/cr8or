@@ -35,7 +35,8 @@ class ContentItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Items';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 70;
+
 
     public static function form(Schema $schema): Schema
     {
