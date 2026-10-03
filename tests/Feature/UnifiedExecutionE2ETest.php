@@ -32,7 +32,7 @@ function commandHeaders(string $secret, string $body, int $timestamp, string $ke
     return ['X-CR8OR-Command-Key' => $key, 'X-CR8OR-Command-Timestamp' => (string) $timestamp, 'X-CR8OR-Command-Signature' => 'sha256='.hash_hmac('sha256', $timestamp.'.'.$body, $secret)];
 }
 
-function phaseE2EAgentContext(User $actor, Enterprise $enterprise): array
+function agentExecutionContext(User $actor, Enterprise $enterprise): array
 {
     $descriptor = AgentDescriptor::factory()->forRuntimeClass(OperationsAgent::class)->create(['slug' => 'operations']);
     ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => OperationsExpert::class, 'enabled' => true]);
@@ -42,7 +42,7 @@ function phaseE2EAgentContext(User $actor, Enterprise $enterprise): array
     return [$assignment, $execution];
 }
 
-function phaseE2EActor(Enterprise $enterprise): User
+function e2eActor(Enterprise $enterprise): User
 {
     $actor = User::factory()->create();
 
@@ -56,7 +56,7 @@ function phaseE2EActor(Enterprise $enterprise): User
 
 it('proves the representative work item Operation is shared by MCP, Agent, Workflow and Command Webhook entry points', function (): void {
     $enterprise = Enterprise::factory()->create();
-    $actor = phaseE2EActor($enterprise);
+    $actor = e2eActor($enterprise);
 
     $mcpItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'mcp-before']);
     $agentItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'agent-before']);
@@ -71,7 +71,7 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
 
     $direct->assertOk();
 
-    [$assignment, $execution] = phaseE2EAgentContext($actor, $enterprise);
+    [$assignment, $execution] = agentExecutionContext($actor, $enterprise);
 
     $agentResult = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
         capability: 'work.item.update',
@@ -83,24 +83,24 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
         inputPayload: ['name' => 'agent-after'],
         expertSlug: 'operations',
         correlationId: $execution->correlation_id,
-        idempotencyKey: 'phase-e2e-agent-1',
+        idempotencyKey: 'e2e-agent-1',
     ));
 
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
     WorkflowStage::factory()->create(['workflow_id' => $workflow->getKey(), 'key' => 'update-work', 'name' => 'Update work', 'sequence' => 1, 'dependencies' => [], 'expert_slugs' => ['operations'], 'capability_slugs' => ['work.item.update'], 'input_contract' => ['required' => ['work_item_id', 'name']], 'output_contract' => []]);
-    $version = app(WorkflowVersionService::class)->publish($workflow, $actor, 'phase-e2e-publish-'.$workflow->getKey());
-    $workflowResult = app(WorkflowExecutionService::class)->start($actor, $version, ['work_item_id' => $workflowItem->getKey(), 'name' => 'workflow-after'], 'phase-e2e-workflow-1', 'phase-e2e-workflow');
+    $version = app(WorkflowVersionService::class)->publish($workflow, $actor, 'e2e-publish-'.$workflow->getKey());
+    $workflowResult = app(WorkflowExecutionService::class)->start($actor, $version, ['work_item_id' => $workflowItem->getKey(), 'name' => 'workflow-after'], 'e2e-workflow-1', 'e2e-workflow');
 
-    config()->set('services.command_webhooks.credentials.phase-e2e', [
-        'secret' => 'phase-e2e-secret',
+    config()->set('services.command_webhooks.credentials.e2e', [
+        'secret' => 'e2e-secret',
         'actor_id' => $actor->getKey(),
         'capabilities' => ['work.item.update'],
     ]);
 
     $payload = [
         'enterprise_slug' => $enterprise->slug,
-        'idempotency_key' => 'phase-e2e-command-1',
-        'correlation_id' => 'phase-e2e-command',
+        'idempotency_key' => 'e2e-command-1',
+        'correlation_id' => 'e2e-command',
         'input' => [
             'work_item_id' => $commandItem->getKey(),
             'name' => 'command-after',
@@ -109,10 +109,10 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 
     $command = $this->withHeaders(commandHeaders(
-        'phase-e2e-secret',
+        'e2e-secret',
         $body,
         now()->timestamp,
-        'phase-e2e',
+        'e2e',
     ))->postJson('/commands/work.item.update', $payload);
 
     $command->assertOk();
@@ -128,7 +128,7 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
 
 it('preserves the integration reconciliation exception outside the business Capability boundary', function (): void {
     $enterprise = Enterprise::factory()->create();
-    $actor = phaseE2EActor($enterprise);
+    $actor = e2eActor($enterprise);
 
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $enterprise->organization_id,
@@ -143,10 +143,10 @@ it('preserves the integration reconciliation exception outside the business Capa
         'enterprise_id' => $enterprise->id,
         'provider' => 'canva',
         'operation' => 'design.create',
-        'idempotency_key' => 'phase-e2e-integration-job',
+        'idempotency_key' => 'e2e-integration-job',
         'status' => IntegrationJob::STATUS_PENDING,
-        'external_job_id' => 'phase-e2e-external-job',
-        'correlation_id' => 'phase-e2e-integration',
+        'external_job_id' => 'e2e-external-job',
+        'correlation_id' => 'e2e-integration',
         'attempts' => 1,
     ]);
 
@@ -154,8 +154,8 @@ it('preserves the integration reconciliation exception outside the business Capa
         'canva',
         'webhook',
         new IntegrationResultEnvelope(
-            'phase-e2e-external-job', 'phase-e2e-result', 'succeeded',
-            'phase-e2e-integration', 'phase-e2e-delivery',
+            'e2e-external-job', 'e2e-result', 'succeeded',
+            'e2e-integration', 'e2e-delivery',
             CarbonImmutable::now(), ['provider_status' => 'succeeded'], null, null,
         ),
     );

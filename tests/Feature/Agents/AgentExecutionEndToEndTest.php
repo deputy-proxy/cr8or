@@ -26,14 +26,14 @@ use App\Services\McpContextAssembler;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 
-function phase10E2EAgentClass(): string
+function agentExecutionE2EAgentClass(): string
 {
     return get_class(new class extends Agent
     {
         public function definition(): \App\Agents\AgentDefinition
         {
             return new \App\Agents\AgentDefinition(
-                name: 'Phase 10 E2E Agent',
+                name: 'Agent Execution E2E Agent',
                 description: 'Exercises the complete governed execution loop.',
                 responsibilities: ['execute'],
                 instructions: 'Use only authorized capabilities and supplied context.',
@@ -44,15 +44,15 @@ function phase10E2EAgentClass(): string
     });
 }
 
-function phase10E2EAssignment(User $actor, Enterprise $enterprise): AgentAssignment
+function agentExecutionE2EAssignment(User $actor, Enterprise $enterprise): AgentAssignment
 {
     Membership::factory()->owner()->create([
         'user_id' => $actor->getKey(),
         'organization_id' => $enterprise->organization_id,
     ]);
 
-    $descriptor = AgentDescriptor::factory()->forRuntimeClass(phase10E2EAgentClass())->create([
-        'slug' => 'phase-10-e2e-agent',
+    $descriptor = AgentDescriptor::factory()->forRuntimeClass(agentExecutionE2EAgentClass())->create([
+        'slug' => 'e2e-agent-execution',
     ]);
     ExpertDescriptor::query()->updateOrCreate(['slug' => 'operations'], ['runtime_class' => \App\Experts\OperationsExpert::class, 'enabled' => true]);
 
@@ -61,7 +61,7 @@ function phase10E2EAssignment(User $actor, Enterprise $enterprise): AgentAssignm
     ]);
 }
 
-function phase10E2EService(FakeModelProvider $provider): AgentExecutionService
+function agentExecutionE2EService(FakeModelProvider $provider): AgentExecutionService
 {
     return new AgentExecutionService(
         $provider,
@@ -73,7 +73,7 @@ function phase10E2EService(FakeModelProvider $provider): AgentExecutionService
 it('runs assignment, Knowledge and Memory context, multi-step reasoning, governed capability, result propagation, and completion', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
-    $assignment = phase10E2EAssignment($actor, $enterprise);
+    $assignment = agentExecutionE2EAssignment($actor, $enterprise);
     $approver = User::factory()->create();
     Membership::factory()->admin()->create(['user_id' => $approver->id, 'organization_id' => $enterprise->organization_id]);
     EnterpriseContext::factory()->create(['enterprise_id' => $enterprise->getKey()]);
@@ -104,7 +104,7 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
                         'capability' => 'work.item.create',
                         'expert_slug' => 'operations',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                        'input_payload' => ['name' => 'Phase 10 E2E item'],
+                        'input_payload' => ['name' => 'Agent Execution E2E item'],
                     ]],
                     'delegation_requests' => [],
                     'termination' => 'continue',
@@ -129,9 +129,9 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
         );
     });
 
-    $result = phase10E2EService($provider)->execute(new AgentExecutionRequest(
+    $result = agentExecutionE2EService($provider)->execute(new AgentExecutionRequest(
         actor: $actor, assignment: $assignment, prompt: 'Create and verify the work item.',
-        correlationId: 'phase-10-e2e', options: ['max_steps' => 3],
+        correlationId: 'e2e-agent-execution', options: ['max_steps' => 3],
     ));
 
     expect($result->succeeded())->toBeTrue()
@@ -146,7 +146,7 @@ it('queues an execution, retries a transient model failure, and keeps the operat
     Queue::fake();
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
-    $assignment = phase10E2EAssignment($actor, $enterprise);
+    $assignment = agentExecutionE2EAssignment($actor, $enterprise);
     $calls = 0;
     $provider = new FakeModelProvider(function ($request) use (&$calls) {
         $calls++;
@@ -161,7 +161,7 @@ it('queues an execution, retries a transient model failure, and keeps the operat
         );
     });
 
-    $service = phase10E2EService($provider);
+    $service = agentExecutionE2EService($provider);
     $execution = $service->queue(new AgentExecutionRequest(actor: $actor, assignment: $assignment, prompt: 'Run asynchronously.', correlationId: 'async-e2e'));
     $job = new RunAgentExecutionJob($execution->getKey(), $actor->getKey());
 
@@ -178,11 +178,11 @@ it('enforces enterprise isolation and keeps the obsolete generic mutation capabi
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $foreignEnterprise = Enterprise::factory()->create();
-    $assignment = phase10E2EAssignment($actor, $enterprise);
+    $assignment = agentExecutionE2EAssignment($actor, $enterprise);
     $assignment->enterprise_id = $foreignEnterprise->getKey();
     $assignment->saveQuietly();
 
-    expect(fn () => phase10E2EService(FakeModelProvider::returning())->execute(new AgentExecutionRequest(
+    expect(fn () => agentExecutionE2EService(FakeModelProvider::returning())->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
         prompt: 'Cross scope.',

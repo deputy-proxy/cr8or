@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\IntegrationJobs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationJobs\Pages\ListIntegrationJobs;
 use App\Models\IntegrationJob;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class IntegrationJobResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = IntegrationJob::class;
 

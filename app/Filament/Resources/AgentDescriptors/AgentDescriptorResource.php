@@ -5,7 +5,7 @@ namespace App\Filament\Resources\AgentDescriptors;
 use App\Agents\Agent;
 use App\Filament\Resources\AgentDescriptors\Pages\EditAgentDescriptor;
 use App\Filament\Resources\AgentDescriptors\Pages\ListAgentDescriptors;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentDescriptor;
 use BackedEnum;
 use Filament\Forms\Components\Placeholder;
@@ -22,7 +22,7 @@ use ReflectionClass;
 
 class AgentDescriptorResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AgentDescriptor::class;
 

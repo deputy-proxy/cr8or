@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\IntegrationConnections;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationConnections\Pages\CreateIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\EditIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\ListIntegrationConnections;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class IntegrationConnectionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = IntegrationConnection::class;
 

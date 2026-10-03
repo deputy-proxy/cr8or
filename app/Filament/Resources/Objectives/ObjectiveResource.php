@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Objectives;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Objectives\Pages\CreateObjective;
 use App\Filament\Resources\Objectives\Pages\EditObjective;
 use App\Filament\Resources\Objectives\Pages\ListObjectives;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ObjectiveResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Objective::class;
 

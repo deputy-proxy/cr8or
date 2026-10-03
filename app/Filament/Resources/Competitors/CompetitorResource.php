@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Competitors;
 
 use App\Filament\Resources\Competitors\Pages\CreateCompetitor;
 use App\Filament\Resources\Competitors\Pages\ListCompetitors;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Competitor;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CompetitorResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Competitor::class;
 

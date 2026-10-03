@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\AgentDelegations;
 
 use App\Filament\Resources\AgentDelegations\Pages\ListAgentDelegations;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentDelegation;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgentDelegationResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AgentDelegation::class;
 

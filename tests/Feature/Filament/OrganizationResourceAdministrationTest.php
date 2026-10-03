@@ -16,7 +16,7 @@ use App\Models\User;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Gate;
 
-it('scopes every phase two organization resource to the authenticated organizations', function () {
+it('scopes every organization resource to the authenticated organizations', function () {
     $organization = Organization::factory()->create();
     $otherOrganization = Organization::factory()->create();
     $owner = User::factory()->create();
@@ -42,7 +42,7 @@ it('scopes every phase two organization resource to the authenticated organizati
         ->and(ApprovalRequestResource::getEloquentQuery()->pluck('id')->all())->toContain($approval->id)->not->toContain($foreignApproval->id);
 });
 
-it('does not expose phase two administration to users without organization membership', function () {
+it('does not expose organization administration to users without organization membership', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\AssetVersions;
 
 use App\Filament\Resources\AssetVersions\Pages\ListAssetVersions;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AssetVersion;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AssetVersionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AssetVersion::class;
 

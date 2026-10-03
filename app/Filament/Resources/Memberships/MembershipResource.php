@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Memberships;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Memberships\Pages\CreateMembership;
 use App\Filament\Resources\Memberships\Pages\EditMembership;
 use App\Filament\Resources\Memberships\Pages\ListMemberships;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MembershipResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Membership::class;
 

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Dependencies;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\WorkItem;
@@ -12,7 +12,7 @@ use Filament\Schemas\Schema;
 
 class DependencyForm
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     public static function configure(Schema $schema): Schema
     {

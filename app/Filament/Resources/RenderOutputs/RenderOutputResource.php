@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\RenderOutputs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\RenderOutputs\Pages\ListRenderOutputs;
 use App\Models\RenderOutput;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RenderOutputResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = RenderOutput::class;
 

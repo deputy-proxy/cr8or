@@ -25,7 +25,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
-it('scopes phase 5 media and publishing resources to the authenticated organizations', function () {
+it('scopes media and publishing resources to the authenticated organizations', function () {
     $organization = Organization::factory()->create();
     $otherOrganization = Organization::factory()->create();
     $user = User::factory()->create();
@@ -72,7 +72,7 @@ it('scopes phase 5 media and publishing resources to the authenticated organizat
         ->and(IntegrationConnectionResource::canViewAny())->toBeTrue();
 });
 
-it('limits mutable phase 5 administration to enterprise managers', function () {
+it('limits mutable media and publishing administration to enterprise managers', function () {
     $organization = Organization::factory()->create();
     $owner = User::factory()->create();
     $member = User::factory()->create();
@@ -111,7 +111,7 @@ it('keeps historical and external execution resources read-only', function () {
         ->and(PublicationResultResource::getPages())->not->toHaveKey('edit');
 });
 
-it('uses existing policies for mutable phase 5 records', function () {
+it('uses existing policies for mutable media and publishing records', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);

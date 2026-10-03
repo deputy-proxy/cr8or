@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Statements;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\Statements\Pages\CreateStatements;
 use App\Filament\Resources\Statements\Pages\EditStatements;
 use App\Filament\Resources\Statements\Pages\ListStatements;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StatementResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Statement::class;
 

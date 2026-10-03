@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\RenderJobs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\RenderJobs\Pages\ListRenderJobs;
 use App\Models\RenderJob;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class RenderJobResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = RenderJob::class;
 

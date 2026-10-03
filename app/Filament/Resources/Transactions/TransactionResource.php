@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Transactions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\Transactions\Pages\CreateTransactions;
 use App\Filament\Resources\Transactions\Pages\EditTransactions;
 use App\Filament\Resources\Transactions\Pages\ListTransactions;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TransactionResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Transaction::class;
 

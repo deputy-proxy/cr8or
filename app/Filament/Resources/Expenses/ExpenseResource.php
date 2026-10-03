@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Expenses;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\Expenses\Pages\CreateExpenses;
 use App\Filament\Resources\Expenses\Pages\EditExpenses;
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ExpenseResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Expense::class;
 

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\WorkItems;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\WorkItems\Pages\CreateWorkItem;
 use App\Filament\Resources\WorkItems\Pages\EditWorkItem;
 use App\Filament\Resources\WorkItems\Pages\ListWorkItems;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class WorkItemResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = WorkItem::class;
 

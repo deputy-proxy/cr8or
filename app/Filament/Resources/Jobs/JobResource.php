@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Jobs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Jobs\Pages\ListJobs;
 use App\Models\Job;
 use BackedEnum;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class JobResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Job::class;
 

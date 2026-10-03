@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 
-trait ScopesPhaseOneRecords
+trait ScopesAuthorizedRecords
 {
     protected static function currentUser(): ?User
     {

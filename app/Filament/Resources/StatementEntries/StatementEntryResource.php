@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\StatementEntries;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\StatementEntries\Pages\CreateStatementEntries;
 use App\Filament\Resources\StatementEntries\Pages\EditStatementEntries;
 use App\Filament\Resources\StatementEntries\Pages\ListStatementEntries;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StatementEntryResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = StatementEntry::class;
 

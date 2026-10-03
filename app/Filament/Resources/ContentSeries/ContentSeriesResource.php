@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ContentSeries;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ContentSeries\Pages\CreateContentSeries;
 use App\Filament\Resources\ContentSeries\Pages\EditContentSeries;
 use App\Filament\Resources\ContentSeries\Pages\ListContentSeries;
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ContentSeriesResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = ContentSeries::class;
 

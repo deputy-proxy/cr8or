@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\PublishingJobs;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\PublishingJobs\Pages\ListPublishingJobs;
 use App\Models\PublishingJob;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PublishingJobResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = PublishingJob::class;
 

@@ -74,7 +74,7 @@ it('enforces customer authorization through the enterprise organization', functi
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Customer::class, $enterprise]))->toBeFalse();
 });
 
-it('keeps the customer schema limited to phase 1 fields', function () {
+it('keeps the customer schema limited to supported fields', function () {
     expect(Schema::getColumnListing('customers'))->toBe([
         'id', 'enterprise_id', 'name', 'email', 'phone', 'status', 'created_at', 'updated_at',
     ]);

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\TransactionCategories;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\TransactionCategories\Pages\CreateTransactionCategories;
 use App\Filament\Resources\TransactionCategories\Pages\EditTransactionCategories;
 use App\Filament\Resources\TransactionCategories\Pages\ListTransactionCategories;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TransactionCategoryResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = TransactionCategory::class;
 

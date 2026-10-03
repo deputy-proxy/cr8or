@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Assets;
 use App\Filament\Resources\Assets\Pages\CreateAsset;
 use App\Filament\Resources\Assets\Pages\EditAsset;
 use App\Filament\Resources\Assets\Pages\ListAssets;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Asset;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AssetResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Asset::class;
 

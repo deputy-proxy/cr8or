@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Channels;
 use App\Filament\Resources\Channels\Pages\CreateChannel;
 use App\Filament\Resources\Channels\Pages\EditChannel;
 use App\Filament\Resources\Channels\Pages\ListChannels;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Channel;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ChannelResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Channel::class;
 

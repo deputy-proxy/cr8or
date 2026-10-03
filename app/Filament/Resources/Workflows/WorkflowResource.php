@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Workflows;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
 use App\Filament\Resources\Workflows\Pages\EditWorkflow;
 use App\Filament\Resources\Workflows\Pages\ListWorkflows;
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class WorkflowResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Workflow::class;
 

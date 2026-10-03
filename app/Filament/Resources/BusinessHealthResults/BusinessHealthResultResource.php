@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\BusinessHealthResults;
 
 use App\Filament\Resources\BusinessHealthResults\Pages\ListBusinessHealthResults;
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Models\BusinessHealthResult;
 use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BusinessHealthResultResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = BusinessHealthResult::class;
 

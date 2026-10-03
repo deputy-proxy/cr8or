@@ -88,7 +88,7 @@ it('scopes assignment and dependency administration to the authenticated organiz
         ->not->toContain($hiddenDependency->id);
 });
 
-it('limits phase 3 administration actions to enterprise managers', function () {
+it('limits assignment administration actions to enterprise managers', function () {
     $organization = Organization::factory()->create();
     $owner = User::factory()->create();
     $member = User::factory()->create();

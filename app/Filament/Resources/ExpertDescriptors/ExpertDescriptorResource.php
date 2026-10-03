@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ExpertDescriptors;
 
 use App\Experts\Expert;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ExpertDescriptors\Pages\EditExpertDescriptor;
 use App\Filament\Resources\ExpertDescriptors\Pages\ListExpertDescriptors;
 use App\Models\ExpertDescriptor;
@@ -22,7 +22,7 @@ use ReflectionClass;
 
 class ExpertDescriptorResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = ExpertDescriptor::class;
 

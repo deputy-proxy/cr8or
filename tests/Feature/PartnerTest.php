@@ -74,7 +74,7 @@ it('enforces partner authorization through the enterprise organization', functio
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Partner::class, $enterprise]))->toBeFalse();
 });
 
-it('keeps the partner schema limited to phase 1 fields', function () {
+it('keeps the partner schema limited to supported fields', function () {
     expect(Schema::getColumnListing('partners'))->toBe([
         'id', 'enterprise_id', 'name', 'email', 'phone', 'status', 'created_at', 'updated_at',
     ]);

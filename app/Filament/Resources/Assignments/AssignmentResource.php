@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Assignments;
 use App\Filament\Resources\Assignments\Pages\CreateAssignment;
 use App\Filament\Resources\Assignments\Pages\EditAssignment;
 use App\Filament\Resources\Assignments\Pages\ListAssignments;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Assignment;
 use App\Models\Enterprise;
 use BackedEnum;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AssignmentResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Assignment::class;
 

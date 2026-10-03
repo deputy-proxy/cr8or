@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\MultiAgentBusinessReportingService;
@@ -11,7 +11,7 @@ use UnitEnum;
 
 class AgentCollaborationReport extends Page
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static string|\BackedEnum|null $navigationIcon = \Filament\Support\Icons\Heroicon::OutlinedChartBarSquare;
 

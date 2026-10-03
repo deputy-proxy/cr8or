@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Budgets;
 use App\Filament\Resources\Budgets\Pages\CreateBudgets;
 use App\Filament\Resources\Budgets\Pages\EditBudgets;
 use App\Filament\Resources\Budgets\Pages\ListBudgets;
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Models\Budget;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BudgetResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Budget::class;
 

@@ -30,7 +30,7 @@ use App\Models\TransactionCategory;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
-it('scopes phase 6 resources to the authenticated organizations', function () {
+it('scopes financial resources to the authenticated organizations', function () {
     $organization = Organization::factory()->create();
     $otherOrganization = Organization::factory()->create();
     $user = User::factory()->create();

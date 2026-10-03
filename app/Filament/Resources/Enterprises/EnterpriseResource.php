@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Enterprises;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Enterprises\Pages\CreateEnterprise;
 use App\Filament\Resources\Enterprises\Pages\EditEnterprise;
 use App\Filament\Resources\Enterprises\Pages\ListEnterprises;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class EnterpriseResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Enterprise::class;
 

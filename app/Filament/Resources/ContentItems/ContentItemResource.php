@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ContentItems;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ContentItems\Pages\CreateContentItem;
 use App\Filament\Resources\ContentItems\Pages\EditContentItem;
 use App\Filament\Resources\ContentItems\Pages\ListContentItems;
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ContentItemResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = ContentItem::class;
 

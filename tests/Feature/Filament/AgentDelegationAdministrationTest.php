@@ -29,7 +29,7 @@ it('scopes delegation administration to permitted organizations', function () {
     expect(AgentDelegationResource::getEloquentQuery()->pluck('id')->all())->not->toContain($foreignDelegation->id);
 });
 
-it('denies phase seven administration without organization membership', function () {
+it('denies agent delegation administration without organization membership', function () {
     $this->actingAs(User::factory()->create());
 
     expect(AgentDelegationResource::canViewAny())->toBeFalse();

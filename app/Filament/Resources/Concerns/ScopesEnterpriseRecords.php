@@ -5,9 +5,9 @@ namespace App\Filament\Resources\Concerns;
 use App\Models\Enterprise;
 use Illuminate\Database\Eloquent\Builder;
 
-trait ScopesPhaseSixRecords
+trait ScopesEnterpriseRecords
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     /** @return Builder<Enterprise> */
     protected static function authorizedEnterpriseIds(): Builder

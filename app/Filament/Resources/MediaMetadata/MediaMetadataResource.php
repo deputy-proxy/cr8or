@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\MediaMetadata;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\MediaMetadata\Pages\ListMediaMetadatas;
 use App\Models\MediaMetadata;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MediaMetadataResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = MediaMetadata::class;
 

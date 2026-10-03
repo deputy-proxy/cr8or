@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Decisions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Decisions\Pages\CreateDecision;
 use App\Filament\Resources\Decisions\Pages\EditDecision;
 use App\Filament\Resources\Decisions\Pages\ListDecisions;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DecisionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Decision::class;
 
