@@ -1,1667 +1,1908 @@
 # CR8OR
 
-CR8OR is an AI-native business operating platform that provides a persistent system of record for enterprises, together with a controlled MCP interface through which AI agents can understand enterprise context, make decisions, request actions, and execute approved workflows.
+CR8OR is an AI-native business operating platform and persistent system of record for enterprises.
 
-CR8OR is designed to separate **business state**, **AI reasoning**, **capability exposure**, and **external execution**. Laravel owns the authoritative business state and application rules; AI agents own reasoning and decisions; MCP exposes controlled capabilities to AI clients; specialized external services perform media, publishing, development, and other execution tasks. n8n is an optional future MCP-integrated automation capability, not CR8OR's primary orchestrator.
+Its purpose is to let humans and AI agents operate a business through one governed application state and execution model. CR8OR stores authoritative business state, provides enterprise context, governs permissions and approvals, exposes controlled capabilities to AI clients, orchestrates repeatable workflows, records execution history, and connects specialized external services without surrendering ownership of business state.
 
-## Product Definition
+CR8OR is deliberately **not** an AI model, an MCP-only wrapper, an n8n workflow database, or a collection of CRUD screens with an AI chatbot attached. It is the application and governance layer that sits between reasoning and business state.
 
-CR8OR is:
-
-- A business operating system built around explicit domain boundaries.
-- A persistent system of record for enterprise context, strategy, work, content, media, finance, integrations, and operational history.
-- An AI-native platform in which agents operate through controlled capabilities rather than direct database access.
-- An MCP server and application interface for AI agents and AI clients.
-- A workflow and governance layer connecting human decisions, AI decisions, application actions, background jobs, and external services.
-
-CR8OR is not:
-
-- A generic CRUD administration panel with an AI chatbot attached.
-- An AI model or model-hosting platform.
-- A replacement for specialized execution services such as media renderers, social publishers, or external APIs.
-- A workflow engine whose business state lives primarily in n8n.
-- A system where AI agents can bypass application authorization or domain rules.
-
-The core architectural boundary is:
-
-**Agents reason and decide → CR8OR authorizes and owns state/rules → MCP exposes governed capabilities → specialized services execute.**
-
-Automation systems such as n8n may be connected later through MCP by an Automatiser Expert when a business workflow requires them.
-
-Agent execution is intentionally split into reasoning and governed execution. The Agent runtime produces a Capability Request; CR8OR validates authority and approval requirements; the requested Capability resolves to an Operation; the Operation invokes the appropriate application/domain service; the resulting state and audit record remain authoritative in CR8OR.
-
-## Product Principles
-
-The project is governed by the following principles:
-
-1. **Business state belongs to CR8OR** — the Laravel application is the canonical source of truth for operational business state.
-2. **Agents own decisions, not database access** — AI agents interact through explicit application capabilities.
-3. **Domain behavior is explicit** — important business operations are represented by controlled application/domain workflows rather than arbitrary model mutation.
-4. **MCP is an interface, not a second application layer** — MCP translates AI requests into application services and must not contain duplicated business logic.
-5. **Human authority remains explicit** — sensitive actions can require approval and must be auditable.
-6. **External systems are execution boundaries** — media workers, publishers, GitHub and other services perform specialized work without becoming the source of truth. Automation platforms such as n8n are optional MCP-connected capabilities rather than the core orchestration layer.
-7. **Historical truth is preserved** — important decisions, state changes, approvals, transactions and outputs remain interpretable after rules change.
-8. **CI is part of development** — an implementation is not complete until the repository's required quality gates pass and the resulting state is verified.
-9. **Documentation is part of the product** — important architectural, domain, security and operational decisions must be documented.
-10. **The architecture must remain model-independent** — AI models can change without changing the business system or losing its state.
-
-## Primary Actors
-
-**Human User**
-
-Owns enterprise decisions, approvals, permissions, and organizational authority. Humans can inspect, approve, reject, correct, and override appropriate AI-generated work.
-
-**AI Agent**
-
-Performs a defined operational role such as CEO, Marketing, Finance, Product, Operations, or a specialized expert. Agents reason over authorized enterprise context and invoke controlled CR8OR capabilities.
-
-**AI Expert**
-
-Provides specialized reasoning within an agent or workflow, such as Marketing Expert, Copywriting Expert, SEO Expert, Finance Expert, Accounting Expert, Product Expert, Laravel Expert, or UX Expert.
-
-**System Administrator**
-
-Maintains platform configuration, organizations, users, permissions, integrations, infrastructure settings, and operational controls.
-
-**External Service**
-
-A connected system that performs specialized execution, such as n8n, CR8OR Media, R2, Canva, Postiz, GitHub, OpenAI or other approved providers.
-
-## Target Core Domain Model
-
-The product is organized around explicit domain boundaries rather than an uncontrolled collection of CRUD records. The entities below describe the intended **target persistent CR8OR domain model**; they are not all implemented in the current repository. Runtime Capabilities and Operations are documented separately because they are executable contracts rather than generic CRUD records. Runtime components such as Agents and Experts are documented separately because they are executable classes rather than business-state entities.
-
-### Identity & Access
-
-- Organization
-- User
-- Membership
-- Role
-- Permission
-- Agent identity
-- Agent capability
-- Access policy
-- Approval authority
-
-Organizations provide the primary isolation boundary for business data and operational authority.
-
-### Enterprise
-
-- Enterprise
-- Enterprise Context
-- Vision
-- Mission
-- Goal
-- KPI
-- Product
-- Customer
-- Partner
-- Competitor
-- Enterprise Decision
-
-An Enterprise represents the operational entity an agent is helping to run. Enterprise Context provides the structured information agents need without requiring them to reconstruct the enterprise from unrelated records.
-
-### Agent Runtime & Governance
-
-Agents and Experts are **runtime components implemented as PHP classes**. They are not themselves Eloquent models or persistent business entities.
-
-CR8OR also maintains **AgentDescriptor** and **ExpertDescriptor** records as the platform runtime registry for those components. Descriptors identify the runtime class and expose persistent registry information, while the PHP runtime classes remain authoritative for their identity, description, responsibilities, capabilities, methodology and executable behavior. Enterprise-level governance is represented through **AgentAssignment** records and the Agent → Expert → Capability authorization chain.
-
-- Agent PHP classes
-- Expert PHP classes
-- AgentDescriptor
-- ExpertDescriptor
-- Agent Instruction / configuration
-- Capability
-- Tool
-- Agent Permission
-- Agent Assignment
-- Agent Execution
-- Agent Decision
-- Agent Memory / Context Reference
-
-The descriptor layer must not duplicate authoritative runtime metadata. Filament can resolve the registered PHP class and display its metadata read-only, providing a living technical glossary derived from the actual implementation.
-
-**Agents orchestrate. Experts reason. Capabilities define governed authority. Operations execute business operations. Application services enforce business behavior. Descriptors register runtime components. Models persist business state.**
-
-Agents determine which expertise is required, coordinate one or more Experts, and combine their results. Experts provide domain-specific reasoning, determine required context, and request appropriate Capabilities. A Capability is a reusable, governed business authority. An Operation is the concrete executable business operation associated with a Capability. Application services implement and enforce the business behavior required by Operations against authoritative CR8OR state or approved external services.
-
-### Capability governance boundary
-
-Capability availability, authorization and approval are intentionally separate:
-
-- **Availability:** an Agent or Expert runtime declares a Capability it can use. The same Capability may be reused by multiple Agents or Experts.
-- **Authorization:** an Agent assignment must authorize the requested Expert, and that Expert must own the requested Capability within the applicable organization and Enterprise scope.
-- **Approval:** a separate governance decision is required when the permission is approval-sensitive. Permission does not imply approval.
-
-When an Expert is used through an Agent, CR8OR verifies that the Expert declares the Capability and that the Agent assignment is explicitly permitted to use it. MCP and non-MCP execution share this authorization boundary.
-
-### Knowledge
-
-- Knowledge Source
-- Document
-- Knowledge Item
-- Context
-- Decision Record
-- Specification
-- Reference
-- Knowledge Version
-
-Knowledge provides durable enterprise context. The AI model is not the authoritative storage location for business knowledge.
-
-### Strategy
-
-- Objective
-- Strategy
-- Plan
-- Initiative
-- KPI
-- Metric
-- Strategic Decision
-
-Strategy describes what the business intends to achieve and provides the context against which agents evaluate proposed actions.
-
-### Work
-
-- Project
-- Task
-- Assignment
-- Workflow
-- Work Item
-- Milestone
-- Dependency
-- Job
-- Execution
-
-Work represents operational activity independently of the specific interface through which it was created.
-
-### Marketing
-
-- Marketing Strategy
-- Campaign
-- Content Series
-- Content Item
-- Script
-- Channel
-- Audience
-- Publication
-- Content Metric
-
-Marketing is a business domain, not merely a collection of social-media posts.
-
-### Media
-
-- Asset
-- Asset Version
-- Generation Request
-- Generation Job
-- Transformation
-- Render Request
-- Render Job
-- Render Output
-- Media Metadata
-
-Media assets have an explicit lifecycle and remain associated with their source requests, prompts, versions, jobs and outputs.
-
-### Publishing
-
-- Channel
-- Social Account
-- Publication
-- Publication Schedule
-- Publishing Job
-- Publication Result
-- Engagement Metric
-
-Publishing is separated from content creation so that content can exist independently of a particular publishing provider.
-
-### Finance
-
-- Financial Account
-- Transaction
-- Transaction Category
-- Statement
-- Invoice
-- Expense
-- Revenue
-- Budget
-- Financial Period
-- Financial Report
-
-Financial records require strong auditability and historical integrity.
-
-### Integrations
-
-- Integration
-- Provider
-- Credential Reference
-- Connection
-- Webhook
-- External Resource
-- Integration Event
-- Integration Job
-
-Integrations connect CR8OR to external systems without transferring ownership of business state to those systems.
-
-### Governance
-
-- Approval
-- Approval Request
-- Policy
-- Audit Entry
-- Decision
-- Exception
-- Change Record
-
-Sensitive actions must be traceable from request through decision, execution and result.
-
-### Reporting
-
-- Report
-- Metric
-- Snapshot
-- Dashboard
-- Business Health Result
-- Performance Result
-
-Reports provide derived views of authoritative business data and must not silently replace the underlying records.
-
-## Operating Architecture
-
-CR8OR uses an explicit governed execution path. The current repository implements the **Capability → Operation** runtime boundary and the **MCP Tool → Capability** interface boundary. Application/domain services remain responsible for business behavior and authoritative state.
+The fundamental separation is:
 
 ```
-                         HUMAN / AI CLIENT
-                                |
-                                v
-                         +-------------+
-                         |  MCP Tool   |
-                         +------+------+
-                                |
-                                v
-                       +-------------------+
-                       | Capability        |
-                       | Registry / Auth   |
-                       +---------+---------+
-                                 |
-                         approval, if required
-                                 |
-                                 v
-                       +-------------------+
-                       | Operation         |
-                       +---------+---------+
-                                 |
-                                 v
-                    +-------------------------+
-                    | Application / Domain    |
-                    | Service                 |
-                    +-----------+-------------+
-                                |
-                                v
-                         Authoritative State
-                                |
-                         +------+------+
-                         |             |
-                         v             v
-                    Events / Jobs   Audit / Result
-                         |
-                         v
-                  External Execution
-                  (Media / R2 / Postiz /
-                   Canva / other services)
+AI reasons and decides
+        ↓
+CR8OR authorizes and governs
+        ↓
+Capability
+        ↓
+Operation
+        ↓
+Application / Domain behavior
+        ↓
+Authoritative business state
 ```
 
-For Agent-driven execution, the reasoning layer sits before the MCP or application capability request:
+External systems are used where they are good at specialized execution:
 
 ```
-Agent → Expert → Capability Request
-                         |
-                         v
-              Authorization / Approval
-                         |
-                         v
-                  Capability
-                         |
-                         v
-                   Operation
-                         |
-                         v
-              Application / Domain Service
-                         |
-                         v
-                 Authoritative State
+CR8OR business state
+        ↓
+Integration / provider boundary
+        ↓
+External execution
+        ↓
+Result / reconciliation
+        ↓
+CR8OR authoritative state
 ```
 
-Agents and Experts do not receive authority merely because a Capability is declared or an MCP Tool is technically callable. Authorization remains server-side and is evaluated for the current actor, Agent/Expert context, organization and Enterprise scope.
+The central architectural rule is simple:
 
-### Architectural Responsibilities
+> **AI may decide what should happen. CR8OR decides whether it is allowed to happen and owns what actually happened.**
 
-| Layer | Responsibility |
-|---|---|
-| AI Agents | Reasoning, planning, decisions and recommendations |
-| CR8OR Laravel | Authoritative business state, domain rules, permissions and history |
-| MCP | Controlled AI-facing capability interface |
-| Application Services | Execute explicit business operations |
-| Policies / Authorization | Enforce authority and data boundaries |
-| Event mechanisms | Communicate meaningful state changes where concrete event handling is implemented |
-| Async job mechanisms | Perform asynchronous application work where the corresponding domain capability requires it |
-| n8n | Optional future MCP-connected automation capability |
-| External Workers | Perform specialized execution |
-| Cloudflare R2 | Canonical generated-media and file storage |
-| Filament | Administrative and operational application interface |
+---
 
-### Core Interaction Pattern
+## 1. What CR8OR Is For
 
-Every important governed operation should follow the conceptual pattern:
+CR8OR is intended to be the operating layer through which an enterprise can:
 
-**Agent reasoning → Capability Request → Authorization → Approval, where required → Capability → Operation → Application / Domain Service → State Transition → Result / Audit**
+- define and preserve enterprise context;
+- manage strategy, objectives and plans;
+- manage projects, work items and operational execution;
+- define Agents and specialized Experts;
+- assign Agents to Enterprises;
+- govern which Experts and Capabilities an Agent may use;
+- execute business actions through explicit Operations;
+- run deterministic, persisted Workflows;
+- allow AI clients to interact through MCP;
+- continue long-running interactive Agent work across multiple ChatGPT turns;
+- run autonomous Agent work through workers and a ModelProvider;
+- request and manage approvals;
+- preserve correlation, idempotency and provenance;
+- manage marketing, content, media and publishing;
+- manage finance and business operations;
+- retrieve enterprise Knowledge and context;
+- connect external execution providers;
+- reconcile provider results;
+- expose operational state through Filament;
+- preserve enough history to understand how important state was produced.
 
-The Capability is the reusable governed authority; the Operation is the executable business operation. An MCP Tool is only an interface through which the Capability may be requested.
+The platform is therefore both:
 
-Not every operation requires every step, but the boundaries must remain explicit.
+1. a **business application**, and
+2. a **governed execution substrate for AI-driven work**.
 
-Agent execution follows:
+These are not two separate systems. The same authoritative business state is used whether a change originated from a human, an Agent, a Workflow, an MCP client, or an authenticated command integration.
 
-**Agent reasoning → Capability request → CR8OR authorization → Approval when required → Capability → Operation → Application / domain service → Authoritative state transition → Result / audit**
+---
 
-The Agent runtime produces and records governed Capability Requests. It does not implicitly execute arbitrary capabilities merely because an AI model requested them. Actual state-changing execution occurs through the CR8OR Capability → Operation boundary.
+# 2. Core Architectural Principles
 
-## MCP Architecture
+## 2.1 CR8OR owns authoritative business state
 
-MCP is a first-class interface to CR8OR, but it does not own the business domain.
+Laravel and the CR8OR application/domain layer own the authoritative state of the business.
 
-### MCP Resources
-
-Resources provide authorized context to AI clients. The current server registers four contextual resources:
-
-- `cr8or://enterprises/{enterprise}/context`
-- `cr8or://enterprises/{enterprise}/strategy`
-- `cr8or://enterprises/{enterprise}/knowledge`
-- `cr8or://enterprises/{enterprise}/work`
-
-Additional domain-specific resource URIs remain roadmap examples until implemented.
-
-### MCP Tools
-
-Tools are MCP-facing interface identifiers. A Tool does not itself grant authority. A governed state-changing Tool resolves to a CR8OR Capability and its executable Operation.
-
-The canonical naming convention is:
-
-- **Capability:** `marketing.content.create`
-- **Operation:** `CreateContentItem`
-- **Tool:** `create-content-item`
-
-Capability identifiers use hierarchical dot notation, Operation classes use PascalCase, and MCP Tool names use kebab-case.
-
-Examples:
-
-- `get_enterprise_context`
-- `create_campaign`
-- `create_enterprise_context`
-- `create_content_item`
-- `request_asset`
-- `create_render_job`
-- `schedule_publication`
-- `create_task`
-- `register_transaction`
-- `request_approval`
-- `get_business_metrics`
-
-MCP Tools must resolve through the governed Capability boundary to an Operation and application/domain service rather than directly manipulating Eloquent models or database records. Tool registration does not grant authority.
-
-### MCP Prompts / Workflows
-
-Where appropriate, reusable operational workflows may be exposed for tasks such as:
-
-- weekly marketing planning;
-- financial review;
-- business health review;
-- product launch;
-- content campaign planning;
-- operational review.
-
-The MCP surface must remain capability-oriented rather than exposing internal database structure. MCP Tools are interface contracts and must resolve through CR8OR Capabilities and Operations rather than becoming a second application layer.
-
-## Agent Architecture
-
-Agents and Experts are executable CR8OR runtime components implemented as PHP classes. Their persistent counterparts are **AgentDescriptor** and **ExpertDescriptor** records used for registration, discovery, glossary presentation and persistent governance.
-
-### Descriptors
-
-An **AgentDescriptor** identifies an Agent runtime class without becoming the Agent itself.
-
-An **ExpertDescriptor** identifies an Expert runtime class without becoming the Expert itself.
-
-Descriptors should remain deliberately small. They may persist information such as:
-
-- slug;
-- runtime class;
-- enabled/disabled status;
-- registry or governance configuration that genuinely belongs in persistence.
-
-The runtime PHP class is authoritative for:
-
-- name and identity;
-- description and purpose;
-- responsibilities;
-- capabilities;
-- required context;
-- available Capabilities and their Operations;
-- methodology;
-- executable behavior.
-
-Filament should resolve the runtime class from the descriptor and display this information **read-only**. This creates an in-app glossary that is generated from the actual implementation rather than maintained as duplicated database content.
-
-The architectural relationship is:
-
-    AgentDescriptor
-      |
-      | runtime_class
-      v
-    Agent PHP class
-      |
-      v
-    ExpertDescriptor
-      |
-      | runtime_class
-      v
-    Expert PHP class
-      |
-      v
-    Capability
-      |
-      v
-    Operation
-      |
-      v
-    Application Service
-
-The descriptor must never become a second source of truth for runtime behavior. Changing the implementation's authoritative metadata or behavior belongs in PHP code, tests and CI, not in an arbitrary editable glossary field.
-
-### Platform Registry vs Enterprise Governance
-
-The Agent/Expert registry has two distinct governance layers:
-
-- **AgentDescriptor / ExpertDescriptor** define the platform-level runtime registry: which executable Agent/Expert classes exist, which runtime class they resolve to, and whether the registered runtime is enabled.
-- **AgentAssignment** defines where a registered Agent may operate; Expert composition and Expert-owned Capabilities define what governed work it may perform.
-
-Platform registry governance must not be confused with enterprise governance. The current implementation provides the descriptor registry and enterprise assignment/permission controls; a dedicated platform-authority boundary for administration of global descriptors should be established before the production Agent/Expert catalog expands.
-
-An **Agent** is an orchestration component. It represents a broad operational domain and is responsible for understanding the request at a high level, selecting the appropriate Experts, coordinating their work, and combining their results.
-
-Current runtime examples:
-
-- CeoAgent
-- MarketingAgent
-- FinanceAgent
-- ProductAgent
-- OperationsAgent
-
-An **Expert** is a domain-specialist component. It provides the methodology and reasoning required for a specific area of work, determines the context it needs, requests the Capabilities it requires, interprets Operation results, and produces a structured result.
-
-Current runtime examples:
-
-- MarketingExpert
-- FinanceExpert
-- ProductExpert
-- OperationsExpert
-
-Future/domain-specific Experts such as social media, copywriting, SEO, accounting, Laravel or UX specialists may be introduced when their corresponding responsibilities are implemented. They are illustrative roadmap examples, not claims about the current runtime catalog.
-
-The runtime relationship is:
-
-    Agent
-      |
-      v
-    Expert
-      |
-      v
-    Capability
-      |
-      v
-    Operation
-      |
-      v
-    Application Service
-      |
-      v
-    Eloquent Models / External Services
+Agents, MCP clients, external providers and automation systems do not become alternative sources of truth.
 
 For example:
 
-    MarketingAgent
-      |
-      v
-    SocialMediaExpert
-      |
-      +-- business.context.read
-      +-- marketing.product.read
-      +-- marketing.template.read
-      +-- marketing.campaign.create
-      +-- marketing.content_series.create
-      +-- marketing.content.create
-      |
-      v
-    CR8OR state / approved external services
+- a content item exists in CR8OR;
+- a publication is recorded in CR8OR;
+- a financial transaction is recorded in CR8OR;
+- a Workflow execution is recorded in CR8OR;
+- an Agent execution is recorded in CR8OR;
+- an approval is recorded in CR8OR;
+- an external job is represented by CR8OR integration state.
 
-### Runtime responsibilities
+External systems may execute work, but their output is reconciled back into CR8OR.
 
-**Agents**
+## 2.2 Agents own reasoning, not application authority
 
-- understand and route the high-level request;
-- select and coordinate Experts;
-- coordinate multi-expert workflows;
-- enforce the Agent's available authority and capability boundaries;
-- combine Expert results into the requested outcome.
+An Agent can reason, plan, select Experts, request Capabilities and coordinate work.
 
-**Experts**
+An Agent cannot:
 
-- apply domain-specific methodology;
-- determine required context;
-- request appropriate Capabilities;
-- reason over authorized enterprise context;
-- interpret Operation results;
-- produce structured domain results.
+- arbitrarily mutate Eloquent models;
+- choose an arbitrary Operation class;
+- bypass authorization;
+- bypass Enterprise isolation;
+- treat an MCP Tool as implicit authority;
+- create its own alternative execution path.
 
-**Capabilities**
+The server remains authoritative.
 
-- define reusable governed business authority;
-- use stable hierarchical identifiers;
-- do not grant authority merely by being declared or exposed;
-- resolve to explicit Operations.
+## 2.3 Experts provide governed specialization
 
-**Operations**
+An Expert represents specialized reasoning and capability ownership within an Agent execution.
 
-- represent concrete executable business operations;
-- enforce application/domain rules through the appropriate service boundary;
-- read or mutate authoritative business state;
-- invoke approved external execution services;
-- remain independently testable where practical.
+Examples include:
 
-**Application Services**
+- Marketing Expert;
+- Copywriting Expert;
+- SEO Expert;
+- Finance Expert;
+- Accounting Expert;
+- Product Expert;
+- Laravel Expert;
+- UX Expert.
 
-- implement or coordinate the business behavior required by Operations;
-- enforce application/domain rules;
-- read or mutate authoritative business state;
-- invoke approved external execution services;
-- remain deterministic and independently testable where practical.
+The canonical Agent path is:
 
-### Persistence boundary
+```
+Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+```
 
-Agents and Experts are not themselves Eloquent models. Their descriptors are persistent registry/catalog records, while execution and governance records remain separate persistent entities.
+There is deliberately no direct:
 
-If CR8OR needs to persist information about an Agent or its operation, that persistence belongs to separate models such as:
+```
+Agent → Capability
+```
 
-- Agent Execution
-- Agent Decision
-- Agent Assignment
-- Agent Permission
-- Approval
-- Audit Entry
+authority path.
 
-This keeps executable behavior separate from persistent business state.
+## 2.4 Capabilities are the business authority boundary
 
-An Agent must never gain authority merely because an AI model can technically call a tool.
+A Capability describes a governed business ability.
 
-## Core Business Lifecycle
+An Operation is the executable implementation associated with that Capability.
 
-The operational lifecycle of an AI-assisted business operation is:
+The runtime mapping is:
 
-**Enterprise Context**
-↓
-**Agent Reasoning / Decision**
-↓
-**Plan, where applicable**
-↓
-**Capability Request**
-↓
-**Authorization**
-↓
-**Approval, where required**
-↓
-**Execution**
-↓
-**Result**
-↓
-**Event, where an event is applicable to the operation**
-↓
-**Updated Business State**
-↓
-**Audit / Reporting**
+```
+Capability → Operation
+```
 
-Lifecycle rules:
+The Capability Registry is the authoritative runtime mapping for governed execution.
 
-- Every state-changing operation must be authorized.
-- Sensitive actions must support explicit approval gates.
-- External execution must be traceable back to the originating CR8OR action.
-- External service failures must not silently corrupt authoritative CR8OR state.
-- Retries must be idempotent where the operation permits retries.
-- Important historical records must remain interpretable.
-- AI output is not authoritative merely because it was generated successfully.
+A Capability may exist without a public MCP Tool. An Operation does not automatically become publicly callable merely because it exists.
 
-## Methodology
+## 2.5 MCP is an interface, not a second application
 
-CR8OR uses a governed operating methodology that keeps AI reasoning separate from authoritative business execution:
+MCP gives AI clients a controlled interface to CR8OR.
 
-1. **Understand context** — resolve the authorized Enterprise, organization, business state and relevant Knowledge, Strategy and Work context.
-2. **Reason within role** — an Agent coordinates the task and Experts provide specialized reasoning without gaining independent execution authority.
-3. **Form a capability request** — reasoning produces a structured request for an application capability rather than a direct database operation.
-4. **Authorize and approve** — CR8OR evaluates server-side permissions, organization/Enterprise scope and any required human approval before sensitive execution.
-5. **Execute through application boundaries** — application/domain services own mutations and integration calls; MCP and external services do not duplicate business rules or become authoritative state stores.
-6. **Record the outcome** — execution, decision, approval, delegation and external-result records preserve the context needed for historical interpretation.
-7. **Report from authoritative state** — derived reports read CR8OR-owned records and do not replace the underlying business state.
+Business MCP Tools must not contain duplicated business logic. A business Tool resolves into the governed Capability boundary and ultimately the registered Operation.
 
-This methodology remains narrower than a generalized workflow engine, policy language or reporting platform. Phase 8 provides governed Agent memory primitives, while generalized workflow-engine semantics, policy-language infrastructure, reporting/forecasting and autonomous self-modifying Agent behavior remain outside the implemented scope.
+The intended path is:
 
-### CR8OR Operating Model
+```
+MCP business Tool
+    ↓
+Capability
+    ↓
+Operation
+    ↓
+Application / Domain
+    ↓
+State
+```
 
-CR8OR separates four responsibilities:
+MCP therefore exposes the application. It does not replace it.
 
-**Reason**
+## 2.6 Workflows are persisted data
 
-AI agents interpret enterprise context and determine what should happen.
+Workflows are not hardcoded executable graphs hidden in PHP.
 
-**Control**
+The persisted model is:
 
-CR8OR applies authorization, domain rules, policies and approval requirements.
+```
+Workflow
+  ↓
+WorkflowVersion
+  ↓
+WorkflowExecution
+  ↓
+WorkflowStage
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+State
+```
 
-**Orchestrate**
+Published WorkflowVersions are immutable. Historical executions remain attached to the version against which they were executed.
 
-CR8OR coordinates business workflows and owns authoritative business state. n8n is an optional future MCP-connected automation capability for external asynchronous or multi-service automation, not the primary CR8OR orchestration layer.
+## 2.7 Filament is a deliberate exception
 
-**Execute**
+Filament is the administrative and operational application interface.
 
-Specialized services perform rendering, generation, storage, publishing, development and other concrete operations.
+It does not need to route every form submission through MCP or the Capability Registry. Filament uses normal Laravel application behavior, Eloquent models, policies and application services.
 
-This separation is authoritative for the initial architecture and should be documented further as implementation decisions are made.
+The architecture is therefore not:
 
-## Capability / Operation / Tool Model
+```
+Everything → MCP
+```
 
-CR8OR uses three deliberately separate names for governed AI execution:
+It is:
 
-| Concept | Canonical form | Meaning |
-|---|---|---|
-| Capability | `marketing.content.create` | Reusable governed business authority |
-| Operation | `CreateContentItem` | Concrete executable business operation |
-| Tool | `create-content-item` | MCP-facing interface identifier |
+```
+AI-facing business execution → Capability boundary
+Human application administration → Laravel / Filament
+External result reconciliation → Integration boundary
+```
 
-A Tool does not grant authority. Agents do not directly authorize Capabilities. Authorization is evaluated server-side through Agent → Expert → Capability for the current actor, Agent assignment, organization and Enterprise scope, with approval applied independently where policy requires it.
+Trying to make all three identical would create abstraction for abstraction's sake, which is one of software engineering's more reliable ways to manufacture problems.
 
-Capabilities may be reused by multiple Agents or Experts. They are not owned exclusively by one runtime component. Operations provide the concrete execution boundary and must not be bypassed by direct Expert calls to arbitrary application services.
+## 2.8 Provider-result webhooks are not command entry points
 
-## Workflow Composition
+A command webhook means:
 
-A Workflow is a business-level composition of governed Capabilities and Operations that produces a business outcome. It is not itself an executable Operation, a runtime Execution attempt, or an asynchronous Job. The current repository models these concerns separately:
+```
+External caller
+  ↓
+Authenticated command
+  ↓
+Capability
+  ↓
+Operation
+```
 
-- **Workflow** — the business-level composition and its business context. A Workflow may contain multiple Jobs.
-- **Operation** — the concrete executable business operation associated with a Capability. Operations remain the governed execution boundary for application behavior.
-- **Job** — an asynchronous execution mechanism used when a workflow step needs background processing. A Job belongs to a Workflow and can be retried without becoming the business Workflow itself.
-- **Execution** — a runtime attempt/result record for a Job, including historical context needed to interpret what happened.
+A provider-result webhook means:
 
-The current implementation uses this model for concrete lifecycle-backed work such as media generation and rendering. It does not introduce a generic workflow engine. Reporting keeps workflow failures separate from failed operations/execution records so the concepts are not treated as interchangeable.
+```
+External provider
+  ↓
+Integration webhook
+  ↓
+IntegrationResultEnvelope
+  ↓
+IntegrationResultService
+  ↓
+Reconciliation
+```
 
-CR8OR should use the existing Agent, Expert, Capability and Operation primitives for real workflows rather than introducing a generic workflow engine prematurely. n8n remains an optional external automation/execution capability and never becomes authoritative CR8OR business state.
+These are different concerns and must remain different.
 
-## Public Trust Model
+---
 
-CR8OR's authoritative record is the Laravel application database and its associated immutable/versioned records.
+# 3. The Complete Execution Architecture
 
-External services may provide execution results, but they do not become authoritative merely by holding a copy of the data.
+CR8OR has four principal governed business execution entry points.
 
-AI-generated plans, recommendations, prompts and outputs are derived artifacts until accepted or executed through the appropriate CR8OR workflow. A Capability identifies governed authority; an Operation performs the concrete business operation; an MCP Tool is only the interface used to request it.
+### Agent
 
-Important state changes must be attributable to:
+```
+Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+```
 
+### Deterministic Workflow
+
+```
+Workflow
+  ↓
+Stage
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+```
+
+### Direct business MCP
+
+```
+MCP business Tool
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+```
+
+### Command Webhook
+
+```
+Authenticated command
+  ↓
+Enterprise resolution
+  ↓
+Capability allowlist
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+```
+
+All four converge on the same governed execution substrate:
+
+```
+CapabilityInvocationRequest
+        ↓
+CapabilityInvocationService
+        ↓
+CapabilityRegistry
+        ↓
+Operation
+        ↓
+Application / Domain
+        ↓
+Authoritative state
+```
+
+This convergence is one of the most important properties of CR8OR.
+
+There should not be one business implementation for MCP, another for Agents, another for Workflows and another for webhooks.
+
+Different entry points provide different legitimate context. They do not own different business engines.
+
+---
+
+# 4. Actors and Responsibilities
+
+## Human
+
+Humans remain the ultimate organizational authority where the enterprise requires human decision-making.
+
+A human can:
+
+- configure enterprise information;
+- assign Agents;
+- configure permissions;
+- inspect execution;
+- approve or reject sensitive actions;
+- inspect Workflow state;
+- correct application state through authorized interfaces;
+- inspect integration results;
+- review AI-generated work;
+- initiate direct application actions.
+
+## AI Agent
+
+An Agent is an adaptive orchestrator.
+
+It can:
+
+- understand authorized context;
+- reason about a task;
+- select Experts;
+- request Capabilities;
+- coordinate multiple steps;
+- delegate to another Agent where permitted;
+- select a persisted Workflow;
+- continue an existing execution.
+
+It cannot bypass CR8OR governance.
+
+## Expert
+
+An Expert provides specialized reasoning and governed Capability ownership.
+
+It can:
+
+- define specialized responsibilities;
+- identify required context;
+- reason about domain-specific work;
+- request Capabilities it is authorized to use;
+- participate in Agent and Workflow execution.
+
+## Workflow
+
+A Workflow is deterministic orchestration for repeatable work.
+
+It can:
+
+- define ordered or dependency-based stages;
+- bind stages to Experts and Capabilities;
+- preserve execution state;
+- pause for approval or continuation;
+- resume using durable state;
+- execute without a ModelProvider.
+
+## System Administrator
+
+The administrator manages:
+
+- identity;
+- Enterprise configuration;
+- Agents and Experts;
+- assignments;
+- permissions;
+- integrations;
+- operational controls;
+- platform configuration.
+
+## External Provider
+
+A provider performs specialized execution outside CR8OR.
+
+Examples include:
+
+- Canva;
+- Postiz;
+- Cloudflare R2;
+- CR8OR Media;
+- GitHub;
+- model providers;
+- other approved external services.
+
+A provider is not authoritative for CR8OR business state.
+
+---
+
+# 5. Agent and Expert Runtime
+
+Agents and Experts are executable PHP runtime components.
+
+They are not ordinary Eloquent business models.
+
+CR8OR uses persistent descriptors to register runtime components:
+
+```
+AgentDescriptor
+      ↓ runtime_class
+Agent PHP class
+      ↓
+ExpertDescriptor
+      ↓ runtime_class
+Expert PHP class
+      ↓
+Capability
+      ↓
+Operation
+```
+
+Descriptors are registry/governance records. The executable PHP class remains authoritative for runtime behavior.
+
+## AgentAssignment
+
+An Agent becomes useful to an Enterprise through an assignment.
+
+An assignment provides the governance context in which the Agent can operate.
+
+The platform can therefore distinguish:
+
+- which Agent exists;
+- which runtime class implements it;
+- which Enterprise it is assigned to;
+- which permissions apply;
+- which Experts it can use;
+- which execution is currently in progress.
+
+## AgentExecution
+
+An AgentExecution represents durable execution state.
+
+It preserves the information required to understand and continue an Agent's work, including applicable:
+
+- Enterprise;
 - actor;
-- agent, where applicable;
-- capability;
-- operation;
-- MCP tool, where applicable;
-- timestamp;
-- authorization context;
-- approval;
-- external execution reference;
-- resulting state.
-
-## Verified Current State
-
-The repository has completed **Phases 0 through 8** within their audited product boundaries, plus the post-Phase-8 platform hardening and governance work recorded in Phase 11. Phase 8 establishes the canonical Agent/Expert runtime contracts, authorized composable context, the Marketing Agent runtime, governed Expert coordination, and persistent Agent memory with retrieval, write policy, provenance, auditability and explicit context integration. Phase 8.23 reconciled the documentation and Phase 8.24 completed the final implementation audit. Deferred capabilities remain explicitly identified in the roadmap.
-
-### Implemented
-
-- Laravel 13 application foundation.
-- Filament 5 administration foundation.
-- Repository conventions and issue-driven development workflow.
-- GitHub Actions CI with PHP 8.4, Node 22, lint, PHPStan and automated tests.
-- Core architecture, domain, governance, MCP and integration specifications.
-- Repository-level AI development rules in `.github/AI_DEVELOPMENT_RULES.md`.
-- Organization and membership identity.
-- Server-side organization and enterprise authorization.
-- Enterprise ownership and one-to-one enterprise context.
-- Phase 1 enterprise records: products, customers, partners, goals, KPIs and enterprise decisions.
-- Filament administration for the implemented Phase 1 domain.
-- Historical enterprise decision actor identity and decision timestamps.
-- Protected `/mcp` MCP transport with Passport-backed authentication and OAuth discovery.
-- Organization/enterprise-scoped MCP Enterprise, Strategy, Knowledge and Work resources.
-- Governed MCP Work/Strategy mutation and approval-request tools backed by application services.
-- Provider-neutral AI model execution through `App\AI\Contracts\ModelProvider`, including a real Laravel AI adapter and deterministic fake provider.
-- Governed Agent/Expert execution against authorized Enterprise, Knowledge, Strategy and Work context with execution-time capability re-authorization.
-- Correlated AgentExecution/AgentDecision/ApprovalRequest history with normalized failures, provider references and redacted observability.
-
-### Intentionally Deferred
-
-The following capabilities were deliberately deferred from the completed Phase 4 scope and belonged to later roadmap work:
-
-- Concrete production business Agent catalogues.
-- Concrete production business Expert catalogues.
-- Agent-to-agent collaboration and multi-agent workflow orchestration.
-- Broader capability catalogues, policy language and reporting.
-- Generalized Knowledge ingestion and provider infrastructure beyond the bounded Phase 9 retrieval implementation.
-- AI planning and metric-calculation engines.
-- Full workflow-engine semantics.
-- Marketing, media and publishing domains inside CR8OR Core.
-- Predictive forecasting.
-- Additional provider-specific cross-service integrations beyond the implemented platform contracts.
-
-These items are not missing Phase 4 implementation. Phase 4 provides the reusable runtime, governance, authorization, context and capability infrastructure on which later domain capabilities can be built.
-
-Concrete Agents and Experts are introduced with the domains that require them rather than being treated as a generic Core catalog. Enterprise-specific runtime components likewise belong in the relevant enterprise/domain layer.
-
-Existing external CR8OR services such as media, n8n, Canva or publishing infrastructure do not constitute completion of the corresponding CR8OR Core product phases.
-
-### Audit Reconciliation
-
-The Phase 1 audit confirmed the domain foundation, organization isolation, authorization and Filament administration. Phase 2 and Phase 3 audits subsequently verified the Agent/Expert governance and structured operating context. Phase 4.7 verified the MCP and governed AI execution boundary. Phase 6.7 verifies the Finance & Business Operations domain, administration, authorization and historical/reporting boundaries.
-
-Current follow-up items are:
-
-- keep authorization independent from UI visibility;
-- continue tracking non-phase hardening separately from phase-completion audits;
-- keep authoritative documentation and CI instructions aligned with the repository's actual commands and files.
-
-These are ongoing hardening/documentation items, not evidence that the completed phases are absent. They should be tracked separately from the phase-completion status.
-
-### Foundation Integrity
-
-During Phase 0, a later change accidentally removed `.github/AI_DEVELOPMENT_RULES.md`. The Phase 0 audit detected the regression and restored the file before Phase 0 was closed. Required foundation files should therefore be protected by automated integrity validation rather than relying on human memory or review alone.
-
-### Future Roadmap / Deferred Capabilities
-
-Phase 7 is complete within its defined scope. Phase 8.1–8.24 are implemented, documented and audited within their defined boundaries. Phase 11 platform hardening is implemented and audited in `docs/phase-11-audit.md`. The remaining deferred roadmap includes generalized Knowledge Retrieval / AI Context Infrastructure beyond the current bounded context providers, full workflow-engine semantics, policy-language infrastructure, generalized reporting/forecasting, autonomous self-modifying Agent behavior, and broader cross-service integrations.
-
-Generalized Knowledge Retrieval / AI Context Infrastructure should be introduced when the product requires retrieval beyond the currently implemented enterprise-scoped context assembly, with explicit authorization, indexing, ranking, semantic retrieval, context-budget and auditability boundaries. It is not a Phase 4 or Phase 7 completion gap.
-
-## Development Roadmap
-
-The phases below represent the original **product development roadmap**.
-
-The roadmap is product-oriented. Technical implementation issues, tickets and temporary engineering groupings must not silently replace or renumber the original product phases.
-
-### Phase 0 — Foundation & Architecture
-
-**Status: Complete**
-
-**Objective**
-
-Establish the fresh Laravel + Filament application and the architectural foundation for CR8OR Core.
-
-**Scope**
-
-- Fresh Laravel application.
-- Filament administration foundation.
-- Repository and CI conventions.
-- Core architecture documentation.
-- Target domain and application boundaries.
-- Development rules.
-- Initial authorization and MCP architecture specifications.
-
-**Completion Criteria**
-
-- Repository baseline is established.
-- CI validates the baseline.
-- Core architectural specifications exist.
-- Domain boundaries are documented.
-- Development workflow is documented.
-- The repository baseline follows the agreed foundation conventions.
-
-### Phase 1 — Identity, Organizations & Enterprise Context
-
-**Status: Complete**
-
-**Objective**
-
-Create the authoritative organization, user, enterprise and enterprise-context foundation.
-
-**Scope**
-
-- Organizations and memberships.
-- Users, roles and permissions.
-- Enterprises.
-- Enterprise context.
-- Products, customers and partners.
-- Goals and KPIs.
-- Enterprise decisions.
-
-**Completion Criteria**
-
-- Organization isolation is enforced.
-- Enterprise context can be created and maintained.
-- Authorization is server-side.
-- Core domain invariants are tested.
-- Administrative interfaces are operational.
-- Historical enterprise decisions preserve actor identity and decision time.
-
-### Phase 2 — Agents, Experts & Governance
-
-**Status: Complete**
-
-**Objective**
-
-Establish the Agent and Expert runtime architecture, persistent descriptors, governance model, and administrative discovery interface. Phase 2 is the governance/control-plane phase; production execution and MCP integration were intentionally completed in Phase 4.
-
-**Scope**
-
-- Agent runtime contracts and PHP classes.
-- Expert runtime contracts and PHP classes.
-- `AgentDescriptor` and `ExpertDescriptor` persistent registry records.
-- Runtime class registration and resolution.
-- Agent and Expert metadata contracts.
-- Read-only Filament Agent/Expert catalog and glossary.
-- Agent instructions and runtime configuration.
-- Capabilities and Operations.
-- Agent permissions and authority.
-- Agent assignments.
-- Agent execution records.
-- Agent decision records.
-- Approval requirements.
-- Audit records.
-- Runtime metadata remains authoritative in PHP classes and is not duplicated as editable descriptor fields.
-
-**Architecture boundary**
-
-- Agents and Experts are executable PHP classes, not Eloquent models.
-- AgentDescriptor and ExpertDescriptor records register runtime classes and support discovery, glossary presentation, and persistent governance.
-- Runtime PHP classes are authoritative for identity, description, responsibilities, capabilities, required context, methodology, and executable behavior.
-- Filament displays runtime metadata read-only rather than maintaining a second editable copy.
-- Capabilities define governed authority; Operations provide concrete executable business operations; application/domain services implement or coordinate their business behavior.
-- Eloquent models persist business state and governance/execution records.
-- MCP exposes authorized capabilities to AI clients without duplicating business logic.
-- Agents and Experts do not receive direct database access merely because they are AI runtime components.
-
-**Completion Criteria**
-
-- Agents and Experts have explicit runtime contracts.
-- Runtime implementations are PHP classes, not Eloquent models.
-- Descriptors can register and resolve runtime classes.
-- Runtime classes expose authoritative metadata.
-- Filament can display runtime metadata read-only.
-- Descriptor records do not become a second source of truth for runtime behavior.
-- Agent authority is explicitly governed.
-- Agent and Expert executions and decisions are auditable.
-- Relevant authorization and regression tests pass.
-- CI is green.
-
-### Phase 3 — Strategy, Knowledge & Work
-
-**Status: Complete**
-
-**Objective**
-
-Give agents and humans a structured operating model for planning and execution.
-
-**Scope**
-
-- Knowledge.
-- Strategy.
-- Objectives.
-- Plans.
-- Projects.
-- Tasks.
-- Workflows.
-- Jobs.
-- Decisions.
-
-**Verified implementation**
-
-- Business knowledge is persistently represented with enterprise-scoped sources, documents, items, contexts, references, specifications and historical versions with version edits and deletion blocked by the authorization boundary.
-- Strategy connects objectives, strategies, plans and initiatives and can reference existing Goals and KPIs.
-- Projects, tasks, work items, milestones, dependencies and assignments provide the operational work model.
-- Workflows, jobs and executions provide traceable CR8OR-owned execution history with explicit lifecycle and retry semantics.
-- Decision records preserve decision-time actor and context as historical facts and remain distinct from AgentDecision and EnterpriseDecision.
-- Filament administration is implemented with server-side organization/enterprise authorization and scoping.
-- Full local validation and the implementation PR CI checks were verified during the Phase 3 audit.
-
-**Deferred**
-
-- Advanced/generalized Knowledge ingestion, provider expansion and autonomous retrieval optimization remain deferred.
-- AI planning or metric-calculation engines.
-- Full workflow-engine semantics.
-- Concrete provider execution and external task-management integrations.
-
-### Phase 4 — MCP Core
-
-**Status: Complete**
-
-Phase 4 completes the **governed Agent/Expert execution infrastructure and capability boundaries**. It does not mean that CR8OR already contains a complete catalog of production business Agents or Experts. Concrete reusable platform Agents/Experts and enterprise-specific capabilities are introduced as their respective domains require them.
-
-**Objective**
-
-Expose CR8OR as a controlled AI operating interface and introduce the governed AI execution runtime for Agents and Experts.
-
-**Scope**
-
-- MCP server foundation.
-- Authentication.
-- Authorization.
-- Resources.
-- Tools.
-- Agent and Expert execution runtime.
-- Model/provider adapter layer.
-- Agent context assembly and execution context management.
-- MCP Tool → Capability → Operation invocation through application/domain services.
-- Agent and Expert execution lifecycle and traceability.
-- Agent decisions and execution results.
-- MCP auditability.
-- Error, validation and provider-failure contracts.
-
-**Architecture boundary**
-
-Phase 4 is the verified implementation phase in which CR8OR first invokes AI models as part of its governed Agent/Expert runtime. The phase delivers the execution infrastructure and capability boundary, not a complete business-role catalog.
-
-- The runtime may execute registered Agent/Expert classes, but the repository does not claim that every business role named in the target architecture has a concrete production implementation.
-- Concrete Agents and Experts are domain capabilities introduced when their operational responsibilities are implemented.
-- Enterprise-specific runtime components belong to the relevant enterprise/domain layer rather than automatically becoming part of CR8OR Core.
-
-- Phase 2 defines and governs Agent/Expert runtime components, descriptors, assignments, permissions and historical execution/decision records.
-- Phase 3 provides the structured enterprise context, strategy, knowledge and work state that execution can reason over.
-- Phase 4 connects those foundations to an actual AI execution runtime.
-- AI models reason within explicit Agent/Expert authority and request capabilities through governed Operations, application services and MCP Tools.
-- Agents and Experts must not receive direct database access or bypass CR8OR authorization.
-- Model/provider integration must remain replaceable so that changing an AI provider does not change authoritative business state.
-- `AgentExecution` and related records provide persistent traceability around actual runtime execution rather than becoming an alternative execution engine.
-- MCP translates AI requests into application capabilities and must not duplicate business logic.
-
-**Completion Criteria**
-
-- MCP clients can retrieve authorized enterprise context.
-- MCP tools resolve governed Capabilities to Operations that invoke application/domain services.
-- Authorized Agents and Experts can execute through the CR8OR runtime.
-- AI model/provider calls are isolated behind explicit runtime contracts.
-- Agent and Expert execution context is assembled from authorized CR8OR state.
-- MCP Tool → Capability → Operation calls are authorization-checked and auditable.
-- MCP cannot bypass authorization.
-- Execution failures and provider failures produce explicit, traceable outcomes.
-- Agent execution and decision records preserve the required historical context.
-- Business logic is not duplicated inside MCP.
-- Relevant authorization, runtime, integration and regression tests pass.
-- CI is green.
-
-### Current Implementation Status
-
-| Capability | Status |
-|---|---|
-| Core identity and organizations | Implemented |
-| Enterprise context | Implemented |
-| Enterprise operational domain | Implemented |
-| Agent / Expert descriptors | Implemented |
-| Agent assignments / permissions | Implemented |
-| Agent execution governance | Implemented |
-| Approval workflow | Implemented |
-| Provider-neutral model interface | Implemented |
-| MCP authentication / authorization | Implemented |
-| MCP contextual resources | Implemented |
-| Governed MCP capability tools | Implemented |
-| Workflow / Job / Execution tracking | Implemented |
-| Core business Agent catalog (CEO, Marketing, Finance, Product, Operations) | Implemented within current domain/runtime boundaries |
-| Core business Expert catalog (Business Analysis, Copywriting, Finance, Marketing, Operations, Product, SEO, Strategy) | Implemented within current domain/runtime boundaries |
-| Generalized knowledge retrieval | Implemented within bounded enterprise-scoped context/retrieval contracts; broader retrieval infrastructure remains future |
-| Full workflow engine | Deferred |
-| Cross-service business integrations | Platform contracts implemented; additional provider/domain adapters remain future |
-
-The status above distinguishes completed Phase 4 infrastructure from intentionally deferred product capabilities. “Deferred” does not indicate an incomplete Phase 4 implementation. Supporting infrastructure does not, by itself, make a business capability complete.
-
-
-### Post-Phase-8 Platform Hardening — Phase 11
-
-**Status: Complete within documented boundaries**
-
-Phase 11 closes the platform gaps identified after the Agent runtime phases. It adds generalized reporting foundations, Agent runtime policies, production reliability controls, cross-system security hardening and operational governance UX. The final reconciliation is recorded in `docs/phase-11-audit.md`.
-
-Implemented boundaries include:
-
-- Generic cross-domain reporting contracts with immutable snapshots and provenance.
-- Environment → organization → Enterprise → Agent → Expert runtime policy inheritance.
-- Persisted execution limits, queue retry/timeout governance and stuck-execution detection.
-- Webhook authentication, delivery-identity replay protection and external-result reconciliation.
-- Cross-system threat model and asynchronous governance revalidation.
-- Agent execution inspection, structured timeline, approvals/delegations/integration status and runtime-policy operational views.
-
-Accepted limitations are predictive forecasting, a general arbitrary workflow engine, richer runtime-policy editing UX and additional provider-specific integrations.
-
-### Phase 5 — Marketing, Media & Publishing
-
-**Status: Complete**
-
-**Objective**
-
-Implement the AI-assisted content operating system.
-
-**Scope**
-
-- Marketing strategy.
-- Campaigns.
-- Content series.
-- Scripts.
-- Content items.
-- Asset requests.
-- Generation jobs.
-- Media rendering.
-- Cloudflare R2 as the canonical media and file storage system.
-- Publishing.
-- Postiz publishing adapter/integration boundary.
-- Canva design creation through a governed integration boundary with authorization, idempotency, correlation and external-resource tracking.
-
-**Verified implementation:** Issues 65-70 implement and audit the Marketing, controlled content, media, publishing/Postiz, Canva integration boundary and Filament administration slices. CR8OR remains authoritative for business state, lifecycle, authorization, approval and historical records; external providers remain execution boundaries.
-
-**Completion Criteria**
-
-- Content can move through a controlled lifecycle.
-- Asset generation is traceable.
-- Render outputs are associated with source content.
-- Published content is traceable to CR8OR state.
-- External media and publishing services remain execution boundaries.
-
-### Phase 6 — Finance & Business Operations
-
-**Status: Complete**
-
-**Objective**
-
-Extend CR8OR into broader business operations and financial intelligence.
-
-**Scope**
-
-- Financial accounts.
-- Transactions.
-- Transaction categories.
-- Statements and statement import records.
-- Revenue.
-- Expenses.
-- Invoices.
-- Budgets.
-- Financial reporting.
-- Operational metrics.
-- Business health reporting.
-- Financial reporting and business-health results derived from authoritative Phase 6 records.
-
-**Verified Phase 6 implementation:** Issues 78-85 implement and audit the financial foundation, statement/import records, invoices/revenue/expenses, financial periods/budgets, derived reporting/business-health results, authorization-aware Agent financial context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6.
-
-**Verified Phase 6.3 implementation:** Invoices, Revenue and Expense are authoritative CR8OR records with Enterprise-safe relationships, historical invoice counterparty snapshots, fixed-precision monetary values and server-side organization authorization. Revenue and Expense reference authoritative accounts/transactions rather than duplicating ledger state; payment is not inferred from invoice lifecycle status.
-
-**Completion Criteria**
-
-- Financial records are auditable.
-- Historical transactions remain interpretable.
-- Financial operations respect authorization.
-- Agents can access authorized financial context.
-- Reports derive from authoritative records.
-
-### Phase 7 — Multi-Agent Business Operations
-
-**Status: Complete — Phase 7.1–7.7 implemented and audited**
-
-**Objective**
-
-Allow multiple specialized agents to collaborate through a shared business operating system.
-
-**Scope**
-
-- CEO / orchestration agent.
-- Marketing agent.
-- Finance agent.
-- Product agent.
-- Operations agent.
-- Expert delegation.
-- Agent-to-agent workflows.
-- Cross-domain approvals.
-- Business-level reporting.
-
-**Completion Criteria**
-
-- Agents can delegate according to explicit authority.
-- Cross-domain workflows are auditable.
-- Human approval remains available for sensitive decisions.
-- Agent collaboration does not bypass domain boundaries.
-- Business state remains centralized in CR8OR.
-
-**Phase 4 Completion Boundary**
-
-Phase 4 delivers the governed AI/MCP execution infrastructure and capability boundaries. It is complete for that defined scope. Concrete business Agents and Experts remain domain capabilities introduced as their responsibilities are implemented, and generalized retrieval, full workflow-engine semantics and broader integrations remain later roadmap capabilities.
-
-- Phase 4.1 protects the `/mcp` transport with Passport-backed authentication and establishes the MCP server boundary.
-- Phase 4.2 exposes organization/enterprise-scoped Enterprise, Strategy, Knowledge and Work resources.
-- Phase 4.3 exposes governed Work/Strategy mutation and approval-request tools through application services.
-- Phase 4.4 isolates model-provider access behind `App\AI\Contracts\ModelProvider` with a real Laravel AI adapter and deterministic fake provider.
-- Phase 4.5 executes authorized Agents against assembled Enterprise/Knowledge/Strategy/Work context, coordinates Experts, invokes the provider contract, re-authorizes capability requests and records execution/decision history.
-- Phase 4.6 adds normalized errors, correlation, provider/external references, retry/idempotency coverage and redacted observability.
-- All Phase 4 implementation PRs were merged with successful GitHub Actions CI runs.
-
-Phase 4 does not introduce agent-to-agent collaboration, Finance, or a generalized workflow/policy engine. Marketing/Media/Publishing are implemented in Phase 5, and Finance & Business Operations are implemented in Phase 6. Agent-to-agent collaboration and broader workflow/policy capabilities remain later-phase capabilities. It also does not imply that enterprise-specific runtime components are part of CR8OR Core.
-
-### Phase 7 Reporting Boundary
-
-Phase 7.5 adds the minimum business-level multi-Agent report. It is Enterprise-scoped and derived from authoritative AgentExecution, AgentDecision, AgentDelegation, ApprovalRequest, Workflow and existing financial/business-health results. Report generation is read-only, failed operations remain failures, and historical Agent identity comes from the execution/delegation snapshots already maintained by CR8OR. A generalized reporting engine, forecasting and analytics platform remain deferred.
-
-### Phase 7 Administration Boundary
-
-Phase 7.6 exposes the implemented multi-Agent operational state through the existing Filament administration foundation. Agent delegation history and the business-level collaboration report are available through organization-scoped, server-authorized views. Existing Agent/Expert descriptors, executions, decisions, approvals and workflow records remain read-only where their historical semantics require it. Runtime Agent/Expert metadata remains authoritative in PHP and is displayed read-only. The administration surface is an operational view over CR8OR-owned state, not a second authorization or business-logic layer.
-
-### Workflow / Job / Execution Boundary
-
-The current Workflow, Job and Execution models provide CR8OR-owned lifecycle, idempotency and execution tracking. They are the authoritative execution-history layer for implemented workflows, not a generalized workflow engine. Full workflow-engine semantics remain deferred.
-
-### Events and Jobs
-
-Events and Jobs remain CR8OR application mechanisms for meaningful state-change communication and asynchronous application work. The current repository contains execution/lifecycle contracts and tracking infrastructure, while substantial concrete asynchronous workflows are introduced only where the corresponding domain capability requires them. n8n is not the primary CR8OR orchestration layer. It may be connected later through MCP by an Automatiser Expert when appropriate.
-
-### Phase 8 — Agent Runtime, Context & Memory
-
-**Status: Complete within the defined Phase 8 scope**
-
-**Objective**
-
-Turn the existing governed Agent/Expert infrastructure into a production-ready Agent operating runtime with canonical execution contracts, authorized business context, a first production business Agent and persistent Agent memory.
-
-**Scope**
-
-- Canonical Agent runtime structure.
-- Canonical Expert runtime structure.
-- Agent execution contract.
-- Agent context contract.
-- Expert invocation contract.
-- Capability Request contract.
-- Runtime contract tests.
-- Enterprise, Strategy, Work, Knowledge, decision and execution-history context assembly.
-- Composable Agent context builder.
-- Marketing Agent runtime.
-- Marketing Agent instructions and Capability map.
-- Marketing Expert coordination.
-- End-to-end Marketing Agent execution tests.
-- Agent episodic memory.
-- Agent semantic memory.
-- Governed Agent memory retrieval and write policy.
-- Agent memory provenance and auditability.
-- Agent memory integration into the canonical context pipeline.
-- Phase 8 documentation and final implementation audit.
-
-**Architecture boundary**
-
-Phase 8 builds on the completed governance and execution foundations from Phases 2, 4 and 7. It does not replace those boundaries.
-
-- Agents orchestrate and make decisions; Experts provide specialized reasoning.
-- Agent and Expert runtime metadata remains authoritative in PHP.
-- Agent execution remains governed through Capability Requests and the Capability → Operation → Application Service boundary.
-- Context assembly reads authorized CR8OR state and does not become a second business-state store.
-- Agent memory is distinct from authoritative business Knowledge and business records.
-- Memory may reference authoritative records but must not silently replace or contradict them.
-- Organization and Enterprise isolation remains mandatory for context and memory.
-- Provider-specific behavior remains behind the existing model-provider boundary.
-- A generalized workflow engine, generalized policy language, reporting engine, forecasting platform and autonomous self-modifying Agent system remain outside Phase 8.
-
-**Phase 8 Implementation Sequence**
-
-| Issue | Scope |
-|---|---|
-| Phase 8.1 | Establish Canonical Agent Runtime Structure |
-| Phase 8.2 | Establish Canonical Expert Runtime Structure |
-| Phase 8.3 | Establish Agent Execution Contract |
-| Phase 8.4 | Establish Agent Context Contract |
-| Phase 8.5 | Establish Expert Invocation Contract |
-| Phase 8.6 | Establish Capability Request Contract |
-| Phase 8.7 | Add Agent and Expert Runtime Contract Tests |
-| Phase 8.8 | Implement Enterprise Context Assembly |
-| Phase 8.9 | Implement Strategy Context Assembly |
-| Phase 8.10 | Implement Work Context Assembly |
-| Phase 8.11 | Implement Knowledge Context Assembly |
-| Phase 8.12 | Implement Decision and Execution History Context |
-| Phase 8.13 | Implement Composable Agent Context Builder |
-| Phase 8.14 | Implement Marketing Agent Runtime |
-| Phase 8.15 | Implement Marketing Agent Instructions and Capability Map |
-| Phase 8.16 | Implement Marketing Expert Coordination |
-| Phase 8.17 | Implement Marketing Agent End-to-End Execution Tests |
-| Phase 8.18 | Implement Agent Episodic Memory |
-| Phase 8.19 | Implement Agent Semantic Memory |
-| Phase 8.20 | Implement Agent Memory Retrieval and Write Policy |
-| Phase 8.21 | Add Agent Memory Provenance and Auditability |
-| Phase 8.22 | Integrate Agent Memory into Canonical Context Pipeline |
-| Phase 8.23 | Complete Phase 8 Agent Runtime and Context Documentation |
-| Phase 8.24 | Complete Agent Runtime and Context Audit |
-
-**Completion Criteria**
-
-- Agent and Expert runtime contracts are canonical and tested.
-- Agents can assemble authorized, bounded and traceable business context.
-- Experts can be invoked through the governed Agent execution boundary.
-- Capability Requests resolve through existing authorization, approval and Capability → Operation semantics.
-- Marketing Agent can complete a representative end-to-end governed execution using the canonical runtime.
-- Agent memory is persistent, scoped, governed and traceable.
-- Agent memory remains distinct from authoritative business state and Knowledge.
-- Organization and Enterprise isolation remains enforced.
-- README and applicable technical specifications accurately describe the implemented Phase 8 state.
-- Full local validation passes.
-- Actual GitHub Actions CI is green.
-- Phase 8 is complete following the Phase 8.24 audit. See `docs/phase-8-audit.md` for the verification record.
-
-## Phase 9 — Knowledge Retrieval & AI Context
-
-**Status: Complete**
-
-Phase 9 establishes the bounded Knowledge Retrieval and AI Context infrastructure intentionally deferred from earlier Knowledge and Agent runtime phases.
-
-**Implemented**
-
-- Provider-neutral retrieval contracts and canonical authorization boundary.
-- Search representation lifecycle with pending/indexed/stale/failed/removed states.
-- Deterministic Knowledge normalization and bounded searchable units.
-- Idempotent indexing with multi-chunk lifecycle correctness.
-- Deterministic lexical retrieval.
-- Provider-neutral semantic embeddings and retrieval.
-- Deterministic hybrid lexical/semantic retrieval with deduplication and bounded ranking.
-- Authoritative provenance normalization and Enterprise isolation after provider execution.
-- Bounded retrieved_knowledge Agent context with explicit query/objective, result limits and deterministic token-budget degradation.
-- Retrieval observability with correlation, counts, latency and allow-listed provider metadata, without logging retrieved Knowledge content.
-- Permanent regression coverage for lexical, semantic, hybrid, authorization, provenance, context budgeting and observability.
-
-**Deferred**
-
-- Generalized ingestion pipelines and broad external source connectors.
-- Production embedding/vector-provider expansion beyond the current deterministic provider boundary.
-- Advanced learned ranking, reranking and autonomous retrieval optimization.
-- Generalized autonomous workflow orchestration.
-
-**Audit record**
-
-The final verification is recorded in docs/phase-9-audit.md.
-
-## MCP Surface: Current Implementation
-
-The implemented MCP surface is broader than the original Phase 4 mutation subset. The MCP server currently registers discovery/read tools, domain mutation and lifecycle tools, governed Agent-facing Capability tools, approval tools, social-account tools, and context resources.
-
-### Resources
-
-The current server registers four contextual resources:
-
-- Enterprise Context: `cr8or://enterprises/{enterprise}/context`
-- Strategy Context: `cr8or://enterprises/{enterprise}/strategy`
-- Knowledge Context: `cr8or://enterprises/{enterprise}/knowledge`
-- Work Context: `cr8or://enterprises/{enterprise}/work`
-
-### Tool categories
-
-The current server registers tools for:
-
-- Capability discovery
-- Enterprise, objective, strategy, marketing-strategy, goal, KPI, plan and initiative discovery
-- Campaign, content-series, content-item, audience, channel and social-account operations
-- Project and work-item operations
-- Agent/Expert descriptor and execution/approval discovery
-- Agent delegation, business analysis, marketing planning and financial reporting
-- Governed content creation, update, review, publication-readiness and publishing
-- Strategy and work-item creation/update
-- Enterprise context creation
-
-The server currently registers 78 concrete tool classes. Not every registered MCP tool is itself a Capability. Read/discovery tools provide authorized resource access, while state-changing tools either resolve to an explicit governed Capability/Operation or use the shared authorized domain-mutation/lifecycle boundaries described below.
-
-### MCP mutation boundaries
-
-There are currently two intentional state-changing MCP patterns:
-
-1. **Explicit governed Capability path:** MCP Tool → CapabilityRegistry → Operation → application/domain service. This is used by Agent-facing governed capabilities such as marketing planning, content operations, delegation, financial reporting, strategy operations and work-item operations.
-2. **Authorized domain-resource path:** MCP Tool → shared domain mutation/transition boundary → DomainResourceService. This is used by the broader enterprise/domain CRUD and lifecycle surface. These tools still require authentication, Enterprise scope and policy/capability authorization, but are not represented as individual Agent-facing Capability definitions.
-
-These two paths should not be conflated. The Capability Registry remains the authoritative mapping for governed Agent-facing capabilities; the shared domain-resource boundary exists for the broader MCP domain interface.
-
-### MCP Context Limitations
-
-Current context assembly is enterprise-scoped and authorization-aware and now supports bounded retrieved_knowledge through the canonical Agent context builder. Generalized ingestion, provider expansion, advanced ranking and autonomous retrieval optimization remain deferred.
-
-## Current Reconciliation
-
-The repository has completed Phases 1-9 within their defined boundaries. Phase 9 extends the Agent/Expert runtime and Knowledge foundations without reopening completed governance, MCP or business-domain phases. Deferred capabilities remain explicitly identified rather than being represented as complete.
-
-| Original phase | Current status | Reconciliation |
-|---|---|---|
-| Phase 0 — Foundation & Architecture | **Complete** | Foundation, CI, architecture specifications and development rules are implemented and verified. |
-| Phase 1 — Identity, Organizations & Enterprise Context | **Complete** | Organization and membership identity, enterprise ownership, enterprise context, Phase 1 business records, authorization, historical decisions and Filament administration are implemented and validated. Audit follow-ups are tracked separately as hardening work. |
-| Phase 2 — Agents, Experts & Governance | **Complete** | The 2.1–2.7 governance/control-plane implementation is complete and audited: runtime contracts, descriptors, assignments, permissions, execution/decision records, approvals and Filament governance administration are implemented. Phase 4 supplies the later production execution/provider integration; agent-to-agent workflows and broader policy/reporting capabilities remain deferred. |
-| Phase 3 — Strategy, Knowledge & Work | **Complete** | Knowledge, strategy, objectives, plans, projects, tasks, assignments, workflows, jobs, executions and decision records are implemented, authorized, tested and documented. Retrieval/indexing, AI planning, full workflow-engine semantics, provider execution and external task-management integrations remain deferred. |
-| Phase 4 — MCP Core | **Complete** | MCP authentication, authorized resources, governed tools, provider-neutral model execution, Agent/Expert runtime execution, approval enforcement, correlation, normalized errors and historical execution/decision contracts are implemented and audited. |
-| Phase 5 — Marketing, Media & Publishing | **Complete** | Issues 65-70 implement and audit the Marketing foundation, governed content operations, media lifecycle, Postiz publishing, Canva integration boundary and administration UI. External systems remain execution boundaries and do not own CR8OR business state. |
-| Phase 6 — Finance & Business Operations | **Complete** | Issues 78-85 implement and audit the financial foundation, statements/imports, invoices/revenue/expenses, periods/budgets, derived financial reporting/business health, authorization-aware Agent context and Filament administration. Deferred accounting rules, automated reconciliation, provider integrations, payment processing, generalized forecasting and generalized reporting-engine semantics remain outside Phase 6. |
-| Phase 7 — Multi-Agent Business Operations | **Complete** | Phase 7.1 delegation foundation, Phase 7.2 core business Agent/Expert runtimes, Phase 7.3 governed cross-Agent workflow traceability, Phase 7.4 delegated approvals, Phase 7.5 business-level reporting, Phase 7.6 administration and Phase 7.7 final audit are implemented and audited within their defined boundaries. Deferred generalized workflow-engine, policy-language, reporting/forecasting and Agent-memory capabilities remain outside Phase 7. |
-| Phase 8 — Agent Runtime, Context & Memory | **Complete** | Phase 8.1–8.7 establish the canonical Agent/Expert runtime and execution contracts; Phase 8.8–8.13 build authorized context assembly; Phase 8.14–8.17 implement and verify the Marketing Agent; Phase 8.18–8.22 implement governed Agent memory and integrate it into the context pipeline; Phase 8.23 reconciles documentation; Phase 8.24 verifies the complete phase against its acceptance criteria and CI. |
-| Phase 9 — Knowledge Retrieval & AI Context | **Complete** | Phase 9.1–9.12 establish the provider-neutral retrieval contract, indexing lifecycle, normalization, searchable representations, lexical/semantic/hybrid retrieval, provenance, authorization/isolation, bounded Agent context retrieval, observability and final audit. Generalized ingestion, provider expansion, advanced ranking and autonomous retrieval optimization remain deferred. |
-
-### Reconciliation Rules
-
-- The original product roadmap remains authoritative.
-- Technical issue groupings are implementation slices, not replacement phases.
-- Completed technical work must be mapped back to the appropriate product phase.
-- Partially implemented capabilities must be explicitly identified.
-- Existing CR8OR services do not automatically constitute completed CR8OR Core functionality.
-- A capability is not complete merely because supporting infrastructure exists.
-- The README must describe the actual repository state.
-- Audit findings must be resolved or explicitly accepted as technical debt before they become hidden architectural assumptions.
-
-## Existing Implementation Milestones
-
-The repository is no longer a foundation-only greenfield baseline. Phases 0 through 8 have been implemented and audited within their defined boundaries. Phase 7 Multi-Agent Business Operations and Phase 8 Agent Runtime, Context & Memory are complete within their documented scopes. Deferred generalized workflow-engine, policy-language, reporting/forecasting and other capabilities remain outside the completed scope.
-
-Future technical milestones will be recorded here and mapped to the corresponding product phase.
-
-### Core vs Enterprise-Specific Capabilities
-
-CR8OR Core should provide reusable governance, execution, authorization, context and integration primitives. A business capability belongs in Core only when it is genuinely reusable across enterprises.
-
-Enterprise-specific Agents, Experts and capabilities should live in the appropriate enterprise/domain layer and use the same CR8OR governance, execution and audit machinery. A component must not be added to Core merely because one enterprise requires it.
-
-For example, an EdVenture-specific `CourseCoordinator` can be a valid enterprise/domain Agent or Expert without requiring every CR8OR enterprise to inherit that concept. The platform provides the runtime and governance boundary; the enterprise provides its domain-specific capabilities.
-
-### Implementation History Rules
-
-Technical milestones are subordinate to the original product roadmap.
-
-They must not be interpreted as a new phase numbering system unless the product roadmap itself is formally changed.
-
-## Authoritative Specifications
-
-The following documents are authoritative where they exist and are applicable to the current implementation:
-
-- `docs/domain-model.md` — core entities and domain boundaries.
-- `docs/architecture.md` — application and integration architecture.
-- `docs/mcp.md` — MCP resources, tools, authentication and contracts.
-- `docs/agents.md` — agent and expert runtime architecture, descriptors and governance.
-- `docs/governance.md` — permissions, approvals and auditability.
-
-The following documents are also maintained as implementation-facing specifications and must remain reconciled with the codebase:
-
-- `docs/integrations.md` — external service boundaries and contracts.
-- `docs/implementation-decisions.md` — important architectural decisions.
-- `docs/security.md` — security and authorization requirements.
-- `docs/model-interface-boundaries.md` — human CRUD, controlled domain actions, and read-only operational/historical interface boundaries.
-
-The README remains the product roadmap and current-state reconciliation document. More specific technical specifications take precedence for their own subject areas, provided they do not silently contradict approved product decisions.
-
-### Specification Authority
-
-When implementation conflicts with an approved specification:
-
-1. Identify the conflict.
-2. Determine whether the specification or implementation is incorrect.
-3. Document the decision.
-4. Update the authoritative specification when the product decision changes.
-5. Implement the approved result.
-
-No important architectural or product decision should exist only in an issue comment, chat message or someone's increasingly unreliable memory.
-
-## Development Rules
-
-1. Important architectural, product, workflow, policy, security and data decisions must be documented.
-2. Do not silently contradict an approved specification.
-3. Preserve historical truth and data integrity.
-4. Authorization must be enforced server-side.
-5. UI visibility must never be treated as a security boundary.
-6. Sensitive mutations must use controlled application/domain workflows.
-7. Database writes must respect domain invariants.
-8. Every implementation issue must account for lint, static analysis and relevant automated tests.
-9. New functionality must include appropriate regression coverage.
-10. Existing functionality must not be broken to implement unrelated work.
-11. Deliberate technical debt must be documented.
-12. CI must be green before an implementation issue is considered complete.
-13. A pull request is not complete merely because the code works locally.
-14. Final implementation must satisfy the repository's lint, static-analysis and test requirements.
-15. Historical records must remain interpretable according to the rules under which they were created.
-16. MCP tools must not contain duplicated business logic.
-17. AI agents must not bypass application authorization.
-18. External integrations must not silently become authoritative sources of business state.
-19. Idempotency must be considered for retried external operations.
-20. Documentation must be updated when architecture or domain behavior changes.
-
-## Quality Gates
-
-The repository's current CI contract is defined by `.github/workflows/tests.yml` and the Composer scripts in `composer.json`.
-
-### Setup
-
-`composer setup`
-
-This installs PHP dependencies, prepares the environment, migrates the database, installs frontend dependencies and builds the frontend.
-
-### Lint
-
-`composer lint:check`
-
-Equivalent to the configured Laravel Pint test command.
-
-### Static Analysis
-
-`composer types:check`
-
-Runs PHPStan/Larastan using the repository's `phpstan.neon` configuration.
-
-### Tests
-
-`php artisan test`
-
-The test suite is also included in `composer test` after lint and static analysis.
-
-### Full Local Validation
-
-`composer test`
-
-This runs:
-
-1. configuration clearing;
-2. lint;
-3. static analysis;
-4. the full Laravel test suite.
-
-### CI Validation
-
-GitHub Actions runs:
-
-`composer setup`
-
-followed by:
-
-`composer ci:check`
-
-The `ci:check` script invokes the repository's complete test sequence. GitHub Actions is the authoritative validation environment.
-
-### Completion Requirement
-
-An implementation issue is complete only when:
-
-- lint passes;
-- static analysis passes;
-- relevant tests pass;
-- the complete test suite passes where required;
-- CI is green;
-- the implementation conforms to applicable specifications;
-- issue acceptance criteria are satisfied.
-
-## Testing Strategy
-
-**Unit Tests**
-
-Test isolated domain logic, value objects, policies and application services where appropriate.
-
-**Feature / Integration Tests**
-
-Test complete application workflows and integration boundaries.
-
-**Domain / Invariant Tests**
-
-Test business rules and state-transition invariants.
-
-**Authorization Tests**
-
-Verify organization isolation, user permissions, agent permissions and sensitive-operation controls.
-
-**MCP Tests**
-
-Verify authentication, authorization, resource visibility, tool contracts, validation, application-service invocation and auditability.
-
-**Regression Tests**
-
-Every discovered regression should receive appropriate automated coverage where practical.
-
-**CI**
-
-GitHub Actions is the authoritative automated validation environment.
-
-## Security & Authorization
-
-### Authentication
-
-Authenticated users and approved machine/AI clients must be identifiable before accessing protected CR8OR capabilities.
-
-### Authorization
-
-Authorization is enforced server-side through roles, permissions, policies and domain-specific capability checks.
-
-### Tenancy / Data Isolation
-
-Organizations provide the primary business data isolation boundary.
-
-An agent acting for one organization must not obtain or mutate another organization's business state.
-
-### Sensitive Operations
-
-Operations such as financial mutations, publication, external spending, destructive changes, credential use and other high-impact actions may require additional authorization or human approval.
-
-### Auditability
-
-Important actions must record sufficient context to reconstruct:
-
-- who or what initiated the action;
-- which agent acted, where applicable;
-- what capability was invoked;
-- which authorization context applied;
-- whether approval was required;
-- what external execution occurred;
-- what result was produced.
-
-### Historical Integrity
-
-Historical records must not be silently rewritten merely because current business rules have changed.
-
-For supported application mutations, historical immutability and state-transition constraints are enforced at the Eloquent/application boundary. Direct database writes, raw SQL updates and bulk mutations outside the supported application mutation path are not treated as governed CR8OR operations and are outside these application-level guarantees.
-
-## Data & Historical Integrity
-
-CR8OR must distinguish between mutable operational state and historical truth.
-
-### Immutable Records
-
-Candidates for immutable or append-only treatment include:
-
-- financial transactions;
+- assignment;
+- execution state;
+- correlation;
+- idempotency;
+- provenance;
+- decisions;
+- Capability requests;
+- results;
+- continuation state.
+
+## Agent decisions
+
+Agent reasoning and business execution are separate.
+
+The model may decide:
+
+> Create a campaign for the product launch.
+
+CR8OR then determines:
+
+1. which Agent is acting;
+2. which Expert is responsible;
+3. whether the Expert owns the requested Capability;
+4. whether the Agent assignment permits it;
+5. whether approval is required;
+6. which Operation implements the Capability;
+7. whether the requested target belongs to the Enterprise;
+8. whether the request is valid and idempotent;
+9. whether the Operation can execute.
+
+The model never becomes the authority for these checks.
+
+---
+
+# 6. Interactive and Autonomous Agent Execution
+
+CR8OR has two Agent execution modes.
+
+## 6.1 Interactive execution
+
+Interactive execution is designed for continuous ChatGPT-driven work.
+
+Conceptually:
+
+```
+ChatGPT
+  ↓ MCP
+CR8OR
+  ↓
+Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Persisted state
+  ↓
+MCP continuation
+  ↓
+ChatGPT
+  ↓
+...
+```
+
+The important property is persistence.
+
+A conversation does not need to hold the complete execution state in its context window. CR8OR stores durable execution state and returns a structured continuation.
+
+A later continuation request is validated against:
+
+- the Enterprise;
+- the Agent execution;
+- the expected step;
+- the continuation state;
+- idempotency;
+- authorization.
+
+Interactive continuation is provider-free. The next reasoning result can come from ChatGPT through MCP without CR8OR itself needing to invoke a ModelProvider.
+
+## 6.2 Autonomous execution
+
+Autonomous execution is worker-driven.
+
+Conceptually:
+
+```
+Schedule / Event
+  ↓
+CR8OR
+  ↓
+Worker
+  ↓
+Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+ModelProvider, when reasoning is required
+  ↓
+next step
+```
+
+The ModelProvider supplies reasoning. It does not become the authority for business state.
+
+The two execution modes share:
+
+- Agent governance;
+- Expert ownership;
+- Capability authorization;
+- Operation resolution;
 - approvals;
-- audit entries;
-- publication results;
-- important agent decisions;
-- external execution records.
+- persistence;
+- correlation;
+- idempotency;
+- failure semantics.
 
-### Versioned Records
+They differ only in how reasoning is supplied and how execution progresses.
 
-Candidates for versioning include:
+---
 
-- enterprise context;
-- strategies;
-- agent instructions;
+# 7. Delegation
+
+Agents can delegate work to other Agents where the platform permits it.
+
+The conceptual path is:
+
+```
+Source Agent
+  ↓
+Delegation
+  ↓
+Target Agent Assignment
+  ↓
+Target Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+```
+
+Delegation is an orchestration concern.
+
+A receiving Agent does not inherit arbitrary authority from the source Agent. Its own assignment, Expert ownership, permissions and Enterprise scope still apply.
+
+Delegation records preserve relevant provenance such as:
+
+- source assignment;
+- target assignment;
+- Enterprise;
+- parent execution;
+- requested Capability;
+- actor;
+- correlation;
+- idempotency;
+- approval context.
+
+---
+
+# 8. Capability Architecture
+
+A Capability is a reusable governed business ability.
+
+Examples include:
+
+- `business.analysis`;
+- `marketing.strategy.create`;
+- `marketing.content.create`;
+- `marketing.content.update`;
+- `finance.report.generate`;
+- `work.item.create`;
+- `work.item.update`;
+- `strategy.create`;
+- `strategy.update`.
+
+The exact registry is defined in code and is the runtime source of truth.
+
+## Capability definition
+
+A Capability definition associates the relevant execution contract, including:
+
+- capability identifier;
+- Operation;
+- MCP Tool where publicly exposed;
+- input contract;
+- output contract;
+- authorization requirements;
+- approval requirements;
+- category;
+- tool class.
+
+## Capability categories
+
+The registry distinguishes at least:
+
+- business;
+- lifecycle;
+- read/query surfaces.
+
+Business Capabilities are governed by the business execution invariant.
+
+Lifecycle capabilities are orchestration controls such as Agent and Workflow lifecycle actions. They are intentionally separate from business mutation Capabilities.
+
+---
+
+# 9. Operation Architecture
+
+Operations are explicit executable business actions.
+
+The mapping is:
+
+```
+Capability
+   ↓
+Operation
+```
+
+An Operation may call:
+
+- application services;
+- domain services;
 - policies;
-- content;
-- prompts;
-- media assets;
-- specifications.
+- repositories where appropriate;
+- external integration boundaries;
+- persistence mechanisms.
 
-### Phase 1 Enterprise Decisions
+An Operation must not be treated as a generic arbitrary class endpoint.
 
-Phase 1 enterprise decisions currently preserve the actor identity and decision timestamp at creation time. The substantive decision content remains mutable in the current implementation.
+Agents, Workflows, MCP clients and command webhooks resolve Operations through the Capability Registry rather than accepting arbitrary Operation class names from an external caller.
 
-Before Agent and MCP workflows depend on enterprise decisions as durable historical evidence, CR8OR must explicitly choose and implement the required historical model for those records: mutable, append-only, versioned, or a combination with immutable decision events.
+This prevents a caller from turning an application service container into an accidental remote-code-execution-shaped API.
 
-### Snapshot Rules
+---
 
-Information that must remain historically accurate must be snapshotted rather than dynamically reconstructed from current mutable records.
+# 10. CapabilityInvocationService
 
-### Historical Interpretation
+`CapabilityInvocationService` is the common business execution boundary.
 
-Changes to methodology, pricing, permissions, agent instructions or business rules must not make previously recorded decisions or transactions unintelligible.
+Its conceptual responsibility is:
 
-## User Interfaces
+1. receive a governed CapabilityInvocationRequest;
+2. establish execution context;
+3. resolve the Capability;
+4. resolve the authoritative Operation;
+5. apply the applicable governance;
+6. execute the Operation;
+7. translate failures into the platform's normalized execution contract;
+8. return the result;
+9. preserve relevant provenance and execution metadata.
 
-### Public Website
+The service is not a replacement for authorization systems or domain policies. It is the common execution substrate through which the entry points converge.
 
-Public product surfaces may be introduced later.
+---
 
-### Authenticated Application
+# 11. Authorization and Governance
 
-The primary authenticated application will use Filament for administrative and operational interfaces.
+Authorization is server-side.
 
-### Administration
+A client interface, AI model, Tool name or visible UI control does not grant authority.
 
-Filament will provide interfaces for organizations, users, permissions, business configuration, agents, integrations and operational controls.
+## Agent authorization
 
-### Operational Interfaces
+The Agent path uses:
 
-Operational dashboards will expose queues, approvals, jobs, agent executions, integrations, media workflows and business activity.
+```
+Agent Assignment
+  ↓
+Expert
+  ↓
+Capability ownership
+  ↓
+Authorization
+  ↓
+Capability execution
+```
 
-### UX Principles
+The Agent cannot simply invent a Capability.
 
-- Interfaces should expose domain concepts rather than database implementation details.
-- Sensitive actions must communicate authority and consequences clearly.
-- Operational state should be visible without requiring users to inspect logs.
-- AI-generated work should be distinguishable from approved or executed work.
-## Execution modes: interactive and autonomous
+## Enterprise isolation
 
-CR8OR has exactly two Agent execution modes.
+Every business operation is evaluated in an Enterprise context where applicable.
 
-**Interactive** is the continuous ChatGPT-driven runtime:
+Cross-Enterprise access must fail closed.
 
-`ChatGPT → MCP → CR8OR → Agent → Expert → Capability → Operation → persisted state → MCP continuation → ChatGPT → …`
+Enterprise context is not merely prompt text. It is a security and business boundary.
 
-The initial interactive MCP call creates durable state and returns a machine-readable continuation. ChatGPT submits the next structured reasoning result through `continue-agent-execution`. CR8OR validates scope, exact step ordering and idempotency, re-authorizes Agent → Expert → Capability, executes the governed Operation, persists authoritative results and returns the next continuation or an explicit human/terminal state. Interactive never invokes `ModelProvider` and normal continuation does not require a worker.
+## Approval
 
-**Autonomous** is the worker/model-provider runtime:
+Approval is separate from permission.
 
-`Schedule/Event → CR8OR → Worker → Agent → Expert → Capability → Operation → ModelProvider → …`
+A user or Agent may have permission to request an action while the action may still require an explicit approval decision.
 
-The worker drives autonomous progression and the configured ModelProvider supplies reasoning. The two modes share the durable execution and governance model but never cross reasoning boundaries.
+This distinction is important:
 
-The invariant in both modes is **Agent → Expert → Capability → Operation**. MCP Tool availability does not grant authority, Agents do not directly own Capabilities, and approval/human gates remain server-authoritative.
+```
+Permission ≠ Approval
+```
 
-## Current Agent / Expert Capability / Operation / Tool graph
+Approval-sensitive operations preserve approval context through execution.
 
-The current runtime capability graph is exposed through governed MCP Tools. Runtime PHP classes remain authoritative for Capability metadata and Operation bindings; MCP is the transport and authorization coordination layer. The graph below covers the explicit Agent-facing Capability Registry, not every domain CRUD/discovery MCP tool.
+Command Webhooks cannot turn possession of a valid command credential into an implicit human approval.
 
-| Capability | Runtime consumer | Operation | Tool | Type |
-| --- | --- | --- | --- |
-| `agent.delegate` | CEO / Orchestration Agent | `DelegateAgent` | `delegate-agent` | state-changing delegation |
-| `business.analysis` | Business Analysis Expert | `AnalyzeBusinessContext` | `analyze-business-context` | analysis |
-| `marketing.plan` | Marketing Agent / Expert | `PlanMarketing` | `plan-marketing` | planning |
-| `finance.report.generate` | Finance Agent / Expert | `GenerateFinancialReport` | `generate-financial-report` | controlled financial operation |
-| `marketing.content.create` | Marketing Agent | `CreateContentItem` | `create-content-item` | state-changing |
-| `marketing.content.update` | Marketing Agent | `UpdateContentItem` | `update-content-item` | state-changing |
-| `marketing.content.review` | Marketing Agent | `SubmitContentForReview` | `submit-content-for-review` | lifecycle transition |
-| `marketing.content.publication-ready` | Marketing Agent | `MarkContentPublicationReady` | `mark-content-publication-ready` | lifecycle transition |
-| `strategy.create` / `strategy.update` | Product Agent | `CreateStrategy` / `UpdateStrategy` | `create-strategy` / `update-strategy` | state-changing |
-| `work.item.create` / `work.item.update` | Product / Operations Agents | `CreateWorkItem` / `UpdateWorkItem` | `create-work-item` / `update-work-item` | state-changing |
-| `publication.publish` | Publishing / Marketing runtime | `PublishContent` | `publish-content` | state-changing |
+---
 
-Finance is intentionally not exposed as generic CRUD. The current Agent-facing Finance Operation is financial report generation through the existing reporting service; other Finance models remain governed by their existing policies until a dedicated domain Operation exists.
+# 12. Correlation, Idempotency and Failure
 
-### Phase 12 capability-native validation
+CR8OR treats execution metadata as part of the architecture rather than optional logging decoration.
 
-Phase 12 is validated by `E2E-CAPABILITY-20260928`, which executes the application workflow through `CapabilityInvocationService → CapabilityRegistry → Operation → Application/Domain Service → Persistence`. The validation intentionally does not invoke MCP CRUD/action tools or Railway Sandbox and emits a machine-readable persisted graph for the complete test workflow.
+## Correlation
+
+Correlation identifiers allow related actions to be followed across:
+
+- Agent executions;
+- Workflow executions;
+- Capability requests;
+- Operations;
+- jobs;
+- integrations;
+- external providers;
+- webhooks.
+
+## Idempotency
+
+Different entry points have appropriate idempotency semantics.
+
+Agent execution uses durable execution/step state.
+
+Workflow execution uses published-version and stage execution identity.
+
+Direct MCP requests can pass idempotency through the governed invocation request where supplied.
+
+Command Webhooks persist a delivery record keyed to the authenticated credential and idempotency key.
+
+Domain Operations retain responsibility for domain-specific idempotency where the domain requires it.
+
+## Failure
+
+Business execution uses the normalized CR8OR failure contract.
+
+Failures are not converted into provider-specific business semantics.
+
+Command Webhooks expose the same canonical execution failure concept through an HTTP envelope.
+
+Integration failures remain integration failures and are reconciled through the integration boundary.
+
+---
+
+# 13. Workflows
+
+A Workflow is a persisted deterministic orchestration primitive.
+
+A Workflow definition contains stages and their relationships.
+
+A stage identifies, among other things:
+
+- Expert;
+- Capability;
+- dependencies;
+- input/output contracts;
+- execution context.
+
+The published WorkflowVersion is immutable.
+
+Runtime execution is therefore:
+
+```
+WorkflowVersion
+  ↓
+WorkflowExecution
+  ↓
+Stage
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+```
+
+## Workflow publication
+
+Persisted workflow definitions are validated before publication.
+
+Validation checks that the persisted graph is structurally valid and that declared execution relationships are compatible with the governed Capability model.
+
+## Workflow execution
+
+A Workflow does not:
+
+- call an arbitrary Operation class;
+- invoke a business MCP Tool as a shortcut;
+- contain a hardcoded business execution graph;
+- require a ModelProvider merely to execute deterministic work.
+
+## Workflow continuation
+
+A WorkflowExecution persists:
+
+- stage progress;
+- outputs;
+- waiting state;
+- correlation;
+- idempotency;
+- continuation state.
+
+Continuation tokens fail closed when stale or invalid.
+
+## Workflow and Agents
+
+An Agent may select a persisted Workflow when work is known and repeatable.
+
+The Workflow remains the deterministic execution authority.
+
+The Agent does not rewrite the Workflow's result.
+
+---
+
+# 14. Lifecycle MCP Tools
+
+Lifecycle MCP Tools control orchestration state rather than directly exposing business mutation authority.
+
+They use explicit namespaces:
+
+- `mcp_agent_*`
+- `mcp_workflow_*`
+
+Examples include operations for:
+
+- creating or executing Agent lifecycle state;
+- continuing Agent execution;
+- delegating Agent work;
+- creating Workflows;
+- publishing Workflows;
+- starting Workflow execution;
+- inspecting Workflow execution;
+- resuming Workflow execution.
+
+Lifecycle Tools are intentionally different from business MCP Tools.
+
+They may invoke lifecycle Operations directly where that is the appropriate orchestration boundary. The business MCP 1:1 invariant applies to business mutation Tools, not to every lifecycle control in the platform.
+
+---
+
+# 15. MCP Architecture
+
+CR8OR exposes an MCP server for AI clients.
+
+MCP provides two important kinds of interface:
+
+1. contextual resources;
+2. executable Tools.
+
+## Resources
+
+Resources expose authorized contextual information such as:
+
+- Enterprise context;
+- strategy;
+- knowledge;
+- work.
+
+Resources are read-oriented context interfaces.
+
+They do not grant business mutation authority.
+
+## Business Tools
+
+A business Tool should map to:
+
+```
+one Tool
+  ↓
+one Capability
+  ↓
+one Operation
+```
+
+The registry enforces uniqueness of:
+
+- Capability identifier;
+- Operation mapping;
+- MCP Tool identifier;
+- Tool class mapping.
+
+A business Tool must execute through the Capability boundary.
+
+## Read/query/admin Tools
+
+Not every MCP Tool is a business mutation Capability.
+
+The server may expose:
+
+- read/query tools;
+- context tools;
+- administration tools;
+- lifecycle tools;
+- business mutation tools.
+
+The important distinction is classification and governance, not forcing every MCP endpoint into the same abstraction.
+
+---
+
+# 16. Command Webhooks
+
+Command Webhooks provide a machine-to-machine business entry point.
+
+The path is:
+
+```
+Authenticated command
+  ↓
+HMAC / credential authentication
+  ↓
+Enterprise identity resolution
+  ↓
+Capability allowlist
+  ↓
+Idempotency / correlation
+  ↓
+CapabilityInvocationService
+  ↓
+Operation
+  ↓
+State
+```
+
+A command webhook cannot submit:
+
+- an arbitrary Operation class;
+- an arbitrary application service;
+- arbitrary model mutation instructions.
+
+The credential explicitly determines which Capabilities it may invoke.
+
+Replay protection is implemented through durable command delivery state.
+
+Approval-required Capabilities cannot be bypassed merely because the command is authenticated.
+
+---
+
+# 17. External Integrations
+
+External integrations are specialized execution boundaries.
+
+Examples include:
+
+- Canva for creative work;
+- Postiz for publishing;
+- Cloudflare R2 for storage;
+- CR8OR Media for media processing;
+- GitHub for repository operations;
+- ModelProviders for AI reasoning.
+
+The integration architecture is:
+
+```
+CR8OR
+  ↓
+Provider-neutral integration contract
+  ↓
+Provider adapter
+  ↓
+External system
+```
+
+CR8OR owns:
+
+- authorization;
+- business state;
+- correlation;
+- idempotency;
+- reconciliation;
+- provenance.
+
+The provider owns its own execution mechanics.
+
+---
+
+# 18. External-result Webhooks
+
+Provider-originated results are handled separately from command Webhooks.
+
+The path is:
+
+```
+External Provider
+  ↓
+Integration Webhook
+  ↓
+IntegrationResultEnvelope
+  ↓
+IntegrationResultService
+  ↓
+Integration Job / reconciliation
+  ↓
+CR8OR state
+```
+
+This boundary exists because a provider result is not a new arbitrary business command.
+
+The reconciliation layer must:
+
+- authenticate the provider;
+- validate the payload;
+- normalize provider-specific data;
+- correlate it to the CR8OR operation;
+- deduplicate delivery;
+- handle delayed or out-of-order results;
+- preserve provider identifiers;
+- update authoritative integration state.
+
+---
+
+# 19. n8n
+
+n8n is not CR8OR's primary orchestration engine and is not the authoritative business-state store.
+
+It can be used as an external automation capability when appropriate.
+
+The intended relationship is:
+
+```
+CR8OR
+  ↓ MCP
+n8n / automation capability
+  ↓
+External automation
+  ↓
+CR8OR / external systems
+```
+
+An n8n workflow must not become a hidden second CR8OR business engine whose state cannot be understood from CR8OR.
+
+This allows n8n to be useful without making CR8OR dependent on its internal workflow representation.
+
+---
+
+# 20. Knowledge and Context
+
+CR8OR maintains durable enterprise context separately from transient model context.
+
+Knowledge may include:
+
+- enterprise documents;
+- specifications;
+- references;
+- decisions;
+- structured knowledge items;
+- indexed representations;
+- provenance.
+
+Agent context assembly is authorization-aware and Enterprise-scoped.
+
+The model's context window is not the system of record.
+
+A useful conceptual distinction is:
+
+```
+Knowledge = durable source material
+Context = authorized material selected for a particular execution
+Memory = durable Agent-specific recollection
+Business State = authoritative domain state
+```
+
+These should not be collapsed into one generic "AI memory" table.
+
+---
+
+# 21. Agent Memory
+
+Agent memory is governed context, not business authority.
+
+Memory may help an Agent remember:
+
+- prior interaction context;
+- relevant conclusions;
+- useful working information;
+- durable Agent-specific knowledge.
+
+Memory must never override authoritative business state.
+
+For example:
+
+- a remembered campaign status is not authoritative if the Campaign record says otherwise;
+- a remembered permission is not authorization;
+- a remembered approval is not an Approval record.
+
+The authoritative application state always wins.
+
+---
+
+# 22. Business Domains
+
+CR8OR is intended to provide reusable business primitives across several domains.
+
+## Enterprise
+
+Enterprise identity and context define the organization being operated.
+
+Examples include:
+
+- vision;
+- mission;
+- goals;
+- KPIs;
+- products;
+- customers;
+- partners;
+- competitors;
+- strategic decisions.
+
+## Strategy
+
+Strategy expresses desired direction and measurable outcomes.
+
+Examples include:
+
+- objectives;
+- strategies;
+- plans;
+- initiatives;
+- KPIs;
+- strategic decisions.
+
+## Work
+
+Work represents operational execution.
+
+Examples include:
+
+- projects;
+- tasks;
+- work items;
+- milestones;
+- dependencies;
+- assignments;
+- executions.
+
+## Marketing
+
+Marketing is modeled as a domain rather than a pile of posts.
+
+Examples include:
+
+- marketing strategies;
+- campaigns;
+- audiences;
+- channels;
+- content series;
+- content items;
+- scripts;
+- publications;
+- metrics.
+
+## Media
+
+Media has an explicit lifecycle.
+
+Examples include:
+
+- assets;
+- versions;
+- generation requests;
+- generation jobs;
+- transformations;
+- render requests;
+- render jobs;
+- outputs.
+
+## Publishing
+
+Publishing is separated from content creation.
+
+Examples include:
+
+- social accounts;
+- publication schedules;
+- publications;
+- publishing jobs;
+- provider results;
+- engagement metrics.
+
+## Finance
+
+Finance is a governed business domain.
+
+Examples include:
+
+- financial accounts;
+- transactions;
+- categories;
+- statements;
+- invoices;
+- expenses;
+- revenue;
+- budgets;
+- financial periods;
+- reports.
+
+Finance should not be exposed as arbitrary generic CRUD to Agents.
+
+## Governance
+
+Governance records include:
+
+- policies;
+- approvals;
+- approval requests;
+- audit entries;
+- decisions;
+- exceptions;
+- change records.
+
+---
+
+# 23. Marketing Example
+
+A typical AI-assisted marketing process can look like:
+
+```
+Human asks for a product launch campaign
+        ↓
+Marketing Agent
+        ↓
+Marketing Expert
+        ↓
+Enterprise context + strategy + knowledge
+        ↓
+Plan campaign
+        ↓
+Create campaign
+        ↓
+Create content series
+        ↓
+Create content items
+        ↓
+Generate media requests
+        ↓
+External media execution
+        ↓
+CR8OR records assets/results
+        ↓
+Human approval, where required
+        ↓
+Publish
+        ↓
+External publisher
+        ↓
+Provider result
+        ↓
+CR8OR publication state
+```
+
+The important point is that the Agent does not own the campaign. CR8OR does.
+
+---
+
+# 24. Finance Example
+
+A Finance Agent may be asked to produce a financial report.
+
+The Agent reasons over authorized enterprise and financial context:
+
+```
+Finance Agent
+  ↓
+Finance Expert
+  ↓
+finance.report.generate
+  ↓
+GenerateFinancialReport
+  ↓
+Financial reporting service
+  ↓
+CR8OR financial state
+  ↓
+Report
+```
+
+A finance report is derived from authoritative financial records.
+
+The report does not become the financial ledger.
+
+---
+
+# 25. Product / Work Example
+
+A Product or Operations Agent may create and update Work Items.
+
+The path is:
+
+```
+Agent
+  ↓
+Product / Operations Expert
+  ↓
+work.item.create / work.item.update
+  ↓
+CreateWorkItem / UpdateWorkItem
+  ↓
+Application service
+  ↓
+WorkItem state
+```
+
+The same business Operation can be reached through:
+
+- Agent execution;
+- deterministic Workflow;
+- direct MCP;
+- command Webhook.
+
+That is the purpose of the common execution substrate.
+
+---
+
+# 26. Human Application and Filament
+
+Filament is the operational interface for humans.
+
+It can be used to:
+
+- manage Enterprises;
+- inspect context;
+- manage Agent assignments;
+- inspect Agent executions;
+- manage Workflows;
+- inspect Workflow executions;
+- manage domain records;
+- inspect approvals;
+- inspect integrations;
+- inspect generated media;
+- manage business configuration;
+- inspect operational state.
+
+Filament is intentionally allowed to use normal Laravel application state and application services.
+
+It is not an MCP client pretending to be a human.
+
+This also means that the application remains usable if MCP is unavailable.
+
+---
+
+# 27. Persistence Model
+
+CR8OR uses persistence for more than CRUD.
+
+Persistence provides durable execution semantics.
+
+Important persisted concepts include:
+
+- Enterprise;
+- Enterprise Context;
+- AgentDescriptor;
+- ExpertDescriptor;
+- AgentAssignment;
+- AgentExecution;
+- Agent decisions;
+- delegation records;
+- Workflow;
+- WorkflowVersion;
+- WorkflowExecution;
+- WorkflowStage;
+- Capability-related provenance;
+- ApprovalRequest;
+- Approval;
+- command delivery records;
+- integration jobs;
+- integration results;
+- domain records;
+- audit history.
+
+Durability allows CR8OR to continue work across:
+
+- chat turns;
+- worker executions;
+- process restarts;
+- delayed provider results;
+- approval waits;
+- external failures;
+- retries.
+
+---
+
+# 28. Historical Integrity
+
+CR8OR distinguishes current mutable state from historical truth.
+
+Where required, the platform uses:
+
+- immutable records;
+- versioned records;
+- append-only records;
+- execution history;
+- snapshots;
+- explicit state transitions.
+
+Important historical information must not silently change because current configuration changed.
+
+Examples include:
+
+- published WorkflowVersions;
+- execution records;
+- approvals;
+- financial transactions;
+- external execution results;
+- publication results;
+- important Agent decisions.
+
+---
+
+# 29. Security Model
+
+Security is enforced server-side.
+
+## Authentication
+
+Protected interfaces identify the caller before granting access.
+
+## Authorization
+
+Authorization considers the relevant:
+
+- user;
+- organization;
+- Enterprise;
+- Agent assignment;
+- Expert;
+- Capability;
+- target resource;
+- approval state;
+- integration credential.
+
+## Isolation
+
+Enterprise data is scoped so that an Agent acting for one Enterprise cannot access another Enterprise's state merely by changing an identifier in a request.
+
+## Secrets
+
+External credentials are integration concerns and must not be exposed to AI reasoning as arbitrary raw secrets.
+
+## Auditability
+
+Important execution should be reconstructable:
+
+```
+who / what
+  ↓
+which Enterprise
+  ↓
+which Agent / Expert
+  ↓
+which Capability
+  ↓
+which Operation
+  ↓
+which approval
+  ↓
+which external execution
+  ↓
+which result
+  ↓
+which state change
+```
+
+---
+
+# 30. Extending CR8OR
+
+New business functionality should normally be added through the following sequence:
+
+1. Define the business concept and authoritative state.
+2. Define the application/domain behavior.
+3. Implement an explicit Operation.
+4. Define the governed Capability.
+5. Register the Capability → Operation mapping.
+6. Add authorization and approval requirements.
+7. Add an MCP Tool only if AI-facing direct access is appropriate.
+8. Add Agent/Expert usage only where the capability belongs to that runtime.
+9. Add Workflow support only if the work is meaningfully repeatable and deterministic.
+10. Add command Webhook exposure only when machine-to-machine command execution is justified.
+11. Add integration boundaries when specialized external execution is required.
+12. Add tests for the business invariant and all relevant entry points.
+13. Update the applicable architecture/domain documentation.
+
+The existence of an Operation does not imply that it should be exposed through every interface.
+
+---
+
+# 31. Choosing the Right Entry Point
+
+Use **Filament** when a human needs direct application administration or operational control.
+
+Use a **business MCP Tool** when an AI client needs a direct governed business action.
+
+Use an **Agent** when the work requires adaptive reasoning, Expert selection, context interpretation or delegation.
+
+Use a **Workflow** when the process is known, repeatable and should execute deterministically from persisted configuration.
+
+Use a **Command Webhook** when an authenticated external system needs to initiate a specific governed business capability.
+
+Use an **Integration Webhook** when an external provider is returning the result of work CR8OR previously requested.
+
+Use an **external provider** when specialized infrastructure already exists for the execution itself.
+
+This distinction prevents every problem from becoming "add another Agent," which is how perfectly ordinary CRUD systems acquire 47 autonomous personalities.
+
+---
+
+# 32. What CR8OR Must Not Become
+
+CR8OR should not evolve into:
+
+### An arbitrary AI shell
+
+AI must not directly manipulate the database.
+
+### A second business application inside MCP
+
+MCP Tools must not duplicate domain rules.
+
+### A hidden n8n database
+
+Business truth must remain in CR8OR.
+
+### A hardcoded workflow engine
+
+Persisted Workflow state must remain authoritative.
+
+### An unrestricted Operation router
+
+External callers must not select arbitrary PHP classes.
+
+### A permission-free Agent framework
+
+Agent assignments, Expert ownership, authorization and approvals remain server-side.
+
+### A provider-owned business system
+
+External providers execute specialized work. CR8OR retains business state.
+
+### A universal abstraction layer
+
+Not every human form, provider callback or lifecycle action needs to be forced through the same interface.
+
+---
+
+# 33. Testing and Architectural Enforcement
+
+The architecture is enforced by automated tests and runtime guardrails.
+
+Important classes of tests include:
+
+- Capability Registry uniqueness and resolution;
+- business MCP Tool boundary enforcement;
+- lifecycle Tool classification;
+- Agent → Expert authorization;
+- Agent execution;
+- deterministic Workflow execution;
+- Workflow publication validation;
+- Workflow continuation;
+- Command Webhook authentication;
+- command allowlisting;
+- Enterprise resolution;
+- command idempotency and replay protection;
+- approval rejection for unsupported command contexts;
+- integration-result reconciliation;
+- Knowledge and Memory resource execution;
+- cross-entry business-effect convergence.
+
+The repository also maintains architectural documentation and an explicit unified execution audit.
+
+A representative business Operation should produce the same authoritative business effect regardless of whether it is reached through:
+
+```
+Agent
+Workflow
+Direct MCP
+Command Webhook
+```
+
+The interface and provenance differ. The business Operation and authoritative state do not.
+
+---
+
+# 34. Development and Quality Rules
+
+A change is not complete merely because the PHP compiles.
+
+Changes should preserve:
+
+- domain invariants;
+- authorization;
+- Enterprise isolation;
+- idempotency;
+- historical integrity;
+- execution provenance;
+- architecture boundaries.
+
+Relevant code must pass:
+
+- formatting/lint;
+- static analysis;
+- automated tests;
+- CI.
+
+Architecture changes must also update the relevant documentation.
+
+The README describes the platform architecture and intended utilization. More specific documents provide detailed contracts for their subject areas.
+
+---
+
+# 35. Authoritative Architecture Documents
+
+The README provides the high-level architecture and utilization model.
+
+The detailed specifications include:
+
+- `docs/architecture.md` — overall application and execution architecture;
+- `docs/architecture/capability-execution-contract.md` — common Capability execution contract;
+- `docs/agents.md` — Agent and Expert runtime;
+- `docs/workflows.md` — persisted deterministic Workflow architecture;
+- `docs/integrations.md` — integration and webhook boundaries;
+- `docs/domain-model.md` — domain entities and boundaries;
+- `docs/governance.md` — authorization, approval and audit governance;
+- `docs/mcp.md` — MCP resources, Tools and contracts;
+- `docs/security.md` — security requirements;
+- `docs/model-interface-boundaries.md` — human CRUD, domain actions and operational interfaces;
+- `docs/implementation-decisions.md` — important architectural decisions.
+
+The README should remain free of implementation-phase history. When the implementation evolves, this document should be updated to describe the resulting architecture rather than becoming a changelog.
+
+---
+
+# 36. The Intended CR8OR Operating Model
+
+The complete intended operating model can be summarized as follows.
+
+## Humans
+
+Humans define goals, exercise organizational authority, configure the system and approve sensitive work.
+
+## Agents
+
+Agents reason about what should happen.
+
+## Experts
+
+Experts provide specialized reasoning and governed Capability ownership.
+
+## Capabilities
+
+Capabilities define what CR8OR permits a runtime to request.
+
+## Operations
+
+Operations define what business action is actually performed.
+
+## Application / Domain
+
+Application and domain services enforce business rules.
+
+## Persistence
+
+CR8OR stores authoritative state and durable execution history.
+
+## Workflows
+
+Workflows make known repeatable work deterministic and persistent.
+
+## MCP
+
+MCP makes governed CR8OR capabilities available to AI clients.
+
+## Command Webhooks
+
+Command Webhooks make explicitly allowlisted capabilities available to authenticated machine callers.
+
+## Integrations
+
+Integrations connect CR8OR to specialized external execution systems.
+
+## Provider Webhooks
+
+Provider Webhooks return external execution results into CR8OR's reconciliation boundary.
+
+## Filament
+
+Filament provides the human administrative and operational interface.
+
+## Model Providers
+
+Model Providers supply reasoning when autonomous execution needs them. They do not own business state or authorization.
+
+## n8n
+
+n8n can provide optional automation capabilities through MCP. It is not the primary CR8OR orchestration or persistence layer.
+
+---
+
+# 37. Canonical Architecture
+
+The architecture can finally be represented in one diagram:
+
+```
+                             HUMAN
+                               |
+                               v
+                         +-----------+
+                         | Filament  |
+                         +-----+-----+
+                               |
+                               v
+                       Laravel Application
+                               |
+                               v
+                        Authoritative State
+                               ^
+                               |
+             +-----------------+-----------------+
+             |                                   |
+             |                                   |
+         AI / MCP                            Workflows
+             |                                   |
+             v                                   v
+       +-----------+                      +-------------+
+       | MCP Tools |                      | Workflow    |
+       +-----+-----+                      | Execution   |
+             |                            +------+------+
+             |                                   |
+             v                                   v
+       Capability                         Stage → Expert
+             |                                   |
+             +-----------------+-----------------+
+                               |
+                               v
+                          Capability
+                               |
+                               v
+                           Operation
+                               |
+                               v
+                    Application / Domain
+                               |
+                               v
+                     Authoritative State
+                               |
+              +----------------+----------------+
+              |                                 |
+              v                                 v
+        Integration Boundary               Audit / History
+              |
+              v
+      External Provider / Worker
+              |
+              v
+      Provider Result Webhook
+              |
+              v
+      IntegrationResultService
+              |
+              v
+       Reconciled CR8OR State
+
+
+Agent-specific path:
+
+Agent
+  ↓
+Expert
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+Application / Domain
+  ↓
+State
+
+Command path:
+
+Authenticated Command
+  ↓
+Enterprise Identity
+  ↓
+Capability Allowlist
+  ↓
+Capability
+  ↓
+Operation
+  ↓
+State
+```
+
+The invariant across the system is:
+
+> **There is one authoritative business state and one governed business execution substrate. Interfaces may differ. Reasoning modes may differ. External providers may differ. The business authority does not.**
+
+That is the architecture CR8OR is designed to provide.
