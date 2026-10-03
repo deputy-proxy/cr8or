@@ -1,5 +1,8 @@
 <?php
 
+use App\Experts\OperationsExpert;
+use App\Mcp\Servers\Cr8orServer;
+use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Models\AgentExecution;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
@@ -10,6 +13,7 @@ use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowVersion;
+use App\Models\WorkItem;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -55,6 +59,67 @@ function publishedWorkflow(Workflow $workflow, User $actor): WorkflowVersion
 {
     return app(WorkflowVersionService::class)->publish($workflow, $actor, 'publish:'.$workflow->getKey().':'.uniqid());
 }
+
+it('uses the same Capability boundary and Operation for Workflow and direct MCP business execution', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+
+    ExpertDescriptor::query()->updateOrCreate([
+        'slug' => 'operations',
+    ], [
+        'runtime_class' => OperationsExpert::class,
+        'enabled' => true,
+    ]);
+
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    $workflowItem = WorkItem::factory()->create([
+        'enterprise_id' => $enterprise,
+        'name' => 'Workflow before',
+    ]);
+    $directItem = WorkItem::factory()->create([
+        'enterprise_id' => $enterprise,
+        'name' => 'Direct before',
+    ]);
+
+    WorkflowStage::factory()->create([
+        'workflow_id' => $workflow,
+        'key' => 'update-work',
+        'name' => 'Update work',
+        'sequence' => 1,
+        'dependencies' => [],
+        'expert_slugs' => ['operations'],
+        'capability_slugs' => ['work.item.update'],
+        'input_contract' => [
+            'required' => ['work_item_id', 'name'],
+        ],
+        'output_contract' => [],
+    ]);
+
+    $version = publishedWorkflow($workflow, $actor);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        [
+            'work_item_id' => $workflowItem->getKey(),
+            'name' => 'Workflow after',
+        ],
+        'workflow-equivalent-'.$workflowItem->getKey(),
+        'workflow-equivalent-correlation',
+    );
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(UpdateWorkItemTool::class, [
+            'work_item_id' => $directItem->getKey(),
+            'name' => 'Direct after',
+        ])
+        ->assertOk();
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($workflowItem->refresh()->name)->toBe('Workflow after')
+        ->and($directItem->refresh()->name)->toBe('Direct after')
+        ->and($execution->outputs['update-work'])->toBeArray();
+});
 
 it('executes a multi-stage published workflow without creating an AgentExecution or requiring a ModelProvider', function (): void {
     $enterprise = Enterprise::factory()->create();
