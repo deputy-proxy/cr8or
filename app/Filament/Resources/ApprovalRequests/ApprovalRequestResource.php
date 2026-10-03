@@ -23,7 +23,7 @@ class ApprovalRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
 
     protected static ?string $navigationLabel = 'Approvals';
 

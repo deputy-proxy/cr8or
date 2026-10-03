@@ -24,7 +24,7 @@ class MissionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
     protected static ?string $navigationLabel = 'Mission';
 

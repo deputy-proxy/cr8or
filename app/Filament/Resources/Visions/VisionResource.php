@@ -24,7 +24,7 @@ class VisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEye;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
     protected static ?string $navigationLabel = 'Vision';
 
