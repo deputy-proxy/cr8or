@@ -30,7 +30,8 @@ class EnterpriseDecisionResource extends Resource
 
     protected static ?string $navigationLabel = 'Enterprise Decisions';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 160;
+
 
     public static function form(Schema $schema): Schema
     {
