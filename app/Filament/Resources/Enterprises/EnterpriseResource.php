@@ -31,7 +31,6 @@ class EnterpriseResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('organization_id')->relationship('organization', 'name')->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('slug')->required()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
