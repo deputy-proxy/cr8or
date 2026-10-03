@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Milestones;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Milestones\Pages\CreateMilestone;
 use App\Filament\Resources\Milestones\Pages\EditMilestone;
 use App\Filament\Resources\Milestones\Pages\ListMilestones;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MilestoneResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Milestone::class;
 
