@@ -29,7 +29,6 @@ class KnowledgeSpecificationResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
-
     public static function form(Schema $schema): Schema
     {
         return KnowledgeSpecificationForm::configure($schema);
