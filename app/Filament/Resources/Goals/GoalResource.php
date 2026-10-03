@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Goals;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Goals\Pages\CreateGoal;
 use App\Filament\Resources\Goals\Pages\EditGoal;
 use App\Filament\Resources\Goals\Pages\ListGoals;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GoalResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Goal::class;
 
