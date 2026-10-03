@@ -5,13 +5,12 @@ namespace App\Services;
 use App\Models\Assignment;
 use App\Models\Dependency;
 use App\Models\Enterprise;
-use App\Models\Execution;
-use App\Models\Job;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
 use App\Models\WorkItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -219,23 +218,15 @@ class WorkContextAssembler
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
-        $jobs = Job::query()
+        $executions = WorkflowExecution::query()
             ->whereIn('workflow_id', $workflows->pluck('id')->all())
             ->orderByDesc('id')
             ->get()
             ->groupBy('workflow_id')
             ->map(fn (Collection $items) => $items->first());
 
-        $executions = Execution::query()
-            ->whereIn('workflow_job_id', $jobs->pluck('id')->all())
-            ->orderByDesc('id')
-            ->get()
-            ->groupBy('workflow_job_id')
-            ->map(fn (Collection $items) => $items->first());
-
-        return $workflows->map(function (Workflow $workflow) use ($jobs, $executions) {
-            $job = $jobs->get($workflow->getKey());
-            $execution = $job === null ? null : $executions->get($job->getKey());
+        return $workflows->map(function (Workflow $workflow) use ($executions) {
+            $execution = $executions->get($workflow->getKey());
 
             return [
                 'workflow' => [
@@ -246,20 +237,17 @@ class WorkContextAssembler
                     'task_id' => $workflow->task_id,
                     'work_item_id' => $workflow->work_item_id,
                 ],
-                'job' => $job === null ? null : [
-                    'id' => $job->getKey(),
-                    'name' => $job->name,
-                    'status' => $job->status,
-                    'attempts' => $job->attempts,
-                    'started_at' => $job->started_at?->toISOString(),
-                    'completed_at' => $job->completed_at?->toISOString(),
-                ],
                 'execution' => $execution === null ? null : [
                     'id' => $execution->getKey(),
+                    'workflow_version_id' => $execution->workflow_version_id,
+                    'workflow_version' => $execution->workflow_version,
                     'status' => $execution->status,
+                    'current_stage_key' => $execution->current_stage_key,
                     'started_at' => $execution->started_at?->toISOString(),
                     'completed_at' => $execution->completed_at?->toISOString(),
                     'failure_reason' => $execution->failure_reason,
+                    'correlation_id' => $execution->correlation_id,
+                    'idempotency_key' => $execution->idempotency_key,
                 ],
             ];
         })->all();
