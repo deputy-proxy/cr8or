@@ -30,7 +30,8 @@ class EnterpriseContextResource extends Resource
 
     protected static ?string $navigationLabel = 'Enterprise Contexts';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 10;
+
 
     public static function form(Schema $schema): Schema
     {
