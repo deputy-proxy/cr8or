@@ -207,6 +207,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::create + enterprise scope',
                 'none',
                 'lifecycle',
+                'mcp_workflow_create',
             ),
             $this->definition(
                 'workflow.publish',
@@ -217,6 +218,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::view + immutable version publication',
                 'none',
                 'lifecycle',
+                'mcp_workflow_publish',
             ),
             $this->definition(
                 'workflow.discover',
@@ -237,6 +239,7 @@ final class CapabilityRegistry
                 'Published Workflow view authorization',
                 'none',
                 'lifecycle',
+                'mcp_workflow_execute',
             ),
             $this->definition(
                 'workflow.inspect',
@@ -247,6 +250,7 @@ final class CapabilityRegistry
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
                 'lifecycle',
+                'mcp_workflow_inspect',
             ),
             $this->definition(
                 'workflow.resume',
@@ -257,6 +261,7 @@ final class CapabilityRegistry
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
                 'lifecycle',
+                'mcp_workflow_resume',
             ),
             $this->definition(
                 'agent.continue',
@@ -277,6 +282,7 @@ final class CapabilityRegistry
                 'InteractiveContinuationService + governed Capability execution',
                 'none',
                 'lifecycle',
+                'mcp_agent_continue',
             ),
             $this->definition(
                 'agent.execute',
@@ -305,6 +311,7 @@ final class CapabilityRegistry
                 'McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService',
                 'none',
                 'lifecycle',
+                'mcp_agent_execute',
             ),
             $this->definition(
                 'agent.delegate',
@@ -326,6 +333,7 @@ final class CapabilityRegistry
                 'delegation-service + capability authorization',
                 'none',
                 'lifecycle',
+                'mcp_agent_delegate',
             ),
             $this->definition(
                 'business.analysis',
@@ -498,6 +506,7 @@ final class CapabilityRegistry
                 'assignment authorization',
                 'required',
                 'lifecycle',
+                'mcp_agent_approval_request',
             ),
             $this->definition(
                 'marketing.audience.create',
@@ -742,6 +751,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment createForAgentAssignment authorization',
                 'none',
                 'lifecycle',
+                'mcp_agent_assignment_create',
             ),
             $this->definition(
                 'agent.assignment.update',
@@ -752,6 +762,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment update authorization',
                 'none',
                 'lifecycle',
+                'mcp_agent_assignment_update',
             ),
             $this->definition(
                 'agent.assignment.transition',
@@ -762,6 +773,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment lifecycle authorization',
                 'none',
                 'lifecycle',
+                'mcp_agent_assignment_transition',
             ),
             $this->definition(
                 'knowledge.item.create',
@@ -828,11 +840,12 @@ final class CapabilityRegistry
         string $authorizationRequirement,
         string $approvalRequirement,
         string $category = 'business',
+        ?string $toolName = null,
     ): CapabilityDefinition {
         return new CapabilityDefinition(
             key: $key,
             operation: $operation,
-            tool: Str::kebab(Str::beforeLast(class_basename($toolClass), 'Tool')),
+            tool: $toolName ?? Str::kebab(Str::beforeLast(class_basename($toolClass), 'Tool')),
             toolClass: $toolClass,
             inputContract: $inputContract,
             outputContract: $outputContract,

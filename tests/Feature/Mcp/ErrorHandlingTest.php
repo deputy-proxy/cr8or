@@ -58,7 +58,7 @@ it('exposes the canonical failure contract with provenance and diagnostic identi
         provenance: new \App\AI\Contracts\FailureProvenance(
             operation: 'CreateAgentAssignment',
             capability: 'agent.assignment.create',
-            tool: 'create-agent-assignment',
+            tool: 'mcp_agent_assignment_create',
         ),
     );
 
@@ -72,7 +72,7 @@ it('exposes the canonical failure contract with provenance and diagnostic identi
         'correlation_id' => 'corr-279',
         'operation' => 'CreateAgentAssignment',
         'capability' => 'agent.assignment.create',
-        'tool' => 'create-agent-assignment',
+        'tool' => 'mcp_agent_assignment_create',
         'details' => [],
     ])->and($payload['error']['diagnostic_id'])->toBeString()->not->toBeEmpty()
         ->and(json_encode($payload))->not->toContain('private implementation detail');

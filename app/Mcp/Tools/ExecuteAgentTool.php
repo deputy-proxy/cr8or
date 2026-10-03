@@ -16,7 +16,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('execute-agent')]
+#[Name('mcp_agent_execute')]
 #[Description('Start a durable Agent Execution through the governed agent.execute capability.')]
 class ExecuteAgentTool extends GovernedCapabilityTool
 {

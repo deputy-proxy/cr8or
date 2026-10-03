@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('resume-workflow-execution')]
+#[Name('mcp_workflow_resume')]
 #[Description('Continue an existing deterministic WorkflowExecution without Agent reasoning.')]
 class ResumeWorkflowExecutionTool extends GovernedCapabilityTool
 {

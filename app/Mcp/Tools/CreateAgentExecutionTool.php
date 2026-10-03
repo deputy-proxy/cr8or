@@ -11,7 +11,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('create-agent-execution')] #[Description('Queue a durable Agent Execution from an authorized Assignment.') ] class CreateAgentExecutionTool extends AgentExecutionResourceTool
+#[Name('mcp_agent_execution_create')] #[Description('Queue a durable Agent Execution from an authorized Assignment.') ] class CreateAgentExecutionTool extends AgentExecutionResourceTool
 {
     protected function operationClass(): string
     {

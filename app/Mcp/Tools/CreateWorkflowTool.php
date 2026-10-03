@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('create-workflow')]
+#[Name('mcp_workflow_create')]
 #[Description('Create an enterprise-scoped deterministic Workflow definition.')]
 class CreateWorkflowTool extends GovernedCapabilityTool
 {

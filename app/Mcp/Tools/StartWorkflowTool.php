@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('start-workflow')]
+#[Name('mcp_workflow_execute')]
 #[Description('Start a published deterministic Workflow without creating an AgentExecution.')]
 class StartWorkflowTool extends GovernedCapabilityTool
 {

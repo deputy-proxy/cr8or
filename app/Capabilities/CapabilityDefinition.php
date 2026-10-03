@@ -32,7 +32,7 @@ final readonly class CapabilityDefinition
             throw new InvalidArgumentException("Capability [{$key}] must resolve to an Operation.");
         }
 
-        if ($tool === '' || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $tool)) {
+        if ($tool === '' || ! preg_match('/^[a-z0-9_]+(?:-[a-z0-9_]+)*$/', $tool)) {
             throw new InvalidArgumentException("Invalid MCP Tool name [{$tool}].");
         }
 

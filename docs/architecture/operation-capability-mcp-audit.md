@@ -18,15 +18,15 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 
 | Capability | Operation | MCP Tool | Tool class | Category | Workflow | Direct | Entry | Authorization | Approval | Correlation | Idempotency | Failure |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| workflow.create | CreateWorkflow | create-workflow | CreateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::create + enterprise scope | none | no | no | standard |
-| workflow.publish | PublishWorkflow | publish-workflow | PublishWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::view + immutable version publication | none | no | yes | standard |
+| workflow.create | CreateWorkflow | mcp_workflow_create | CreateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::create + enterprise scope | none | no | no | standard |
+| workflow.publish | PublishWorkflow | mcp_workflow_publish | PublishWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::view + immutable version publication | none | no | yes | standard |
 | workflow.discover | DiscoverWorkflows | list-workflows | ListWorkflowsTool | business | yes | yes | CapabilityInvocationService | Enterprise view authorization | none | no | no | standard |
-| workflow.execute | StartWorkflow | start-workflow | StartWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | Published Workflow view authorization | none | yes | yes | standard |
-| workflow.inspect | InspectWorkflowExecution | get-workflow-execution | GetWorkflowExecutionTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowExecution enterprise/workflow authorization | none | no | no | standard |
-| workflow.resume | ResumeWorkflowExecution | resume-workflow-execution | ResumeWorkflowExecutionTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowExecution enterprise/workflow authorization | none | no | no | standard |
-| agent.continue | ContinueAgentExecution | continue-agent-execution | ContinueAgentExecutionTool | lifecycle | no | yes | Operation direct | InteractiveContinuationService + governed Capability execution | none | no | yes | standard |
-| agent.execute | ExecuteAgent | execute-agent | ExecuteAgentTool | lifecycle | no | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService | none | yes | yes | standard |
-| agent.delegate | DelegateAgent | delegate-agent | DelegateAgentTool | lifecycle | no | yes | CapabilityInvocationService | delegation-service + capability authorization | none | yes | yes | standard |
+| workflow.execute | StartWorkflow | mcp_workflow_execute | StartWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | Published Workflow view authorization | none | yes | yes | standard |
+| workflow.inspect | InspectWorkflowExecution | mcp_workflow_inspect | GetWorkflowExecutionTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowExecution enterprise/workflow authorization | none | no | no | standard |
+| workflow.resume | ResumeWorkflowExecution | mcp_workflow_resume | ResumeWorkflowExecutionTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowExecution enterprise/workflow authorization | none | no | no | standard |
+| agent.continue | ContinueAgentExecution | mcp_agent_continue | ContinueAgentExecutionTool | lifecycle | no | yes | Operation direct | InteractiveContinuationService + governed Capability execution | none | no | yes | standard |
+| agent.execute | ExecuteAgent | mcp_agent_execute | ExecuteAgentTool | lifecycle | no | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService | none | yes | yes | standard |
+| agent.delegate | DelegateAgent | mcp_agent_delegate | DelegateAgentTool | lifecycle | no | yes | CapabilityInvocationService | delegation-service + capability authorization | none | yes | yes | standard |
 | business.analysis | AnalyzeBusinessContext | analyze-business-context | AnalyzeBusinessContextTool | business | yes | yes | CapabilityInvocationService | ExpertCapabilityService + capability authorization | none | no | no | standard |
 | finance.report.generate | GenerateFinancialReport | generate-financial-report | GenerateFinancialReportTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Finance policy | none | no | no | standard |
 | marketing.strategy.create | CreateMarketingStrategy | create-marketing-strategy | CreateMarketingStrategyTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy | none | no | no | standard |
@@ -45,7 +45,7 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | work.item.create | CreateWorkItem | create-work-item | CreateWorkItemTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + WorkItem policy | none | no | no | standard |
 | work.item.update | UpdateWorkItem | update-work-item | UpdateWorkItemTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + WorkItem policy | none | no | no | standard |
 | enterprise.create | EnterpriseCreate | create-enterprise | CreateEnterpriseTool | business | yes | yes | Operation direct | none | none | no | no | standard |
-| approval.request | ApprovalRequestCreate | request-approval | RequestApprovalTool | business | yes | yes | Operation direct | assignment authorization | required | no | no | standard |
+| approval.request | ApprovalRequestCreate | mcp_agent_approval_request | RequestApprovalTool | business | yes | yes | Operation direct | assignment authorization | required | no | no | standard |
 | marketing.audience.create | MarketingAudienceCreate | create-audience | CreateAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
 | marketing.audience.update | MarketingAudienceUpdate | update-audience | UpdateAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
 | marketing.audience.archive | MarketingAudienceArchive | archive-audience | ArchiveAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
@@ -70,9 +70,9 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | marketing.strategy.archive | MarketingStrategyArchive | archive-marketing-strategy | ArchiveMarketingStrategyTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + MarketingStrategy policy | none | no | no | standard |
 | memory.retrieve | RetrieveMemory | retrieve-memory | RetrieveMemoryTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy | none | no | no | standard |
 | memory.record | RecordMemory | record-memory | RecordMemoryTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy | none | no | no | standard |
-| agent.assignment.create | CreateAgentAssignment | create-agent-assignment | CreateAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment createForAgentAssignment authorization | none | yes | yes | standard |
-| agent.assignment.update | UpdateAgentAssignment | update-agent-assignment | UpdateAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment update authorization | none | yes | no | standard |
-| agent.assignment.transition | TransitionAgentAssignment | transition-agent-assignment | TransitionAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment lifecycle authorization | none | no | no | standard |
+| agent.assignment.create | CreateAgentAssignment | mcp_agent_assignment_create | CreateAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment createForAgentAssignment authorization | none | yes | yes | standard |
+| agent.assignment.update | UpdateAgentAssignment | mcp_agent_assignment_update | UpdateAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment update authorization | none | yes | no | standard |
+| agent.assignment.transition | TransitionAgentAssignment | mcp_agent_assignment_transition | TransitionAgentAssignmentTool | lifecycle | no | yes | Operation direct | Enterprise policy + AgentAssignment lifecycle authorization | none | no | no | standard |
 | knowledge.item.create | CreateKnowledgeItem | create-knowledge-item | CreateKnowledgeItemTool | business | yes | yes | CapabilityInvocationService | Enterprise policy + KnowledgeItem createForEnterprise authorization | none | yes | yes | standard |
 | knowledge.index.create | CreateKnowledgeIndex | create-knowledge-index | CreateKnowledgeIndexTool | business | yes | yes | CapabilityInvocationService | Enterprise policy + KnowledgeItem authorization | none | yes | yes | standard |
 | knowledge.unit.create | CreateKnowledgeUnit | create-knowledge-unit | CreateKnowledgeUnitTool | business | yes | yes | CapabilityInvocationService | Enterprise policy + KnowledgeItem authorization | none | yes | yes | standard |
@@ -236,14 +236,14 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | Operation | Capability | MCP Tool | Classification |
 |---|---|---|---|
 | AnalyzeBusinessContext | business.analysis | analyze-business-context | governed |
-| ApprovalRequestCreate | approval.request | request-approval | governed |
+| ApprovalRequestCreate | approval.request | mcp_agent_approval_request | governed |
 | ArchiveKnowledgeUnit | - | - | resource/lifecycle or follow-up candidate |
 | ArchiveMemory | - | - | resource/lifecycle or follow-up candidate |
 | CampaignLifecycle | marketing.campaign.lifecycle | transition-campaign | governed |
 | CancelAgentExecution | - | - | resource/lifecycle or follow-up candidate |
 | ContentSeriesLifecycle | marketing.content-series.lifecycle | transition-content-series | governed |
-| ContinueAgentExecution | agent.continue | continue-agent-execution | lifecycle |
-| CreateAgentAssignment | agent.assignment.create | create-agent-assignment | lifecycle |
+| ContinueAgentExecution | agent.continue | mcp_agent_continue | lifecycle |
+| CreateAgentAssignment | agent.assignment.create | mcp_agent_assignment_create | lifecycle |
 | CreateAgentExecution | - | - | resource/lifecycle or follow-up candidate |
 | CreateContentItem | marketing.content.create | create-content-item | governed |
 | CreateKnowledgeIndex | knowledge.index.create | create-knowledge-index | governed |
@@ -255,16 +255,16 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | CreateScript | marketing.script.create | create-script | governed |
 | CreateStrategy | strategy.create | create-strategy | governed |
 | CreateWorkItem | work.item.create | create-work-item | governed |
-| CreateWorkflow | workflow.create | create-workflow | lifecycle |
+| CreateWorkflow | workflow.create | mcp_workflow_create | lifecycle |
 | DefineMarketingStrategySection | marketing.strategy.section.define | define-marketing-strategy-section | governed |
-| DelegateAgent | agent.delegate | delegate-agent | lifecycle |
+| DelegateAgent | agent.delegate | mcp_agent_delegate | lifecycle |
 | DiscoverWorkflows | workflow.discover | list-workflows | governed |
 | DomainMutationToolOperation | - | - | framework adapter |
 | DomainTransitionToolOperation | - | - | framework adapter |
 | EnterpriseContextCreate | enterprise.context.create | create-enterprise-context | governed |
 | EnterpriseContextRetrieve | enterprise.context.retrieve | retrieve-enterprise-context | governed |
 | EnterpriseCreate | enterprise.create | create-enterprise | governed |
-| ExecuteAgent | agent.execute | execute-agent | lifecycle |
+| ExecuteAgent | agent.execute | mcp_agent_execute | lifecycle |
 | GenerateFinancialReport | finance.report.generate | generate-financial-report | governed |
 | GetAgentAssignment | - | - | internal/read operation |
 | GetAgentDelegation | - | - | internal/read operation |
@@ -272,7 +272,7 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | GetKnowledgeIndex | - | - | internal/read operation |
 | GetKnowledgeUnit | - | - | internal/read operation |
 | GetMemory | - | - | internal/read operation |
-| InspectWorkflowExecution | workflow.inspect | get-workflow-execution | lifecycle |
+| InspectWorkflowExecution | workflow.inspect | mcp_workflow_inspect | lifecycle |
 | ListAgentAssignments | - | - | internal/read operation |
 | ListAgentDelegations | - | - | internal/read operation |
 | ListAgentExecutions | - | - | internal/read operation |
@@ -297,19 +297,19 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 | ProjectCreate | marketing.project.create | create-project | governed |
 | ProjectUpdate | marketing.project.update | update-project | governed |
 | PublishContent | publication.publish | publish-content | governed |
-| PublishWorkflow | workflow.publish | publish-workflow | lifecycle |
+| PublishWorkflow | workflow.publish | mcp_workflow_publish | lifecycle |
 | RecordMemory | memory.record | record-memory | governed |
 | ResumeAgentExecution | - | - | resource/lifecycle or follow-up candidate |
-| ResumeWorkflowExecution | workflow.resume | resume-workflow-execution | lifecycle |
+| ResumeWorkflowExecution | workflow.resume | mcp_workflow_resume | lifecycle |
 | RetrieveKnowledge | knowledge.retrieve | retrieve-knowledge | governed |
 | RetrieveMemory | memory.retrieve | retrieve-memory | governed |
 | SocialAccountConnect | marketing.social-account.connect | connect-social-account | governed |
 | SocialAccountDisconnect | marketing.social-account.disconnect | disconnect-social-account | governed |
 | SocialAccountUpdate | marketing.social-account.update | update-social-account | governed |
-| StartWorkflow | workflow.execute | start-workflow | lifecycle |
+| StartWorkflow | workflow.execute | mcp_workflow_execute | lifecycle |
 | SubmitContentForReview | marketing.content.review | submit-content-for-review | governed |
-| TransitionAgentAssignment | agent.assignment.transition | transition-agent-assignment | lifecycle |
-| UpdateAgentAssignment | agent.assignment.update | update-agent-assignment | lifecycle |
+| TransitionAgentAssignment | agent.assignment.transition | mcp_agent_assignment_transition | lifecycle |
+| UpdateAgentAssignment | agent.assignment.update | mcp_agent_assignment_update | lifecycle |
 | UpdateContentItem | marketing.content.update | update-content-item | governed |
 | UpdateKnowledgeIndex | - | - | resource/lifecycle or follow-up candidate |
 | UpdateKnowledgeUnit | - | - | resource/lifecycle or follow-up candidate |

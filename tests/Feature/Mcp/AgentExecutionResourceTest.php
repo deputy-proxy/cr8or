@@ -90,7 +90,7 @@ it('exposes a durable interactive continuation without invoking a model provider
         'idempotency_key' => 'interactive-continuation-1',
     ]);
 
-    $response->assertOk()->assertSee('continue-agent-execution')->assertSee('waiting_for_input');
+    $response->assertOk()->assertSee('mcp_agent_continue')->assertSee('waiting_for_input');
     $execution = App\Models\AgentExecution::query()->firstOrFail();
     expect($execution->mode->value)->toBe('interactive')
         ->and($execution->status)->toBe(App\Models\AgentExecution::STATUS_WAITING_FOR_INPUT)
@@ -136,7 +136,7 @@ it('accepts exactly one structured continuation and rejects stale steps', functi
     $stale = [...$input, 'expected_step' => 1, 'idempotency_key' => 'reasoning-turn-stale'];
     $server->tool(ContinueAgentExecutionTool::class, $stale)->assertHasErrors();
 });
-it('uses resume-execution as the interactive continuation boundary without invoking a ModelProvider', function (): void {
+it('uses mcp_agent_execution_resume as the interactive continuation boundary without invoking a ModelProvider', function (): void {
     [$user, $enterprise, $assignment] = executionMcpActor();
     $server = Cr8orServer::actingAs($user, 'api');
 

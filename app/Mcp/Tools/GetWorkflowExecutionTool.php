@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('get-workflow-execution')]
+#[Name('mcp_workflow_inspect')]
 #[Description('Inspect durable state for an enterprise-scoped WorkflowExecution.')]
 class GetWorkflowExecutionTool extends GovernedCapabilityTool
 {

@@ -15,7 +15,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('delegate-agent')]
+#[Name('mcp_agent_delegate')]
 #[Description('Delegate governed work from one Agent assignment to another Agent in the same Enterprise.')]
 final class DelegateAgentTool extends GovernedCapabilityTool
 {

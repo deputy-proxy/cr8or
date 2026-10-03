@@ -535,7 +535,7 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
         'mode' => 'interactive',
         'idempotency_key' => 'continuous-interactive-e2e',
     ]);
-    $start->assertOk()->assertSee('continue-agent-execution')->assertSee('waiting_for_input');
+    $start->assertOk()->assertSee('mcp_agent_continue')->assertSee('waiting_for_input');
 
     $execution = AgentExecution::query()->where('idempotency_key', 'continuous-interactive-e2e')->firstOrFail();
     $stepOne = $server->tool(ContinueAgentExecutionTool::class, [
@@ -556,7 +556,7 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
         'termination' => 'continue',
         'termination_reason' => 'The first governed operation completed; continue to verification.',
     ]);
-    $stepOne->assertOk()->assertSee('reasoning')->assertSee('continue-agent-execution');
+    $stepOne->assertOk()->assertSee('reasoning')->assertSee('mcp_agent_continue');
 
     expect(App\Models\WorkItem::query()->where('name', 'Interactive E2E work item')->count())->toBe(1)
         ->and($execution->refresh()->current_step)->toBe(1)
