@@ -31,7 +31,8 @@ class DecisionResource extends Resource
 
     protected static ?string $navigationLabel = 'Decisions';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 150;
+
 
     public static function form(Schema $schema): Schema
     {
