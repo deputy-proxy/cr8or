@@ -31,7 +31,6 @@ class PartnerResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('email')->email()->required()->maxLength(255), TextInput::make('phone')->tel()->maxLength(255), Select::make('status')->options(['active' => 'Active', 'inactive' => 'Inactive'])->default('active')->required()]);
