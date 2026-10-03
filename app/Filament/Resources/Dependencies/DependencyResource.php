@@ -30,7 +30,6 @@ class DependencyResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
-
     public static function form(Schema $schema): Schema
     {
         return DependencyForm::configure($schema);
