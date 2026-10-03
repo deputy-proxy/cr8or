@@ -31,7 +31,6 @@ class KpiResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), TextInput::make('name')->required()->maxLength(255), TextInput::make('definition')->required()->maxLength(255), TextInput::make('unit')->maxLength(255), TextInput::make('target_value')->numeric(), TextInput::make('current_value')->numeric(), Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required()]);
