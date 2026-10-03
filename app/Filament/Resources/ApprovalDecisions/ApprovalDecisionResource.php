@@ -17,6 +17,7 @@ class ApprovalDecisionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+
     protected static ?int $navigationSort = 150;
 
     protected static ?string $navigationLabel = 'ApprovalDecisions';
