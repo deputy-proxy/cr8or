@@ -28,7 +28,6 @@ class WorkflowExecutionFactory extends Factory
                 'stage_definitions' => [],
             ]),
             'workflow_version' => 1,
-            'organization_id' => 1,
             'enterprise_id' => $enterprise,
             'actor_id' => User::factory(),
             'status' => WorkflowExecution::STATUS_PENDING,
@@ -45,7 +44,6 @@ class WorkflowExecutionFactory extends Factory
     {
         return $this->state([
             'enterprise_id' => $enterprise,
-            'organization_id' => $enterprise->organization_id,
         ]);
     }
 }
