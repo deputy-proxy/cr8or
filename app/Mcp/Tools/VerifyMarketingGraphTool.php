@@ -28,8 +28,8 @@ final class VerifyMarketingGraphTool extends GovernedCapabilityTool
             'content_item_ids' => $schema->array()->required(),
             'script_ids' => $schema->array()->required(),
             'asset_ids' => $schema->array()->required(),
-            'agent_assignment_id' => $schema->integer()->min(1)->required(),
-            'agent_execution_id' => $schema->integer()->min(1)->required(),
+            'agent_assignment_id' => $schema->integer()->min(1),
+            'agent_execution_id' => $schema->integer()->min(1),
         ];
     }
 
@@ -45,8 +45,8 @@ final class VerifyMarketingGraphTool extends GovernedCapabilityTool
                 'content_item_ids' => ['required', 'array'], 'content_item_ids.*' => ['integer', 'min:1'],
                 'script_ids' => ['required', 'array'], 'script_ids.*' => ['integer', 'min:1'],
                 'asset_ids' => ['required', 'array'], 'asset_ids.*' => ['integer', 'min:1'],
-                'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
-                'agent_execution_id' => ['required', 'integer', 'min:1', 'exists:agent_executions,id'],
+                'agent_assignment_id' => ['sometimes', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['sometimes', 'integer', 'min:1', 'exists:agent_executions,id'],
             ]);
             $actor = $request->user();
             if (! $actor instanceof User) {
