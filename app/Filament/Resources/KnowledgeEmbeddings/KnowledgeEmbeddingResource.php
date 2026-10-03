@@ -20,6 +20,8 @@ class KnowledgeEmbeddingResource extends Resource
 
     protected static ?string $navigationLabel = 'KnowledgeEmbeddings';
 
+    protected static ?int $navigationSort = 100;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
