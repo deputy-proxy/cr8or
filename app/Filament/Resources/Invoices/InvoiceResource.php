@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Invoices;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\Invoices\Pages\CreateInvoices;
 use App\Filament\Resources\Invoices\Pages\EditInvoices;
 use App\Filament\Resources\Invoices\Pages\ListInvoices;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class InvoiceResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = Invoice::class;
 
