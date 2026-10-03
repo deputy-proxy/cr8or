@@ -2,6 +2,8 @@
 
 Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 
+> **Historical baseline:** This document records the pre-#383 inventory state and is retained for historical traceability. Its execution-path findings are superseded by `docs/architecture/unified-execution-audit-2026-10-03.md`, which reflects the current implementation after the #383 remediation.
+
 ## Executive summary
 
 - MCP Tool files: 130.
@@ -13,6 +15,22 @@ Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 - The current registry mixes lifecycle Tools with business Tools.
 - Several registered Tools still execute Operations directly instead of entering CapabilityInvocationService.
 - Six concrete mutation Tools have no CapabilityRegistry mapping.
+
+
+## Post-#383 current additions
+
+The current registry additionally governs these formerly unmapped mutating resource Tools:
+
+| Capability | Operation | MCP Tool | Tool class |
+|---|---|---|---|
+| knowledge.unit.archive | ArchiveKnowledgeUnit | archive-knowledge-unit | ArchiveKnowledgeUnitTool |
+| knowledge.index.update | UpdateKnowledgeIndex | update-knowledge-index | UpdateKnowledgeIndexTool |
+| knowledge.unit.update | UpdateKnowledgeUnit | update-knowledge-unit | UpdateKnowledgeUnitTool |
+| memory.create | CreateMemory | create-memory | CreateMemoryTool |
+| memory.update | UpdateMemory | update-memory | UpdateMemoryTool |
+| memory.archive | ArchiveMemory | archive-memory | ArchiveMemoryTool |
+
+The post-#383 execution path for these mapped resource mutations is `MCP Tool → CapabilityInvocationService → Operation`.
 
 ## Complete Capability registry matrix
 

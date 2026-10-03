@@ -2,6 +2,8 @@
 
 ## Unified execution model
 
+The repository-wide verification report for this architecture is maintained in `docs/architecture/unified-execution-audit-2026-10-03.md`.
+
 CR8OR separates orchestration, governed business execution, administration, and external-result reconciliation.
 
 ### Orchestrated business work

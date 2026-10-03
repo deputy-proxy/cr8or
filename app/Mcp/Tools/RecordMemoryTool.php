@@ -5,8 +5,6 @@ namespace App\Mcp\Tools;
 use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
-use App\Operations\RecordMemory;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -43,9 +41,9 @@ class RecordMemoryTool extends GovernedCapabilityTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.memory.record', function (string $correlationId) use ($request, $authorization, $registry) {
+        return $this->executeWithErrors($request, 'mcp.memory.record', function (string $correlationId) use ($request, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'persist' => ['required', 'boolean'],
@@ -74,21 +72,10 @@ class RecordMemoryTool extends GovernedCapabilityTool
 
             /** @var Enterprise $enterprise */
             $enterprise = Enterprise::query()->findOrFail($validated['enterprise_id']);
-            $definition = $this->definition($registry);
-
-            $authorization->authorizeCapability(
-                $actor,
-                $definition->key,
-                $enterprise,
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                null,
-                ['enterprise_id' => $enterprise->getKey(), 'type' => $validated['type']],
-            );
 
             return Response::structured([
                 'success' => true,
-                'result' => app(RecordMemory::class)->execute($actor, [
+                'result' => $this->executeCapability($registry, $actor, [
                     ...$validated,
                     'enterprise' => $enterprise,
                     'correlation_id' => $validated['correlation_id'] ?? $correlationId,
