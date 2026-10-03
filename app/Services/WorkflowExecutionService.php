@@ -110,6 +110,7 @@ final class WorkflowExecutionService
                 return $this->continueLocked($actor, $locked, $returnFailed);
             });
         } catch (Throwable $exception) {
+            /** @var WorkflowExecution|null $failed */
             $failed = WorkflowExecution::query()->find($execution->getKey());
 
             if ($failed !== null && $failed->status !== WorkflowExecution::STATUS_COMPLETED) {
