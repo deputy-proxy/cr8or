@@ -31,7 +31,8 @@ class AssetResource extends Resource
 
     protected static ?string $navigationLabel = 'Assets';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 90;
+
 
     public static function form(Schema $schema): Schema
     {
