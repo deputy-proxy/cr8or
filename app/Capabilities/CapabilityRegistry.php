@@ -162,6 +162,36 @@ final class CapabilityRegistry
         return $this->operation($this->forTool($tool)->key);
     }
 
+    /** @return array<string, CapabilityDefinition> */
+    public function business(): array
+    {
+        return array_filter($this->all(), static fn (CapabilityDefinition $definition): bool => $definition->category === 'business');
+    }
+
+    public function assertBusinessToolSurface(): void
+    {
+        foreach ($this->business() as $definition) {
+            if (! is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
+                throw new InvalidArgumentException(
+                    "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not implement the Capability boundary.",
+                );
+            }
+
+            if (! is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
+                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
+                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)) {
+                $reflection = new \ReflectionClass($definition->toolClass);
+                $source = $reflection->getFileName();
+
+                if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
+                    throw new InvalidArgumentException(
+                        "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
+                    );
+                }
+            }
+        }
+    }
+
     /**
      * @return list<CapabilityDefinition>
      */
@@ -176,6 +206,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow'],
                 'WorkflowPolicy::create + enterprise scope',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'workflow.publish',
@@ -185,6 +216,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow-version'],
                 'WorkflowPolicy::view + immutable version publication',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'workflow.discover',
@@ -194,6 +226,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow-list'],
                 'Enterprise view authorization',
                 'none',
+                'read',
             ),
             $this->definition(
                 'workflow.execute',
@@ -203,6 +236,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow-execution'],
                 'Published Workflow view authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'workflow.inspect',
@@ -212,6 +246,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow-execution-state'],
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'workflow.resume',
@@ -221,6 +256,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow-execution'],
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'agent.continue',
@@ -240,6 +276,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'interactive-continuation'],
                 'InteractiveContinuationService + governed Capability execution',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'agent.execute',
@@ -267,6 +304,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'agent-execution'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'agent.delegate',
@@ -287,6 +325,7 @@ final class CapabilityRegistry
                 ['delegation_id' => 'integer', 'status' => 'string', 'source_agent' => 'string', 'target_agent' => 'string', 'capability' => 'string', 'correlation_id' => 'string|null', 'execution_id' => 'integer|null'],
                 'delegation-service + capability authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'business.analysis',
@@ -458,6 +497,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'object'],
                 'assignment authorization',
                 'required',
+                'lifecycle',
             ),
             $this->definition(
                 'marketing.audience.create',
@@ -584,6 +624,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'object'],
                 'EnterprisePolicy::view + EnterpriseContextService authorization',
                 'none',
+                'read',
             ),
             $this->definition(
                 'marketing.objective.create',
@@ -674,6 +715,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'memory-retrieval'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
                 'none',
+                'support',
             ),
             $this->definition(
                 'memory.record',
@@ -689,6 +731,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'memory-record'],
                 'McpCapabilityAuthorizer::authorizeCapability + AgentMemoryPolicy',
                 'none',
+                'support',
             ),
             $this->definition(
                 'agent.assignment.create',
@@ -698,6 +741,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment createForAgentAssignment authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'agent.assignment.update',
@@ -707,6 +751,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment update authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'agent.assignment.transition',
@@ -716,6 +761,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'agent-assignment'],
                 'Enterprise policy + AgentAssignment lifecycle authorization',
                 'none',
+                'lifecycle',
             ),
             $this->definition(
                 'knowledge.item.create',
@@ -762,6 +808,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'knowledge-retrieval'],
                 'McpCapabilityAuthorizer::authorizeCapability + Enterprise policy',
                 'none',
+                'read',
             ),
         ];
     }
@@ -780,6 +827,7 @@ final class CapabilityRegistry
         array $outputContract,
         string $authorizationRequirement,
         string $approvalRequirement,
+        string $category = 'business',
     ): CapabilityDefinition {
         return new CapabilityDefinition(
             key: $key,
@@ -791,6 +839,7 @@ final class CapabilityRegistry
             authorizationRequirement: $authorizationRequirement,
             approvalRequirement: $approvalRequirement,
             failureContract: CapabilityFailureContract::standard(),
+            category: $category,
         );
     }
 

@@ -6,7 +6,6 @@ use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\DomainResourceService;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +13,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 
-abstract class DomainTransitionTool extends AuthorizedTool
+abstract class DomainTransitionTool extends AuthorizedTool implements \App\Contracts\CapabilityBoundaryTool
 {
     // @phpstan-ignore missingType.iterableValue
     abstract protected static function model(array $validated): Model;
@@ -39,9 +38,9 @@ abstract class DomainTransitionTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
+    public function handle(Request $request, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, static::operation(), function () use ($request, $authorization, $capabilities) {
+        return $this->executeWithErrors($request, static::operation(), function () use ($request, $capabilities) {
             $validated = $request->validate([
                 'id' => ['required', 'integer', 'min:1'],
                 'status' => ['required', 'string', 'min:1', 'max:100'],
@@ -60,18 +59,14 @@ abstract class DomainTransitionTool extends AuthorizedTool
 
             $definition = $capabilities->forTool(static::class);
 
-            $authorization->authorizeMutation(
+            $record = $this->invokeCapability(
+                $capabilities,
                 $actor,
-                $definition->key,
                 $enterprise,
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                $validated['approval_request_id'] ?? null,
+                $validated,
                 ['id' => $target->getKey()],
                 ['update', $target],
             );
-
-            $record = $capabilities->operationForTool(static::class)->execute($actor, $validated);
 
             return Response::structured([
                 'success' => true,

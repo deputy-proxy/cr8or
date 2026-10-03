@@ -3,9 +3,11 @@
 use App\Capabilities\CapabilityDefinition;
 use App\Capabilities\CapabilityFailureContract;
 use App\Capabilities\CapabilityRegistry;
+use App\Contracts\CapabilityBoundaryTool;
 use App\Contracts\Operation;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\GetEnterpriseTool;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkItem;
@@ -17,6 +19,7 @@ function capabilityDefinition(
     string $operation,
     string $tool,
     string $toolClass,
+    string $category = 'business',
 ): CapabilityDefinition {
     return new CapabilityDefinition(
         key: $key,
@@ -28,6 +31,7 @@ function capabilityDefinition(
         authorizationRequirement: 'McpCapabilityAuthorizer::authorizeMutation',
         approvalRequirement: 'permission-dependent',
         failureContract: CapabilityFailureContract::standard(),
+        category: $category,
     );
 }
 
@@ -47,6 +51,37 @@ it('resolves every governed Capability to one explicit Operation and Tool contra
             ->and($definition->approvalRequirement)->not->toBeEmpty()
             ->and($definition->failureContract->toArray())->not->toBeEmpty();
     }
+});
+
+it('enforces the Capability boundary for every business MCP Tool', function () {
+    $registry = app(CapabilityRegistry::class);
+
+    expect($registry->business())->toHaveCount(42);
+
+    $registry->assertBusinessToolSurface();
+
+    foreach ($registry->business() as $definition) {
+        expect(is_a($definition->toolClass, CapabilityBoundaryTool::class, true))->toBeTrue();
+    }
+});
+
+it('rejects a business Tool that does not implement the Capability boundary', function () {
+    $registry = new CapabilityRegistry([
+        capabilityDefinition('test.business', CreateContentItem::class, 'get-enterprise', GetEnterpriseTool::class),
+    ]);
+
+    expect(fn () => $registry->assertBusinessToolSurface())
+        ->toThrow(InvalidArgumentException::class, 'does not implement the Capability boundary');
+});
+
+it('does not apply the business boundary to lifecycle mappings', function () {
+    $registry = new CapabilityRegistry([
+        capabilityDefinition('test.lifecycle', CreateContentItem::class, 'get-enterprise', GetEnterpriseTool::class, 'lifecycle'),
+    ]);
+
+    $registry->assertBusinessToolSurface();
+
+    expect($registry->business())->toBeEmpty();
 });
 
 it('resolves every governed MCP Tool to exactly one Capability and Operation class', function () {
