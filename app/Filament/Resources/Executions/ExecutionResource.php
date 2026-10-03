@@ -18,6 +18,10 @@ class ExecutionResource extends Resource
 
     protected static ?string $model = Execution::class;
 
+    protected static ?string $modelLabel = 'Execution';
+
+    protected static ?string $pluralModelLabel = 'Executions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPlayCircle;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';

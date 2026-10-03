@@ -24,6 +24,10 @@ class TaskResource extends Resource
 
     protected static ?string $model = Task::class;
 
+    protected static ?string $modelLabel = 'Task';
+
+    protected static ?string $pluralModelLabel = 'Tasks';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckCircle;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

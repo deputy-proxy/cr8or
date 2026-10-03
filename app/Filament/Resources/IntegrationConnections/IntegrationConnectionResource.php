@@ -25,11 +25,15 @@ class IntegrationConnectionResource extends Resource
 
     protected static ?string $model = IntegrationConnection::class;
 
+    protected static ?string $modelLabel = 'Integration Connection';
+
+    protected static ?string $pluralModelLabel = 'Integration Connections';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';
 
-    protected static ?string $navigationLabel = 'Connections';
+    protected static ?string $navigationLabel = 'Integration Connections';
 
     protected static ?int $navigationSort = 10;
 

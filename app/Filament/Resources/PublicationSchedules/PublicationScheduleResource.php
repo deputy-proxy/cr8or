@@ -19,11 +19,15 @@ class PublicationScheduleResource extends Resource
 
     protected static ?string $model = PublicationSchedule::class;
 
+    protected static ?string $modelLabel = 'Publication Schedule';
+
+    protected static ?string $pluralModelLabel = 'Publication Schedules';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
-    protected static ?string $navigationLabel = 'Schedules';
+    protected static ?string $navigationLabel = 'Publication Schedules';
 
     protected static ?int $navigationSort = 190;
 

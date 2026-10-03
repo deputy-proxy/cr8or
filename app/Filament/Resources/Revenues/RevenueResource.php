@@ -24,11 +24,15 @@ class RevenueResource extends Resource
 
     protected static ?string $model = Revenue::class;
 
+    protected static ?string $modelLabel = 'Revenue';
+
+    protected static ?string $pluralModelLabel = 'Revenues';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingUp;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
-    protected static ?string $navigationLabel = 'Revenue';
+    protected static ?string $navigationLabel = 'Revenues';
 
     protected static ?int $navigationSort = 60;
 

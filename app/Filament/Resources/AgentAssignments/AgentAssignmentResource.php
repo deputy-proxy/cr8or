@@ -24,6 +24,10 @@ class AgentAssignmentResource extends Resource
 
     protected static ?string $model = AgentAssignment::class;
 
+    protected static ?string $modelLabel = 'Agent Assignment';
+
+    protected static ?string $pluralModelLabel = 'Agent Assignments';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

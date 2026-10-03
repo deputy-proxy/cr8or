@@ -22,11 +22,15 @@ class MissionResource extends Resource
 
     protected static ?string $model = Mission::class;
 
+    protected static ?string $modelLabel = 'Mission';
+
+    protected static ?string $pluralModelLabel = 'Missions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
-    protected static ?string $navigationLabel = 'Mission';
+    protected static ?string $navigationLabel = 'Missions';
 
     protected static ?int $navigationSort = 30;
 

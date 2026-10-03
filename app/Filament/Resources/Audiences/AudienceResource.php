@@ -26,6 +26,10 @@ class AudienceResource extends Resource
 
     protected static ?string $model = Audience::class;
 
+    protected static ?string $modelLabel = 'Audience';
+
+    protected static ?string $pluralModelLabel = 'Audiences';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

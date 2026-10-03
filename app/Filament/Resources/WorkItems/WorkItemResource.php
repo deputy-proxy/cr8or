@@ -24,6 +24,10 @@ class WorkItemResource extends Resource
 
     protected static ?string $model = WorkItem::class;
 
+    protected static ?string $modelLabel = 'Work Item';
+
+    protected static ?string $pluralModelLabel = 'Work Items';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

@@ -21,6 +21,10 @@ class KnowledgeReferenceResource extends Resource
 
     protected static ?string $model = KnowledgeReference::class;
 
+    protected static ?string $modelLabel = 'Knowledge Reference';
+
+    protected static ?string $pluralModelLabel = 'Knowledge References';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

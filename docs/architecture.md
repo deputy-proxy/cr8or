@@ -277,3 +277,18 @@ Authorization, approval, correlation, idempotency and normalized failure semanti
 The repository includes cross-entry regression coverage proving a representative `work.item.update` Operation can be reached through direct MCP, Agent-backed Capability invocation, deterministic Workflow execution, and command Webhook execution while preserving Enterprise scope and authoritative state. Integration-result reconciliation and lifecycle MCP namespace separation are covered as explicit exceptions.
 
 See `docs/architecture/capability-execution-contract.md` for the detailed request metadata, authorization, approval, idempotency and failure contract.
+
+## Filament resource presentation contract
+
+CR8OR treats Filament resource presentation as an explicit UI contract, not as an incidental result of class-name inflection.
+
+- Every Filament Resource has an explicit human-readable navigation label, singular model label, and plural model label.
+- Labels preserve CR8OR domain terminology and correctly separate PascalCase and acronym boundaries.
+- Every list table is reviewed against the underlying model, relationships, forms, filters, authorization, and domain semantics.
+- Tables expose useful operational fields for identification, filtering, sorting, and management rather than defaulting to id.
+- Relationship context should use human-readable related attributes where safely available; stable relationship identifiers are acceptable when they are the appropriate non-sensitive context.
+- Dates, status/categorical values, booleans, numeric values, and other domain-specific fields use appropriate Filament presentation.
+- Searchable and sortable behavior is added where it materially improves record management.
+- Secrets, credentials, tokens, raw private payloads, vectors, and sensitive implementation details must not be exposed merely for completeness.
+- Table definitions must avoid unnecessary relationship loading and obvious N+1 query patterns.
+- The exhaustive resource presentation inventory is maintained in docs/filament-resource-presentation.md and is enforced by tests/Feature/Filament/PresentationContractTest.php.\n

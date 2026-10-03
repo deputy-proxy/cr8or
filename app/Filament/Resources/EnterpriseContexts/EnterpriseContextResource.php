@@ -24,6 +24,10 @@ class EnterpriseContextResource extends Resource
 
     protected static ?string $model = EnterpriseContext::class;
 
+    protected static ?string $modelLabel = 'Enterprise Context';
+
+    protected static ?string $pluralModelLabel = 'Enterprise Contexts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInformationCircle;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

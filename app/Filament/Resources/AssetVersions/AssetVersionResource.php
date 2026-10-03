@@ -19,6 +19,10 @@ class AssetVersionResource extends Resource
 
     protected static ?string $model = AssetVersion::class;
 
+    protected static ?string $modelLabel = 'Asset Version';
+
+    protected static ?string $pluralModelLabel = 'Asset Versions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

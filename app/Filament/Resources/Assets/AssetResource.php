@@ -25,6 +25,10 @@ class AssetResource extends Resource
 
     protected static ?string $model = Asset::class;
 
+    protected static ?string $modelLabel = 'Asset';
+
+    protected static ?string $pluralModelLabel = 'Assets';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

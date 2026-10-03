@@ -100,7 +100,7 @@ it('keeps non-resource Filament pages inside the current navigation taxonomy', f
 });
 
 it('uses the agreed domain labels for the primary navigation resources', function () {
-    expect(OrganizationResource::getNavigationLabel())->toBe('Organization')
+    expect(OrganizationResource::getNavigationLabel())->toBe('Organizations')
         ->and(EnterpriseResource::getNavigationGroup())->toBe('Organization & Enterprise Scope')
         ->and(ObjectiveResource::getNavigationLabel())->toBe('Objectives')
         ->and(StrategyResource::getNavigationLabel())->toBe('Strategies')
@@ -109,11 +109,11 @@ it('uses the agreed domain labels for the primary navigation resources', functio
         ->and(AgentDescriptorResource::getNavigationLabel())->toBe('Agents')
         ->and(ExpertDescriptorResource::getNavigationLabel())->toBe('Experts')
         ->and(CampaignResource::getNavigationLabel())->toBe('Campaigns')
-        ->and(ContentSeriesResource::getNavigationLabel())->toBe('Series')
-        ->and(ContentItemResource::getNavigationLabel())->toBe('Items')
+        ->and(ContentSeriesResource::getNavigationLabel())->toBe('Content Series')
+        ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
         ->and(AudienceResource::getNavigationLabel())->toBe('Audiences')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
         ->and(ExecutionResource::getNavigationLabel())->toBe('Executions')
         ->and(JobResource::getNavigationLabel())->toBe('Jobs')
-        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approvals');
+        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests');
 });

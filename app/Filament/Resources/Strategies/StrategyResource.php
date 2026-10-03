@@ -24,6 +24,10 @@ class StrategyResource extends Resource
 
     protected static ?string $model = Strategy::class;
 
+    protected static ?string $modelLabel = 'Strategie';
+
+    protected static ?string $pluralModelLabel = 'Strategies';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

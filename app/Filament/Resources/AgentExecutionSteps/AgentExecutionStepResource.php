@@ -14,6 +14,10 @@ class AgentExecutionStepResource extends Resource
 {
     protected static ?string $model = AgentExecutionStep::class;
 
+    protected static ?string $modelLabel = 'Agent Execution Step';
+
+    protected static ?string $pluralModelLabel = 'Agent Execution Steps';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
@@ -25,7 +29,13 @@ class AgentExecutionStepResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('agent_execution_id')->label('Execution')->searchable()->sortable(),
+            TextColumn::make('sequence')->numeric()->sortable(),
+            TextColumn::make('status')->badge()->searchable()->sortable(),
+            TextColumn::make('type')->badge()->searchable()->sortable(),
+            TextColumn::make('started_at')->dateTime()->sortable(),
+            TextColumn::make('completed_at')->dateTime()->sortable(),
+            TextColumn::make('failure_code')->badge()->searchable(),
         ]);
     }
 

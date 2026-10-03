@@ -24,6 +24,10 @@ class ExpenseResource extends Resource
 
     protected static ?string $model = Expense::class;
 
+    protected static ?string $modelLabel = 'Expense';
+
+    protected static ?string $pluralModelLabel = 'Expenses';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowTrendingDown;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

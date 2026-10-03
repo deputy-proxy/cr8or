@@ -19,6 +19,10 @@ class RenderRequestResource extends Resource
 
     protected static ?string $model = RenderRequest::class;
 
+    protected static ?string $modelLabel = 'Render Request';
+
+    protected static ?string $pluralModelLabel = 'Render Requests';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

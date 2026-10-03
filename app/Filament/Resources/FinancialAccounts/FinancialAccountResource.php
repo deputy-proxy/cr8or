@@ -23,6 +23,10 @@ class FinancialAccountResource extends Resource
 
     protected static ?string $model = FinancialAccount::class;
 
+    protected static ?string $modelLabel = 'Financial Account';
+
+    protected static ?string $pluralModelLabel = 'Financial Accounts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

@@ -19,6 +19,10 @@ class IntegrationJobResource extends Resource
 
     protected static ?string $model = IntegrationJob::class;
 
+    protected static ?string $modelLabel = 'Integration Job';
+
+    protected static ?string $pluralModelLabel = 'Integration Jobs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';

@@ -24,6 +24,10 @@ class InvoiceResource extends Resource
 
     protected static ?string $model = Invoice::class;
 
+    protected static ?string $modelLabel = 'Invoice';
+
+    protected static ?string $pluralModelLabel = 'Invoices';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

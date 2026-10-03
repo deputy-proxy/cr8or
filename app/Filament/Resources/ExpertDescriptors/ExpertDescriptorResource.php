@@ -26,6 +26,10 @@ class ExpertDescriptorResource extends Resource
 
     protected static ?string $model = ExpertDescriptor::class;
 
+    protected static ?string $modelLabel = 'Expert';
+
+    protected static ?string $pluralModelLabel = 'Experts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

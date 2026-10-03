@@ -21,6 +21,10 @@ class KnowledgeContextResource extends Resource
 
     protected static ?string $model = KnowledgeContext::class;
 
+    protected static ?string $modelLabel = 'Knowledge Context';
+
+    protected static ?string $pluralModelLabel = 'Knowledge Contexts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

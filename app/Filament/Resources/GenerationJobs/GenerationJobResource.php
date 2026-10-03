@@ -19,6 +19,10 @@ class GenerationJobResource extends Resource
 
     protected static ?string $model = GenerationJob::class;
 
+    protected static ?string $modelLabel = 'Generation Job';
+
+    protected static ?string $pluralModelLabel = 'Generation Jobs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

@@ -23,6 +23,10 @@ class EnterpriseResource extends Resource
 
     protected static ?string $model = Enterprise::class;
 
+    protected static ?string $modelLabel = 'Enterprise';
+
+    protected static ?string $pluralModelLabel = 'Enterprises';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';

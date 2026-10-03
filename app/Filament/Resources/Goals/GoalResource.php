@@ -24,6 +24,10 @@ class GoalResource extends Resource
 
     protected static ?string $model = Goal::class;
 
+    protected static ?string $modelLabel = 'Goal';
+
+    protected static ?string $pluralModelLabel = 'Goals';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

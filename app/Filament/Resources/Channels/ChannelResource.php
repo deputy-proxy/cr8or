@@ -25,6 +25,10 @@ class ChannelResource extends Resource
 
     protected static ?string $model = Channel::class;
 
+    protected static ?string $modelLabel = 'Channel';
+
+    protected static ?string $pluralModelLabel = 'Channels';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

@@ -22,6 +22,10 @@ class MembershipResource extends Resource
 
     protected static ?string $model = Membership::class;
 
+    protected static ?string $modelLabel = 'Membership';
+
+    protected static ?string $pluralModelLabel = 'Memberships';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';

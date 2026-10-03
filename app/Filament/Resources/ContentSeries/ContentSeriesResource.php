@@ -29,11 +29,15 @@ class ContentSeriesResource extends Resource
 
     protected static ?string $model = ContentSeries::class;
 
+    protected static ?string $modelLabel = 'Content Series';
+
+    protected static ?string $pluralModelLabel = 'Content Series';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
-    protected static ?string $navigationLabel = 'Series';
+    protected static ?string $navigationLabel = 'Content Series';
 
     protected static ?int $navigationSort = 30;
 

@@ -19,6 +19,10 @@ class ExternalResourceResource extends Resource
 
     protected static ?string $model = ExternalResource::class;
 
+    protected static ?string $modelLabel = 'External Resource';
+
+    protected static ?string $pluralModelLabel = 'External Resources';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';

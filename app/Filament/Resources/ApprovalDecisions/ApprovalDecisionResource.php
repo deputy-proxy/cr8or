@@ -14,18 +14,26 @@ class ApprovalDecisionResource extends Resource
 {
     protected static ?string $model = ApprovalDecision::class;
 
+    protected static ?string $modelLabel = 'Approval Decision';
+
+    protected static ?string $pluralModelLabel = 'Approval Decisions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
 
-    protected static ?string $navigationLabel = 'ApprovalDecisions';
+    protected static ?string $navigationLabel = 'Approval Decisions';
 
     protected static ?int $navigationSort = 150;
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('approval_request_id')->label('Approval Request')->searchable()->sortable(),
+            TextColumn::make('stage')->badge()->searchable()->sortable(),
+            TextColumn::make('decision')->badge()->searchable()->sortable(),
+            TextColumn::make('actor_name')->label('Actor')->searchable()->sortable(),
+            TextColumn::make('decided_at')->dateTime()->sortable(),
         ]);
     }
 

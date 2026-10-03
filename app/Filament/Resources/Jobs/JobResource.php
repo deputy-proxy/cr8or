@@ -18,6 +18,10 @@ class JobResource extends Resource
 
     protected static ?string $model = Job::class;
 
+    protected static ?string $modelLabel = 'Job';
+
+    protected static ?string $pluralModelLabel = 'Jobs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';

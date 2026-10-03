@@ -23,6 +23,10 @@ class TransactionCategoryResource extends Resource
 
     protected static ?string $model = TransactionCategory::class;
 
+    protected static ?string $modelLabel = 'Transaction Category';
+
+    protected static ?string $pluralModelLabel = 'Transaction Categories';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

@@ -25,6 +25,10 @@ class SocialAccountResource extends Resource
 
     protected static ?string $model = SocialAccount::class;
 
+    protected static ?string $modelLabel = 'Social Account';
+
+    protected static ?string $pluralModelLabel = 'Social Accounts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

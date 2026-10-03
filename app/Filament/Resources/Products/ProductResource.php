@@ -23,6 +23,10 @@ class ProductResource extends Resource
 
     protected static ?string $model = Product::class;
 
+    protected static ?string $modelLabel = 'Product';
+
+    protected static ?string $pluralModelLabel = 'Products';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

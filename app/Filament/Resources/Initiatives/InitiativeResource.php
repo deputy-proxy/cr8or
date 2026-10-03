@@ -24,6 +24,10 @@ class InitiativeResource extends Resource
 
     protected static ?string $model = Initiative::class;
 
+    protected static ?string $modelLabel = 'Initiative';
+
+    protected static ?string $pluralModelLabel = 'Initiatives';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRocketLaunch;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

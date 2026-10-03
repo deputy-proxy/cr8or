@@ -22,6 +22,10 @@ class AssignmentResource extends Resource
 
     protected static ?string $model = Assignment::class;
 
+    protected static ?string $modelLabel = 'Assignment';
+
+    protected static ?string $pluralModelLabel = 'Assignments';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserPlus;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';

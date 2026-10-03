@@ -24,6 +24,10 @@ class TransactionResource extends Resource
 
     protected static ?string $model = Transaction::class;
 
+    protected static ?string $modelLabel = 'Transaction';
+
+    protected static ?string $pluralModelLabel = 'Transactions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

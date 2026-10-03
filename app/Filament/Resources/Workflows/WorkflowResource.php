@@ -28,6 +28,10 @@ class WorkflowResource extends Resource
 
     protected static ?string $model = Workflow::class;
 
+    protected static ?string $modelLabel = 'Workflow';
+
+    protected static ?string $pluralModelLabel = 'Workflows';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';

@@ -29,11 +29,15 @@ class ContentItemResource extends Resource
 
     protected static ?string $model = ContentItem::class;
 
+    protected static ?string $modelLabel = 'Content Item';
+
+    protected static ?string $pluralModelLabel = 'Content Items';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
-    protected static ?string $navigationLabel = 'Items';
+    protected static ?string $navigationLabel = 'Content Items';
 
     protected static ?int $navigationSort = 70;
 

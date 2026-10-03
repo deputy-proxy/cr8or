@@ -21,6 +21,10 @@ class KnowledgeItemResource extends Resource
 
     protected static ?string $model = KnowledgeItem::class;
 
+    protected static ?string $modelLabel = 'Knowledge Item';
+
+    protected static ?string $pluralModelLabel = 'Knowledge Items';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

@@ -18,6 +18,10 @@ class AgentDecisionResource extends Resource
 
     protected static ?string $model = AgentDecision::class;
 
+    protected static ?string $modelLabel = 'Agent Decision';
+
+    protected static ?string $pluralModelLabel = 'Agent Decisions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

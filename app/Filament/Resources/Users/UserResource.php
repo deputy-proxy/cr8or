@@ -14,6 +14,10 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $modelLabel = 'User';
+
+    protected static ?string $pluralModelLabel = 'Users';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';
@@ -25,7 +29,10 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('email')->searchable()->sortable(),
+            TextColumn::make('email_verified_at')->dateTime()->sortable(),
+            TextColumn::make('two_factor_confirmed_at')->dateTime()->sortable(),
         ]);
     }
 

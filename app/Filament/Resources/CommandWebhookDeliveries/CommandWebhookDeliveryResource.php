@@ -14,18 +14,26 @@ class CommandWebhookDeliveryResource extends Resource
 {
     protected static ?string $model = CommandWebhookDelivery::class;
 
+    protected static ?string $modelLabel = 'Command Webhook Delivery';
+
+    protected static ?string $pluralModelLabel = 'Command Webhook Deliveries';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';
 
-    protected static ?string $navigationLabel = 'CommandWebhookDeliveries';
+    protected static ?string $navigationLabel = 'Command Webhook Deliveries';
 
     protected static ?int $navigationSort = 50;
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('capability')->searchable()->sortable(),
+            TextColumn::make('idempotency_key')->label('Idempotency Key')->searchable(),
+            TextColumn::make('status')->badge()->searchable()->sortable(),
+            TextColumn::make('failure_code')->badge()->searchable(),
+            TextColumn::make('processed_at')->dateTime()->sortable(),
         ]);
     }
 

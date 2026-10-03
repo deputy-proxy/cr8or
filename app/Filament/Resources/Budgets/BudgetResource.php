@@ -23,6 +23,10 @@ class BudgetResource extends Resource
 
     protected static ?string $model = Budget::class;
 
+    protected static ?string $modelLabel = 'Budget';
+
+    protected static ?string $pluralModelLabel = 'Budgets';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

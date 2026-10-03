@@ -25,6 +25,10 @@ class StatementResource extends Resource
 
     protected static ?string $model = Statement::class;
 
+    protected static ?string $modelLabel = 'Statement';
+
+    protected static ?string $pluralModelLabel = 'Statements';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';
