@@ -4,16 +4,15 @@ namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityDefinition;
 use App\Capabilities\CapabilityRegistry;
-use App\Data\CapabilityInvocationRequest;
+use App\Contracts\CapabilityBoundaryTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\User;
-use App\Services\CapabilityInvocationService;
 use Illuminate\Database\Eloquent\Model;
 
-abstract class GovernedCapabilityTool extends AuthorizedTool
+abstract class GovernedCapabilityTool extends AuthorizedTool implements CapabilityBoundaryTool
 {
     protected function expertSlug(): ?string
     {
@@ -47,19 +46,7 @@ abstract class GovernedCapabilityTool extends AuthorizedTool
                 'approval_request_id' => $approval?->getKey(),
             ], static fn (mixed $value): bool => $value !== null);
 
-        return app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-            capability: $this->capability($registry),
-            actor: $actor,
-            enterprise: $enterprise,
-            targetContext: $targetContext,
-            inputPayload: $input,
-            assignment: $assignment,
-            execution: $execution,
-            approval: $approval,
-            correlationId: isset($input['correlation_id']) && is_string($input['correlation_id']) ? $input['correlation_id'] : null,
-            idempotencyKey: isset($input['idempotency_key']) && is_string($input['idempotency_key']) ? $input['idempotency_key'] : null,
-            expertSlug: $this->expertSlug(),
-        ))['raw_result'] ?? null;
+        return $this->invokeCapability($registry, $actor, $enterprise, $input, $targetContext, null, $this->expertSlug());
     }
 
     /** @param array<string, mixed> $input */

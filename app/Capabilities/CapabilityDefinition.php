@@ -22,6 +22,7 @@ final readonly class CapabilityDefinition
         public string $authorizationRequirement,
         public string $approvalRequirement,
         public CapabilityFailureContract $failureContract = new CapabilityFailureContract([]),
+        public string $category = 'business',
     ) {
         if ($key === '' || ! preg_match('/^[a-z0-9]+(?:\.[a-z0-9_-]+)+$/', $key)) {
             throw new InvalidArgumentException("Invalid capability identifier [{$key}].");
@@ -53,6 +54,10 @@ final readonly class CapabilityDefinition
 
         if ($approvalRequirement === '') {
             throw new InvalidArgumentException("Capability [{$key}] must define approval requirements.");
+        }
+
+        if (! in_array($category, ['business', 'lifecycle', 'read', 'support'], true)) {
+            throw new InvalidArgumentException("Invalid Capability category [{$category}] for [{$key}].");
         }
     }
 }

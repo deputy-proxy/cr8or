@@ -6,7 +6,6 @@ use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\Organization;
 use App\Models\User;
-use App\Services\DomainResourceService;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -17,7 +16,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-enterprise')]
 #[Description('Create an enterprise under an organization where the authenticated actor has enterprise creation authority.')]
-class CreateEnterpriseTool extends AuthorizedTool
+class CreateEnterpriseTool extends AuthorizedTool implements \App\Contracts\CapabilityBoundaryTool
 {
     public function schema(JsonSchema $schema): array
     {
@@ -29,7 +28,7 @@ class CreateEnterpriseTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
         return $this->executeWithErrors($request, 'enterprise.create', function () use ($request, $capabilities) {
             $validated = $request->validate([
@@ -46,8 +45,14 @@ class CreateEnterpriseTool extends AuthorizedTool
             }
 
             $organization = Organization::query()->findOrFail((int) $validated['organization_id']);
-            $capabilities->forTool(static::class);
-            $enterprise = $capabilities->operationForTool(static::class)->execute($actor, $validated);
+            $enterprise = $this->invokeCapability(
+                $capabilities,
+                $actor,
+                null,
+                $validated,
+                ['organization_id' => $organization->getKey()],
+                ['createForOrganization', [Enterprise::class, $organization]],
+            );
 
             return Response::structured([
                 'success' => true,
@@ -62,13 +67,5 @@ class CreateEnterpriseTool extends AuthorizedTool
                 ],
             ]);
         });
-    }
-
-    /** @param array<string, mixed> $validated */
-    public static function executeOperation(User $actor, array $validated): Enterprise
-    {
-        $organization = Organization::query()->findOrFail((int) $validated['organization_id']);
-
-        return app(DomainResourceService::class)->createEnterprise($actor, $organization, $validated);
     }
 }

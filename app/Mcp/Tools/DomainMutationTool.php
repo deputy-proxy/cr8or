@@ -6,7 +6,6 @@ use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\DomainResourceService;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +13,7 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 
-abstract class DomainMutationTool extends AuthorizedTool
+abstract class DomainMutationTool extends AuthorizedTool implements \App\Contracts\CapabilityBoundaryTool
 {
     /** @return array<string, mixed> */
     abstract protected static function schemaFields(JsonSchema $schema): array;
@@ -44,11 +43,11 @@ abstract class DomainMutationTool extends AuthorizedTool
         return static::schemaFields($schema);
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
+    public function handle(Request $request, DomainResourceService $domain, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
         $definition = $capabilities->forTool(static::class);
 
-        return $this->executeWithErrors($request, $definition->operation, function () use ($request, $authorization, $definition) {
+        return $this->executeWithErrors($request, $definition->operation, function () use ($request, $capabilities) {
             $validated = $request->validate(static::rules());
             $actor = $request->user();
 
@@ -60,18 +59,14 @@ abstract class DomainMutationTool extends AuthorizedTool
             $enterprise = static::enterprise($validated);
             $humanAbility = static::humanAbility($validated, $target);
 
-            $authorization->authorizeMutation(
+            $record = $this->invokeCapability(
+                $capabilities,
                 $actor,
-                $definition->key,
                 $enterprise,
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                $validated['approval_request_id'] ?? null,
+                $validated,
                 static::targetContext($validated, $target),
                 $humanAbility,
             );
-
-            $record = app($definition->operation)->execute($actor, $validated);
 
             return Response::structured(['success' => true, 'result' => static::result($record)]);
         });

@@ -158,6 +158,12 @@ final class CapabilityInvocationService
             return;
         }
 
+        if ($request->humanAbility !== null) {
+            Gate::forUser($request->actor)->authorize($request->humanAbility[0], $request->humanAbility[1]);
+
+            return;
+        }
+
         if ($request->enterprise === null) {
             if ($request->capability !== 'enterprise.create') {
                 throw new AuthorizationException('A Capability invocation requires an Enterprise context.');

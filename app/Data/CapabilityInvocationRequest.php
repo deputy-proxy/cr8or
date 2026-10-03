@@ -17,6 +17,7 @@ final readonly class CapabilityInvocationRequest
     /**
      * @param  array<string, mixed>  $targetContext
      * @param  array<string, mixed>  $inputPayload
+     * @param  array{0: string, 1: mixed}|null  $humanAbility
      */
     public function __construct(
         public string $capability,
@@ -33,6 +34,7 @@ final readonly class CapabilityInvocationRequest
         public ?string $correlationId = null,
         public ?string $idempotencyKey = null,
         public ?string $expertSlug = null,
+        public ?array $humanAbility = null,
     ) {
         if (trim($this->capability) === '') {
             throw new InvalidArgumentException('A Capability identifier is required.');
@@ -129,6 +131,7 @@ final readonly class CapabilityInvocationRequest
             'expert_slug' => $this->expertSlug,
             'correlation_id' => $this->resolvedCorrelationId(),
             'idempotency_key' => $this->idempotencyKey,
+            'human_ability' => $this->humanAbility,
             'approval_request_id' => $this->approval?->getKey(),
             'delegation_id' => $this->delegation?->getKey(),
         ];
