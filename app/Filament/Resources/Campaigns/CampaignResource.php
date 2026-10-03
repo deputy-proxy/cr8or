@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Campaigns;
 use App\Filament\Resources\Campaigns\Pages\CreateCampaign;
 use App\Filament\Resources\Campaigns\Pages\EditCampaign;
 use App\Filament\Resources\Campaigns\Pages\ListCampaigns;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Campaign;
 use App\Models\User;
 use App\Services\DomainResourceService;
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CampaignResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Campaign::class;
 
