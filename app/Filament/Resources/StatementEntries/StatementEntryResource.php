@@ -33,7 +33,6 @@ class StatementEntryResource extends Resource
 
     protected static ?int $navigationSort = 110;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
