@@ -27,7 +27,6 @@ class GenerationRequestResource extends Resource
 
     protected static ?int $navigationSort = 120;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
