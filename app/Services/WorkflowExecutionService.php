@@ -39,8 +39,8 @@ final class WorkflowExecutionService
             return $existing;
         }
 
-        return DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId, $returnFailed): WorkflowExecution {
-            $execution = WorkflowExecution::query()->create([
+        $execution = DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId): WorkflowExecution {
+            return WorkflowExecution::query()->create([
                 'workflow_id' => $workflow->getKey(),
                 'workflow_version_id' => $version->getKey(),
                 'workflow_version' => $version->version,
@@ -59,9 +59,9 @@ final class WorkflowExecutionService
                     'workflow_version' => $version->version,
                 ],
             ]);
-
-            return $this->continue($actor, $execution, null, $returnFailed);
         });
+
+        return $this->continue($actor, $execution, null, $returnFailed);
     }
 
     /** @return array<string, mixed> */
@@ -98,16 +98,32 @@ final class WorkflowExecutionService
 
     public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false): WorkflowExecution
     {
-        return DB::transaction(function () use ($actor, $execution, $continuationToken, $returnFailed): WorkflowExecution {
-            /** @var WorkflowExecution $locked */
-            $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
+        try {
+            return DB::transaction(function () use ($actor, $execution, $continuationToken, $returnFailed): WorkflowExecution {
+                /** @var WorkflowExecution $locked */
+                $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
-            if ($continuationToken !== null && ! hash_equals((string) $locked->continuation_token, $continuationToken)) {
-                throw new AuthorizationException('Workflow continuation token is stale or invalid.');
+                if ($continuationToken !== null && ! hash_equals((string) $locked->continuation_token, $continuationToken)) {
+                    throw new AuthorizationException('Workflow continuation token is stale or invalid.');
+                }
+
+                return $this->continueLocked($actor, $locked, $returnFailed);
+            });
+        } catch (Throwable $exception) {
+            /** @var WorkflowExecution|null $failed */
+            $failed = WorkflowExecution::query()->find($execution->getKey());
+
+            if ($failed !== null && $failed->status !== WorkflowExecution::STATUS_COMPLETED) {
+                $failed->continuation_token = (string) str()->uuid();
+                $failed->fail($exception->getMessage())->save();
             }
 
-            return $this->continueLocked($actor, $locked, $returnFailed);
-        });
+            if ($returnFailed && $failed !== null) {
+                return $failed->refresh();
+            }
+
+            throw $exception;
+        }
     }
 
     private function continueLocked(User $actor, WorkflowExecution $execution, bool $returnFailed = false): WorkflowExecution
