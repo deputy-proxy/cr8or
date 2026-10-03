@@ -18,7 +18,7 @@ class BusinessHealthResultPolicy
 
     public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user);
+        return false;
     }
 
     public function createForEnterprise(User $user, Enterprise $enterprise): bool
