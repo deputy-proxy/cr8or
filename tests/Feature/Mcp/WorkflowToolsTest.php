@@ -16,8 +16,6 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Policies\WorkflowPolicy;
-use App\Services\CanonicalWorkflowProvisioner;
-use App\Services\MarketingStrategyWorkflowDefinition;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 
@@ -137,16 +135,22 @@ it('discovers a canonical Workflow by exact enterprise and canonical key', funct
     workflowMcpOwner($actor, $organization);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
 
-    $workflow = app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($actor, $enterprise, [
+        'name' => 'Canonical discovery workflow',
+        'canonical_key' => 'marketing.strategy.create',
+        'purpose' => 'Persisted workflow discovery test.',
+        'stages' => workflowMcpInput(),
+    ]);
+    app(\App\Services\WorkflowVersionService::class)->publish($workflow, $actor, 'publish-canonical-discovery');
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(ListWorkflowsTool::class, [
             'enterprise_id' => $enterprise->id,
-            'canonical_key' => MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE,
+            'canonical_key' => 'marketing.strategy.create',
         ])
         ->assertOk()
         ->assertSee($workflow->name)
-        ->assertSee(MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE)
+        ->assertSee('marketing.strategy.create')
         ->assertSee((string) $workflow->published_version_id);
 
     expect(AgentExecution::query()->count())->toBe(0);
@@ -159,12 +163,18 @@ it('returns no result for a canonical key belonging to another enterprise', func
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     $otherEnterprise = Enterprise::factory()->create(['organization_id' => $organization]);
 
-    app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, $actor);
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($actor, $enterprise, [
+        'name' => 'Canonical discovery workflow',
+        'canonical_key' => 'marketing.strategy.create',
+        'purpose' => 'Persisted workflow isolation test.',
+        'stages' => workflowMcpInput(),
+    ]);
+    app(\App\Services\WorkflowVersionService::class)->publish($workflow, $actor, 'publish-canonical-isolation');
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(ListWorkflowsTool::class, [
             'enterprise_id' => $otherEnterprise->id,
-            'canonical_key' => MarketingStrategyWorkflowDefinition::CANONICAL_TEMPLATE,
+            'canonical_key' => 'marketing.strategy.create',
         ])
         ->assertOk()
         ->assertSee('"items":[]');

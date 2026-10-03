@@ -1,4 +1,3 @@
-
 <?php
 
 beforeEach(function (): void {
@@ -114,20 +113,22 @@ function fullMarketingFixture(): array
     KnowledgeItem::factory()->create(['enterprise_id' => $enterprise->getKey(), 'knowledge_source_id' => $source->getKey(), 'knowledge_document_id' => $document->getKey(), 'knowledge_context_id' => $knowledgeContext->getKey(), 'title' => 'Brand positioning evidence']);
     $descriptor = AgentDescriptor::query()->where('slug', 'marketing')->firstOrFail();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->getKey(), 'status' => AgentAssignment::STATUS_READY]);
+    $workflow = persistedMarketingAgentWorkflow($enterprise, $user);
     AgentRuntimePolicy::query()->create(['environment' => app()->environment(), 'organization_id' => $enterprise->organization_id, 'enterprise_id' => $enterprise->getKey(), 'agent_descriptor_id' => $descriptor->getKey(), 'enabled' => true, 'max_steps' => 12, 'max_retries' => 3, 'timeout_seconds' => 120, 'max_context_bytes' => 120000, 'retrieved_knowledge_limit' => 5, 'memory_limit' => 20]);
 
-    return [$user, $enterprise, $assignment];
+    return [$user, $enterprise, $assignment, $workflow];
 }
 
 it('completes the full autonomous marketing graph starting from one MCP execution', function (): void {
     config(['queue.default' => 'sync']);
     $provider = fullMarketingProvider();
     app()->instance(ModelProvider::class, $provider);
-    [$user, $enterprise, $assignment] = fullMarketingFixture();
+    [$user, $enterprise, $assignment, $workflow] = fullMarketingFixture();
 
     $response = Cr8orServer::actingAs($user, 'api')->tool(CreateAgentExecutionTool::class, [
         'enterprise_id' => $enterprise->getKey(),
         'agent_assignment_id' => $assignment->getKey(),
+        'workflow_id' => $workflow->getKey(),
         'prompt' => 'Generate and implement a full marketing strategy for the enterprise blckdsgn.com.',
         'mode' => AgentExecutionMode::AUTONOMOUS->value,
         'idempotency_key' => 'full-marketing-mcp-e2e-1',
@@ -175,10 +176,11 @@ it('completes the full autonomous marketing graph starting from one MCP executio
 it('replaying the same MCP idempotency key does not duplicate the completed graph', function (): void {
     config(['queue.default' => 'sync']);
     app()->instance(ModelProvider::class, fullMarketingProvider());
-    [$user, $enterprise, $assignment] = fullMarketingFixture();
+    [$user, $enterprise, $assignment, $workflow] = fullMarketingFixture();
     $server = Cr8orServer::actingAs($user, 'api');
     $input = [
         'enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => $assignment->getKey(),
+        'workflow_id' => $workflow->getKey(),
         'prompt' => 'Generate and implement a full marketing strategy for the enterprise blckdsgn.com.',
         'mode' => 'autonomous', 'idempotency_key' => 'full-marketing-idempotent-1',
     ];

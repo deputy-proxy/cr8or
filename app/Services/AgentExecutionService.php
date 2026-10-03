@@ -37,6 +37,7 @@ use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowVersion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
@@ -54,7 +55,6 @@ final class AgentExecutionService
         private readonly ?CapabilityExecutionService $capabilityExecution = null,
         private readonly ?InteractiveCapabilityStepRunner $interactiveSteps = null,
         private readonly ?AgentRuntimePolicyService $runtimePolicies = null,
-        private readonly ?WorkflowTemplateResolver $workflowTemplates = null,
     ) {}
 
     public function execute(AgentExecutionRequest $request): AgentExecutionResult
@@ -128,7 +128,7 @@ final class AgentExecutionService
             );
         }
 
-        $workflow ??= ($this->workflowTemplates ?? app(WorkflowTemplateResolver::class))->resolve($assignment, $request->prompt, $request->mode, $request->workflowTemplate);
+        $workflow ??= $this->resolveWorkflowTemplate($assignment, $request->workflowTemplate, $request->mode);
 
         if ($workflow !== null) {
             $workflowPolicy = (array) $workflow->getAttribute('execution_policy');
@@ -271,7 +271,7 @@ final class AgentExecutionService
             return $existing->refresh();
         }
 
-        $workflow ??= ($this->workflowTemplates ?? app(WorkflowTemplateResolver::class))->resolve($assignment, $request->prompt, $request->mode, $request->workflowTemplate);
+        $workflow ??= $this->resolveWorkflowTemplate($assignment, $request->workflowTemplate, $request->mode);
 
         if ($workflow !== null) {
             $workflowPolicy = (array) $workflow->getAttribute('execution_policy');
@@ -1690,6 +1690,25 @@ final class AgentExecutionService
                 : null,
             'decided_at' => now(),
         ]);
+    }
+
+    private function resolveWorkflowTemplate(AgentAssignment $assignment, ?string $template, AgentExecutionMode $mode): ?Workflow
+    {
+        if ($mode !== AgentExecutionMode::AUTONOMOUS || $template === null) {
+            return null;
+        }
+
+        $workflow = Workflow::query()
+            ->where('enterprise_id', $assignment->enterprise_id)
+            ->where('canonical_key', $template)
+            ->with('publishedVersion')
+            ->first();
+
+        if ($workflow === null || $workflow->publishedVersion?->status !== WorkflowVersion::STATUS_PUBLISHED) {
+            return null;
+        }
+
+        return $workflow;
     }
 
     private function hasDeterministicWorkflow(AgentExecution $execution): bool
