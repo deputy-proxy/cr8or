@@ -4,7 +4,7 @@ namespace App\Filament\Resources\AgentExecutions;
 
 use App\Filament\Resources\AgentExecutions\Pages\ListAgentExecutions;
 use App\Filament\Resources\AgentExecutions\Pages\ViewAgentExecution;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentExecution;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgentExecutionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AgentExecution::class;
 
