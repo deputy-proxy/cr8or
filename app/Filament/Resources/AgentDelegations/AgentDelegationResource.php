@@ -24,7 +24,7 @@ class AgentDelegationResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent Delegations';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 80;
 
     public static function table(Table $table): Table
     {
