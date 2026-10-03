@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\FinancialAccounts;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\FinancialAccounts\Pages\CreateFinancialAccounts;
 use App\Filament\Resources\FinancialAccounts\Pages\EditFinancialAccounts;
 use App\Filament\Resources\FinancialAccounts\Pages\ListFinancialAccounts;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FinancialAccountResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = FinancialAccount::class;
 
