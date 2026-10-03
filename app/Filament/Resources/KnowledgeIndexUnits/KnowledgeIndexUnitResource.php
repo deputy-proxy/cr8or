@@ -20,6 +20,8 @@ class KnowledgeIndexUnitResource extends Resource
 
     protected static ?string $navigationLabel = 'KnowledgeIndexUnits';
 
+    protected static ?int $navigationSort = 90;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

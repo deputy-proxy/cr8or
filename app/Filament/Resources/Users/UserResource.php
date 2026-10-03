@@ -20,6 +20,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Users';
 
+    protected static ?int $navigationSort = 20;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

@@ -30,7 +30,7 @@ class RevenueResource extends Resource
 
     protected static ?string $navigationLabel = 'Revenue';
 
-    protected static ?int $navigationSort = 180;
+    protected static ?int $navigationSort = 60;
 
     public static function form(Schema $schema): Schema
     {

@@ -30,7 +30,7 @@ class FinancialPeriodResource extends Resource
 
     protected static ?string $navigationLabel = 'Financial Periods';
 
-    protected static ?int $navigationSort = 110;
+    protected static ?int $navigationSort = 20;
 
     public static function form(Schema $schema): Schema
     {

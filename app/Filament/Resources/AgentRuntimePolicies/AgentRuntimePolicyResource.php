@@ -21,7 +21,7 @@ class AgentRuntimePolicyResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent Runtime Policies';
 
-    protected static ?int $navigationSort = 45;
+    protected static ?int $navigationSort = 30;
 
     public static function table(Table $table): Table
     {

@@ -32,7 +32,7 @@ class ScriptResource extends Resource
 
     protected static ?string $navigationLabel = 'Scripts';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 80;
 
     public static function form(Schema $schema): Schema
     {

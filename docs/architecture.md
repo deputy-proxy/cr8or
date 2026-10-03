@@ -226,6 +226,22 @@ This distinction is based on the verified repository schema, model relationships
 
 The resulting Enterprise Context navigation sequence may therefore present `Task` and `WorkItem` as adjacent peer resources after `Project` and `Milestone`; this ordering reflects their shared work-domain level, not a parent/child relationship.
 
+### Resource ordering rules
+
+Within each navigation group, the resource tables above are the canonical logical order. The order is based on domain dependency and operational flow rather than alphabetical class names. Each resource uses an explicit numeric `navigationSort` value in increments of 10 within its group, starting at 10.
+
+- Foundational scope/context records precede dependent records.
+- Definitions precede runtime and execution records.
+- Agent resources follow **Agent → Expert → runtime policy → assignment → execution → delegation/decision → memory → approval**.
+- Workflow resources follow **definition → version → stage → dependency → execution**.
+- Knowledge resources follow **context/source → document/item → version/specification/reference → index → embedding**.
+- Marketing follows **strategy → campaign/content planning → audience/channel/account → content/script → asset/media/generation/rendering → publication/publishing/result**.
+- Finance follows **financial context → counterparties/activity → planning/statements/invoices → reporting/health**.
+- Integrations follow **connection → external resource → job → result → delivery**.
+- New resources must be assigned an intentional position and sort value. They must not inherit alphabetical or incidental registration order.
+
+The numeric sort values are scoped to their navigation group; the fixed top-level group order remains authoritative.
+
 ### Navigation rules
 
 - The top-level order is fixed as shown above.

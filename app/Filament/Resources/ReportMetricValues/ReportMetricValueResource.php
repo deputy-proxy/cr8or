@@ -20,6 +20,8 @@ class ReportMetricValueResource extends Resource
 
     protected static ?string $navigationLabel = 'ReportMetricValues';
 
+    protected static ?int $navigationSort = 30;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

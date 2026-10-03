@@ -27,7 +27,7 @@ class ApprovalRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'Approvals';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 140;
 
     public static function table(Table $table): Table
     {

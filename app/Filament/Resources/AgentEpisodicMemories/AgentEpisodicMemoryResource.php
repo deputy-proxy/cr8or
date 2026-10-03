@@ -20,6 +20,8 @@ class AgentEpisodicMemoryResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent EpisodicMemories';
 
+    protected static ?int $navigationSort = 100;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

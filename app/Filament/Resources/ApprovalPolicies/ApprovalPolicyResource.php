@@ -20,6 +20,8 @@ class ApprovalPolicyResource extends Resource
 
     protected static ?string $navigationLabel = 'ApprovalPolicies';
 
+    protected static ?int $navigationSort = 130;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

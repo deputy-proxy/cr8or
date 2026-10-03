@@ -20,6 +20,8 @@ class CommandWebhookDeliveryResource extends Resource
 
     protected static ?string $navigationLabel = 'CommandWebhookDeliveries';
 
+    protected static ?int $navigationSort = 50;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

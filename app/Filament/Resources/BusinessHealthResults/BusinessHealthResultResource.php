@@ -29,7 +29,7 @@ class BusinessHealthResultResource extends Resource
 
     protected static ?string $navigationLabel = 'Business Health';
 
-    protected static ?int $navigationSort = 90;
+    protected static ?int $navigationSort = 140;
 
     public static function form(Schema $schema): Schema
     {

@@ -25,7 +25,7 @@ class GenerationRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'Generation Requests';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 120;
 
     public static function form(Schema $schema): Schema
     {

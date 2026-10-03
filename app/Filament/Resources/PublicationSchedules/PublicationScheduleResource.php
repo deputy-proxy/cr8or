@@ -25,7 +25,7 @@ class PublicationScheduleResource extends Resource
 
     protected static ?string $navigationLabel = 'Schedules';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 190;
 
     public static function form(Schema $schema): Schema
     {

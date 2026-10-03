@@ -29,7 +29,7 @@ class EnterpriseResource extends Resource
 
     protected static ?string $navigationLabel = 'Enterprises';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

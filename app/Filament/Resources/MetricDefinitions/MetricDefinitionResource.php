@@ -20,6 +20,8 @@ class MetricDefinitionResource extends Resource
 
     protected static ?string $navigationLabel = 'MetricDefinitions';
 
+    protected static ?int $navigationSort = 70;
+
     public static function table(Table $table): Table
     {
         return $table->columns([

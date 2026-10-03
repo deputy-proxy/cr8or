@@ -30,7 +30,7 @@ class GoalResource extends Resource
 
     protected static ?string $navigationLabel = 'Goals';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

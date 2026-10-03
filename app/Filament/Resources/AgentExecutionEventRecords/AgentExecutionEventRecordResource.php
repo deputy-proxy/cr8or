@@ -20,6 +20,8 @@ class AgentExecutionEventRecordResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent Execution EventRecords';
 
+    protected static ?int $navigationSort = 70;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
