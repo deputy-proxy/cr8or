@@ -28,7 +28,8 @@ class AssignmentResource extends Resource
 
     protected static ?string $navigationLabel = 'Assignments';
 
-    protected static ?int $navigationSort = 45;
+    protected static ?int $navigationSort = 50;
+
 
     public static function form(Schema $schema): Schema
     {
