@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\AgentDecisions;
 
 use App\Filament\Resources\AgentDecisions\Pages\ListAgentDecisions;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentDecision;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AgentDecisionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = AgentDecision::class;
 
