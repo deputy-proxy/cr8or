@@ -1,11 +1,12 @@
 <?php
 
 use App\Models\Enterprise;
-use App\Models\Execution;
-use App\Models\Job;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
+use App\Models\WorkflowVersion;
 use App\Models\WorkItem;
 use Illuminate\Support\Facades\Schema;
 
@@ -52,12 +53,21 @@ it('allows a Workflow and Execution to preserve both Task and WorkItem context',
         'task_id' => $task,
         'work_item_id' => $workItem,
     ]);
-    $execution = Execution::factory()->create([
-        'workflow_job_id' => Job::factory()->create(['workflow_id' => $workflow]),
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+    ]);
+    $execution = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise,
+        'actor_id' => User::factory(),
     ]);
 
     expect($workflow->task->is($task))->toBeTrue()
         ->and($workflow->workItem->is($workItem))->toBeTrue()
-        ->and($execution->task->is($task))->toBeTrue()
-        ->and($execution->workItem->is($workItem))->toBeTrue();
+        ->and($execution->workflow->task->is($task))->toBeTrue()
+        ->and($execution->workflow->workItem->is($workItem))->toBeTrue();
 });
