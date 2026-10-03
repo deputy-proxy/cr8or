@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ContentItemService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -59,6 +60,7 @@ class ContentItemResource extends Resource
             TextColumn::make('status')->badge()->sortable(),
         ])->recordActions([
             EditAction::make(),
+            DeleteAction::make(),
             Action::make('submit_for_review')
                 ->label('Submit for review')
                 ->visible(fn (ContentItem $record): bool => $record->status === ContentItem::STATUS_DRAFT)

@@ -18,7 +18,7 @@ class AgentDecisionPolicy
 
     public function create(User $user): bool
     {
-        return $user->memberships()->exists();
+        return false;
     }
 
     public function createForAgentDecision(User $user, AgentDecision $record): bool

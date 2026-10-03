@@ -18,7 +18,7 @@ class AgentExecutionPolicy
 
     public function create(User $user): bool
     {
-        return $user->memberships()->exists();
+        return false;
     }
 
     public function createForAgentExecution(User $user, AgentExecution $record): bool

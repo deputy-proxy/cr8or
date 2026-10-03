@@ -23,7 +23,7 @@ class AgentDescriptorPolicy
 
     public function create(User $user): bool
     {
-        return $this->manageable($user);
+        return false;
     }
 
     public function update(User $user, AgentDescriptor $descriptor): bool
@@ -33,7 +33,7 @@ class AgentDescriptorPolicy
 
     public function delete(User $user, AgentDescriptor $descriptor): bool
     {
-        return $this->manageable($user);
+        return false;
     }
 
     private function manageable(User $user): bool
