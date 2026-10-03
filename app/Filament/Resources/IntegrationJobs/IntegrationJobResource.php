@@ -27,7 +27,6 @@ class IntegrationJobResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
