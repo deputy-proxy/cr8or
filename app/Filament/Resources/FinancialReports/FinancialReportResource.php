@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\FinancialReports;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\FinancialReports\Pages\ListFinancialReports;
 use App\Models\FinancialReport;
 use BackedEnum;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FinancialReportResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = FinancialReport::class;
 
