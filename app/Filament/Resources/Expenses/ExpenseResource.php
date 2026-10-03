@@ -32,7 +32,6 @@ class ExpenseResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
