@@ -36,6 +36,7 @@ it('auto-selects the full marketing workflow and completes the governed graph wi
     Membership::factory()->owner()->create(['user_id' => $actor->getKey(), 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::query()->where('slug', 'marketing')->firstOrFail();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->getKey()]);
+    $workflow = persistedMarketingAgentWorkflow($enterprise, $actor);
     AgentRuntimePolicy::query()->create(['environment' => app()->environment(), 'organization_id' => $enterprise->organization_id, 'enterprise_id' => $enterprise->getKey(), 'agent_descriptor_id' => $descriptor->getKey(), 'enabled' => true, 'max_steps' => 12, 'max_retries' => 3, 'timeout_seconds' => 120, 'max_context_bytes' => 120000, 'retrieved_knowledge_limit' => 5, 'memory_limit' => 20]);
     $provider = new FakeModelProvider(function ($request): ModelResult {
         $stage = $request->context['workflow_stage']['key'] ?? null;
@@ -95,6 +96,7 @@ it('auto-selects the full marketing workflow and completes the governed graph wi
         ->execute(new AgentExecutionRequest(
             actor: $actor,
             assignment: $assignment,
+            workflow: $workflow,
             prompt: 'Generate and implement a full marketing strategy for the enterprise blckdsgn.com.',
             mode: AgentExecutionMode::AUTONOMOUS,
             correlationId: 'full-marketing-workflow-test',
@@ -124,12 +126,14 @@ it('does not create a second marketing workflow when an autonomous execution is 
     Membership::factory()->owner()->create(['user_id' => $actor->getKey(), 'organization_id' => $enterprise->organization_id]);
     $descriptor = AgentDescriptor::query()->where('slug', 'marketing')->firstOrFail();
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $descriptor->getKey()]);
+    $workflow = persistedMarketingAgentWorkflow($enterprise, $actor);
     AgentRuntimePolicy::query()->create(['environment' => app()->environment(), 'organization_id' => $enterprise->organization_id, 'enterprise_id' => $enterprise->getKey(), 'agent_descriptor_id' => $descriptor->getKey(), 'enabled' => true, 'max_steps' => 12, 'max_retries' => 3, 'timeout_seconds' => 120, 'max_context_bytes' => 120000, 'retrieved_knowledge_limit' => 5, 'memory_limit' => 20]);
 
     $service = app(AgentExecutionService::class);
     $request = fn () => new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
+        workflow: $workflow,
         prompt: 'Generate and implement a full marketing strategy.',
         correlationId: 'workflow-idempotency',
     );

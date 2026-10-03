@@ -3,35 +3,34 @@
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
-use App\Services\CanonicalWorkflowProvisioner;
-use Database\Seeders\AgentDescriptorSeeder;
 use Database\Seeders\CanonicalWorkflowSeeder;
-use Database\Seeders\ExpertDescriptorSeeder;
 
-it('seeds valid.guide with the canonical strategy Workflows on a clean database', function (): void {
-    $this->seed([
-        AgentDescriptorSeeder::class,
-        ExpertDescriptorSeeder::class,
-    ]);
+it('seeds valid.guide with persisted canonical workflows on a clean database', function (): void {
     User::factory()->create(['email' => 'test@example.com']);
 
     $this->seed(CanonicalWorkflowSeeder::class);
 
-    $enterprise = Enterprise::query()->where('slug', 'valid.guide')->first();
+    $enterprise = Enterprise::query()->where('slug', 'valid.guide')->firstOrFail();
 
-    expect($enterprise)->not->toBeNull()
-        ->and(Workflow::query()->forCanonicalKey($enterprise, 'strategy.create')->count())->toBe(1)
-        ->and(Workflow::query()->forCanonicalKey($enterprise, 'marketing.strategy.create')->count())->toBe(1)
-        ->and(app(CanonicalWorkflowProvisioner::class)->provisionStrategyCreation($enterprise, User::query()->where('email', 'test@example.com')->first())->versions()->count())->toBe(1)
-        ->and(app(CanonicalWorkflowProvisioner::class)->provisionMarketingStrategy($enterprise, User::query()->where('email', 'test@example.com')->first())->versions()->count())->toBe(1);
+    $strategy = Workflow::query()->forCanonicalKey($enterprise, 'strategy.create')->firstOrFail();
+    $marketing = Workflow::query()->forCanonicalKey($enterprise, 'marketing.strategy.create')->firstOrFail();
+
+    expect($strategy->publishedVersion?->status)->toBe('published')
+        ->and($strategy->stages)->toHaveCount(1)
+        ->and($marketing->publishedVersion?->status)->toBe('published')
+        ->and($marketing->stages)->toHaveCount(18)
+        ->and($marketing->publishedVersion?->stage_definitions)->toHaveCount(18);
 });
 
-it('keeps DatabaseSeeder deterministic when run repeatedly', function (): void {
-    $this->seed();
+it('keeps canonical workflow provisioning deterministic when the seeder runs repeatedly', function (): void {
     $this->seed();
 
-    $enterprise = Enterprise::query()->where('slug', 'valid.guide')->first();
+    $this->seed();
+
+    $enterprise = Enterprise::query()->where('slug', 'valid.guide')->firstOrFail();
 
     expect(Workflow::query()->forCanonicalKey($enterprise, 'strategy.create')->count())->toBe(1)
-        ->and(Workflow::query()->forCanonicalKey($enterprise, 'marketing.strategy.create')->count())->toBe(1);
+        ->and(Workflow::query()->forCanonicalKey($enterprise, 'marketing.strategy.create')->count())->toBe(1)
+        ->and(Workflow::query()->forCanonicalKey($enterprise, 'strategy.create')->firstOrFail()->versions()->count())->toBe(1)
+        ->and(Workflow::query()->forCanonicalKey($enterprise, 'marketing.strategy.create')->firstOrFail()->versions()->count())->toBe(1);
 });

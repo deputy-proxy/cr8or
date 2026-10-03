@@ -48,3 +48,31 @@ function something()
 {
     // ..
 }
+
+function persistedMarketingAgentWorkflow(\App\Models\Enterprise $enterprise, \App\Models\User $actor): \App\Models\Workflow
+{
+    $stages = [
+        ['key' => 'enterprise-analysis', 'name' => 'Analyze enterprise context', 'sequence' => 1, 'expert_slugs' => ['marketing', 'strategy'], 'capability_slugs' => ['marketing.plan']],
+        ['key' => 'audiences', 'name' => 'Build audiences', 'sequence' => 2, 'dependencies' => ['enterprise-analysis'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.audience.create']],
+        ['key' => 'strategy', 'name' => 'Create marketing strategy', 'sequence' => 3, 'dependencies' => ['audiences'], 'expert_slugs' => ['marketing', 'strategy'], 'capability_slugs' => ['marketing.strategy.create']],
+        ['key' => 'campaigns', 'name' => 'Create campaigns', 'sequence' => 4, 'dependencies' => ['strategy'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.campaign.create']],
+        ['key' => 'content-series', 'name' => 'Create content series', 'sequence' => 5, 'dependencies' => ['campaigns'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.content-series.create']],
+        ['key' => 'content-items', 'name' => 'Create content items', 'sequence' => 6, 'dependencies' => ['content-series'], 'expert_slugs' => ['copywriting'], 'capability_slugs' => ['marketing.content.create']],
+        ['key' => 'scripts', 'name' => 'Create scripts and asset requirements', 'sequence' => 7, 'dependencies' => ['content-items'], 'expert_slugs' => ['copywriting'], 'capability_slugs' => ['marketing.script.create']],
+        ['key' => 'assets', 'name' => 'Persist required assets as pending', 'sequence' => 8, 'dependencies' => ['scripts'], 'expert_slugs' => ['copywriting'], 'capability_slugs' => ['marketing.asset.create']],
+        ['key' => 'verification', 'name' => 'Verify the resulting marketing graph', 'sequence' => 9, 'dependencies' => ['assets'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.graph.verify']],
+    ];
+
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($actor, $enterprise, [
+        'name' => 'Persisted Full Marketing Strategy Workflow',
+        'canonical_key' => 'marketing.full-strategy',
+        'purpose' => 'Test-only persisted workflow used to verify generic Agent orchestration.',
+        'execution_policy' => ['mode' => 'agent', 'requires_model_provider' => true],
+        'completion_criteria' => ['required_stage_keys' => array_column($stages, 'key')],
+        'stages' => $stages,
+    ]);
+
+    app(\App\Services\WorkflowVersionService::class)->publish($workflow, $actor, 'test-persisted-marketing-workflow-'.$enterprise->getKey());
+
+    return $workflow->refresh();
+}
