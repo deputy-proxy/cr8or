@@ -32,7 +32,6 @@ class TaskResource extends Resource
 
     protected static ?int $navigationSort = 130;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
