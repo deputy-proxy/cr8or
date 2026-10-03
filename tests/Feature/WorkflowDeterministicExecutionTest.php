@@ -239,7 +239,18 @@ it('supports draft revision, idempotent publishing and retirement', function ():
     $published = publishedWorkflow($workflow, $actor);
 
     $draft = app(WorkflowVersionService::class)->createDraft($published, $actor, 'revision-1');
-    $draft->setAttribute('stage_definitions', [['key' => 'research-v2', 'name' => 'Research v2', 'sequence' => 1]])->save();
+    $draft->setAttribute('stage_definitions', [[
+        'key' => 'research-v2',
+        'name' => 'Research v2',
+        'sequence' => 1,
+        'dependencies' => [],
+        'expert_slugs' => ['business-analysis'],
+        'capability_slugs' => ['business.analysis'],
+        'input_contract' => ['required' => ['request']],
+        'output_contract' => ['required' => ['analysis']],
+        'repeatable' => false,
+        'completion_criteria' => [],
+    ]])->save();
 
     $publishedTwo = app(WorkflowVersionService::class)->publishVersion($draft, $actor, 'publish-revision-1');
 

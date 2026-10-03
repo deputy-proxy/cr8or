@@ -11,6 +11,7 @@ use App\Events\CapabilityAuthorized;
 use App\Events\CapabilityRequested;
 use App\Events\CapabilityResultReceived;
 use App\Events\OperationExecuted;
+use App\Exceptions\WorkflowDefinitionException;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Organization;
@@ -105,21 +106,21 @@ final class CapabilityInvocationService
             $capabilitySlugs = is_array($capabilitySlugsValue) ? $capabilitySlugsValue : [];
 
             if ($stage === null || $expertSlug === null || ! in_array($expertSlug, $expertSlugs, true)) {
-                throw new AuthorizationException('Workflow Capability invocation requires an Expert declared by the Workflow stage.');
+                throw new WorkflowDefinitionException('Workflow Capability invocation requires an Expert declared by the Workflow stage.');
             }
 
             if (! in_array($request->capability, $capabilitySlugs, true)) {
-                throw new AuthorizationException('Workflow Capability invocation requires a Capability declared by the Workflow stage.');
+                throw new WorkflowDefinitionException('Workflow Capability invocation requires a Capability declared by the Workflow stage.');
             }
 
             $descriptor = \App\Models\ExpertDescriptor::query()->where('slug', $expertSlug)->first();
             if ($descriptor === null || ! $descriptor->enabled) {
-                throw new AuthorizationException("Workflow Expert [{$expertSlug}] is not available.");
+                throw new WorkflowDefinitionException("Workflow Expert [{$expertSlug}] is not available.");
             }
 
             $expert = app($descriptor->resolveRuntimeClass());
             if (! $expert instanceof \App\Experts\Expert || ! in_array($request->capability, $expert->capabilities(), true)) {
-                throw new AuthorizationException("Expert [{$expertSlug}] does not expose capability [{$request->capability}].");
+                throw new WorkflowDefinitionException("Expert [{$expertSlug}] does not expose capability [{$request->capability}].");
             }
 
             Gate::forUser($request->actor)->authorize('view', $request->enterprise);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\WorkflowDefinitionValidator;
 use Database\Factories\WorkflowVersionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -50,6 +51,9 @@ class WorkflowVersion extends Model
         if ($this->status !== self::STATUS_DRAFT) {
             throw new LogicException('Only draft WorkflowVersions can be published.');
         }
+
+        app(WorkflowDefinitionValidator::class)->validateVersion($this);
+
         $this->status = self::STATUS_PUBLISHED;
         $this->published_at = Carbon::now();
 

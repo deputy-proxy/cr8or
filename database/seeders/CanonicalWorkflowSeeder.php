@@ -17,6 +17,8 @@ class CanonicalWorkflowSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(ExpertDescriptorSeeder::class);
+
         $actor = User::query()->where('email', 'test@example.com')->firstOrFail();
 
         $organization = Organization::query()->firstOrCreate(

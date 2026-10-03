@@ -52,9 +52,9 @@ function something()
 function persistedMarketingAgentWorkflow(\App\Models\Enterprise $enterprise, \App\Models\User $actor): \App\Models\Workflow
 {
     $stages = [
-        ['key' => 'enterprise-analysis', 'name' => 'Analyze enterprise context', 'sequence' => 1, 'expert_slugs' => ['marketing', 'strategy'], 'capability_slugs' => ['marketing.plan']],
+        ['key' => 'enterprise-analysis', 'name' => 'Analyze enterprise context', 'sequence' => 1, 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.plan']],
         ['key' => 'audiences', 'name' => 'Build audiences', 'sequence' => 2, 'dependencies' => ['enterprise-analysis'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.audience.create']],
-        ['key' => 'strategy', 'name' => 'Create marketing strategy', 'sequence' => 3, 'dependencies' => ['audiences'], 'expert_slugs' => ['marketing', 'strategy'], 'capability_slugs' => ['marketing.strategy.create']],
+        ['key' => 'strategy', 'name' => 'Create marketing strategy', 'sequence' => 3, 'dependencies' => ['audiences'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.strategy.create']],
         ['key' => 'campaigns', 'name' => 'Create campaigns', 'sequence' => 4, 'dependencies' => ['strategy'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.campaign.create']],
         ['key' => 'content-series', 'name' => 'Create content series', 'sequence' => 5, 'dependencies' => ['campaigns'], 'expert_slugs' => ['marketing'], 'capability_slugs' => ['marketing.content-series.create']],
         ['key' => 'content-items', 'name' => 'Create content items', 'sequence' => 6, 'dependencies' => ['content-series'], 'expert_slugs' => ['copywriting'], 'capability_slugs' => ['marketing.content.create']],

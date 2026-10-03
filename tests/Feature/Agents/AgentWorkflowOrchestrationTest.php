@@ -149,7 +149,10 @@ it('lets an Agent inspect a failed deterministic Workflow and adapt without hidi
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
     $assignment = optionalWorkflowAssignment($actor, $enterprise);
-    $workflow = deterministicTestWorkflow($enterprise, ['capability.does.not.exist']);
+    $workflow = deterministicTestWorkflow($enterprise, ['marketing.strategy.create']);
+    $workflow->stages()->firstOrFail()->update([
+        'input_contract' => ['required' => ['name']],
+    ]);
 
     app(WorkflowVersionService::class)->publish($workflow, $actor, 'deterministic-failure-v1');
 
