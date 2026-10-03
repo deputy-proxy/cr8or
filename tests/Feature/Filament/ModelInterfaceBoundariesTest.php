@@ -6,12 +6,10 @@ use App\Filament\Resources\AgentExecutions\AgentExecutionResource;
 use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
 use App\Filament\Resources\AssetVersions\AssetVersionResource;
 use App\Filament\Resources\BusinessHealthResults\BusinessHealthResultResource;
-use App\Filament\Resources\Executions\ExecutionResource;
 use App\Filament\Resources\FinancialReports\FinancialReportResource;
 use App\Filament\Resources\GenerationJobs\GenerationJobResource;
 use App\Filament\Resources\GenerationRequests\GenerationRequestResource;
 use App\Filament\Resources\IntegrationJobs\IntegrationJobResource;
-use App\Filament\Resources\Jobs\JobResource;
 use App\Filament\Resources\MediaMetadata\MediaMetadataResource;
 use App\Filament\Resources\PublicationResults\PublicationResultResource;
 use App\Filament\Resources\PublishingJobs\PublishingJobResource;
@@ -28,12 +26,10 @@ it('keeps operational and historical resources free of unrestricted CRUD pages',
         ApprovalRequestResource::class,
         AssetVersionResource::class,
         BusinessHealthResultResource::class,
-        ExecutionResource::class,
         FinancialReportResource::class,
         GenerationJobResource::class,
         GenerationRequestResource::class,
         IntegrationJobResource::class,
-        JobResource::class,
         MediaMetadataResource::class,
         PublicationResultResource::class,
         PublishingJobResource::class,
