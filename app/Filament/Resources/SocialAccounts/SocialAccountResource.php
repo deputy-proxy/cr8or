@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\SocialAccounts;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\SocialAccounts\Pages\CreateSocialAccount;
 use App\Filament\Resources\SocialAccounts\Pages\EditSocialAccount;
 use App\Filament\Resources\SocialAccounts\Pages\ListSocialAccounts;
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SocialAccountResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = SocialAccount::class;
 
