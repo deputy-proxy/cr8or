@@ -30,7 +30,8 @@ class InitiativeResource extends Resource
 
     protected static ?string $navigationLabel = 'Initiatives';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 100;
+
 
     public static function form(Schema $schema): Schema
     {
