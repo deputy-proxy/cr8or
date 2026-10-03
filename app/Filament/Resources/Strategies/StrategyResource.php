@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Strategies;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Strategies\Pages\CreateStrategy;
 use App\Filament\Resources\Strategies\Pages\EditStrategy;
 use App\Filament\Resources\Strategies\Pages\ListStrategies;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StrategyResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Strategy::class;
 
