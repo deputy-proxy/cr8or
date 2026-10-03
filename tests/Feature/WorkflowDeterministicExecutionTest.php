@@ -81,6 +81,32 @@ it('executes a multi-stage published workflow without creating an AgentExecution
         ->and(AgentExecution::query()->count())->toBe(0);
 });
 
+it('persists a failed execution when a started workflow stage fails', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1, [], ['required_request']);
+    $version = publishedWorkflow($workflow, $actor);
+
+    expect(fn () => app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        [],
+        'durable-failure',
+        'durable-failure-correlation',
+    ))->toThrow(AuthorizationException::class, 'missing required input [required_request]');
+
+    $execution = WorkflowExecution::query()
+        ->where('workflow_version_id', $version->id)
+        ->where('idempotency_key', 'durable-failure')
+        ->first();
+
+    expect($execution)->not->toBeNull()
+        ->and($execution->status)->toBe(WorkflowExecution::STATUS_FAILED)
+        ->and($execution->failure_reason)->toContain('missing required input [required_request]')
+        ->and($execution->correlation_id)->toBe('durable-failure-correlation');
+});
+
 it('refuses to execute draft workflow definitions', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
