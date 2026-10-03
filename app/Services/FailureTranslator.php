@@ -11,6 +11,7 @@ use App\Exceptions\CanvaClientException;
 use App\Exceptions\IntegrationProviderException;
 use App\Exceptions\MediaStorageException;
 use App\Exceptions\PublishingProviderException;
+use App\Exceptions\WorkflowDefinitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -92,6 +93,12 @@ final class FailureTranslator
                 ExecutionErrorType::Authentication,
                 FailureCode::AUTHENTICATION_REQUIRED,
                 'Authentication is required.',
+            ),
+            $exception instanceof WorkflowDefinitionException => new ExecutionError(
+                ExecutionErrorType::Configuration,
+                FailureCode::CONFIGURATION_INVALID,
+                'The persisted Workflow definition is invalid.',
+                details: ['errors' => $exception->errors],
             ),
             $exception instanceof AuthorizationException => new ExecutionError(
                 ExecutionErrorType::Authorization,

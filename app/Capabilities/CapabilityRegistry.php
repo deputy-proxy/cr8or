@@ -346,7 +346,7 @@ final class CapabilityRegistry
                 'marketing.graph.verify',
                 \App\Operations\VerifyMarketingGraph::class,
                 \App\Mcp\Tools\VerifyMarketingGraphTool::class,
-                ['enterprise_id' => 'integer|required', 'marketing_strategy_id' => 'integer|required', 'audience_ids' => 'array|required', 'campaign_ids' => 'array|required', 'content_series_ids' => 'array|required', 'content_item_ids' => 'array|required', 'script_ids' => 'array|required', 'asset_ids' => 'array|required', 'agent_assignment_id' => 'integer|required', 'agent_execution_id' => 'integer|required'],
+                ['enterprise_id' => 'integer|required', 'marketing_strategy_id' => 'integer|required', 'audience_ids' => 'array|required', 'campaign_ids' => 'array|required', 'content_series_ids' => 'array|required', 'content_item_ids' => 'array|required', 'script_ids' => 'array|required', 'asset_ids' => 'array|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Enterprise view policy',
                 'none',
