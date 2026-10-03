@@ -211,6 +211,21 @@ External resources, integrations, integration execution/results, and command web
 | ExternalResources | app/Filament/Resources/ExternalResources/*Resource.php |
 | CommandWebhookDeliveries | app/Filament/Resources/CommandWebhookDeliveries/*Resource.php |
 
+### Task and WorkItem domain contract
+
+`Task` and `WorkItem` are distinct peer concepts within the Work domain. They are not parent/child variants of one abstraction and there is no direct `Task -> WorkItem` relationship.
+
+- **Task** is the hierarchical planning/work-management entity. It belongs to an Enterprise, may belong to a Project, supports parent/child Task hierarchy, and owns Task-specific priority and due-date semantics.
+- **WorkItem** is a lightweight operational work subject. It belongs to an Enterprise, may belong to a Project, and can have a direct Workflow association. It intentionally does not carry Task hierarchy, priority, or due-date semantics.
+- A Project may contain Tasks and WorkItems independently. Their shared Enterprise/Project scope does not make one a specialization of the other.
+- A Workflow may carry `task_id`, `work_item_id`, both, or neither. These fields provide contextual references rather than defining an inheritance relationship. Existing execution tests explicitly preserve both contexts together.
+- An Execution snapshots both optional Task and WorkItem references and their historical names when present, preserving the distinction in runtime history.
+- WorkItem-specific governed operations (`work.item.create` and `work.item.update`) operate on WorkItems through the normal Capability boundary. Task remains a separate work-management model with its own policies and administration surface.
+
+This distinction is based on the verified repository schema, model relationships, workflow/execution persistence, services, policies, Filament resources, MCP capabilities, and tests. No schema migration or model merge is required.
+
+The resulting Enterprise Context navigation sequence may therefore present `Task` and `WorkItem` as adjacent peer resources after `Project` and `Milestone`; this ordering reflects their shared work-domain level, not a parent/child relationship.
+
 ### Navigation rules
 
 - The top-level order is fixed as shown above.
