@@ -7,8 +7,10 @@ use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowVersion;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
-it('authorizes workflow execution access by organization membership', function (): void {
+it('authorizes workflow execution access through its Enterprise', function (): void {
+    expect(Schema::hasColumn('workflow_executions', 'organization_id'))->toBeFalse();
     $member = User::factory()->create();
     $foreignEnterprise = Enterprise::factory()->create();
     $foreign = User::factory()->create();
@@ -25,7 +27,6 @@ it('authorizes workflow execution access by organization membership', function (
         'workflow_id' => $workflow->id,
         'workflow_version_id' => $version->id,
         'workflow_version' => $version->version,
-        'organization_id' => $enterprise->organization_id,
         'enterprise_id' => $enterprise->id,
         'actor_id' => $member->id,
         'status' => WorkflowExecution::STATUS_PENDING,
