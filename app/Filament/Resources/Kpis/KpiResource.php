@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Kpis;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Kpis\Pages\CreateKpi;
 use App\Filament\Resources\Kpis\Pages\EditKpi;
 use App\Filament\Resources\Kpis\Pages\ListKpis;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class KpiResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Kpi::class;
 
