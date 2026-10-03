@@ -33,7 +33,6 @@ class DecisionResource extends Resource
 
     protected static ?int $navigationSort = 150;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
