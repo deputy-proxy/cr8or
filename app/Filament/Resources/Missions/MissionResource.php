@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Missions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Missions\Pages\CreateMission;
 use App\Filament\Resources\Missions\Pages\ListMissions;
 use App\Models\Mission;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MissionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Mission::class;
 
