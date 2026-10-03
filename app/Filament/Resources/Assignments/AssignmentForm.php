@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Assignments;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentAssignment;
 use App\Models\Project;
 use App\Models\Task;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AssignmentForm
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     public static function configure(Schema $schema): Schema
     {
