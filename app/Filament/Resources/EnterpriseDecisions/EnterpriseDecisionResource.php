@@ -32,7 +32,6 @@ class EnterpriseDecisionResource extends Resource
 
     protected static ?int $navigationSort = 160;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(), Select::make('actor_id')->options(fn () => \App\Models\User::query()->whereHas('memberships', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()))->pluck('name', 'id'))->searchable()->preload()->required(), Textarea::make('title')->required(), Textarea::make('summary')->required(), Textarea::make('rationale'), DateTimePicker::make('decided_at')->required()]);
