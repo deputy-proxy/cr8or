@@ -34,7 +34,6 @@ class ScriptResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([Select::make('content_item_id')->relationship('contentItem', 'title')->searchable()->preload()->required(), TextInput::make('title')->required()->maxLength(255), Textarea::make('body')->required()->rows(10)]);
