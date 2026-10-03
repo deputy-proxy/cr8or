@@ -30,7 +30,8 @@ class ProjectResource extends Resource
 
     protected static ?string $navigationLabel = 'Projects';
 
-    protected static ?int $navigationSort = 35;
+    protected static ?int $navigationSort = 110;
+
 
     public static function form(Schema $schema): Schema
     {
