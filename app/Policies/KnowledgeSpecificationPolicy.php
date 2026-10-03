@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\KnowledgeSpecification;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class KnowledgeSpecificationPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, KnowledgeSpecification $record): bool
     {
         return (new EnterprisePolicy)->view($user, $record->enterprise);

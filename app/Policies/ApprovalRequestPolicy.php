@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Enums\MembershipRole;
 use App\Models\ApprovalRequest;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class ApprovalRequestPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, ApprovalRequest $request): bool
     {
         return $this->organizationRole($user, $request) !== null;

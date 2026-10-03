@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\KnowledgeDocument;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class KnowledgeDocumentPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, KnowledgeDocument $record): bool
     {
         return (new EnterprisePolicy)->view($user, $record->enterprise);

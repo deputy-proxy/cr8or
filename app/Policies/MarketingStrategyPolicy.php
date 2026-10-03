@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class MarketingStrategyPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, MarketingStrategy $strategy): bool
     {
         return (new EnterprisePolicy)->view($user, $strategy->enterprise);

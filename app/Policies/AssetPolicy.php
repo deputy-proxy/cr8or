@@ -6,9 +6,12 @@ use App\Models\Asset;
 use App\Models\Enterprise;
 use App\Models\Script;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AssetPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $u, Asset $a): bool
     {
         return (new EnterprisePolicy)->view($u, $a->enterprise);

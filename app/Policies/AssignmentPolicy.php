@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Assignment;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AssignmentPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Assignment $assignment): bool
     {
         return (new EnterprisePolicy)->view($user, $assignment->enterprise);

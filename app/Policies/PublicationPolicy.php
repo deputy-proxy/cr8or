@@ -5,18 +5,21 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\Publication;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 /** @property-read \App\Models\Enterprise $enterprise */
 class PublicationPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $u, Publication $p): bool
     {
         return (new EnterprisePolicy)->view($u, $p->enterprise()->firstOrFail());
     }
 
-    public function create(User $u): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($u);
+        return false;
     }
 
     public function createForEnterprise(User $u, Enterprise $e): bool
@@ -24,12 +27,12 @@ class PublicationPolicy
         return (new EnterprisePolicy)->update($u, $e);
     }
 
-    public function update(User $u, Publication $p): bool
+    public function update(User $user, object $record): bool
     {
-        return (new EnterprisePolicy)->update($u, $p->enterprise()->firstOrFail());
+        return false;
     }
 
-    public function delete(User $u, Publication $p): bool
+    public function delete(User $user, object $record): bool
     {
         return false;
     }

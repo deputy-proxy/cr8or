@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Channel;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class ChannelPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Channel $channel): bool
     {
         return (new EnterprisePolicy)->view($user, $channel->enterprise);

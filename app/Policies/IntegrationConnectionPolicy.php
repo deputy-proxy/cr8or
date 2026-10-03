@@ -4,9 +4,12 @@ namespace App\Policies;
 
 use App\Models\IntegrationConnection;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class IntegrationConnectionPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, IntegrationConnection $connection): bool
     {
         return (new OrganizationPolicy)->view($user, $connection->organization);
@@ -14,7 +17,7 @@ class IntegrationConnectionPolicy
 
     public function create(User $user): bool
     {
-        return $user->exists;
+        return (new EnterprisePolicy)->create($user);
     }
 
     public function update(User $user, IntegrationConnection $connection): bool

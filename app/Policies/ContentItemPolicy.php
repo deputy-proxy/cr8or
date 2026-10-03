@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class ContentItemPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, ContentItem $item): bool
     {
         return (new EnterprisePolicy)->view($user, $item->enterprise);

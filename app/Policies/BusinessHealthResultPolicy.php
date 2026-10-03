@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\BusinessHealthResult;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class BusinessHealthResultPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, BusinessHealthResult $result): bool
     {
         return $this->enterprisePolicy()->view($user, $result->enterprise);
