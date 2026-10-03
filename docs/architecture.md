@@ -213,6 +213,38 @@ External connections and resources, integration execution/results, and command w
 | 4 | IntegrationResults | app/Filament/Resources/IntegrationResults/*Resource.php |
 | 5 | CommandWebhookDeliveries | app/Filament/Resources/CommandWebhookDeliveries/*Resource.php |
 
+## Task vs WorkItem domain contract
+
+CR8OR intentionally retains **Task** and **WorkItem** as distinct peer concepts. They are not duplicate representations of the same record and neither is an obsolete alias for the other.
+
+### Task
+
+`Task` is the hierarchical planning/work-management entity. It belongs to an Enterprise and optionally a Project, supports parent/child Task hierarchy, and carries planning-specific `priority` and `due_at` semantics. Its current consumers include project work management, assignments/dependencies, decisions, workflow context, and Agent work-context assembly.
+
+### WorkItem
+
+`WorkItem` is the lightweight operational work subject used by governed WorkItem capabilities and MCP operations. It belongs to an Enterprise and optionally a Project, has a simple lifecycle (`todo`, `in_progress`, `done`), and has a direct one-to-one Workflow association. It intentionally has no Task hierarchy, priority, or due-date semantics.
+
+### Workflow relationship
+
+A Workflow may reference a Task, a WorkItem, or both. These references are complementary rather than mutually exclusive:
+
+```text
+Project
+├── Task
+│   └── planning / hierarchy / priority / due date
+└── WorkItem
+    └── operational subject / capability target
+
+Workflow
+├── optional Task context
+└── optional WorkItem operational context
+```
+
+When both references are present, the Task provides the planning context while the WorkItem identifies the operational work subject. Runtime `Execution` records preserve both references and their historical names. This matches existing workflow, execution, decision, context-assembly, and test behavior.
+
+This resolves the Task/WorkItem ambiguity without introducing a direct Task → WorkItem relationship, replacing either model, or changing the Agent → Expert → Capability architecture. The Enterprise Context navigation therefore keeps `Project → Milestone → Task → WorkItem → Decision`, with Task and WorkItem adjacent but semantically distinct.
+
 ### Navigation rules
 
 - The nine top-level navigation groups retain this exact order: Organization & Enterprise Scope, Enterprise Context, Knowledge Management, Agentic Flow, Workflow Flow, Marketing, Finance, Reporting & Analytics, Integrations & External Systems.

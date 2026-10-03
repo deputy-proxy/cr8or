@@ -10,6 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['enterprise_id', 'project_id', 'name', 'description', 'status'])]
+/**
+ * An operational work subject for governed execution.
+ *
+ * WorkItems are lightweight Enterprise/Project-scoped work records with a direct
+ * Workflow association. They intentionally do not model Task hierarchy, priority,
+ * or due-date semantics. A WorkItem can therefore represent the operational target
+ * of WorkItem capabilities without replacing the planning-oriented Task concept.
+ */
 class WorkItem extends Model
 {
     /** @use HasFactory<WorkItemFactory> */

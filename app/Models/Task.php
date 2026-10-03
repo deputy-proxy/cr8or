@@ -10,6 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['enterprise_id', 'project_id', 'parent_task_id', 'name', 'description', 'status', 'priority', 'due_at'])]
+/**
+ * A hierarchical planning/work-management entity.
+ *
+ * Tasks belong to an Enterprise and optionally a Project, may contain child Tasks,
+ * and carry planning-specific priority and due-date semantics. A Task is distinct
+ * from a WorkItem: it represents actionable/plannable work rather than the generic
+ * operational subject used by WorkItem capabilities and workflows.
+ */
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */

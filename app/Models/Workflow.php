@@ -15,6 +15,13 @@ use LogicException;
  * @property array<string, mixed>|null $completion_criteria
  * @property array<string, mixed>|null $execution_policy
  */
+/**
+ * A governed workflow definition that can carry planning and operational context.
+ *
+ * `task_id` identifies an optional planning Task and `work_item_id` identifies an
+ * optional operational WorkItem. These references are complementary and may both
+ * be present when a workflow executes operational work in the context of a Task.
+ */
 class Workflow extends Model
 {
     /** @use HasFactory<WorkflowFactory> */
