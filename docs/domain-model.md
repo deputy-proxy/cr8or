@@ -136,7 +136,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Represent operational activity.
 
-**Core entities:** Project, Task, Work Item, Assignment, Milestone, Dependency, Workflow, Job, Execution.
+**Core entities:** Project, Task, Work Item, Assignment, Milestone, Dependency, Workflow, WorkflowVersion, WorkflowStage, WorkflowExecution.
 
 **Verified Phase 3.3 implementation:** Projects belong to an Enterprise and may reference Strategy, Plan and Initiative records from that same Enterprise. Tasks and Work Items belong to an Enterprise and may belong to a Project within that Enterprise. Tasks may form a parent/child hierarchy. Milestones belong to a Project and Enterprise. Dependencies belong to an Enterprise and relate predecessor/successor work records through explicit polymorphic references. Assignments belong to an Enterprise and identify either a User or an existing Agent Assignment as the assignee.
 
@@ -146,7 +146,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Parent ownership is preserved when unrelated work fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
 
-**Verified Phase 3.4 implementation:** Workflows, Jobs and Executions persist CR8OR-owned execution intent and traceability. Workflows retain Enterprise and optional Project/Task/Work Item origin; Jobs carry a unique idempotency key and retry-safe lifecycle; Executions snapshot the originating organization, enterprise and optional Project/Task/Work Item context and record the lifecycle of a Job attempt. Pending, running, succeeded and failed transitions are explicit, terminal states cannot be silently rewritten, and operational records remain organization-scoped.
+**Current implementation:** Workflows persist deterministic definitions through immutable published WorkflowVersions. WorkflowExecutions are the authoritative persisted runtime records and retain Workflow, Enterprise, actor, version, correlation, idempotency, stage, output, waiting, failure, and continuation state. AgentExecutions are the authoritative Agent runtime records. Laravel Queue jobs remain infrastructure, while GenerationJob, RenderJob, PublishingJob, IntegrationJob, and related specialized job models represent bounded-context records rather than a generic Workflow Job -> Execution hierarchy.
 
 **Deferred:** Full workflow-engine semantics, concrete provider execution and external task-management integration.
 
