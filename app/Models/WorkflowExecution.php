@@ -9,13 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use LogicException;
 
-#[Fillable(['workflow_id', 'workflow_version_id', 'workflow_version', 'organization_id', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'current_stage_key', 'continuation_token', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
+#[Fillable(['workflow_id', 'workflow_version_id', 'workflow_version', 'enterprise_id', 'actor_id', 'status', 'correlation_id', 'idempotency_key', 'current_stage_id', 'current_stage_key', 'continuation_token', 'input', 'outputs', 'context', 'failure_reason', 'state_reason', 'started_at', 'completed_at'])]
 /**
  * @property int $id
  * @property int $workflow_id
  * @property int|null $workflow_version_id
  * @property int $workflow_version
- * @property int $organization_id
  * @property int $enterprise_id
  * @property int $actor_id
  * @property string $status
@@ -67,12 +66,6 @@ class WorkflowExecution extends Model
     public function currentStage(): BelongsTo
     {
         return $this->belongsTo(WorkflowStage::class, 'current_stage_id');
-    }
-
-    /** @return BelongsTo<Organization, $this> */
-    public function organization(): BelongsTo
-    {
-        return $this->belongsTo(Organization::class);
     }
 
     /** @return BelongsTo<Enterprise, $this> */
@@ -181,10 +174,6 @@ class WorkflowExecution extends Model
             }
             if ((int) $execution->workflow_version !== (int) $version->version) {
                 throw new LogicException('Workflow execution version snapshot must match its WorkflowVersion.');
-            }
-            $enterprise = Enterprise::query()->find($execution->enterprise_id);
-            if ($enterprise === null || $enterprise->organization_id !== $execution->organization_id) {
-                throw new LogicException('Workflow execution Enterprise must belong to its Organization.');
             }
             if ($execution->status === self::STATUS_FAILED && $execution->failure_reason === null) {
                 throw new LogicException('A failed Workflow execution must have a failure reason.');

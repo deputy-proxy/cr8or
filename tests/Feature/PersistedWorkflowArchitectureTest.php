@@ -128,7 +128,6 @@ it('resumes an interrupted persisted workflow execution from durable state', fun
         'workflow_version_id' => $version->getKey(),
         'workflow_version' => $version->version,
         'enterprise_id' => $enterprise->getKey(),
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->getKey(),
         'status' => WorkflowExecution::STATUS_PENDING,
         'input' => ['request' => 'Resume this workflow.'],
