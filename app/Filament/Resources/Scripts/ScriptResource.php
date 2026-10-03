@@ -26,6 +26,10 @@ class ScriptResource extends Resource
 
     protected static ?string $model = Script::class;
 
+    protected static ?string $modelLabel = 'Script';
+
+    protected static ?string $pluralModelLabel = 'Scripts';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

@@ -21,11 +21,15 @@ class ApprovalRequestResource extends Resource
 
     protected static ?string $model = ApprovalRequest::class;
 
+    protected static ?string $modelLabel = 'Approval Request';
+
+    protected static ?string $pluralModelLabel = 'Approval Requests';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
 
-    protected static ?string $navigationLabel = 'Approvals';
+    protected static ?string $navigationLabel = 'Approval Requests';
 
     protected static ?int $navigationSort = 140;
 

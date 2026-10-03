@@ -20,6 +20,10 @@ class KnowledgeVersionResource extends Resource
 
     protected static ?string $model = KnowledgeVersion::class;
 
+    protected static ?string $modelLabel = 'Knowledge Version';
+
+    protected static ?string $pluralModelLabel = 'Knowledge Versions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

@@ -15,6 +15,10 @@ class AgentRuntimePolicyResource extends Resource
 {
     protected static ?string $model = AgentRuntimePolicy::class;
 
+    protected static ?string $modelLabel = 'Agent Runtime Policie';
+
+    protected static ?string $pluralModelLabel = 'Agent Runtime Policies';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

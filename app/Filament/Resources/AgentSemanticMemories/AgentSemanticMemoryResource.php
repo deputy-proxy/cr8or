@@ -14,18 +14,25 @@ class AgentSemanticMemoryResource extends Resource
 {
     protected static ?string $model = AgentSemanticMemory::class;
 
+    protected static ?string $modelLabel = 'Agent Semantic Memory';
+
+    protected static ?string $pluralModelLabel = 'Agent Semantic Memories';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
 
-    protected static ?string $navigationLabel = 'Agent SemanticMemories';
+    protected static ?string $navigationLabel = 'Agent Semantic Memories';
 
     protected static ?int $navigationSort = 110;
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('agentDescriptor.slug')->label('Agent')->searchable()->sortable(),
+            TextColumn::make('statement')->limit(100)->searchable(),
+            TextColumn::make('confidence')->numeric()->sortable(),
+            TextColumn::make('status')->badge()->searchable()->sortable(),
         ]);
     }
 

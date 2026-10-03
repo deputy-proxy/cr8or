@@ -22,6 +22,10 @@ class DependencyResource extends Resource
 
     protected static ?string $model = Dependency::class;
 
+    protected static ?string $modelLabel = 'Dependencie';
+
+    protected static ?string $pluralModelLabel = 'Dependencies';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';

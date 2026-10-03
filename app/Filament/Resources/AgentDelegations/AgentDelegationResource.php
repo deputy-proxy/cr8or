@@ -18,6 +18,10 @@ class AgentDelegationResource extends Resource
 
     protected static ?string $model = AgentDelegation::class;
 
+    protected static ?string $modelLabel = 'Agent Delegation';
+
+    protected static ?string $pluralModelLabel = 'Agent Delegations';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

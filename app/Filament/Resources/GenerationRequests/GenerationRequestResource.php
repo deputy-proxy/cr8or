@@ -19,6 +19,10 @@ class GenerationRequestResource extends Resource
 
     protected static ?string $model = GenerationRequest::class;
 
+    protected static ?string $modelLabel = 'Generation Request';
+
+    protected static ?string $pluralModelLabel = 'Generation Requests';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

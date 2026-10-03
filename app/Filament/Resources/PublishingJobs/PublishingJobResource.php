@@ -19,6 +19,10 @@ class PublishingJobResource extends Resource
 
     protected static ?string $model = PublishingJob::class;
 
+    protected static ?string $modelLabel = 'Publishing Job';
+
+    protected static ?string $pluralModelLabel = 'Publishing Jobs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

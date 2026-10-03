@@ -19,6 +19,10 @@ class PublicationResultResource extends Resource
 
     protected static ?string $model = PublicationResult::class;
 
+    protected static ?string $modelLabel = 'Publication Result';
+
+    protected static ?string $pluralModelLabel = 'Publication Results';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

@@ -19,6 +19,10 @@ class RenderOutputResource extends Resource
 
     protected static ?string $model = RenderOutput::class;
 
+    protected static ?string $modelLabel = 'Render Output';
+
+    protected static ?string $pluralModelLabel = 'Render Outputs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

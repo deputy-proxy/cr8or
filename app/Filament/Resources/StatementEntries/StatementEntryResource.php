@@ -25,6 +25,10 @@ class StatementEntryResource extends Resource
 
     protected static ?string $model = StatementEntry::class;
 
+    protected static ?string $modelLabel = 'Statement Entry';
+
+    protected static ?string $pluralModelLabel = 'Statement Entries';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

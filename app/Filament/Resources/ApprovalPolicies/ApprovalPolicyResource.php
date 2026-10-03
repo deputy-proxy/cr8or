@@ -14,18 +14,26 @@ class ApprovalPolicyResource extends Resource
 {
     protected static ?string $model = ApprovalPolicy::class;
 
+    protected static ?string $modelLabel = 'Approval Policy';
+
+    protected static ?string $pluralModelLabel = 'Approval Policies';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
 
-    protected static ?string $navigationLabel = 'ApprovalPolicies';
+    protected static ?string $navigationLabel = 'Approval Policies';
 
     protected static ?int $navigationSort = 130;
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('policy_key')->searchable()->sortable(),
+            TextColumn::make('capability')->searchable()->sortable(),
+            TextColumn::make('expires_in_minutes')->numeric()->sortable(),
+            TextColumn::make('allow_self_approval')->badge()->sortable(),
+            TextColumn::make('enabled')->badge()->sortable(),
         ]);
     }
 

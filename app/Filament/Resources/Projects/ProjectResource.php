@@ -24,6 +24,10 @@ class ProjectResource extends Resource
 
     protected static ?string $model = Project::class;
 
+    protected static ?string $modelLabel = 'Project';
+
+    protected static ?string $pluralModelLabel = 'Projects';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

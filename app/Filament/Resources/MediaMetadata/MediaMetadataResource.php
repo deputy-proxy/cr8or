@@ -19,6 +19,10 @@ class MediaMetadataResource extends Resource
 
     protected static ?string $model = MediaMetadata::class;
 
+    protected static ?string $modelLabel = 'Media Metadata';
+
+    protected static ?string $pluralModelLabel = 'Media Metadata';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

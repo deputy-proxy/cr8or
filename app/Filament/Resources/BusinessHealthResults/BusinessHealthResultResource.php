@@ -23,11 +23,15 @@ class BusinessHealthResultResource extends Resource
 
     protected static ?string $model = BusinessHealthResult::class;
 
+    protected static ?string $modelLabel = 'Business Health Result';
+
+    protected static ?string $pluralModelLabel = 'Business Health Results';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHeart;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
-    protected static ?string $navigationLabel = 'Business Health';
+    protected static ?string $navigationLabel = 'Business Health Results';
 
     protected static ?int $navigationSort = 140;
 

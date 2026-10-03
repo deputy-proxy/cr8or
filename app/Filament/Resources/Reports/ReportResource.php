@@ -14,6 +14,10 @@ class ReportResource extends Resource
 {
     protected static ?string $model = Report::class;
 
+    protected static ?string $modelLabel = 'Report';
+
+    protected static ?string $pluralModelLabel = 'Reports';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Reporting & Analytics';
@@ -25,7 +29,13 @@ class ReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('enterprise_id')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('report_type')->badge()->searchable()->sortable(),
+            TextColumn::make('status')->badge()->searchable()->sortable(),
+            TextColumn::make('period_start')->date()->sortable(),
+            TextColumn::make('period_end')->date()->sortable(),
+            TextColumn::make('generated_at')->dateTime()->sortable(),
+            TextColumn::make('methodology_version')->searchable()->sortable(),
         ]);
     }
 

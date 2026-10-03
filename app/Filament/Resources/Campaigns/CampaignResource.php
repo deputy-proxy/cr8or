@@ -29,6 +29,10 @@ class CampaignResource extends Resource
 
     protected static ?string $model = Campaign::class;
 
+    protected static ?string $modelLabel = 'Campaign';
+
+    protected static ?string $pluralModelLabel = 'Campaigns';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

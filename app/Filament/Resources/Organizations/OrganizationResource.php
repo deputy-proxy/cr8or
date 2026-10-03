@@ -22,11 +22,15 @@ class OrganizationResource extends Resource
 
     protected static ?string $model = Organization::class;
 
+    protected static ?string $modelLabel = 'Organization';
+
+    protected static ?string $pluralModelLabel = 'Organizations';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';
 
-    protected static ?string $navigationLabel = 'Organization';
+    protected static ?string $navigationLabel = 'Organizations';
 
     protected static ?int $navigationSort = 10;
 

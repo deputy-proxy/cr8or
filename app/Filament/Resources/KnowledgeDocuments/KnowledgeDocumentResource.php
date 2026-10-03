@@ -21,6 +21,10 @@ class KnowledgeDocumentResource extends Resource
 
     protected static ?string $model = KnowledgeDocument::class;
 
+    protected static ?string $modelLabel = 'Knowledge Document';
+
+    protected static ?string $pluralModelLabel = 'Knowledge Documents';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

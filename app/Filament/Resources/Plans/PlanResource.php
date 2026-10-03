@@ -24,6 +24,10 @@ class PlanResource extends Resource
 
     protected static ?string $model = Plan::class;
 
+    protected static ?string $modelLabel = 'Plan';
+
+    protected static ?string $pluralModelLabel = 'Plans';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

@@ -19,6 +19,10 @@ class TransformationResource extends Resource
 
     protected static ?string $model = Transformation::class;
 
+    protected static ?string $modelLabel = 'Transformation';
+
+    protected static ?string $pluralModelLabel = 'Transformations';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

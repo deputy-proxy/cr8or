@@ -19,6 +19,10 @@ class RenderJobResource extends Resource
 
     protected static ?string $model = RenderJob::class;
 
+    protected static ?string $modelLabel = 'Render Job';
+
+    protected static ?string $pluralModelLabel = 'Render Jobs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';

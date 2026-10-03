@@ -23,6 +23,10 @@ class PartnerResource extends Resource
 
     protected static ?string $model = Partner::class;
 
+    protected static ?string $modelLabel = 'Partner';
+
+    protected static ?string $pluralModelLabel = 'Partners';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

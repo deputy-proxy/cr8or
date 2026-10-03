@@ -24,6 +24,10 @@ class CompetitorResource extends Resource
 
     protected static ?string $model = Competitor::class;
 
+    protected static ?string $modelLabel = 'Competitor';
+
+    protected static ?string $pluralModelLabel = 'Competitors';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

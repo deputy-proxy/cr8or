@@ -24,6 +24,10 @@ class MilestoneResource extends Resource
 
     protected static ?string $model = Milestone::class;
 
+    protected static ?string $modelLabel = 'Milestone';
+
+    protected static ?string $pluralModelLabel = 'Milestones';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

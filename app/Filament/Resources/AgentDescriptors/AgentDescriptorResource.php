@@ -26,6 +26,10 @@ class AgentDescriptorResource extends Resource
 
     protected static ?string $model = AgentDescriptor::class;
 
+    protected static ?string $modelLabel = 'Agent';
+
+    protected static ?string $pluralModelLabel = 'Agents';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

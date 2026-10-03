@@ -24,6 +24,10 @@ class ObjectiveResource extends Resource
 
     protected static ?string $model = Objective::class;
 
+    protected static ?string $modelLabel = 'Objective';
+
+    protected static ?string $pluralModelLabel = 'Objectives';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLightBulb;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

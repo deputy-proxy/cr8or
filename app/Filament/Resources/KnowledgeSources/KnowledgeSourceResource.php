@@ -21,6 +21,10 @@ class KnowledgeSourceResource extends Resource
 
     protected static ?string $model = KnowledgeSource::class;
 
+    protected static ?string $modelLabel = 'Knowledge Source';
+
+    protected static ?string $pluralModelLabel = 'Knowledge Sources';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';

@@ -24,6 +24,10 @@ class EnterpriseDecisionResource extends Resource
 
     protected static ?string $model = EnterpriseDecision::class;
 
+    protected static ?string $modelLabel = 'Enterprise Decision';
+
+    protected static ?string $pluralModelLabel = 'Enterprise Decisions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

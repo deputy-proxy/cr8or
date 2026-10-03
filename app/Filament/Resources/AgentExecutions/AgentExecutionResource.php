@@ -20,6 +20,10 @@ class AgentExecutionResource extends Resource
 
     protected static ?string $model = AgentExecution::class;
 
+    protected static ?string $modelLabel = 'Agent Execution';
+
+    protected static ?string $pluralModelLabel = 'Agent Executions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPlayCircle;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';

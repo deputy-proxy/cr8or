@@ -23,6 +23,10 @@ class CustomerResource extends Resource
 
     protected static ?string $model = Customer::class;
 
+    protected static ?string $modelLabel = 'Customer';
+
+    protected static ?string $pluralModelLabel = 'Customers';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

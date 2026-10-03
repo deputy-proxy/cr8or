@@ -23,6 +23,10 @@ class KpiResource extends Resource
 
     protected static ?string $model = Kpi::class;
 
+    protected static ?string $modelLabel = 'KPI';
+
+    protected static ?string $pluralModelLabel = 'KPIs';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

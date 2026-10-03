@@ -24,6 +24,10 @@ class FinancialPeriodResource extends Resource
 
     protected static ?string $model = FinancialPeriod::class;
 
+    protected static ?string $modelLabel = 'Financial Period';
+
+    protected static ?string $pluralModelLabel = 'Financial Periods';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';

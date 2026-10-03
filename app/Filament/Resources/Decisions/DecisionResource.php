@@ -25,6 +25,10 @@ class DecisionResource extends Resource
 
     protected static ?string $model = Decision::class;
 
+    protected static ?string $modelLabel = 'Decision';
+
+    protected static ?string $pluralModelLabel = 'Decisions';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';

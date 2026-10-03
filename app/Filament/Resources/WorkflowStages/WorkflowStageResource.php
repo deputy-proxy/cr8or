@@ -14,18 +14,26 @@ class WorkflowStageResource extends Resource
 {
     protected static ?string $model = WorkflowStage::class;
 
+    protected static ?string $modelLabel = 'Workflow Stage';
+
+    protected static ?string $pluralModelLabel = 'Workflow Stages';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';
 
-    protected static ?string $navigationLabel = 'WorkflowStages';
+    protected static ?string $navigationLabel = 'Workflow Stages';
 
     protected static ?int $navigationSort = 30;
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('workflow_id')->label('Workflow')->searchable()->sortable(),
+            TextColumn::make('key')->searchable()->sortable(),
+            TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('sequence')->numeric()->sortable(),
+            TextColumn::make('repeatable')->badge()->sortable(),
         ]);
     }
 
