@@ -27,7 +27,8 @@ class KnowledgeSpecificationResource extends Resource
 
     protected static ?string $navigationLabel = 'Knowledge Specifications';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 60;
+
 
     public static function form(Schema $schema): Schema
     {
