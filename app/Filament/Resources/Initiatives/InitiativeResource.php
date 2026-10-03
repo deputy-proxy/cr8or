@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Initiatives;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Initiatives\Pages\CreateInitiative;
 use App\Filament\Resources\Initiatives\Pages\EditInitiative;
 use App\Filament\Resources\Initiatives\Pages\ListInitiatives;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class InitiativeResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Initiative::class;
 
