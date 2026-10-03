@@ -20,6 +20,8 @@ class ReportSnapshotResource extends Resource
 
     protected static ?string $navigationLabel = 'ReportSnapshots';
 
+    protected static ?int $navigationSort = 20;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
