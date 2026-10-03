@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ExternalResources;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ExternalResources\Pages\ListExternalResources;
 use App\Models\ExternalResource;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ExternalResourceResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = ExternalResource::class;
 
