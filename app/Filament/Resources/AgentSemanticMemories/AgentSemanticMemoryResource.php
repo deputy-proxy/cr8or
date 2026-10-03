@@ -20,6 +20,8 @@ class AgentSemanticMemoryResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent SemanticMemories';
 
+    protected static ?int $navigationSort = 110;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
