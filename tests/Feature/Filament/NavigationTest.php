@@ -86,8 +86,8 @@ it('orders every resource in the canonical logical domain flow', function () {
             $files = glob(app_path("Filament/Resources/{$directory}/*Resource.php"));
             expect($files)->toHaveCount(1);
             $class = 'App\\Filament\\Resources\\'.$directory.'\\'.basename($files[0], '.php');
-            expect($class::getNavigationGroup())->toBe($group)
-                ->and($class::getNavigationSort())->toBe(($position + 1) * 10);
+            expect($class::getNavigationGroup())->toBe($group);
+            expect($class::getNavigationSort())->toBe(($position + 1) * 10, "Resource {$directory}");
             $actual[] = $directory;
         }
 
