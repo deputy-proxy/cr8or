@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\MarketingStrategies;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\MarketingStrategies\Pages\CreateMarketingStrategy;
 use App\Filament\Resources\MarketingStrategies\Pages\EditMarketingStrategy;
 use App\Filament\Resources\MarketingStrategies\Pages\ListMarketingStrategies;
@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MarketingStrategyResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = MarketingStrategy::class;
 
