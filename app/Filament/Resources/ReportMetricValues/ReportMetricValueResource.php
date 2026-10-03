@@ -20,12 +20,15 @@ class ReportMetricValueResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-    protected static ?string $navigationLabel = 'ReportMetricValues';
+    protected static ?string $navigationLabel = 'Report Metric Values';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('report.report_type')->label('Report Type')->searchable()->sortable(),
+            TextColumn::make('metricDefinition.name')->label('Metric')->searchable()->sortable(),
+            TextColumn::make('value')->label('Value')->searchable()->sortable(),
+            TextColumn::make('unit')->label('Unit')->searchable()->sortable(),
         ]);
     }
 

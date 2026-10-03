@@ -20,12 +20,19 @@ class KnowledgeIndexRecordResource extends Resource
 
     protected static ?int $navigationSort = 80;
 
-    protected static ?string $navigationLabel = 'KnowledgeIndexRecords';
+    protected static ?string $navigationLabel = 'Knowledge Index Records';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('source.name')->label('Source')->searchable()->sortable(),
+            TextColumn::make('document.title')->label('Document')->searchable()->sortable(),
+            TextColumn::make('item.title')->label('Knowledge Item')->searchable()->sortable(),
+            TextColumn::make('unit_key')->label('Unit Key')->searchable()->sortable(),
+            TextColumn::make('representation_key')->label('Representation Key')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('provider')->label('Provider')->searchable()->sortable(),
+            TextColumn::make('indexed_at')->label('Indexed At')->searchable()->sortable(),
         ]);
     }
 

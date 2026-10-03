@@ -20,12 +20,17 @@ class ApprovalDecisionResource extends Resource
 
     protected static ?int $navigationSort = 150;
 
-    protected static ?string $navigationLabel = 'ApprovalDecisions';
+    protected static ?string $navigationLabel = 'Approval Decisions';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('approvalRequest.capability')->label('Capability')->searchable()->sortable(),
+            TextColumn::make('stage')->label('Stage')->searchable()->sortable(),
+            TextColumn::make('decision')->label('Decision')->searchable()->sortable(),
+            TextColumn::make('actor_name')->label('Actor Name')->searchable()->sortable(),
+            TextColumn::make('decided_at')->label('Decided At')->searchable()->sortable(),
+            TextColumn::make('reason')->label('Reason')->searchable()->sortable(),
         ]);
     }
 

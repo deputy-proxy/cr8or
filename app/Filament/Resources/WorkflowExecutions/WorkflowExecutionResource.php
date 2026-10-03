@@ -20,12 +20,18 @@ class WorkflowExecutionResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
-    protected static ?string $navigationLabel = 'WorkflowExecution s';
+    protected static ?string $navigationLabel = 'Workflow Executions';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('workflow.name')->label('Workflow')->searchable()->sortable(),
+            TextColumn::make('workflowVersion.version')->label('Workflow Version')->searchable()->sortable(),
+            TextColumn::make('currentStage.name')->label('Current Stage')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('started_at')->label('Started At')->searchable()->sortable(),
+            TextColumn::make('completed_at')->label('Completed At')->searchable()->sortable(),
+            TextColumn::make('failure_reason')->label('Failure Reason')->searchable()->sortable(),
         ]);
     }
 

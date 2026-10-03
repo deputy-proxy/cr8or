@@ -26,7 +26,7 @@ class VisionResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
 
-    protected static ?string $navigationLabel = 'Vision';
+    protected static ?string $navigationLabel = 'Visions';
 
     protected static ?int $navigationSort = 20;
 

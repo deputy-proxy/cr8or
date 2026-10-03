@@ -28,7 +28,7 @@ class RevenueResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
-    protected static ?string $navigationLabel = 'Revenue';
+    protected static ?string $navigationLabel = 'Revenues';
 
     protected static ?int $navigationSort = 60;
 

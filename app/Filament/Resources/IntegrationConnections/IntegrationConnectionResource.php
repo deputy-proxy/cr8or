@@ -29,7 +29,7 @@ class IntegrationConnectionResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Integrations & External Systems';
 
-    protected static ?string $navigationLabel = 'Connections';
+    protected static ?string $navigationLabel = 'Integration Connections';
 
     protected static ?int $navigationSort = 10;
 

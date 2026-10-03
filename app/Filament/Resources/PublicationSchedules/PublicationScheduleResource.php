@@ -23,7 +23,7 @@ class PublicationScheduleResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
-    protected static ?string $navigationLabel = 'Schedules';
+    protected static ?string $navigationLabel = 'Publication Schedules';
 
     protected static ?int $navigationSort = 190;
 

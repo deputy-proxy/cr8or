@@ -25,7 +25,13 @@ class AgentExecutionStepResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('execution.id')->label('Execution ID')->searchable()->sortable(),
+            TextColumn::make('sequence')->label('Sequence')->searchable()->sortable(),
+            TextColumn::make('workflowStage.name')->label('Workflow Stage')->searchable()->sortable(),
+            TextColumn::make('type')->label('Type')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('completed_at')->label('Completed At')->searchable()->sortable(),
+            TextColumn::make('failure_reason')->label('Failure Reason')->searchable()->sortable(),
         ]);
     }
 

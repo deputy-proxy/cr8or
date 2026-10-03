@@ -235,6 +235,14 @@ External connections and resources, integration execution/results, and command w
 - Navigation grouping must never replace, bypass, or weaken policy authorization.
 - Resource labels, icons, routes, forms, tables, actions, scopes, and persistence behavior are independent of navigation grouping.
 
+## Filament resource presentation contract
+
+Every current Filament Resource has an explicit human-readable navigation label and an individually reviewed effective list table. Labels use normal word spacing, intentional singular/plural terminology, and established CR8OR domain vocabulary. List tables prioritize meaningful domain fields and relationships, enable search/sort where useful, avoid raw implementation identifiers as the only visible field, and never expose secrets, credentials, tokens, or raw private payloads merely for completeness.
+
+The exhaustive maintained inventory is [`docs/filament-resource-presentation.md`](filament-resource-presentation.md). It records the 98-resource surface, model, navigation label, effective list-table columns, and whether the table is defined directly on the Resource or through a dedicated table configuration class. The presentation contract is enforced by `tests/Feature/Filament/PresentationContractTest.php`.
+
+Resource presentation must remain consistent with authoritative policies and existing CRUD behavior. Table completeness is not a reason to weaken authorization, expose sensitive fields, or introduce unnecessary relationship loading.
+
 ## Governed business boundary
 
 `CapabilityInvocationService` is the common execution substrate. It resolves the authoritative Capability registry, applies the relevant authorization and governance context, and invokes the mapped Operation. Entry points provide their legitimate context, but none owns a parallel business execution engine.

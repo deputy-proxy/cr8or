@@ -20,12 +20,15 @@ class MetricDefinitionResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    protected static ?string $navigationLabel = 'MetricDefinitions';
+    protected static ?string $navigationLabel = 'Metric Definitions';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('key')->label('Key')->searchable()->sortable(),
+            TextColumn::make('name')->label('Name')->searchable()->sortable(),
+            TextColumn::make('unit')->label('Unit')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
         ]);
     }
 

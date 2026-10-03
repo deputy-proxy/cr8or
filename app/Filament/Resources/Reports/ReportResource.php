@@ -25,7 +25,13 @@ class ReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('report_type')->label('Report Type')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('period_start')->label('Period Start')->searchable()->sortable(),
+            TextColumn::make('period_end')->label('Period End')->searchable()->sortable(),
+            TextColumn::make('generated_at')->label('Generated At')->searchable()->sortable(),
+            TextColumn::make('methodology_version')->label('Methodology Version')->searchable()->sortable(),
         ]);
     }
 

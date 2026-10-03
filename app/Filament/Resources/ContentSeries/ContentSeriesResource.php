@@ -33,7 +33,7 @@ class ContentSeriesResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
-    protected static ?string $navigationLabel = 'Series';
+    protected static ?string $navigationLabel = 'Content Series';
 
     protected static ?int $navigationSort = 30;
 

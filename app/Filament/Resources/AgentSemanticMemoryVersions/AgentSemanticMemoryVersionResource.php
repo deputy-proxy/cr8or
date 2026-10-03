@@ -20,12 +20,16 @@ class AgentSemanticMemoryVersionResource extends Resource
 
     protected static ?int $navigationSort = 120;
 
-    protected static ?string $navigationLabel = 'Agent SemanticMemoryVersions';
+    protected static ?string $navigationLabel = 'Agent Semantic Memory Versions';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('memory.statement')->label('Memory Statement')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('change_type')->label('Change Type')->searchable()->sortable(),
+            TextColumn::make('changedBy.name')->label('Changed By')->searchable()->sortable(),
+            TextColumn::make('recorded_at')->label('Recorded At')->searchable()->sortable(),
         ]);
     }
 

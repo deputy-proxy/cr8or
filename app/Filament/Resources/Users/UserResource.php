@@ -25,7 +25,9 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('name')->label('Name')->searchable()->sortable(),
+            TextColumn::make('email')->label('Email')->searchable()->sortable(),
+            TextColumn::make('created_at')->label('Created At')->searchable()->sortable(),
         ]);
     }
 

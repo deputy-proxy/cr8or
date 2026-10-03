@@ -20,12 +20,17 @@ class AgentExecutionEventRecordResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-    protected static ?string $navigationLabel = 'Agent Execution EventRecords';
+    protected static ?string $navigationLabel = 'Agent Execution Event Records';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('execution.id')->label('Execution ID')->searchable()->sortable(),
+            TextColumn::make('event_type')->label('Event Type')->searchable()->sortable(),
+            TextColumn::make('visibility')->label('Visibility')->searchable()->sortable(),
+            TextColumn::make('version')->label('Version')->searchable()->sortable(),
+            TextColumn::make('correlation_id')->label('Correlation Id')->searchable()->sortable(),
+            TextColumn::make('occurred_at')->label('Occurred At')->searchable()->sortable(),
         ]);
     }
 

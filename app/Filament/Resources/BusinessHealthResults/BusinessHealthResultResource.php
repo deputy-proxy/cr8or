@@ -27,7 +27,7 @@ class BusinessHealthResultResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Finance';
 
-    protected static ?string $navigationLabel = 'Business Health';
+    protected static ?string $navigationLabel = 'Business Health Results';
 
     protected static ?int $navigationSort = 140;
 

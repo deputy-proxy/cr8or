@@ -20,12 +20,16 @@ class KnowledgeIndexUnitResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    protected static ?string $navigationLabel = 'KnowledgeIndexUnits';
+    protected static ?string $navigationLabel = 'Knowledge Index Units';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('record.unit_key')->label('Index Record Unit Key')->searchable()->sortable(),
+            TextColumn::make('item.title')->label('Knowledge Item')->searchable()->sortable(),
+            TextColumn::make('version.version')->label('Version')->searchable()->sortable(),
+            TextColumn::make('ordinal')->label('Ordinal')->searchable()->sortable(),
+            TextColumn::make('heading_path')->label('Heading Path')->searchable()->sortable(),
         ]);
     }
 

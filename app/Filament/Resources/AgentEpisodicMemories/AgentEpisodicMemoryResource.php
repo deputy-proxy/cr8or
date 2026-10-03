@@ -20,12 +20,17 @@ class AgentEpisodicMemoryResource extends Resource
 
     protected static ?int $navigationSort = 100;
 
-    protected static ?string $navigationLabel = 'Agent EpisodicMemories';
+    protected static ?string $navigationLabel = 'Agent Episodic Memories';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('agentDescriptor.slug')->label('Agent')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('topic')->label('Topic')->searchable()->sortable(),
+            TextColumn::make('objective')->label('Objective')->searchable()->sortable(),
+            TextColumn::make('outcome')->label('Outcome')->searchable()->sortable(),
+            TextColumn::make('occurred_at')->label('Occurred At')->searchable()->sortable(),
         ]);
     }
 

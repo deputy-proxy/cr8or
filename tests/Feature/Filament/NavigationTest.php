@@ -87,7 +87,7 @@ it('orders every resource according to the canonical domain flow', function () {
             $resourceFile = glob(app_path("Filament/Resources/{$directory}/*Resource.php"));
             expect($resourceFile)->toHaveCount(1);
 
-            $class = 'App\\\\Filament\\\\Resources\\\\'.$directory.'\\\\'.basename($resourceFile[0], '.php');
+            $class = 'App\\Filament\\Resources\\'.$directory.'\\'.basename($resourceFile[0], '.php');
             expect($class::getNavigationGroup())->toBe($group)
                 ->and($class::getNavigationSort())->toBe((array_search($directory, $directories, true) + 1) * 10);
 
@@ -114,11 +114,11 @@ it('uses the agreed domain labels for the primary navigation resources', functio
         ->and(AgentDescriptorResource::getNavigationLabel())->toBe('Agents')
         ->and(ExpertDescriptorResource::getNavigationLabel())->toBe('Experts')
         ->and(CampaignResource::getNavigationLabel())->toBe('Campaigns')
-        ->and(ContentSeriesResource::getNavigationLabel())->toBe('Series')
-        ->and(ContentItemResource::getNavigationLabel())->toBe('Items')
+        ->and(ContentSeriesResource::getNavigationLabel())->toBe('Content Series')
+        ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
         ->and(AudienceResource::getNavigationLabel())->toBe('Audiences')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
         ->and(ExecutionResource::getNavigationLabel())->toBe('Executions')
         ->and(JobResource::getNavigationLabel())->toBe('Jobs')
-        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approvals');
+        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests');
 });

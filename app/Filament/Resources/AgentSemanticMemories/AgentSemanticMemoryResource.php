@@ -20,12 +20,17 @@ class AgentSemanticMemoryResource extends Resource
 
     protected static ?int $navigationSort = 110;
 
-    protected static ?string $navigationLabel = 'Agent SemanticMemories';
+    protected static ?string $navigationLabel = 'Agent Semantic Memories';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('agentDescriptor.slug')->label('Agent')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('statement')->label('Statement')->searchable()->sortable(),
+            TextColumn::make('confidence')->label('Confidence')->searchable()->sortable(),
+            TextColumn::make('status')->label('Status')->searchable()->sortable(),
+            TextColumn::make('updated_at')->label('Updated At')->searchable()->sortable(),
         ]);
     }
 

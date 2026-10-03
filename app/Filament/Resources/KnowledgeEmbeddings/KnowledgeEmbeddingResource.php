@@ -20,12 +20,15 @@ class KnowledgeEmbeddingResource extends Resource
 
     protected static ?int $navigationSort = 100;
 
-    protected static ?string $navigationLabel = 'KnowledgeEmbeddings';
+    protected static ?string $navigationLabel = 'Knowledge Embeddings';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('unit.unit_key')->label('Unit Key')->searchable()->sortable(),
+            TextColumn::make('version.version')->label('Version')->searchable()->sortable(),
+            TextColumn::make('embedding_version')->label('Embedding Version')->searchable()->sortable(),
+            TextColumn::make('content_hash')->label('Content Hash')->searchable()->sortable(),
         ]);
     }
 

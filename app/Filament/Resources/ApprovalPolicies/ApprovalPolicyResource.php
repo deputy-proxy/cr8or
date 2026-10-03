@@ -20,12 +20,16 @@ class ApprovalPolicyResource extends Resource
 
     protected static ?int $navigationSort = 130;
 
-    protected static ?string $navigationLabel = 'ApprovalPolicies';
+    protected static ?string $navigationLabel = 'Approval Policies';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('policy_key')->label('Policy Key')->searchable()->sortable(),
+            TextColumn::make('capability')->label('Capability')->searchable()->sortable(),
+            TextColumn::make('enabled')->label('Enabled')->searchable()->sortable(),
+            TextColumn::make('expires_in_minutes')->label('Expires In Minutes')->searchable()->sortable(),
+            TextColumn::make('allow_self_approval')->label('Allow Self Approval')->searchable()->sortable(),
         ]);
     }
 

@@ -20,12 +20,16 @@ class WorkflowStageResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-    protected static ?string $navigationLabel = 'WorkflowStages';
+    protected static ?string $navigationLabel = 'Workflow Stages';
 
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->searchable()->sortable(),
+            TextColumn::make('workflow.name')->label('Workflow')->searchable()->sortable(),
+            TextColumn::make('key')->label('Key')->searchable()->sortable(),
+            TextColumn::make('name')->label('Name')->searchable()->sortable(),
+            TextColumn::make('sequence')->label('Sequence')->searchable()->sortable(),
+            TextColumn::make('repeatable')->label('Repeatable')->searchable()->sortable(),
         ]);
     }
 
