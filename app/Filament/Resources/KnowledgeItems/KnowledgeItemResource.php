@@ -29,7 +29,6 @@ class KnowledgeItemResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
-
     public static function form(Schema $schema): Schema
     {
         return KnowledgeItemForm::configure($schema);
