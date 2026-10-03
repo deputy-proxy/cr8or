@@ -26,7 +26,6 @@ class AgentDecisionResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-
     public static function table(Table $table): Table
     {
         return $table->columns([
