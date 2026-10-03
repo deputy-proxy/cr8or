@@ -23,7 +23,6 @@ class AgentRuntimePolicyResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-
     public static function table(Table $table): Table
     {
         return $table->columns([
