@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\PublicationResults;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\PublicationResults\Pages\ListPublicationResults;
 use App\Models\PublicationResult;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PublicationResultResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = PublicationResult::class;
 
