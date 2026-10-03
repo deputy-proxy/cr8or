@@ -7,6 +7,7 @@ use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 trait ScopesKnowledgeRecords
 {
@@ -37,12 +38,12 @@ trait ScopesKnowledgeRecords
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && static::authorizedOrganizationIds()->exists();
+        return auth()->check() && Gate::allows('viewAny', static::getModel());
     }
 
     public static function canCreate(): bool
     {
-        return auth()->check() && static::canManageAnyEnterprise();
+        return auth()->check() && Gate::allows('create', static::getModel());
     }
 
     public static function getEloquentQuery(): Builder
