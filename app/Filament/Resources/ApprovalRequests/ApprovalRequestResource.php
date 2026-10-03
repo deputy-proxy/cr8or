@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ApprovalRequests;
 
 use App\Filament\Resources\ApprovalRequests\Pages\ListApprovalRequests;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\ApprovalRequest;
 use App\Services\ApprovalRequestService;
 use BackedEnum;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
 
 class ApprovalRequestResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = ApprovalRequest::class;
 
