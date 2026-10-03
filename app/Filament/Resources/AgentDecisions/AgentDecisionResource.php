@@ -24,7 +24,8 @@ class AgentDecisionResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent Decisions';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 90;
+
 
     public static function table(Table $table): Table
     {
