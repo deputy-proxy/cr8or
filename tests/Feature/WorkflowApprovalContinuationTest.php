@@ -42,7 +42,6 @@ it('preserves and resumes a waiting-for-approval WorkflowExecution', function ()
         'workflow_version_id' => $workflow->published_version_id,
         'workflow_version' => $workflow->publishedVersion->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_PENDING,
     ]);
