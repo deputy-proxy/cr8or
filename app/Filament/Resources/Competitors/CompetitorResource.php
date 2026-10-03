@@ -32,7 +32,6 @@ class CompetitorResource extends Resource
 
     protected static ?int $navigationSort = 170;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
