@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Dependencies;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Dependencies\Pages\CreateDependency;
 use App\Filament\Resources\Dependencies\Pages\EditDependency;
 use App\Filament\Resources\Dependencies\Pages\ListDependencies;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DependencyResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Dependency::class;
 
