@@ -337,7 +337,7 @@ final class CapabilityRegistry
                 'marketing.asset.create',
                 \App\Operations\CreatePlannedAsset::class,
                 \App\Mcp\Tools\CreateAssetTool::class,
-                ['script_id' => 'integer|required', 'name' => 'string|required', 'type' => 'string|required', 'purpose' => 'string|required', 'channel' => 'string|required', 'platform' => 'string|required', 'format' => 'string|required', 'width' => 'integer|nullable', 'height' => 'integer|nullable', 'aspect_ratio' => 'string|nullable', 'duration_seconds' => 'number|nullable', 'creative_brief' => 'string|required', 'agent_assignment_id' => 'integer|required', 'agent_execution_id' => 'integer|required'],
+                ['script_id' => 'integer|required', 'name' => 'string|required', 'type' => 'string|required', 'purpose' => 'string|required', 'channel' => 'string|required', 'platform' => 'string|required', 'format' => 'string|required', 'width' => 'integer|nullable', 'height' => 'integer|nullable', 'aspect_ratio' => 'string|nullable', 'duration_seconds' => 'number|nullable', 'creative_brief' => 'string|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'asset'],
                 'McpCapabilityAuthorizer::authorizeMutation + Asset policy',
                 'none',
