@@ -26,7 +26,6 @@ class JobResource extends Resource
 
     protected static ?int $navigationSort = 70;
 
-
     public static function table(Table $table): Table
     {
         return $table->columns([
