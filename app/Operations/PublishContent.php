@@ -19,11 +19,11 @@ final class PublishContent implements Operation
 
     public function execute(User $actor, array $input): Publication
     {
-        $content = $input['content_item'] instanceof ContentItem
+        $content = ($input['content_item'] ?? null) instanceof ContentItem
             ? $input['content_item']
             : ContentItem::query()->findOrFail((int) $input['content_item_id']);
 
-        $account = $input['social_account'] instanceof SocialAccount
+        $account = ($input['social_account'] ?? null) instanceof SocialAccount
             ? $input['social_account']
             : SocialAccount::query()->findOrFail((int) $input['social_account_id']);
 

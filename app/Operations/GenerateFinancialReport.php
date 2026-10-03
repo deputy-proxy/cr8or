@@ -20,7 +20,7 @@ final class GenerateFinancialReport implements Operation
             ? $input['enterprise']
             : Enterprise::query()->findOrFail((int) $input['enterprise_id']);
 
-        $period = $input['financial_period'] instanceof FinancialPeriod
+        $period = ($input['financial_period'] ?? null) instanceof FinancialPeriod
             ? $input['financial_period']
             : FinancialPeriod::query()->findOrFail((int) $input['financial_period_id']);
 
