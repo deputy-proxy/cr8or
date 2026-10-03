@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Audiences;
 use App\Filament\Resources\Audiences\Pages\CreateAudience;
 use App\Filament\Resources\Audiences\Pages\EditAudience;
 use App\Filament\Resources\Audiences\Pages\ListAudiences;
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Audience;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AudienceResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Audience::class;
 
