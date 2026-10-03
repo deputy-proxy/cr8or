@@ -26,7 +26,8 @@ class KnowledgeVersionResource extends Resource
 
     protected static ?string $navigationLabel = 'Knowledge Versions';
 
-    protected static ?int $navigationSort = 110;
+    protected static ?int $navigationSort = 50;
+
 
     public static function form(Schema $schema): Schema
     {
