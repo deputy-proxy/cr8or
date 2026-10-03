@@ -20,6 +20,8 @@ class WorkflowVersionResource extends Resource
 
     protected static ?string $navigationLabel = 'WorkflowVersions';
 
+    protected static ?int $navigationSort = 20;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
