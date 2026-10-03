@@ -3,8 +3,6 @@
 use App\Models\Assignment;
 use App\Models\Dependency;
 use App\Models\Enterprise;
-use App\Models\Execution;
-use App\Models\Job;
 use App\Models\Membership;
 use App\Models\Milestone;
 use App\Models\Organization;
@@ -12,6 +10,8 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
+use App\Models\WorkflowVersion;
 use App\Models\WorkItem;
 use App\Services\McpContextAssembler;
 use App\Services\WorkContextAssembler;
@@ -74,13 +74,19 @@ it('assembles bounded authorized work context with coherent relationships and ex
         'work_item_id' => $workItem->getKey(),
         'status' => Workflow::STATUS_RUNNING,
     ]);
-    $job = Job::factory()->create([
+    $version = WorkflowVersion::factory()->create([
         'workflow_id' => $workflow->getKey(),
-        'status' => Job::STATUS_RUNNING,
+        'enterprise_id' => $enterprise->getKey(),
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
     ]);
-    $execution = Execution::factory()->create([
-        'workflow_job_id' => $job->getKey(),
-        'status' => Execution::STATUS_FAILED,
+    $execution = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow->getKey(),
+        'workflow_version_id' => $version->getKey(),
+        'workflow_version' => 1,
+        'enterprise_id' => $enterprise->getKey(),
+        'actor_id' => $user->getKey(),
+        'status' => WorkflowExecution::STATUS_FAILED,
         'failure_reason' => 'Provider unavailable',
     ]);
 
@@ -135,20 +141,17 @@ it('assembles bounded authorized work context with coherent relationships and ex
                 'task_id' => $childTask->getKey(),
                 'work_item_id' => $workItem->getKey(),
             ],
-            'job' => [
-                'id' => $job->getKey(),
-                'name' => $job->name,
-                'status' => Job::STATUS_RUNNING,
-                'attempts' => $job->attempts,
-                'started_at' => null,
-                'completed_at' => null,
-            ],
             'execution' => [
                 'id' => $execution->getKey(),
-                'status' => Execution::STATUS_FAILED,
+                'workflow_version_id' => $version->getKey(),
+                'workflow_version' => 1,
+                'status' => WorkflowExecution::STATUS_FAILED,
+                'current_stage_key' => null,
                 'started_at' => null,
                 'completed_at' => null,
                 'failure_reason' => 'Provider unavailable',
+                'correlation_id' => $execution->correlation_id,
+                'idempotency_key' => $execution->idempotency_key,
             ],
         ]);
 });
