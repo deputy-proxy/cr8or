@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Transformations;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Transformations\Pages\ListTransformations;
 use App\Models\Transformation;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TransformationResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Transformation::class;
 
