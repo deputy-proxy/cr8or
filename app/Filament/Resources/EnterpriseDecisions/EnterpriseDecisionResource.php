@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseDecisions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\EnterpriseDecisions\Pages\CreateEnterpriseDecision;
 use App\Filament\Resources\EnterpriseDecisions\Pages\EditEnterpriseDecision;
 use App\Filament\Resources\EnterpriseDecisions\Pages\ListEnterpriseDecisions;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class EnterpriseDecisionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = EnterpriseDecision::class;
 
