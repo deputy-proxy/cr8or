@@ -28,7 +28,6 @@ class AgentExecutionResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
-
     public static function table(Table $table): Table
     {
         return $table->columns([
