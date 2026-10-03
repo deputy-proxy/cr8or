@@ -1,214 +1,128 @@
 <?php
 
-use App\Filament\Resources\Executions\ExecutionResource;
-use App\Filament\Resources\Jobs\JobResource;
+use App\Filament\Resources\WorkflowExecutions\WorkflowExecutionResource;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
-use App\Models\Execution;
-use App\Models\Job;
 use App\Models\Membership;
 use App\Models\Organization;
-use App\Models\Project;
-use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
-use App\Models\WorkItem;
-use Illuminate\Database\QueryException;
+use App\Models\WorkflowExecution;
+use App\Models\WorkflowVersion;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use LogicException;
 
-it('creates a correlated workflow, job and execution for enterprise work', function () {
+function workflowExecutionFixture(): array
+{
     $enterprise = Enterprise::factory()->create();
-    $project = Project::factory()->create(['enterprise_id' => $enterprise]);
-    $task = Task::factory()->forProject($project)->create();
-    $workItem = WorkItem::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
+    $actor = User::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor,
+        'organization_id' => $enterprise->organization_id,
     ]);
 
     $workflow = Workflow::factory()->create([
         'enterprise_id' => $enterprise,
-        'project_id' => $project,
-        'task_id' => $task,
-        'work_item_id' => $workItem,
     ]);
-    $job = Job::factory()->create(['workflow_id' => $workflow]);
-    $execution = Execution::factory()->create(['workflow_job_id' => $job]);
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+    ]);
 
-    expect($job->workflow->is($workflow))->toBeTrue()
-        ->and($execution->job->is($job))->toBeTrue()
-        ->and($execution->organization->is($enterprise->organization))->toBeTrue()
-        ->and($execution->enterprise->is($enterprise))->toBeTrue()
-        ->and($execution->project->is($project))->toBeTrue()
-        ->and($execution->task->is($task))->toBeTrue()
-        ->and($execution->workItem->is($workItem))->toBeTrue()
-        ->and($execution->organization_name)->toBe($enterprise->organization->name)
-        ->and($execution->enterprise_name)->toBe($enterprise->name)
-        ->and($execution->project_name)->toBe($project->name)
-        ->and($execution->task_name)->toBe($task->name)
-        ->and($execution->work_item_name)->toBe($workItem->name);
+    $execution = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise,
+        'actor_id' => $actor,
+    ]);
+
+    return compact('enterprise', 'actor', 'workflow', 'version', 'execution');
+}
+
+it('removes the legacy generic workflow job and execution schema', function () {
+    expect(Schema::hasTable('workflow_jobs'))->toBeFalse()
+        ->and(Schema::hasTable('executions'))->toBeFalse()
+        ->and(Schema::hasColumn('generation_jobs', 'workflow_job_id'))->toBeFalse()
+        ->and(Schema::hasColumn('generation_jobs', 'execution_id'))->toBeFalse()
+        ->and(Schema::hasColumn('render_jobs', 'workflow_job_id'))->toBeFalse()
+        ->and(Schema::hasColumn('render_jobs', 'execution_id'))->toBeFalse();
 });
 
-it('enforces explicit pending running succeeded and failed lifecycle transitions', function () {
-    $workflow = Workflow::factory()->create();
-    $job = Job::factory()->create(['workflow_id' => $workflow]);
-    $execution = Execution::factory()->create(['workflow_job_id' => $job]);
+it('uses WorkflowExecution as the canonical persisted workflow runtime record', function () {
+    ['workflow' => $workflow, 'version' => $version, 'execution' => $execution] = workflowExecutionFixture();
 
-    $workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
-    $job->start()->save();
+    expect($execution->workflow->is($workflow))->toBeTrue()
+        ->and($execution->workflowVersion->is($version))->toBeTrue()
+        ->and($workflow->executions()->whereKey($execution)->exists())->toBeTrue()
+        ->and(method_exists($workflow, 'jobs'))->toBeFalse();
+});
+
+it('enforces the WorkflowExecution lifecycle', function () {
+    ['execution' => $execution] = workflowExecutionFixture();
+
     $execution->start()->save();
-    $execution->succeed()->save();
-    $job->succeed()->save();
-    $workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
 
-    expect($workflow->status)->toBe(Workflow::STATUS_SUCCEEDED)
-        ->and($job->status)->toBe(Job::STATUS_SUCCEEDED)
-        ->and($execution->status)->toBe(Execution::STATUS_SUCCEEDED)
-        ->and($job->attempts)->toBe(1)
-        ->and($job->started_at)->not->toBeNull()
-        ->and($execution->completed_at)->not->toBeNull();
-
-    expect(fn () => $execution->fail('late failure')->save())
-        ->toThrow(LogicException::class, 'cannot transition from [succeeded] to [failed]');
-});
-
-it('preserves the originating execution context after source records change', function () {
-    $organization = Organization::factory()->create(['name' => 'Original Organization']);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'Original Enterprise']);
-    $project = Project::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Original Project']);
-    $task = Task::factory()->forProject($project)->create(['name' => 'Original Task']);
-    $workItem = WorkItem::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
-        'name' => 'Original Work Item',
-    ]);
-
-    $workflow = Workflow::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
-        'task_id' => $task,
-        'work_item_id' => $workItem,
-    ]);
-    $execution = Execution::factory()->create(['workflow_job_id' => Job::factory()->create(['workflow_id' => $workflow])]);
-
-    $enterprise->update(['name' => 'Changed Enterprise']);
-    $project->update(['name' => 'Changed Project']);
-    $task->update(['name' => 'Changed Task']);
-    $workItem->update(['name' => 'Changed Work Item']);
-
-    $execution->enterprise_name = 'Tampered Enterprise';
-    $execution->project_name = 'Tampered Project';
-    $execution->save();
-    $execution->refresh();
-
-    expect($execution->organization_name)->toBe('Original Organization')
-        ->and($execution->enterprise_name)->toBe('Original Enterprise')
-        ->and($execution->project_name)->toBe('Original Project')
-        ->and($execution->task_name)->toBe('Original Task')
-        ->and($execution->work_item_name)->toBe('Original Work Item');
-});
-
-it('prevents failed execution from being represented as succeeded', function () {
-    $execution = Execution::factory()->create();
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_RUNNING)
+        ->and($execution->started_at)->not->toBeNull();
 
     $execution->fail('Provider unavailable')->save();
 
-    expect(fn () => $execution->succeed()->save())
-        ->toThrow(LogicException::class, 'cannot transition from [failed] to [succeeded]');
-
-    $execution->refresh();
-
-    expect($execution->status)->toBe(Execution::STATUS_FAILED)
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_FAILED)
         ->and($execution->failure_reason)->toBe('Provider unavailable')
-        ->and($execution->enterprise_id)->toBe($execution->job->workflow->enterprise_id);
+        ->and($execution->completed_at)->not->toBeNull();
+
+    $execution->retry()->save();
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_RUNNING)
+        ->and($execution->failure_reason)->toBeNull();
+
+    $execution->complete()->save();
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($execution->completed_at)->not->toBeNull();
+
+    expect(fn () => $execution->fail('late failure')->save())
+        ->toThrow(LogicException::class, 'cannot transition from [completed] to [failed]');
 });
 
-it('retries the same logical job without creating a duplicate idempotency key', function () {
-    $job = Job::factory()->create();
-    $job->start()->save();
-    $job->fail('Temporary failure')->save();
-
-    $key = $job->idempotency_key;
-    $job->retry()->save();
-    $job->refresh();
-
-    expect($job->status)->toBe(Job::STATUS_PENDING)
-        ->and($job->idempotency_key)->toBe($key)
-        ->and($job->attempts)->toBe(1)
-        ->and($job->started_at)->toBeNull()
-        ->and(Job::query()->where('idempotency_key', $key)->count())->toBe(1);
-
-    expect(fn () => Job::factory()->create([
-        'workflow_id' => $job->workflow_id,
-        'idempotency_key' => $key,
-    ]))->toThrow(QueryException::class);
-});
-
-it('prevents workflow work context from crossing enterprise boundaries', function () {
+it('rejects workflow executions that reference a non-published version', function () {
     $enterprise = Enterprise::factory()->create();
-    $foreignEnterprise = Enterprise::factory()->create();
-    $project = Project::factory()->create(['enterprise_id' => $foreignEnterprise]);
-
-    expect(fn () => Workflow::factory()->create([
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
         'enterprise_id' => $enterprise,
-        'project_id' => $project,
-    ]))->toThrow(LogicException::class, 'project_id must belong to its enterprise');
+        'status' => WorkflowVersion::STATUS_DRAFT,
+    ]);
+
+    expect(fn () => WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $version,
+        'workflow_version' => $version->version,
+        'enterprise_id' => $enterprise,
+    ]))->toThrow(LogicException::class, 'published WorkflowVersion');
 });
 
-it('enforces organization isolation for workflow, job and execution records', function () {
-    $organization = Organization::factory()->create();
-    $otherOrganization = Organization::factory()->create();
-    $owner = User::factory()->create();
-    $foreignMember = User::factory()->create();
+it('keeps WorkflowExecution authorization scoped to its enterprise', function () {
+    ['enterprise' => $enterprise, 'actor' => $actor, 'execution' => $execution] = workflowExecutionFixture();
 
-    Membership::factory()->owner()->create([
-        'user_id' => $owner,
-        'organization_id' => $organization,
-    ]);
+    $foreignOrganization = Organization::factory()->create();
+    $foreignUser = User::factory()->create();
     Membership::factory()->create([
-        'user_id' => $foreignMember,
-        'organization_id' => $otherOrganization,
+        'user_id' => $foreignUser,
+        'organization_id' => $foreignOrganization,
     ]);
 
-    $workflow = Workflow::factory()->create(['enterprise_id' => Enterprise::factory()->create(['organization_id' => $organization])]);
-    $foreignWorkflow = Workflow::factory()->create(['enterprise_id' => Enterprise::factory()->create(['organization_id' => $otherOrganization])]);
-    $job = Job::factory()->create(['workflow_id' => $workflow]);
-    $foreignJob = Job::factory()->create(['workflow_id' => $foreignWorkflow]);
-    $execution = Execution::factory()->create(['workflow_job_id' => $job]);
-    $foreignExecution = Execution::factory()->create(['workflow_job_id' => $foreignJob]);
-
-    expect(Gate::forUser($owner)->allows('view', $workflow))->toBeTrue()
-        ->and(Gate::forUser($foreignMember)->allows('view', $workflow))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('view', $job))->toBeTrue()
-        ->and(Gate::forUser($foreignMember)->allows('view', $job))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('view', $execution))->toBeTrue()
-        ->and(Gate::forUser($foreignMember)->allows('view', $execution))->toBeFalse()
-        ->and($foreignExecution->job->is($foreignJob))->toBeTrue();
+    expect(Gate::forUser($actor)->allows('view', $execution))->toBeTrue()
+        ->and(Gate::forUser($foreignUser)->allows('view', $execution))->toBeFalse()
+        ->and($enterprise->organization_id)->not->toBe($foreignOrganization->id);
 });
 
-it('scopes operational Filament resources to the authenticated organization', function () {
-    $organization = Organization::factory()->create();
-    $otherOrganization = Organization::factory()->create();
-    $owner = User::factory()->create();
-
-    Membership::factory()->owner()->create([
-        'user_id' => $owner,
-        'organization_id' => $organization,
-    ]);
-
-    $workflow = Workflow::factory()->create(['enterprise_id' => Enterprise::factory()->create(['organization_id' => $organization])]);
-    $foreignWorkflow = Workflow::factory()->create(['enterprise_id' => Enterprise::factory()->create(['organization_id' => $otherOrganization])]);
-    $job = Job::factory()->create(['workflow_id' => $workflow]);
-    $foreignJob = Job::factory()->create(['workflow_id' => $foreignWorkflow]);
-    $execution = Execution::factory()->create(['workflow_job_id' => $job]);
-    $foreignExecution = Execution::factory()->create(['workflow_job_id' => $foreignJob]);
-
-    $this->actingAs($owner);
-
-    expect(WorkflowResource::getEloquentQuery()->pluck('id')->all())
-        ->toContain($workflow->id)->not->toContain($foreignWorkflow->id)
-        ->and(JobResource::getEloquentQuery()->pluck('id')->all())
-        ->toContain($job->id)->not->toContain($foreignJob->id)
-        ->and(ExecutionResource::getEloquentQuery()->pluck('id')->all())
-        ->toContain($execution->id)->not->toContain($foreignExecution->id);
+it('keeps workflow and workflow execution Filament resources aligned with the canonical models', function () {
+    expect(WorkflowResource::getModel())->toBe(Workflow::class)
+        ->and(WorkflowExecutionResource::getModel())->toBe(WorkflowExecution::class)
+        ->and(WorkflowExecutionResource::getPages())->toHaveKey('index');
 });

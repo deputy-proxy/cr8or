@@ -2,8 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Execution;
-use App\Models\Job;
 use App\Models\RenderJob;
 use App\Models\RenderRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -15,6 +13,11 @@ class RenderJobFactory extends Factory
 
     public function definition(): array
     {
-        return ['render_request_id' => RenderRequest::factory(), 'workflow_job_id' => Job::factory(), 'execution_id' => Execution::factory(), 'external_job_id' => null, 'status' => 'pending', 'failure_reason' => null];
+        return [
+            'render_request_id' => RenderRequest::factory(),
+            'external_job_id' => null,
+            'status' => RenderJob::STATUS_PENDING,
+            'failure_reason' => null,
+        ];
     }
 }

@@ -5,9 +5,7 @@ use App\Contracts\MediaRenderer;
 use App\Models\Asset;
 use App\Models\AssetVersion;
 use App\Models\Enterprise;
-use App\Models\Execution;
 use App\Models\GenerationRequest;
-use App\Models\Job;
 use App\Models\Membership;
 use App\Models\RenderOutput;
 use App\Models\RenderRequest;
@@ -29,7 +27,7 @@ it('creates correlated generation records', function () {
     $a = Asset::factory()->create(['enterprise_id' => $e]);
     $u = mediaActorFor($e);
     $r = app(MediaLifecycleService::class)->requestGeneration($u, $a, 'image', ['prompt' => 'test'], 'gen-1');
-    expect($r->status)->toBe(GenerationRequest::STATUS_PENDING)->and($r->jobs)->toHaveCount(1)->and($r->jobs->first()->execution->enterprise_id)->toBe($e->id);
+    expect($r->status)->toBe(GenerationRequest::STATUS_PENDING)->and($r->jobs)->toHaveCount(1)->and($r->jobs->first()->status)->toBe('pending')->and($r->jobs->first()->request->enterprise_id)->toBe($e->id);
 });
 
 it('is idempotent', function () {
@@ -56,7 +54,7 @@ it('preserves asset version history on successful generation', function () {
     };
     app(MediaLifecycleService::class)->startGeneration($r, $generator);
     $v = $a->refresh()->versions()->first();
-    expect($r->refresh()->status)->toBe(GenerationRequest::STATUS_SUCCEEDED)->and($v->version)->toBe(1)->and($v->path)->toBe('generated/1.png')->and($r->jobs->first()->workflowJob->status)->toBe(Job::STATUS_SUCCEEDED)->and($r->jobs->first()->execution->status)->toBe(Execution::STATUS_SUCCEEDED);
+    expect($r->refresh()->status)->toBe(GenerationRequest::STATUS_SUCCEEDED)->and($v->version)->toBe(1)->and($v->path)->toBe('generated/1.png')->and($r->jobs->first()->status)->toBe('succeeded')->and($r->jobs->first()->external_job_id)->toBe('provider-1');
 });
 
 it('records failure and cannot turn it into success', function () {

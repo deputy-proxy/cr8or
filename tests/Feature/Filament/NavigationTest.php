@@ -9,10 +9,8 @@ use App\Filament\Resources\Channels\ChannelResource;
 use App\Filament\Resources\ContentItems\ContentItemResource;
 use App\Filament\Resources\ContentSeries\ContentSeriesResource;
 use App\Filament\Resources\Enterprises\EnterpriseResource;
-use App\Filament\Resources\Executions\ExecutionResource;
 use App\Filament\Resources\ExpertDescriptors\ExpertDescriptorResource;
 use App\Filament\Resources\Initiatives\InitiativeResource;
-use App\Filament\Resources\Jobs\JobResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Organizations\OrganizationResource;
 use App\Filament\Resources\Strategies\StrategyResource;
@@ -39,7 +37,7 @@ it('maps every discovered Filament resource to exactly one current navigation gr
         'EnterpriseContexts' => 'Enterprise Context', 'Visions' => 'Enterprise Context', 'Missions' => 'Enterprise Context', 'Goals' => 'Enterprise Context', 'Objectives' => 'Enterprise Context', 'Kpis' => 'Enterprise Context', 'MetricDefinitions' => 'Enterprise Context', 'Strategies' => 'Enterprise Context', 'Plans' => 'Enterprise Context', 'Initiatives' => 'Enterprise Context', 'Projects' => 'Enterprise Context', 'Milestones' => 'Enterprise Context', 'Tasks' => 'Enterprise Context', 'WorkItems' => 'Enterprise Context', 'Decisions' => 'Enterprise Context', 'EnterpriseDecisions' => 'Enterprise Context', 'Competitors' => 'Enterprise Context', 'Products' => 'Enterprise Context',
         'KnowledgeContexts' => 'Knowledge Management', 'KnowledgeSources' => 'Knowledge Management', 'KnowledgeDocuments' => 'Knowledge Management', 'KnowledgeItems' => 'Knowledge Management', 'KnowledgeVersions' => 'Knowledge Management', 'KnowledgeSpecifications' => 'Knowledge Management', 'KnowledgeReferences' => 'Knowledge Management', 'KnowledgeIndexRecords' => 'Knowledge Management', 'KnowledgeIndexUnits' => 'Knowledge Management', 'KnowledgeEmbeddings' => 'Knowledge Management',
         'AgentDescriptors' => 'Agentic Flow', 'ExpertDescriptors' => 'Agentic Flow', 'AgentRuntimePolicies' => 'Agentic Flow', 'AgentAssignments' => 'Agentic Flow', 'AgentExecutions' => 'Agentic Flow', 'AgentExecutionSteps' => 'Agentic Flow', 'AgentExecutionEventRecords' => 'Agentic Flow', 'AgentDelegations' => 'Agentic Flow', 'AgentDecisions' => 'Agentic Flow', 'AgentEpisodicMemories' => 'Agentic Flow', 'AgentSemanticMemories' => 'Agentic Flow', 'AgentSemanticMemoryVersions' => 'Agentic Flow', 'ApprovalPolicies' => 'Agentic Flow', 'ApprovalRequests' => 'Agentic Flow', 'ApprovalDecisions' => 'Agentic Flow',
-        'Workflows' => 'Workflow Flow', 'WorkflowVersions' => 'Workflow Flow', 'WorkflowStages' => 'Workflow Flow', 'WorkflowExecutions' => 'Workflow Flow', 'Jobs' => 'Workflow Flow', 'Executions' => 'Workflow Flow', 'Dependencies' => 'Workflow Flow',
+        'Workflows' => 'Workflow Flow', 'WorkflowVersions' => 'Workflow Flow', 'WorkflowStages' => 'Workflow Flow', 'Dependencies' => 'Workflow Flow', 'WorkflowExecutions' => 'Workflow Flow',
         'MarketingStrategies' => 'Marketing', 'Campaigns' => 'Marketing', 'ContentSeries' => 'Marketing', 'ContentItems' => 'Marketing', 'Scripts' => 'Marketing', 'Audiences' => 'Marketing', 'Channels' => 'Marketing', 'SocialAccounts' => 'Marketing', 'Publications' => 'Marketing', 'PublicationSchedules' => 'Marketing', 'PublishingJobs' => 'Marketing', 'PublicationResults' => 'Marketing', 'Assets' => 'Marketing', 'AssetVersions' => 'Marketing', 'MediaMetadata' => 'Marketing', 'RenderRequests' => 'Marketing', 'RenderJobs' => 'Marketing', 'RenderOutputs' => 'Marketing', 'Transformations' => 'Marketing', 'GenerationRequests' => 'Marketing', 'GenerationJobs' => 'Marketing',
         'FinancialAccounts' => 'Finance', 'FinancialPeriods' => 'Finance', 'TransactionCategories' => 'Finance', 'Transactions' => 'Finance', 'Revenues' => 'Finance', 'Expenses' => 'Finance', 'Budgets' => 'Finance', 'Statements' => 'Finance', 'StatementEntries' => 'Finance', 'Customers' => 'Finance', 'Partners' => 'Finance', 'Invoices' => 'Finance', 'FinancialReports' => 'Finance', 'BusinessHealthResults' => 'Finance',
         'Reports' => 'Reporting & Analytics', 'ReportSnapshots' => 'Reporting & Analytics', 'ReportMetricValues' => 'Reporting & Analytics',
@@ -54,7 +52,7 @@ it('maps every discovered Filament resource to exactly one current navigation gr
     $expectedDirectories = array_keys($expectedGroups);
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(96);
 
     foreach ($expectedGroups as $directory => $group) {
         $resourceFilesForDirectory = glob(app_path("Filament/Resources/{$directory}/*Resource.php"));
@@ -73,7 +71,7 @@ it('orders every resource in the canonical logical domain flow', function () {
         'Enterprise Context' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'MetricDefinitions', 'Strategies', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Decisions', 'EnterpriseDecisions', 'Competitors', 'Products'],
         'Knowledge Management' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Agentic Flow' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentDelegations', 'AgentDecisions', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions', 'ApprovalPolicies', 'ApprovalRequests', 'ApprovalDecisions'],
-        'Workflow Flow' => ['Workflows', 'WorkflowVersions', 'WorkflowStages', 'Dependencies', 'WorkflowExecutions', 'Executions', 'Jobs'],
+        'Workflow Flow' => ['Workflows', 'WorkflowVersions', 'WorkflowStages', 'Dependencies', 'WorkflowExecutions'],
         'Marketing' => ['MarketingStrategies', 'Campaigns', 'ContentSeries', 'Audiences', 'Channels', 'SocialAccounts', 'ContentItems', 'Scripts', 'Assets', 'AssetVersions', 'MediaMetadata', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices', 'FinancialReports', 'BusinessHealthResults'],
         'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues'],
@@ -113,7 +111,5 @@ it('uses the agreed domain labels for the primary navigation resources', functio
         ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
         ->and(AudienceResource::getNavigationLabel())->toBe('Audiences')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
-        ->and(ExecutionResource::getNavigationLabel())->toBe('Executions')
-        ->and(JobResource::getNavigationLabel())->toBe('Jobs')
         ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests');
 });
