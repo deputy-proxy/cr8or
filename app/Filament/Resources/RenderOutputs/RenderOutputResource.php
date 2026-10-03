@@ -25,7 +25,7 @@ class RenderOutputResource extends Resource
 
     protected static ?string $navigationLabel = 'Render Outputs';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 160;
 
     public static function form(Schema $schema): Schema
     {

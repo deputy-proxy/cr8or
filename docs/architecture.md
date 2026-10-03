@@ -50,168 +50,179 @@ The current navigation taxonomy is aligned with CR8OR application architecture. 
 
 ### Group order and resource mapping
 
+Resource navigation is ordered deliberately within each group to communicate CR8OR domain flow. Group order is controlled separately by the panel navigation-group definition. Resource order is controlled by each Resource class through an explicit `$navigationSort` value. The order below is the canonical information architecture.
+
 ### Organization & Enterprise Scope
 
-Organization identity, membership, enterprise boundaries, and authorization scope.
+Organization identity, membership, enterprise boundaries, and organizational assignments.
 
-| Resource | Filament class location |
-| --- | --- |
-| Organizations | app/Filament/Resources/Organizations/*Resource.php |
-| Users | app/Filament/Resources/Users/*Resource.php |
-| Memberships | app/Filament/Resources/Memberships/*Resource.php |
-| Enterprises | app/Filament/Resources/Enterprises/*Resource.php |
-| Assignments | app/Filament/Resources/Assignments/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | Organizations | app/Filament/Resources/Organizations/*Resource.php |
+| 2 | Users | app/Filament/Resources/Users/*Resource.php |
+| 3 | Memberships | app/Filament/Resources/Memberships/*Resource.php |
+| 4 | Enterprises | app/Filament/Resources/Enterprises/*Resource.php |
+| 5 | Assignments | app/Filament/Resources/Assignments/*Resource.php |
 
 ### Enterprise Context
 
-Enterprise goals, strategy, plans, work, decisions, and business context.
+Enterprise context and intent, measurable outcomes, strategy, planning, work, decisions, and market/product context.
 
-| Resource | Filament class location |
-| --- | --- |
-| EnterpriseContexts | app/Filament/Resources/EnterpriseContexts/*Resource.php |
-| Visions | app/Filament/Resources/Visions/*Resource.php |
-| Missions | app/Filament/Resources/Missions/*Resource.php |
-| Goals | app/Filament/Resources/Goals/*Resource.php |
-| Objectives | app/Filament/Resources/Objectives/*Resource.php |
-| Kpis | app/Filament/Resources/Kpis/*Resource.php |
-| MetricDefinitions | app/Filament/Resources/MetricDefinitions/*Resource.php |
-| Strategies | app/Filament/Resources/Strategies/*Resource.php |
-| Plans | app/Filament/Resources/Plans/*Resource.php |
-| Initiatives | app/Filament/Resources/Initiatives/*Resource.php |
-| Projects | app/Filament/Resources/Projects/*Resource.php |
-| Milestones | app/Filament/Resources/Milestones/*Resource.php |
-| Tasks | app/Filament/Resources/Tasks/*Resource.php |
-| WorkItems | app/Filament/Resources/WorkItems/*Resource.php |
-| Decisions | app/Filament/Resources/Decisions/*Resource.php |
-| EnterpriseDecisions | app/Filament/Resources/EnterpriseDecisions/*Resource.php |
-| Competitors | app/Filament/Resources/Competitors/*Resource.php |
-| Products | app/Filament/Resources/Products/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | EnterpriseContexts | app/Filament/Resources/EnterpriseContexts/*Resource.php |
+| 2 | Visions | app/Filament/Resources/Visions/*Resource.php |
+| 3 | Missions | app/Filament/Resources/Missions/*Resource.php |
+| 4 | Goals | app/Filament/Resources/Goals/*Resource.php |
+| 5 | Objectives | app/Filament/Resources/Objectives/*Resource.php |
+| 6 | Kpis | app/Filament/Resources/Kpis/*Resource.php |
+| 7 | MetricDefinitions | app/Filament/Resources/MetricDefinitions/*Resource.php |
+| 8 | Strategies | app/Filament/Resources/Strategies/*Resource.php |
+| 9 | Plans | app/Filament/Resources/Plans/*Resource.php |
+| 10 | Initiatives | app/Filament/Resources/Initiatives/*Resource.php |
+| 11 | Projects | app/Filament/Resources/Projects/*Resource.php |
+| 12 | Milestones | app/Filament/Resources/Milestones/*Resource.php |
+| 13 | Tasks | app/Filament/Resources/Tasks/*Resource.php |
+| 14 | WorkItems | app/Filament/Resources/WorkItems/*Resource.php |
+| 15 | Decisions | app/Filament/Resources/Decisions/*Resource.php |
+| 16 | EnterpriseDecisions | app/Filament/Resources/EnterpriseDecisions/*Resource.php |
+| 17 | Competitors | app/Filament/Resources/Competitors/*Resource.php |
+| 18 | Products | app/Filament/Resources/Products/*Resource.php |
 
 ### Knowledge Management
 
-Knowledge acquisition, documents, versions, references, indexing, and embeddings.
+Knowledge context and acquisition, documents, normalized knowledge, versioning, references, indexing, and embeddings.
 
-| Resource | Filament class location |
-| --- | --- |
-| KnowledgeContexts | app/Filament/Resources/KnowledgeContexts/*Resource.php |
-| KnowledgeSources | app/Filament/Resources/KnowledgeSources/*Resource.php |
-| KnowledgeDocuments | app/Filament/Resources/KnowledgeDocuments/*Resource.php |
-| KnowledgeItems | app/Filament/Resources/KnowledgeItems/*Resource.php |
-| KnowledgeVersions | app/Filament/Resources/KnowledgeVersions/*Resource.php |
-| KnowledgeSpecifications | app/Filament/Resources/KnowledgeSpecifications/*Resource.php |
-| KnowledgeReferences | app/Filament/Resources/KnowledgeReferences/*Resource.php |
-| KnowledgeIndexRecords | app/Filament/Resources/KnowledgeIndexRecords/*Resource.php |
-| KnowledgeIndexUnits | app/Filament/Resources/KnowledgeIndexUnits/*Resource.php |
-| KnowledgeEmbeddings | app/Filament/Resources/KnowledgeEmbeddings/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | KnowledgeContexts | app/Filament/Resources/KnowledgeContexts/*Resource.php |
+| 2 | KnowledgeSources | app/Filament/Resources/KnowledgeSources/*Resource.php |
+| 3 | KnowledgeDocuments | app/Filament/Resources/KnowledgeDocuments/*Resource.php |
+| 4 | KnowledgeItems | app/Filament/Resources/KnowledgeItems/*Resource.php |
+| 5 | KnowledgeVersions | app/Filament/Resources/KnowledgeVersions/*Resource.php |
+| 6 | KnowledgeSpecifications | app/Filament/Resources/KnowledgeSpecifications/*Resource.php |
+| 7 | KnowledgeReferences | app/Filament/Resources/KnowledgeReferences/*Resource.php |
+| 8 | KnowledgeIndexRecords | app/Filament/Resources/KnowledgeIndexRecords/*Resource.php |
+| 9 | KnowledgeIndexUnits | app/Filament/Resources/KnowledgeIndexUnits/*Resource.php |
+| 10 | KnowledgeEmbeddings | app/Filament/Resources/KnowledgeEmbeddings/*Resource.php |
 
 ### Agentic Flow
 
-Agents, Experts, assignments, execution state, delegation, memory, and approvals.
+Agents, Experts, runtime policy, assignments, execution state, delegation, decisions, memory, and approvals.
 
-| Resource | Filament class location |
-| --- | --- |
-| AgentDescriptors | app/Filament/Resources/AgentDescriptors/*Resource.php |
-| ExpertDescriptors | app/Filament/Resources/ExpertDescriptors/*Resource.php |
-| AgentRuntimePolicies | app/Filament/Resources/AgentRuntimePolicies/*Resource.php |
-| AgentAssignments | app/Filament/Resources/AgentAssignments/*Resource.php |
-| AgentExecutions | app/Filament/Resources/AgentExecutions/*Resource.php |
-| AgentExecutionSteps | app/Filament/Resources/AgentExecutionSteps/*Resource.php |
-| AgentExecutionEventRecords | app/Filament/Resources/AgentExecutionEventRecords/*Resource.php |
-| AgentDelegations | app/Filament/Resources/AgentDelegations/*Resource.php |
-| AgentDecisions | app/Filament/Resources/AgentDecisions/*Resource.php |
-| AgentEpisodicMemories | app/Filament/Resources/AgentEpisodicMemories/*Resource.php |
-| AgentSemanticMemories | app/Filament/Resources/AgentSemanticMemories/*Resource.php |
-| AgentSemanticMemoryVersions | app/Filament/Resources/AgentSemanticMemoryVersions/*Resource.php |
-| ApprovalPolicies | app/Filament/Resources/ApprovalPolicies/*Resource.php |
-| ApprovalRequests | app/Filament/Resources/ApprovalRequests/*Resource.php |
-| ApprovalDecisions | app/Filament/Resources/ApprovalDecisions/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | AgentDescriptors | app/Filament/Resources/AgentDescriptors/*Resource.php |
+| 2 | ExpertDescriptors | app/Filament/Resources/ExpertDescriptors/*Resource.php |
+| 3 | AgentRuntimePolicies | app/Filament/Resources/AgentRuntimePolicies/*Resource.php |
+| 4 | AgentAssignments | app/Filament/Resources/AgentAssignments/*Resource.php |
+| 5 | AgentExecutions | app/Filament/Resources/AgentExecutions/*Resource.php |
+| 6 | AgentExecutionSteps | app/Filament/Resources/AgentExecutionSteps/*Resource.php |
+| 7 | AgentExecutionEventRecords | app/Filament/Resources/AgentExecutionEventRecords/*Resource.php |
+| 8 | AgentDelegations | app/Filament/Resources/AgentDelegations/*Resource.php |
+| 9 | AgentDecisions | app/Filament/Resources/AgentDecisions/*Resource.php |
+| 10 | AgentEpisodicMemories | app/Filament/Resources/AgentEpisodicMemories/*Resource.php |
+| 11 | AgentSemanticMemories | app/Filament/Resources/AgentSemanticMemories/*Resource.php |
+| 12 | AgentSemanticMemoryVersions | app/Filament/Resources/AgentSemanticMemoryVersions/*Resource.php |
+| 13 | ApprovalPolicies | app/Filament/Resources/ApprovalPolicies/*Resource.php |
+| 14 | ApprovalRequests | app/Filament/Resources/ApprovalRequests/*Resource.php |
+| 15 | ApprovalDecisions | app/Filament/Resources/ApprovalDecisions/*Resource.php |
 
 ### Workflow Flow
 
-Persisted workflow definitions, stages, executions, jobs, and dependencies.
+Persisted workflow definitions, versions, stages, dependencies, executions, and jobs.
 
-| Resource | Filament class location |
-| --- | --- |
-| Workflows | app/Filament/Resources/Workflows/*Resource.php |
-| WorkflowVersions | app/Filament/Resources/WorkflowVersions/*Resource.php |
-| WorkflowStages | app/Filament/Resources/WorkflowStages/*Resource.php |
-| WorkflowExecutions | app/Filament/Resources/WorkflowExecutions/*Resource.php |
-| Jobs | app/Filament/Resources/Jobs/*Resource.php |
-| Executions | app/Filament/Resources/Executions/*Resource.php |
-| Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | Workflows | app/Filament/Resources/Workflows/*Resource.php |
+| 2 | WorkflowVersions | app/Filament/Resources/WorkflowVersions/*Resource.php |
+| 3 | WorkflowStages | app/Filament/Resources/WorkflowStages/*Resource.php |
+| 4 | Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
+| 5 | WorkflowExecutions | app/Filament/Resources/WorkflowExecutions/*Resource.php |
+| 6 | Executions | app/Filament/Resources/Executions/*Resource.php |
+| 7 | Jobs | app/Filament/Resources/Jobs/*Resource.php |
 
 ### Marketing
 
-Marketing strategy, content, audiences, channels, assets, media generation, and publishing state.
+Marketing strategy, campaigns, content planning, audiences, channels, production, generation/rendering, and publishing.
 
-| Resource | Filament class location |
-| --- | --- |
-| MarketingStrategies | app/Filament/Resources/MarketingStrategies/*Resource.php |
-| Campaigns | app/Filament/Resources/Campaigns/*Resource.php |
-| ContentSeries | app/Filament/Resources/ContentSeries/*Resource.php |
-| ContentItems | app/Filament/Resources/ContentItems/*Resource.php |
-| Scripts | app/Filament/Resources/Scripts/*Resource.php |
-| Audiences | app/Filament/Resources/Audiences/*Resource.php |
-| Channels | app/Filament/Resources/Channels/*Resource.php |
-| SocialAccounts | app/Filament/Resources/SocialAccounts/*Resource.php |
-| Publications | app/Filament/Resources/Publications/*Resource.php |
-| PublicationSchedules | app/Filament/Resources/PublicationSchedules/*Resource.php |
-| PublishingJobs | app/Filament/Resources/PublishingJobs/*Resource.php |
-| PublicationResults | app/Filament/Resources/PublicationResults/*Resource.php |
-| Assets | app/Filament/Resources/Assets/*Resource.php |
-| AssetVersions | app/Filament/Resources/AssetVersions/*Resource.php |
-| MediaMetadata | app/Filament/Resources/MediaMetadata/*Resource.php |
-| RenderRequests | app/Filament/Resources/RenderRequests/*Resource.php |
-| RenderJobs | app/Filament/Resources/RenderJobs/*Resource.php |
-| RenderOutputs | app/Filament/Resources/RenderOutputs/*Resource.php |
-| Transformations | app/Filament/Resources/Transformations/*Resource.php |
-| GenerationRequests | app/Filament/Resources/GenerationRequests/*Resource.php |
-| GenerationJobs | app/Filament/Resources/GenerationJobs/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | MarketingStrategies | app/Filament/Resources/MarketingStrategies/*Resource.php |
+| 2 | Campaigns | app/Filament/Resources/Campaigns/*Resource.php |
+| 3 | ContentSeries | app/Filament/Resources/ContentSeries/*Resource.php |
+| 4 | Audiences | app/Filament/Resources/Audiences/*Resource.php |
+| 5 | Channels | app/Filament/Resources/Channels/*Resource.php |
+| 6 | SocialAccounts | app/Filament/Resources/SocialAccounts/*Resource.php |
+| 7 | ContentItems | app/Filament/Resources/ContentItems/*Resource.php |
+| 8 | Scripts | app/Filament/Resources/Scripts/*Resource.php |
+| 9 | Assets | app/Filament/Resources/Assets/*Resource.php |
+| 10 | AssetVersions | app/Filament/Resources/AssetVersions/*Resource.php |
+| 11 | MediaMetadata | app/Filament/Resources/MediaMetadata/*Resource.php |
+| 12 | GenerationRequests | app/Filament/Resources/GenerationRequests/*Resource.php |
+| 13 | GenerationJobs | app/Filament/Resources/GenerationJobs/*Resource.php |
+| 14 | RenderRequests | app/Filament/Resources/RenderRequests/*Resource.php |
+| 15 | RenderJobs | app/Filament/Resources/RenderJobs/*Resource.php |
+| 16 | RenderOutputs | app/Filament/Resources/RenderOutputs/*Resource.php |
+| 17 | Transformations | app/Filament/Resources/Transformations/*Resource.php |
+| 18 | Publications | app/Filament/Resources/Publications/*Resource.php |
+| 19 | PublicationSchedules | app/Filament/Resources/PublicationSchedules/*Resource.php |
+| 20 | PublishingJobs | app/Filament/Resources/PublishingJobs/*Resource.php |
+| 21 | PublicationResults | app/Filament/Resources/PublicationResults/*Resource.php |
 
 ### Finance
 
-Financial accounts, periods, transactions, statements, customers, partners, invoices, and financial reporting.
+Financial context, counterparties, financial activity, planning/control structures, statements/invoices, and derived financial reporting.
 
-| Resource | Filament class location |
-| --- | --- |
-| FinancialAccounts | app/Filament/Resources/FinancialAccounts/*Resource.php |
-| FinancialPeriods | app/Filament/Resources/FinancialPeriods/*Resource.php |
-| TransactionCategories | app/Filament/Resources/TransactionCategories/*Resource.php |
-| Transactions | app/Filament/Resources/Transactions/*Resource.php |
-| Revenues | app/Filament/Resources/Revenues/*Resource.php |
-| Expenses | app/Filament/Resources/Expenses/*Resource.php |
-| Budgets | app/Filament/Resources/Budgets/*Resource.php |
-| Statements | app/Filament/Resources/Statements/*Resource.php |
-| StatementEntries | app/Filament/Resources/StatementEntries/*Resource.php |
-| Customers | app/Filament/Resources/Customers/*Resource.php |
-| Partners | app/Filament/Resources/Partners/*Resource.php |
-| Invoices | app/Filament/Resources/Invoices/*Resource.php |
-| FinancialReports | app/Filament/Resources/FinancialReports/*Resource.php |
-| BusinessHealthResults | app/Filament/Resources/BusinessHealthResults/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | FinancialAccounts | app/Filament/Resources/FinancialAccounts/*Resource.php |
+| 2 | FinancialPeriods | app/Filament/Resources/FinancialPeriods/*Resource.php |
+| 3 | TransactionCategories | app/Filament/Resources/TransactionCategories/*Resource.php |
+| 4 | Customers | app/Filament/Resources/Customers/*Resource.php |
+| 5 | Partners | app/Filament/Resources/Partners/*Resource.php |
+| 6 | Revenues | app/Filament/Resources/Revenues/*Resource.php |
+| 7 | Expenses | app/Filament/Resources/Expenses/*Resource.php |
+| 8 | Transactions | app/Filament/Resources/Transactions/*Resource.php |
+| 9 | Budgets | app/Filament/Resources/Budgets/*Resource.php |
+| 10 | Statements | app/Filament/Resources/Statements/*Resource.php |
+| 11 | StatementEntries | app/Filament/Resources/StatementEntries/*Resource.php |
+| 12 | Invoices | app/Filament/Resources/Invoices/*Resource.php |
+| 13 | FinancialReports | app/Filament/Resources/FinancialReports/*Resource.php |
+| 14 | BusinessHealthResults | app/Filament/Resources/BusinessHealthResults/*Resource.php |
 
 ### Reporting & Analytics
 
-Cross-domain reports, snapshots, and report metric values.
+Cross-domain reports, point-in-time snapshots, and recorded report metric values.
 
-| Resource | Filament class location |
-| --- | --- |
-| Reports | app/Filament/Resources/Reports/*Resource.php |
-| ReportSnapshots | app/Filament/Resources/ReportSnapshots/*Resource.php |
-| ReportMetricValues | app/Filament/Resources/ReportMetricValues/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | Reports | app/Filament/Resources/Reports/*Resource.php |
+| 2 | ReportSnapshots | app/Filament/Resources/ReportSnapshots/*Resource.php |
+| 3 | ReportMetricValues | app/Filament/Resources/ReportMetricValues/*Resource.php |
 
 ### Integrations & External Systems
 
-External resources, integrations, integration execution/results, and command webhook deliveries.
+External connections and resources, integration execution/results, and command webhook delivery records.
 
-| Resource | Filament class location |
-| --- | --- |
-| IntegrationConnections | app/Filament/Resources/IntegrationConnections/*Resource.php |
-| IntegrationJobs | app/Filament/Resources/IntegrationJobs/*Resource.php |
-| IntegrationResults | app/Filament/Resources/IntegrationResults/*Resource.php |
-| ExternalResources | app/Filament/Resources/ExternalResources/*Resource.php |
-| CommandWebhookDeliveries | app/Filament/Resources/CommandWebhookDeliveries/*Resource.php |
+| Position | Resource | Filament class location |
+| ---: | --- | --- |
+| 1 | IntegrationConnections | app/Filament/Resources/IntegrationConnections/*Resource.php |
+| 2 | ExternalResources | app/Filament/Resources/ExternalResources/*Resource.php |
+| 3 | IntegrationJobs | app/Filament/Resources/IntegrationJobs/*Resource.php |
+| 4 | IntegrationResults | app/Filament/Resources/IntegrationResults/*Resource.php |
+| 5 | CommandWebhookDeliveries | app/Filament/Resources/CommandWebhookDeliveries/*Resource.php |
 
 ### Navigation rules
+
+- The nine top-level navigation groups retain this exact order: Organization & Enterprise Scope, Enterprise Context, Knowledge Management, Agentic Flow, Workflow Flow, Marketing, Finance, Reporting & Analytics, Integrations & External Systems.
+- Every current Filament Resource must define an explicit numeric `$navigationSort`.
+- Sort values are unique within each group and use stable increments of 10 so future resources can be inserted deliberately.
+- Navigation sorting is an information-architecture concern. It does not define domain ownership, authorization, persistence boundaries, or execution authority.
+- New resources must be assigned deliberately to a documented position in the appropriate group rather than inheriting alphabetical or incidental ordering.
+- The Agentic Flow sequence preserves the Agent → Expert → Capability architecture and does not introduce a direct Agent → Capability relationship.
+- `app/Filament/Resources/Concerns` contains support traits and is not a resource group.
+
 
 - The top-level order is fixed as shown above.
 - Every actual Filament Resource belongs to exactly one group.

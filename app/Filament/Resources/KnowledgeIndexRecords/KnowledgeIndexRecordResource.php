@@ -17,6 +17,7 @@ class KnowledgeIndexRecordResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';
+    protected static ?int $navigationSort = 80;
 
     protected static ?string $navigationLabel = 'KnowledgeIndexRecords';
 

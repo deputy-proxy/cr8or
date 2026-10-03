@@ -67,6 +67,39 @@ it('maps every discovered Filament resource to exactly one current navigation gr
     }
 });
 
+it('orders every resource according to the canonical domain flow', function () {
+    $expectedOrder = [
+        'Organization & Enterprise Scope' => ['Organizations', 'Users', 'Memberships', 'Enterprises', 'Assignments'],
+        'Enterprise Context' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'MetricDefinitions', 'Strategies', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Decisions', 'EnterpriseDecisions', 'Competitors', 'Products'],
+        'Knowledge Management' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
+        'Agentic Flow' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentDelegations', 'AgentDecisions', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions', 'ApprovalPolicies', 'ApprovalRequests', 'ApprovalDecisions'],
+        'Workflow Flow' => ['Workflows', 'WorkflowVersions', 'WorkflowStages', 'Dependencies', 'WorkflowExecutions', 'Executions', 'Jobs'],
+        'Marketing' => ['MarketingStrategies', 'Campaigns', 'ContentSeries', 'Audiences', 'Channels', 'SocialAccounts', 'ContentItems', 'Scripts', 'Assets', 'AssetVersions', 'MediaMetadata', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
+        'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices', 'FinancialReports', 'BusinessHealthResults'],
+        'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues'],
+        'Integrations & External Systems' => ['IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries'],
+    ];
+
+    foreach ($expectedOrder as $group => $directories) {
+        $actual = [];
+
+        foreach ($directories as $directory) {
+            $resourceFile = glob(app_path("Filament/Resources/{$directory}/*Resource.php"));
+            expect($resourceFile)->toHaveCount(1);
+
+            $class = 'App\\\\Filament\\\\Resources\\\\'.$directory.'\\\\'.basename($resourceFile[0], '.php');
+            expect($class::getNavigationGroup())->toBe($group)
+                ->and($class::getNavigationSort())->toBe((array_search($directory, $directories, true) + 1) * 10);
+
+            $actual[] = [$class::getNavigationSort(), $directory];
+        }
+
+        $sorts = array_column($actual, 0);
+        expect($sorts)->toBe(array_values(array_unique($sorts)))
+            ->and($actual)->toBe(array_values($actual));
+    }
+});
+
 it('keeps non-resource Filament pages inside the current navigation taxonomy', function () {
     expect(AgentCollaborationReport::getNavigationGroup())->toBe('Reporting & Analytics');
 });

@@ -29,7 +29,7 @@ class PartnerResource extends Resource
 
     protected static ?string $navigationLabel = 'Partners';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 50;
 
     public static function form(Schema $schema): Schema
     {

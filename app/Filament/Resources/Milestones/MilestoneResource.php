@@ -30,7 +30,7 @@ class MilestoneResource extends Resource
 
     protected static ?string $navigationLabel = 'Milestones';
 
-    protected static ?int $navigationSort = 55;
+    protected static ?int $navigationSort = 120;
 
     public static function form(Schema $schema): Schema
     {

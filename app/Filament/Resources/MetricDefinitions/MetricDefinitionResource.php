@@ -17,6 +17,7 @@ class MetricDefinitionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static ?int $navigationSort = 70;
 
     protected static ?string $navigationLabel = 'MetricDefinitions';
 

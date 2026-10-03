@@ -30,7 +30,7 @@ class TaskResource extends Resource
 
     protected static ?string $navigationLabel = 'Tasks';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 130;
 
     public static function form(Schema $schema): Schema
     {

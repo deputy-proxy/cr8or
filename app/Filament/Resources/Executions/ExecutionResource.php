@@ -24,7 +24,7 @@ class ExecutionResource extends Resource
 
     protected static ?string $navigationLabel = 'Executions';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 60;
 
     public static function table(Table $table): Table
     {

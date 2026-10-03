@@ -25,7 +25,7 @@ class RenderRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'Render Requests';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 140;
 
     public static function form(Schema $schema): Schema
     {

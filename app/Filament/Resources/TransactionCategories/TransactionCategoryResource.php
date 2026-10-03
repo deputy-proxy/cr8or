@@ -29,7 +29,7 @@ class TransactionCategoryResource extends Resource
 
     protected static ?string $navigationLabel = 'Transaction Categories';
 
-    protected static ?int $navigationSort = 140;
+    protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
     {

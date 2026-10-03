@@ -27,7 +27,7 @@ class KnowledgeItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Knowledge Items';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

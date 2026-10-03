@@ -30,7 +30,7 @@ class WorkItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Work Items';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 140;
 
     public static function form(Schema $schema): Schema
     {

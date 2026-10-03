@@ -35,7 +35,7 @@ class MarketingStrategyResource extends Resource
 
     protected static ?string $navigationLabel = 'Marketing Strategies';
 
-    protected static ?int $navigationSort = 25;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {
