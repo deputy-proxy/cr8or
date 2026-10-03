@@ -27,7 +27,6 @@ class PublishingJobResource extends Resource
 
     protected static ?int $navigationSort = 210;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
