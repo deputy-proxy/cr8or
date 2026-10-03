@@ -65,7 +65,7 @@ it('enforces KPI authorization through the enterprise organization', function ()
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Kpi::class, $enterprise]))->toBeFalse();
 });
 
-it('keeps the KPI schema limited to phase 1 definition and recorded value fields', function () {
+it('keeps the KPI schema limited to supported definition and recorded value fields', function () {
     expect(Schema::getColumnListing('kpis'))->toBe([
         'id', 'enterprise_id', 'name', 'definition', 'unit', 'target_value', 'current_value', 'status', 'created_at', 'updated_at',
     ]);
