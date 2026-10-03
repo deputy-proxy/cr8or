@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Visions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Visions\Pages\CreateVision;
 use App\Filament\Resources\Visions\Pages\ListVisions;
 use App\Models\Vision;
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class VisionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Vision::class;
 
