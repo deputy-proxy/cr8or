@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Executions;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Executions\Pages\ListExecutions;
 use App\Models\Execution;
 use BackedEnum;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ExecutionResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Execution::class;
 
