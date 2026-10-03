@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Products;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ListProducts;
@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Product::class;
 
