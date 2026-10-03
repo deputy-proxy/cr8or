@@ -20,6 +20,8 @@ class IntegrationResultResource extends Resource
 
     protected static ?string $navigationLabel = 'IntegrationResults';
 
+    protected static ?int $navigationSort = 40;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
