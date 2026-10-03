@@ -128,7 +128,7 @@ Agents, Experts, assignments, execution state, delegation, memory, and approvals
 
 ### Workflow Flow
 
-Persisted workflow definitions, stages, executions, jobs, and dependencies.
+Persisted workflow definitions, stages, WorkflowExecutions, and dependencies.
 
 | Resource | Filament class location |
 | --- | --- |
@@ -136,8 +136,6 @@ Persisted workflow definitions, stages, executions, jobs, and dependencies.
 | WorkflowVersions | app/Filament/Resources/WorkflowVersions/*Resource.php |
 | WorkflowStages | app/Filament/Resources/WorkflowStages/*Resource.php |
 | WorkflowExecutions | app/Filament/Resources/WorkflowExecutions/*Resource.php |
-| Jobs | app/Filament/Resources/Jobs/*Resource.php |
-| Executions | app/Filament/Resources/Executions/*Resource.php |
 | Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
 
 ### Marketing
@@ -219,7 +217,7 @@ External resources, integrations, integration execution/results, and command web
 - **WorkItem** is a lightweight operational work subject. It belongs to an Enterprise, may belong to a Project, and can have a direct Workflow association. It intentionally does not carry Task hierarchy, priority, or due-date semantics.
 - A Project may contain Tasks and WorkItems independently. Their shared Enterprise/Project scope does not make one a specialization of the other.
 - A Workflow may carry `task_id`, `work_item_id`, both, or neither. These fields provide contextual references rather than defining an inheritance relationship. Existing execution tests explicitly preserve both contexts together.
-- An Execution snapshots both optional Task and WorkItem references and their historical names when present, preserving the distinction in runtime history.
+- A WorkflowExecution preserves Workflow context, including optional Task and WorkItem references carried by the Workflow definition. CR8OR does not use a generic Workflow Job -> Execution domain hierarchy.
 - WorkItem-specific governed operations (`work.item.create` and `work.item.update`) operate on WorkItems through the normal Capability boundary. Task remains a separate work-management model with its own policies and administration surface.
 
 This distinction is based on the verified repository schema, model relationships, workflow/execution persistence, services, policies, Filament resources, MCP capabilities, and tests. No schema migration or model merge is required.
