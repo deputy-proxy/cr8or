@@ -41,8 +41,6 @@ class RenderJobResource extends Resource
     {
         return $table->columns([
             TextColumn::make('request.id')->searchable()->sortable(),
-            TextColumn::make('workflowJob.id')->searchable()->sortable(),
-            TextColumn::make('execution.id')->searchable()->sortable(),
             TextColumn::make('external_job_id')->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
             TextColumn::make('failure_reason')->searchable()->sortable(),
