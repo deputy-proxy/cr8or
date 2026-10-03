@@ -94,7 +94,6 @@ it('rejects stale continuation tokens after the execution advances', function ()
         'workflow_version_id' => $workflow->published_version_id,
         'workflow_version' => $workflow->publishedVersion->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_PENDING,
     ]);
@@ -117,7 +116,6 @@ it('retries a failed execution using the same durable stage idempotency boundary
         'workflow_version_id' => $workflow->published_version_id,
         'workflow_version' => $workflow->publishedVersion->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_FAILED,
         'failure_reason' => 'Transient failure.',
@@ -139,7 +137,6 @@ it('resumes waiting-for-input state without losing execution state', function ()
         'workflow_version_id' => $workflow->published_version_id,
         'workflow_version' => $workflow->publishedVersion->version,
         'enterprise_id' => $enterprise->id,
-        'organization_id' => $enterprise->organization_id,
         'actor_id' => $actor->id,
         'status' => WorkflowExecution::STATUS_PENDING,
     ]);
