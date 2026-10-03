@@ -20,6 +20,8 @@ class WorkflowStageResource extends Resource
 
     protected static ?string $navigationLabel = 'WorkflowStages';
 
+    protected static ?int $navigationSort = 30;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
