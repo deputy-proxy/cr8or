@@ -30,7 +30,8 @@ class TransactionResource extends Resource
 
     protected static ?string $navigationLabel = 'Transactions';
 
-    protected static ?int $navigationSort = 130;
+    protected static ?int $navigationSort = 80;
+
 
     public static function form(Schema $schema): Schema
     {
