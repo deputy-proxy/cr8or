@@ -13,7 +13,7 @@ final class UpdateWorkItem implements Operation
 
     public function execute(User $actor, array $input): WorkItem
     {
-        $workItem = $input['work_item'] instanceof WorkItem
+        $workItem = ($input['work_item'] ?? null) instanceof WorkItem
             ? $input['work_item']
             : WorkItem::query()->findOrFail((int) $input['work_item_id']);
 

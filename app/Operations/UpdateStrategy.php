@@ -13,7 +13,7 @@ final class UpdateStrategy implements Operation
 
     public function execute(User $actor, array $input): Strategy
     {
-        $strategy = $input['strategy'] instanceof Strategy
+        $strategy = ($input['strategy'] ?? null) instanceof Strategy
             ? $input['strategy']
             : Strategy::query()->findOrFail((int) $input['strategy_id']);
 

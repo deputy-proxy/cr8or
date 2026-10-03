@@ -2,6 +2,7 @@
 
 use App\Agents\MarketingAgent;
 use App\Agents\OperationsAgent;
+use App\Data\CapabilityRequest;
 use App\Enums\MembershipRole;
 use App\Experts\MarketingExpert;
 use App\Mcp\Servers\Cr8orServer;
@@ -29,6 +30,7 @@ use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\User;
 use App\Models\WorkItem;
+use App\Services\CapabilityExecutionService;
 
 function mcpCapabilityOwner(User $user, Organization $organization): void
 {
@@ -93,6 +95,48 @@ it('uses the Agent to Expert and Expert to Capability boundaries for Expert MCP 
             'agent_execution_id' => $execution->getKey(),
         ])
         ->assertOk();
+});
+
+it('uses the same Capability boundary and Operation for direct and Agent-requested work-item updates', function () {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    mcpCapabilityOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    $directItem = WorkItem::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'name' => 'Direct before',
+    ]);
+    $agentItem = WorkItem::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'name' => 'Agent before',
+    ]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(UpdateWorkItemTool::class, [
+            'work_item_id' => $directItem->getKey(),
+            'name' => 'Direct after',
+        ])
+        ->assertOk();
+
+    [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
+
+    $result = app(CapabilityExecutionService::class)->execute(new CapabilityRequest(
+        capability: 'work.item.update',
+        assignment: $assignment,
+        execution: $execution,
+        actor: $actor,
+        targetContext: ['work_item_id' => $agentItem->getKey()],
+        inputPayload: ['name' => 'Agent after'],
+        expertSlug: 'operations',
+        correlationId: $execution->correlation_id,
+        idempotencyKey: 'agent-equivalent-update-'.$agentItem->getKey(),
+    ));
+
+    expect($result['status'])->toBe('executed')
+        ->and($directItem->refresh()->name)->toBe('Direct after')
+        ->and($agentItem->refresh()->name)->toBe('Agent after')
+        ->and($result['capability'])->toBe('work.item.update');
 });
 
 it('allows an authorized human to create and update a work item', function () {
