@@ -28,7 +28,6 @@ class KnowledgeVersionResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
-
     public static function form(Schema $schema): Schema
     {
         return KnowledgeVersionForm::configure($schema);
