@@ -30,7 +30,8 @@ class CompetitorResource extends Resource
 
     protected static ?string $navigationLabel = 'Competitors';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 170;
+
 
     public static function form(Schema $schema): Schema
     {
