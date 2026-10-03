@@ -82,12 +82,6 @@ class Workflow extends Model
         return $this->hasMany(WorkflowStage::class)->orderBy('sequence');
     }
 
-    /** @return HasMany<Job, $this> */
-    public function jobs(): HasMany
-    {
-        return $this->hasMany(Job::class);
-    }
-
     /** @return HasMany<AgentExecution, $this> */
     public function agentExecutions(): HasMany
     {
