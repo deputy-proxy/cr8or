@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\WorkflowExecution;
+use Illuminate\Support\Facades\Gate;
 
 class WorkflowExecutionPolicy
 {
@@ -19,8 +20,9 @@ class WorkflowExecutionPolicy
 
     private function canAccess(User $user, WorkflowExecution $execution): bool
     {
-        return $user->memberships()
-            ->where('organization_id', $execution->organization_id)
-            ->exists();
+        $execution->loadMissing('enterprise');
+
+        return $execution->enterprise !== null
+            && Gate::forUser($user)->allows('view', $execution->enterprise);
     }
 }
