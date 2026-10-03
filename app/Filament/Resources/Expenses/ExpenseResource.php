@@ -30,7 +30,8 @@ class ExpenseResource extends Resource
 
     protected static ?string $navigationLabel = 'Expenses';
 
-    protected static ?int $navigationSort = 190;
+    protected static ?int $navigationSort = 70;
+
 
     public static function form(Schema $schema): Schema
     {
