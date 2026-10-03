@@ -7,10 +7,15 @@ use App\Models\WorkflowExecution;
 use Illuminate\Support\Facades\Gate;
 
 it('authorizes workflow execution access by organization membership', function (): void {
-    $enterprise = Enterprise::factory()->create();
     $member = User::factory()->create();
     $foreignEnterprise = Enterprise::factory()->create();
     $foreign = User::factory()->create();
+
+    $execution = WorkflowExecution::factory()->create([
+        'actor_id' => $member->id,
+    ]);
+
+    $enterprise = $execution->workflow->enterprise;
 
     Membership::factory()->owner()->create([
         'user_id' => $member,
@@ -19,10 +24,6 @@ it('authorizes workflow execution access by organization membership', function (
     Membership::factory()->owner()->create([
         'user_id' => $foreign,
         'organization_id' => $foreignEnterprise->organization_id,
-    ]);
-
-    $execution = WorkflowExecution::factory()->forEnterprise($enterprise)->create([
-        'actor_id' => $member->id,
     ]);
 
     expect(Gate::forUser($member)->allows('view', $execution))->toBeTrue()
