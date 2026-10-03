@@ -20,6 +20,8 @@ class AgentExecutionStepResource extends Resource
 
     protected static ?string $navigationLabel = 'Agent Execution Steps';
 
+    protected static ?int $navigationSort = 60;
+
     public static function table(Table $table): Table
     {
         return $table->columns([
