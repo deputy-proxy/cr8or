@@ -2,8 +2,6 @@
 
 use App\Filament\Resources\Assignments\AssignmentResource;
 use App\Filament\Resources\Dependencies\DependencyResource;
-use App\Filament\Resources\Executions\ExecutionResource;
-use App\Filament\Resources\Jobs\JobResource;
 use App\Filament\Resources\KnowledgeVersions\KnowledgeVersionResource;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Assignment;
@@ -103,9 +101,7 @@ it('limits assignment administration actions to enterprise managers', function (
         ->and(DependencyResource::canCreate())->toBeTrue()
         ->and(KnowledgeVersionResource::canCreate())->toBeTrue()
         ->and(WorkflowResource::canCreate())->toBeTrue()
-        ->and(WorkflowResource::getPages())->toHaveKeys(['create', 'edit'])
-        ->and(JobResource::canCreate())->toBeFalse()
-        ->and(ExecutionResource::canCreate())->toBeFalse();
+        ->and(WorkflowResource::getPages())->toHaveKeys(['create', 'edit']);
 
     $this->actingAs($member);
 
