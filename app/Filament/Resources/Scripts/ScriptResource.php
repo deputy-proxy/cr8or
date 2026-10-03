@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Scripts;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Scripts\Pages\CreateScript;
 use App\Filament\Resources\Scripts\Pages\EditScript;
 use App\Filament\Resources\Scripts\Pages\ListScripts;
@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ScriptResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = Script::class;
 
