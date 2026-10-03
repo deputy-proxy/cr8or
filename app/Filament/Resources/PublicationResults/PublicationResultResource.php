@@ -27,7 +27,6 @@ class PublicationResultResource extends Resource
 
     protected static ?int $navigationSort = 220;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
