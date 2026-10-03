@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\FinancialPeriods;
 
-use App\Filament\Resources\Concerns\ScopesPhaseSixRecords;
+use App\Filament\Resources\Concerns\ScopesEnterpriseRecords;
 use App\Filament\Resources\FinancialPeriods\Pages\CreateFinancialPeriods;
 use App\Filament\Resources\FinancialPeriods\Pages\EditFinancialPeriods;
 use App\Filament\Resources\FinancialPeriods\Pages\ListFinancialPeriods;
@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FinancialPeriodResource extends Resource
 {
-    use ScopesPhaseSixRecords;
+    use ScopesEnterpriseRecords;
 
     protected static ?string $model = FinancialPeriod::class;
 
