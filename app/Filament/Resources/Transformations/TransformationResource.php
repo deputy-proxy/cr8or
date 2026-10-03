@@ -25,7 +25,8 @@ class TransformationResource extends Resource
 
     protected static ?string $navigationLabel = 'Transformations';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 170;
+
 
     public static function form(Schema $schema): Schema
     {
