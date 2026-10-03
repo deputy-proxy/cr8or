@@ -19,7 +19,9 @@ use App\Models\Competitor;
 use App\Models\Mission;
 use App\Models\Vision;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
 use App\Policies\StrategicRecordPolicy;
+use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\FailureTranslator;
@@ -99,6 +101,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Mission::class, StrategicRecordPolicy::class);
         Gate::policy(Vision::class, StrategicRecordPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
+        Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }
 
     /**
