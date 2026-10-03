@@ -26,7 +26,6 @@ class ExecutionResource extends Resource
 
     protected static ?int $navigationSort = 60;
 
-
     public static function table(Table $table): Table
     {
         return $table->columns([
