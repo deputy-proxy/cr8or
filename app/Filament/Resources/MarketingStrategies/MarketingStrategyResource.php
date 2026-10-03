@@ -37,7 +37,6 @@ class MarketingStrategyResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
-
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
