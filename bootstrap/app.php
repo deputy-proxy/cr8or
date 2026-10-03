@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         then: static function (): void {
             require base_path('routes/ai.php');
             require base_path('routes/integrations.php');
+            require base_path('routes/commands.php');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

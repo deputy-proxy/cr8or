@@ -61,4 +61,9 @@ return [
         ],
     ],
 
+    'command_webhooks' => [
+        'tolerance' => (int) env('CR8OR_COMMAND_WEBHOOK_TOLERANCE', 300),
+        'credentials' => json_decode((string) env('CR8OR_COMMAND_WEBHOOK_CREDENTIALS', '{}'), true) ?: [],
+    ],
+
 ];

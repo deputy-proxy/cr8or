@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\AI\Contracts\ModelProvider;
 use App\AI\Providers\LaravelAiProvider;
 use App\Contracts\CanvaClient as CanvaClientContract;
+use App\Contracts\CommandWebhookAuthenticator;
 use App\Contracts\CredentialResolver;
 use App\Contracts\IntegrationWebhookVerifier;
 use App\Contracts\KnowledgeEmbeddingProvider;
@@ -25,6 +26,7 @@ use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
 use App\Services\FailureTranslator;
+use App\Services\HmacCommandWebhookAuthenticator;
 use App\Services\HmacIntegrationWebhookVerifier;
 use App\Services\KnowledgeHybridRetrievalProvider;
 use App\Services\KnowledgeLexicalRetrievalProvider;
@@ -57,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         });
         $this->app->bind(MediaStorage::class, R2MediaStorage::class);
         $this->app->singleton(IntegrationWebhookVerifier::class, HmacIntegrationWebhookVerifier::class);
+        $this->app->singleton(CommandWebhookAuthenticator::class, HmacCommandWebhookAuthenticator::class);
         $this->app->singleton(PublishingProvider::class, function ($app): PublishingProvider {
             return $app->environment('testing')
                 ? new FakePublishingProvider
