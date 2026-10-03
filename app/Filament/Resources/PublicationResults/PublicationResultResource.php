@@ -25,7 +25,8 @@ class PublicationResultResource extends Resource
 
     protected static ?string $navigationLabel = 'Publication Results';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 220;
+
 
     public static function form(Schema $schema): Schema
     {
