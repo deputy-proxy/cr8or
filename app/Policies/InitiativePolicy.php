@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Initiative;
 use App\Models\Plan;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class InitiativePolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Initiative $initiative): bool
     {
         return (new EnterprisePolicy)->view($user, $initiative->plan->strategy->objective->enterprise);

@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Enums\MembershipRole;
 use App\Models\AgentDecision;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AgentDecisionPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, AgentDecision $record): bool
     {
         return $this->organizationRole($user, $record) !== null;

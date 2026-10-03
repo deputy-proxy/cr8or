@@ -76,7 +76,7 @@ class ExpenseResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && static::authorizedOrganizationIds()->exists();
+        return auth()->check() && \Illuminate\Support\Facades\Gate::allows('viewAny', static::getModel());
     }
 
     public static function getPages(): array

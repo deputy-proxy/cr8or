@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\Kpi;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class KpiPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Kpi $kpi): bool
     {
         return $this->enterprisePolicy()->view($user, $kpi->enterprise);

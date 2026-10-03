@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Enums\MembershipRole;
 use App\Models\AgentAssignment;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AgentAssignmentPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, AgentAssignment $assignment): bool
     {
         return $this->hasRole($user, $assignment, MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Member);

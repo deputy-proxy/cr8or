@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Enums\MembershipRole;
 use App\Models\ExpertDescriptor;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class ExpertDescriptorPolicy
 {
+    use HasExplicitCrudContract;
+
     public function viewAny(User $user): bool
     {
         return $this->manageable($user);

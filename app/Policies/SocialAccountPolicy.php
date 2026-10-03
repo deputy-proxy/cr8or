@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class SocialAccountPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $u, SocialAccount $a): bool
     {
         return (new EnterprisePolicy)->view($u, $a->enterprise);

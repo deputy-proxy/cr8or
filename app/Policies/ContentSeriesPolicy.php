@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Campaign;
 use App\Models\ContentSeries;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class ContentSeriesPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, ContentSeries $series): bool
     {
         return (new EnterprisePolicy)->view($user, $series->campaign->enterprise);

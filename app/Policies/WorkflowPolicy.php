@@ -6,9 +6,12 @@ use App\Enums\MembershipRole;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class WorkflowPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Workflow $record): bool
     {
         return $this->organizationRole($user, $record) !== null;

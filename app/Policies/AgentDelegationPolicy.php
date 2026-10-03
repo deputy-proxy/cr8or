@@ -4,9 +4,12 @@ namespace App\Policies;
 
 use App\Models\AgentDelegation;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AgentDelegationPolicy
 {
+    use HasExplicitCrudContract;
+
     public function viewAny(User $user): bool
     {
         return $user->memberships()->exists();

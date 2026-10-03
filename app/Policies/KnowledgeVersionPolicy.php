@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\KnowledgeVersion;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class KnowledgeVersionPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, KnowledgeVersion $record): bool
     {
         return (new EnterprisePolicy)->view($user, $record->enterprise);

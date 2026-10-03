@@ -4,10 +4,13 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\WorkflowExecution;
+use App\Policies\Concerns\HasExplicitCrudContract;
 use Illuminate\Support\Facades\Gate;
 
 class WorkflowExecutionPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, WorkflowExecution $execution): bool
     {
         return $this->canAccess($user, $execution);

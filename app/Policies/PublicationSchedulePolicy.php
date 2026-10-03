@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\PublicationSchedule;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class PublicationSchedulePolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, PublicationSchedule $schedule): bool
     {
         return (new EnterprisePolicy)->view($user, $schedule->enterprise);
@@ -15,7 +18,7 @@ class PublicationSchedulePolicy
 
     public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($user);
+        return false;
     }
 
     public function createForEnterprise(User $user, Enterprise $enterprise): bool
@@ -23,13 +26,13 @@ class PublicationSchedulePolicy
         return (new EnterprisePolicy)->update($user, $enterprise);
     }
 
-    public function update(User $user, PublicationSchedule $schedule): bool
+    public function update(User $user, object $record): bool
     {
-        return (new EnterprisePolicy)->update($user, $schedule->enterprise);
+        return false;
     }
 
-    public function delete(User $user, PublicationSchedule $schedule): bool
+    public function delete(User $user, object $record): bool
     {
-        return (new EnterprisePolicy)->delete($user, $schedule->enterprise);
+        return false;
     }
 }

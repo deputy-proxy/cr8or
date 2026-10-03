@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Dependency;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class DependencyPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Dependency $dependency): bool
     {
         return (new EnterprisePolicy)->view($user, $dependency->enterprise);

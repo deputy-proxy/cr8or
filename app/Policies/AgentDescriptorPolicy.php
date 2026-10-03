@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Enums\MembershipRole;
 use App\Models\AgentDescriptor;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class AgentDescriptorPolicy
 {
+    use HasExplicitCrudContract;
+
     public function viewAny(User $user): bool
     {
         return $this->manageable($user);

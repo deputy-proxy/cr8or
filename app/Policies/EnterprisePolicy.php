@@ -6,9 +6,12 @@ use App\Enums\MembershipRole;
 use App\Models\Enterprise;
 use App\Models\Organization;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class EnterprisePolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Enterprise $enterprise): bool
     {
         return $this->hasRole($user, $enterprise->organization_id, MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Member);

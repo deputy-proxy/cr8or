@@ -5,9 +5,12 @@ namespace App\Policies;
 use App\Models\Enterprise;
 use App\Models\Task;
 use App\Models\User;
+use App\Policies\Concerns\HasExplicitCrudContract;
 
 class TaskPolicy
 {
+    use HasExplicitCrudContract;
+
     public function view(User $user, Task $task): bool
     {
         return (new EnterprisePolicy)->view($user, $task->enterprise);
