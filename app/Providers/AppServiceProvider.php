@@ -98,7 +98,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Competitor::class, StrategicRecordPolicy::class);
         Gate::policy(Mission::class, StrategicRecordPolicy::class);
         Gate::policy(Vision::class, StrategicRecordPolicy::class);
-        Gate::policy(Workflow::class, WorkflowPolicy::class);
+        Gate::policy(Workflow::class, WorkflowPolicy::class);\n        Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }
 
     /**
