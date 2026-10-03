@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\GenerationRequests;
 
-use App\Filament\Resources\Concerns\ScopesPhaseOneRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\GenerationRequests\Pages\ListGenerationRequests;
 use App\Models\GenerationRequest;
 use BackedEnum;
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class GenerationRequestResource extends Resource
 {
-    use ScopesPhaseOneRecords;
+    use ScopesAuthorizedRecords;
 
     protected static ?string $model = GenerationRequest::class;
 
