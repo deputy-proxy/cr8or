@@ -9,6 +9,7 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkflowTool;
+use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
@@ -42,6 +43,7 @@ use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkflow;
+use App\Operations\UpdateWorkflow;
 use App\Operations\CreateWorkItem;
 use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
@@ -221,6 +223,17 @@ final class CapabilityRegistry
                 'none',
                 'lifecycle',
                 'mcp_workflow_create',
+            ),
+            $this->definition(
+                'workflow.update',
+                UpdateWorkflow::class,
+                UpdateWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required', 'name' => 'string|nullable', 'canonical_key' => 'string|nullable', 'purpose' => 'string|nullable', 'stages' => 'array|nullable', 'execution_policy' => 'object|nullable', 'completion_criteria' => 'object|nullable'],
+                ['success' => 'boolean', 'result' => 'workflow'],
+                'WorkflowPolicy::update + enterprise scope',
+                'none',
+                'mutation',
+                'mcp_workflow_update',
             ),
             $this->definition(
                 'workflow.publish',
