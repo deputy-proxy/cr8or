@@ -109,7 +109,7 @@ class WorkflowResource extends Resource
                         $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $capability);
                         $data['capability_input_contract'] = $definition->inputContract;
                         $data['capability_output_contract'] = $definition->outputContract;
-                        $data['input_contract'] = static::workflowInputContract($definition->inputContract, $data['input_contract'] ?? null);
+                        $data['input_contract'] = static::workflowInputContract($definition->inputContract, $data['input_contract'] ?? null, false);
                         $data['output_contract'] = ! empty($data['output_contract'] ?? null)
                             ? $data['output_contract']
                             : $definition->outputContract;
@@ -252,7 +252,7 @@ class WorkflowResource extends Resource
      * @param  array<string, string>  $capabilityInputContract
      * @return array<string, mixed>
      */
-    public static function workflowInputContract(array $capabilityInputContract, mixed $currentState = null): array
+    public static function workflowInputContract(array $capabilityInputContract, mixed $currentState = null, bool $deriveRequired = true): array
     {
         $existing = [];
 
@@ -275,7 +275,9 @@ class WorkflowResource extends Resource
             }
         }
 
-        $existing['required'] = $required;
+        if ($deriveRequired || ! array_key_exists('required', $existing)) {
+            $existing['required'] = $required;
+        }
         $existing['defaults'] = is_array($existing['defaults'] ?? null)
             ? $existing['defaults']
             : [];
