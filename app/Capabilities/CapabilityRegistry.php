@@ -232,7 +232,7 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'workflow'],
                 'WorkflowPolicy::update + enterprise scope',
                 'none',
-                'mutation',
+                'lifecycle',
                 'mcp_workflow_update',
             ),
             $this->definition(
