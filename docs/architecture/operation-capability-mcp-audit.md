@@ -37,6 +37,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | Capability | Operation | MCP Tool | Tool class | Category | Workflow | Direct | Entry | Authorization | Approval | Correlation | Idempotency | Failure |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | workflow.create | CreateWorkflow | mcp_workflow_create | CreateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::create + enterprise scope | none | no | no | standard |
+| workflow.update | UpdateWorkflow | mcp_workflow_update | UpdateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::update + enterprise scope | none | no | no | standard |
 | workflow.publish | PublishWorkflow | mcp_workflow_publish | PublishWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::view + immutable version publication | none | no | yes | standard |
 | workflow.discover | DiscoverWorkflows | list-workflows | ListWorkflowsTool | business | yes | yes | CapabilityInvocationService | Enterprise view authorization | none | no | no | standard |
 | workflow.execute | StartWorkflow | mcp_workflow_execute | StartWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | Published Workflow view authorization | none | yes | yes | standard |
@@ -131,6 +132,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateStrategyTool | GovernedCapabilityTool | governed business | strategy.create | CapabilityInvocationService |
 | CreateWorkItemTool | GovernedCapabilityTool | governed business | work.item.create | CapabilityInvocationService |
 | CreateWorkflowTool | GovernedCapabilityTool | lifecycle | workflow.create | CapabilityInvocationService |
+| UpdateWorkflowTool | GovernedCapabilityTool | lifecycle | workflow.update | CapabilityInvocationService |
 | DefineMarketingStrategySectionTool | GovernedCapabilityTool | governed business | marketing.strategy.section.define | CapabilityInvocationService |
 | DelegateAgentTool | GovernedCapabilityTool | lifecycle | agent.delegate | CapabilityInvocationService |
 | DisconnectSocialAccountTool | DomainMutationTool | governed business | marketing.social-account.disconnect | Operation direct |
@@ -274,6 +276,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateStrategy | strategy.create | create-strategy | governed |
 | CreateWorkItem | work.item.create | create-work-item | governed |
 | CreateWorkflow | workflow.create | mcp_workflow_create | lifecycle |
+| UpdateWorkflow | workflow.update | mcp_workflow_update | lifecycle |
 | DefineMarketingStrategySection | marketing.strategy.section.define | define-marketing-strategy-section | governed |
 | DelegateAgent | agent.delegate | mcp_agent_delegate | lifecycle |
 | DiscoverWorkflows | workflow.discover | list-workflows | governed |

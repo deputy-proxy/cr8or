@@ -72,6 +72,88 @@ final class WorkflowEntryPointService
         });
     }
 
+    /** @param array<string, mixed> $input */
+    public function update(User $actor, Workflow $workflow, array $input): Workflow
+    {
+        Gate::forUser($actor)->authorize('update', $workflow);
+
+        return DB::transaction(function () use ($workflow, $input): Workflow {
+            /** @var Workflow $workflow */
+            $workflow = Workflow::query()->lockForUpdate()->whereKey($workflow->getKey())->firstOrFail();
+
+            $attributes = array_intersect_key($input, array_flip([
+                'name',
+                'canonical_key',
+                'purpose',
+                'execution_policy',
+                'completion_criteria',
+                'project_id',
+                'task_id',
+                'work_item_id',
+            ]));
+
+            if ($attributes !== []) {
+                $workflow->fill($attributes);
+                $workflow->save();
+            }
+
+            if (array_key_exists('stages', $input)) {
+                $stages = is_array($input['stages']) ? $input['stages'] : [];
+                $keys = array_values(array_filter(array_map(
+                    static function (mixed $stage): ?string {
+                        return is_array($stage) && is_string($stage['key'] ?? null)
+                            ? $stage['key']
+                            : null;
+                    },
+                    $stages,
+                )));
+
+                WorkflowStage::query()
+                    ->where('workflow_id', $workflow->getKey())
+                    ->when($keys !== [], fn ($query) => $query->whereNotIn('key', $keys))
+                    ->delete();
+
+                foreach ($stages as $stage) {
+                    $expertSlugs = $this->list($stage['expert_slugs'] ?? []);
+                    $capabilitySlugs = $this->list($stage['capability_slugs'] ?? []);
+
+                    if (count($expertSlugs) !== 1 || count($capabilitySlugs) !== 1) {
+                        throw new AuthorizationException(
+                            'Each Workflow stage must declare exactly one Expert and one Capability.',
+                        );
+                    }
+
+                    $capability = $this->expertCapabilities->resolve($expertSlugs[0], $capabilitySlugs[0]);
+                    $stageModel = WorkflowStage::query()->firstOrNew([
+                        'workflow_id' => $workflow->getKey(),
+                        'key' => $stage['key'],
+                    ]);
+
+                    $stageModel->fill([
+                        'name' => $stage['name'] ?? $stage['key'],
+                        'sequence' => $stage['sequence'] ?? 1,
+                        'dependencies' => $stage['dependencies'] ?? [],
+                        'expert_slugs' => $expertSlugs,
+                        'capability_slugs' => $capabilitySlugs,
+                        'capability_input_contract' => $capability->inputContract,
+                        'capability_output_contract' => $capability->outputContract,
+                        'input_contract' => $stage['input_contract'] ?? [],
+                        'output_contract' => filled($stage['output_contract'] ?? null)
+                            ? $stage['output_contract']
+                            : $capability->outputContract,
+                        'repeatable' => (bool) ($stage['repeatable'] ?? false),
+                        'completion_criteria' => $stage['completion_criteria'] ?? [],
+                    ]);
+                    $stageModel->save();
+                }
+            }
+
+            app(WorkflowDefinitionValidator::class)->validateWorkflow($workflow->refresh());
+
+            return $workflow->refresh();
+        });
+    }
+
     /**
      * @return list<string>
      */

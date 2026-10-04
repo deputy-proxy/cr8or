@@ -124,6 +124,7 @@ use App\Mcp\Tools\UpdateObjectiveTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
+use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Mcp\Tools\VerifyMarketingGraphTool;
 use Laravel\Mcp\Server;
@@ -245,6 +246,7 @@ class Cr8orServer extends Server
 
         CreateWorkItemTool::class,
         CreateWorkflowTool::class,
+        UpdateWorkflowTool::class,
         PublishWorkflowTool::class,
         ListWorkflowsTool::class,
         StartWorkflowTool::class,

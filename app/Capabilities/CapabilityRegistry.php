@@ -28,6 +28,7 @@ use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
+use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
@@ -84,6 +85,7 @@ use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
+use App\Operations\UpdateWorkflow;
 use App\Operations\UpdateWorkItem;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -180,11 +182,13 @@ final class CapabilityRegistry
                 );
             }
 
-            if (! is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true)) {
+            $usesGovernedBoundary = is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true);
+
+            if (! $usesGovernedBoundary) {
                 if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
                     throw new InvalidArgumentException(
                         "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
@@ -221,6 +225,17 @@ final class CapabilityRegistry
                 'none',
                 'lifecycle',
                 'mcp_workflow_create',
+            ),
+            $this->definition(
+                'workflow.update',
+                UpdateWorkflow::class,
+                UpdateWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required', 'name' => 'string|nullable', 'canonical_key' => 'string|nullable', 'purpose' => 'string|nullable', 'stages' => 'array|nullable', 'execution_policy' => 'object|nullable', 'completion_criteria' => 'object|nullable'],
+                ['success' => 'boolean', 'result' => 'workflow'],
+                'WorkflowPolicy::update + enterprise scope',
+                'none',
+                'lifecycle',
+                'mcp_workflow_update',
             ),
             $this->definition(
                 'workflow.publish',
