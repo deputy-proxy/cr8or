@@ -43,7 +43,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | ContentSeries | ContentSeries | Content Series | Content Series | Content Series | Marketing | 30 | campaign_id, name, description, status, name, campaign.name, status, transition, status |
 | Customers | Customer | Customers | Customer | Customers | Finance | 40 | enterprise_id, name |
 | Decisions | Decision | Decisions | Decision | Decisions | Enterprise Context | 150 | enterprise_id, type, actor_id, objective_id, strategy_id, plan_id, initiative_id, project_id, task_id, work_item_id, title, summary, rationale, decided_at, title, type, enterprise.name, actor_name, decided_at |
-| Dependencies | Dependency | Dependencies | Dependencie | Dependencies | Workflow Flow | 40 | predecessor.name, successor.name, type, project.name, enterprise.name |
+| Dependencies | Dependency | Dependencies | Dependency | Dependencies | Work | 50 | predecessor.name, successor.name, type, project.name, enterprise.name |
 | EnterpriseContexts | EnterpriseContext | Enterprise Contexts | Enterprise Context | Enterprise Contexts | Enterprise Context | 10 | enterprise_id, enterprise.name |
 | EnterpriseDecisions | EnterpriseDecision | Enterprise Decisions | Enterprise Decision | Enterprise Decisions | Enterprise Context | 160 | enterprise_id, title |
 | Enterprises | Enterprise | Enterprises | Enterprise | Enterprises | Organization & Enterprise Scope | 40 | organization_id, name |
