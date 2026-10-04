@@ -107,19 +107,19 @@ it('hydrates persisted Workflow stage Expert and Capability selections as scalar
 });
 
 it('preserves caller-owned workflow required inputs when editing a persisted stage', function (): void {
-    $organization = \App\\Models\\Organization::factory()->create();
-    $owner = \App\\Models\\User::factory()->create();
-    \App\\Models\\Membership::factory()->owner()->create([
+    $organization = \App\Models\Organization::factory()->create();
+    $owner = \App\Models\User::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
         'user_id' => $owner->getKey(),
         'organization_id' => $organization->getKey(),
     ]);
-    $enterprise = \App\\Models\\Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
-    \App\\Models\\ExpertDescriptor::query()->updateOrCreate(
+    $enterprise = \App\Models\Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(
         ['slug' => 'marketing'],
-        ['runtime_class' => \App\\Experts\\MarketingExpert::class, 'enabled' => true],
+        ['runtime_class' => \App\Experts\MarketingExpert::class, 'enabled' => true],
     );
 
-    $workflow = app(\App\\Services\\WorkflowEntryPointService::class)->create($owner, $enterprise, [
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($owner, $enterprise, [
         'name' => 'Workflow contract preservation test',
         'stages' => [[
             'key' => 'audience',
@@ -137,7 +137,7 @@ it('preserves caller-owned workflow required inputs when editing a persisted sta
 
     $this->actingAs($owner);
 
-    \\Livewire\\Livewire::test(\App\\Filament\\Resources\\Workflows\\Pages\\EditWorkflow::class, [
+    \Livewire\Livewire::test(\App\Filament\Resources\Workflows\Pages\EditWorkflow::class, [
         'record' => $workflow->getKey(),
     ])
         ->assertSet('data.stages.record-1.input_contract', json_encode([
