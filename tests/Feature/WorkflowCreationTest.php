@@ -62,3 +62,23 @@ it('requires enterprise-scoped Workflow creation authorization', function (): vo
         ],
     ]))->toThrow(AuthorizationException::class);
 });
+
+it('reconciles a workflow stage schema missing canonical capability contract snapshot columns', function (): void {
+    $schema = \Illuminate\Support\Facades\Schema::connection('sqlite');
+    $schema->table('workflow_stages', function (\Illuminate\Database\Schema\Blueprint $table): void {
+        $table->dropColumn(['capability_input_contract', 'capability_output_contract']);
+    });
+
+    expect($schema->hasColumns('workflow_stages', [
+        'capability_input_contract',
+        'capability_output_contract',
+    ]))->toBeFalse();
+
+    $migration = require base_path('database/migrations/2026_10_04_130000_reconcile_workflow_stage_capability_contract_columns.php');
+    $migration->up();
+
+    expect($schema->hasColumns('workflow_stages', [
+        'capability_input_contract',
+        'capability_output_contract',
+    ]))->toBeTrue();
+});
