@@ -245,7 +245,7 @@ class WorkflowResource extends Resource
                                 ->helperText('Workflow-level output/completion configuration. The canonical Capability output contract is shown above.'),
                         ])
                         ->columns(2)
-                        ->columnSpan(6),
+                        ->columnSpan(4),
                 ]),
         ]);
     }
