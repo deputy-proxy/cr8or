@@ -30,6 +30,12 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
     }
 
     /** @param array<string, mixed> $input */
+    protected function humanAbility(User $actor, array $input): ?array
+    {
+        return null;
+    }
+
+    /** @param array<string, mixed> $input */
     protected function executeCapability(CapabilityRegistry $registry, User $actor, array $input): mixed
     {
         $enterprise = $this->resolveEnterprise($input);
@@ -46,7 +52,7 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
                 'approval_request_id' => $approval?->getKey(),
             ], static fn (mixed $value): bool => $value !== null);
 
-        return $this->invokeCapability($registry, $actor, $enterprise, $input, $targetContext, null, $this->expertSlug());
+        return $this->invokeCapability($registry, $actor, $enterprise, $input, $targetContext, $this->humanAbility($actor, $input), $this->expertSlug());
     }
 
     /** @param array<string, mixed> $input */
