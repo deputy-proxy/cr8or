@@ -223,6 +223,7 @@ final class WorkflowDefinitionValidator
             }
 
             $errors = [...$errors, ...$this->validateMappings($stage, $keys)];
+            $errors = [...$errors, ...$this->validateRequiredInputs($stage, $stages)];
         }
 
         $errors = [...$errors, ...$this->validateDependencyCycles($stages)];
@@ -290,6 +291,87 @@ final class WorkflowDefinitionValidator
         }
 
         return $errors;
+    }
+
+    /**
+     * Required stage inputs must either be supplied by the workflow caller/runtime,
+     * have a default, or be explicitly mapped. If an upstream stage exposes the
+     * same field, an explicit mapping is mandatory so the data-flow graph is
+     * deterministic and inspectable.
+     *
+     * @param  list<WorkflowStage>  $stages
+     * @return list<array{stage?: string, code: string, message: string, expert?: string, capability?: string}>
+     */
+    private function validateRequiredInputs(WorkflowStage $stage, array $stages): array
+    {
+        $contract = $this->array($stage->getAttribute('input_contract'));
+        $required = $this->list($contract['required'] ?? []);
+        $defaults = $this->array($contract['defaults'] ?? []);
+        $mappings = $this->array($contract['mappings'] ?? []);
+        $errors = [];
+
+        foreach ($required as $input) {
+            if (array_key_exists($input, $defaults) || array_key_exists($input, $mappings) || in_array($input, $this->runtimeProvidedInputs(), true)) {
+                continue;
+            }
+
+            foreach ($stages as $producer) {
+                if ($producer->key === $stage->key || (int) $producer->sequence >= (int) $stage->sequence) {
+                    continue;
+                }
+
+                if ($this->outputContractHasPath($producer->getAttribute('output_contract'), $input)) {
+                    $errors[] = $this->stageError(
+                        $stage,
+                        'mapping.required.missing',
+                        "Workflow stage [{$stage->key}] requires [{$input}] from upstream stage [{$producer->key}] but declares no input mapping for it.",
+                    );
+                    break;
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Verify that a mapped stage output exists in the producer's declared output
+     * contract. Empty contracts are treated as opaque because some capabilities
+     * intentionally return dynamic payloads.
+     */
+    private function outputContractHasPath(mixed $contractValue, string $path): bool
+    {
+        $contract = $this->array($contractValue);
+        if ($contract === []) {
+            return true;
+        }
+
+        $segments = explode('.', $path);
+        $node = $contract;
+
+        foreach ($segments as $segment) {
+            if (isset($node['properties']) && is_array($node['properties'])) {
+                if (! array_key_exists($segment, $node['properties'])) {
+                    return false;
+                }
+                $node = is_array($node['properties'][$segment]) ? $node['properties'][$segment] : [];
+                continue;
+            }
+
+            if (array_key_exists($segment, $node)) {
+                $node = is_array($node[$segment]) ? $node[$segment] : [];
+                continue;
+            }
+
+            if (isset($node['required']) && is_array($node['required']) && in_array($segment, $node['required'], true)) {
+                $node = [];
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
