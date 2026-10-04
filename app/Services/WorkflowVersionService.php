@@ -109,6 +109,7 @@ final class WorkflowVersionService
         $stages = $workflow->stages()->get()->map(fn ($stage): array => [
             'key' => $stage->key,
             'name' => $stage->name,
+            'instruction' => $stage->instruction,
             'sequence' => $stage->sequence,
             'dependencies' => $stage->dependencies ?? [],
             'expert_slugs' => $stage->expert_slugs ?? [],
