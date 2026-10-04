@@ -29,8 +29,10 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
         return $this->definition($registry)->key;
     }
 
-    /** @param array<string, mixed> $input */
-    protected function humanAbility(User $actor, array $input): ?array{string, mixed}
+    /** @param array<string, mixed> $input
+     * @return array{string, mixed}|null
+     */
+    protected function humanAbility(User $actor, array $input): ?array
     {
         return null;
     }
