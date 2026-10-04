@@ -176,18 +176,14 @@ final class CapabilityRegistry
             /** @var class-string $toolClass */
             $toolClass = $definition->toolClass;
             $source = (new \ReflectionClass($toolClass))->getFileName();
-            if (!is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
-                throw new InvalidArgumentException(
-                    "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not implement the Capability boundary.",
-                );
-            }
+            $usesGovernedBoundary = is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
+                || is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true);
 
-            if (!is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
-                && !is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
-                && !is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
-                && !is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
-                && !is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true)) {
-                if ($source === false || !str_contains((string) file_get_contents($source), 'invokeCapability(')) {
+            if (! $usesGovernedBoundary) {
+                if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
                     throw new InvalidArgumentException(
                         "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
                     );
