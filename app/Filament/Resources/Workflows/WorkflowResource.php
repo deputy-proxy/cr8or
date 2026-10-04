@@ -48,7 +48,7 @@ class WorkflowResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make()
+            Grid::make(2)
                 ->schema([
                     Section::make('Workflow')
                         ->schema([
@@ -245,7 +245,7 @@ class WorkflowResource extends Resource
                                 ->helperText('Workflow-level output/completion configuration. The canonical Capability output contract is shown above.'),
                         ])
                         ->columns(2)
-                        ->columnSpan(4),
+                        ->columnSpan(6),
                 ]),
         ]);
     }
