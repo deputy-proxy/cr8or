@@ -37,7 +37,8 @@ it('creates a workflow with its canonical key through the governed entry point',
         ->and($workflow->stages->first()->expert_slugs)->toBe(['marketing'])
         ->and($workflow->stages->first()->capability_slugs)->toBe(['marketing.strategy.create'])
         ->and($workflow->stages->first()->capability_input_contract)->not->toBeEmpty()
-        ->and($workflow->stages->first()->capability_output_contract)->not->toBeEmpty();
+        ->and($workflow->stages->first()->capability_output_contract)->not->toBeEmpty()
+        ->and($workflow->stages->first()->output_contract)->not->toBeEmpty();
 });
 
 it('requires enterprise-scoped Workflow creation authorization', function (): void {

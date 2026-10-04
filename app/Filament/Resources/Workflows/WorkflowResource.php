@@ -170,6 +170,10 @@ class WorkflowResource extends Resource
                                     static::workflowInputContract($definition->inputContract, $get('input_contract')),
                                 ),
                             );
+                            $set(
+                                'output_contract',
+                                static::formatJsonContract($definition->outputContract),
+                            );
                         }),
 
                     Textarea::make('capability_input_contract')

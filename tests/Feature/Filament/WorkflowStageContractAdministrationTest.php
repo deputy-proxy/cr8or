@@ -60,3 +60,12 @@ it('accepts serialized workflow input orchestration state', function (): void {
         'required' => ['name'],
     ]);
 });
+it('uses the canonical capability output contract for workflow output configuration', function (): void {
+    $definition = app(\App\Services\ExpertCapabilityResolver::class)->resolve(
+        'marketing',
+        'marketing.strategy.create',
+    );
+
+    expect(\App\Filament\Resources\Workflows\WorkflowResource::formatJsonContract($definition->outputContract))
+        ->toBe(json_encode($definition->outputContract, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+});

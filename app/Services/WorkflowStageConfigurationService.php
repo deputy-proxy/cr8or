@@ -25,6 +25,7 @@ final class WorkflowStageConfigurationService
             $stage->forceFill([
                 'capability_input_contract' => $definition->inputContract,
                 'capability_output_contract' => $definition->outputContract,
+                'output_contract' => $stage->output_contract ?: $definition->outputContract,
             ])->saveQuietly();
         }
     }

@@ -60,7 +60,7 @@ final class WorkflowEntryPointService
                     'capability_input_contract' => $capability->inputContract,
                     'capability_output_contract' => $capability->outputContract,
                     'input_contract' => $stage['input_contract'] ?? [],
-                    'output_contract' => $stage['output_contract'] ?? [],
+                    'output_contract' => $stage['output_contract'] ?? $capability->outputContract,
                     'repeatable' => (bool) ($stage['repeatable'] ?? false),
                     'completion_criteria' => $stage['completion_criteria'] ?? [],
                 ]);
