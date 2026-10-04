@@ -48,7 +48,7 @@ class WorkflowResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make(8)
+            Grid::make()
                 ->schema([
                     Section::make('Workflow')
                         ->schema([
