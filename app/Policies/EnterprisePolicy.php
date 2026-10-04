@@ -43,6 +43,14 @@ class EnterprisePolicy
             ->where('organization_id', $organizationId)
             ->value('role');
 
+        if ($role === null) {
+            return false;
+        }
+
+        $role = $role instanceof MembershipRole
+            ? $role
+            : MembershipRole::tryFrom((string) $role);
+
         return $role !== null && in_array($role, $roles, true);
     }
 }
