@@ -39,6 +39,13 @@ class WorkflowPolicy
         return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
     }
 
+    public function delete(User $user, Workflow $record): bool
+    {
+        $role = $this->organizationRole($user, $record);
+
+        return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
+    }
+
     private function organizationRole(User $user, Workflow $record): ?MembershipRole
     {
         return $user->memberships()
