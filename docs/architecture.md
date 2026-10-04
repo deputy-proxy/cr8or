@@ -126,9 +126,17 @@ Agents, Experts, assignments, execution state, delegation, memory, and approvals
 | ApprovalRequests | app/Filament/Resources/ApprovalRequests/*Resource.php |
 | ApprovalDecisions | app/Filament/Resources/ApprovalDecisions/*Resource.php |
 
+### Work
+
+Operational work structure and Work-domain relationships. Work Dependencies are directional relationships between supported Work records and are consumed by WorkContextAssembler. They are not Workflow orchestration dependencies.
+
+| Resource | Filament class location |
+| --- | --- |
+| Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
+
 ### Workflow Flow
 
-Persisted workflow definitions, stages, WorkflowExecutions, and dependencies.
+Persisted workflow definitions, stages, and WorkflowExecutions. Workflow Stage dependencies are persisted as part of WorkflowStage definitions and are validated by the Workflow definition validator. They are distinct from Work Dependencies.
 
 | Resource | Filament class location |
 | --- | --- |
@@ -136,7 +144,6 @@ Persisted workflow definitions, stages, WorkflowExecutions, and dependencies.
 | WorkflowVersions | app/Filament/Resources/WorkflowVersions/*Resource.php |
 | WorkflowStages | app/Filament/Resources/WorkflowStages/*Resource.php |
 | WorkflowExecutions | app/Filament/Resources/WorkflowExecutions/*Resource.php |
-| Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
 
 ### Marketing
 
@@ -231,7 +238,7 @@ Within each navigation group, the resource tables above are the canonical logica
 - Foundational scope/context records precede dependent records.
 - Definitions precede runtime and execution records.
 - Agent resources follow **Agent → Expert → runtime policy → assignment → execution → delegation/decision → memory → approval**.
-- Workflow resources follow **definition → version → stage → dependency → execution**.
+- Workflow resources follow **definition → version → stage → execution**; stage dependencies remain internal to the workflow definition contract.
 - Knowledge resources follow **context/source → document/item → version/specification/reference → index → embedding**.
 - Marketing follows **strategy → campaign/content planning → audience/channel/account → content/script → asset/media/generation/rendering → publication/publishing/result**.
 - Finance follows **financial context → counterparties/activity → planning/statements/invoices → reporting/health**.

@@ -23,6 +23,7 @@ Consequential state changes use an application/domain path rather than arbitrary
 - ContentItem: descriptive editing while draft/in-review; review/approval/publication lifecycle through `ContentItemService`.
 - Publication: publication lifecycle/execution boundary.
 - Decision: historical context is protected by model invariants; mutable explanatory content remains controlled human data.
+- Dependency: descriptive Work-domain CRUD is policy-authorized, while model save invariants enforce supported endpoints, Enterprise/Project consistency, duplicate prevention, and acyclic `blocks` semantics. Workflow Stage dependencies remain a separate workflow-definition concern.
 
 ## C. Read-only operational, derived, and historical records
 

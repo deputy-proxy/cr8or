@@ -190,7 +190,23 @@ class WorkContextAssembler
             ->orderByDesc('id')
             ->limit(self::CONTEXT_LIMIT);
 
-        return $query->get()->map(fn (Dependency $dependency) => [
+        return $query->get()->filter(function (Dependency $dependency) use ($enterprise): bool {
+            if (! DependencyService::isSupportedEndpointType($dependency->predecessor_type) || ! DependencyService::isSupportedEndpointType($dependency->successor_type)) {
+                return false;
+            }
+
+            try {
+                $predecessor = DependencyService::endpointClass($dependency->predecessor_type)::query()->whereKey($dependency->predecessor_id)->first();
+                $successor = DependencyService::endpointClass($dependency->successor_type)::query()->whereKey($dependency->successor_id)->first();
+            } catch (\InvalidArgumentException) {
+                return false;
+            }
+
+            return $predecessor !== null
+                && $successor !== null
+                && (int) $predecessor->enterprise_id === (int) $enterprise->getKey()
+                && (int) $successor->enterprise_id === (int) $enterprise->getKey();
+        })->map(fn (Dependency $dependency) => [
             'id' => $dependency->getKey(),
             'project_id' => $dependency->project_id,
             'predecessor' => [
@@ -202,7 +218,7 @@ class WorkContextAssembler
                 'id' => $dependency->successor_id,
             ],
             'type' => $dependency->type,
-        ])->all();
+        ])->values()->all();
     }
 
     /**

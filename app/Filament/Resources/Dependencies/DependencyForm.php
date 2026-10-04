@@ -3,9 +3,7 @@
 namespace App\Filament\Resources\Dependencies;
 
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
-use App\Models\Project;
-use App\Models\Task;
-use App\Models\WorkItem;
+use App\Services\DependencyService;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -51,34 +49,28 @@ class DependencyForm
                 ->disabled(fn (Get $get): bool => blank($get('successor_type')))
                 ->required(),
             Select::make('type')
-                ->options(['blocks' => 'Blocks', 'relates_to' => 'Relates to'])
+                ->options(['blocks' => 'Blocks'])
+                ->default('blocks')
                 ->required(),
         ]);
     }
 
-    /** @return array<class-string, string> */
+    /** @return array<string, string> */
     private static function workRecordTypes(): array
     {
-        return [
-            Project::class => 'Project',
-            Task::class => 'Task',
-            WorkItem::class => 'Work item',
-        ];
+        return collect(DependencyService::ENDPOINT_TYPES)
+            ->mapWithKeys(fn (string $class): array => [$class => class_basename($class)])
+            ->all();
     }
 
     /** @return array<int, string> */
     private static function workRecordOptions(?string $type): array
     {
-        $model = match ($type) {
-            Project::class => Project::class,
-            Task::class => Task::class,
-            WorkItem::class => WorkItem::class,
-            default => null,
-        };
-
-        if ($model === null) {
+        if ($type === null || $type === '') {
             return [];
         }
+
+        $model = DependencyService::endpointClass($type);
 
         return $model::query()
             ->whereIn('enterprise_id', self::manageableEnterpriseIds())

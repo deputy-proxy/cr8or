@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\DependencyType;
+use App\Services\DependencyService;
 use Database\Factories\DependencyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +16,18 @@ class Dependency extends Model
 {
     /** @use HasFactory<DependencyFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $dependency): void {
+            DependencyService::validate($dependency);
+        });
+    }
+
+    protected function casts(): array
+    {
+        return ['type' => DependencyType::class];
+    }
 
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo

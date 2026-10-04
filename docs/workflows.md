@@ -31,3 +31,11 @@ MCP is an entry and continuation interface for Workflow lifecycle operations. Li
 ## Enterprise isolation
 
 Workflow, WorkflowVersion and WorkflowExecution are Enterprise-scoped. Cross-Enterprise access fails closed. Published versions are immutable so later edits cannot silently change historical execution semantics.
+## Work Dependencies vs Workflow Stage Dependencies
+
+CR8OR contains two independent dependency concepts.
+
+- **Work Dependency:** a directional `blocks` relationship between Project, Task, WorkItem, or Milestone records. It belongs to the Work domain, is Enterprise-scoped, may be Project-scoped, and is validated for endpoint integrity, duplicates, and cycles. Work Dependencies may be included in authorized Agent Work context.
+- **Workflow Stage Dependency:** a deterministic ordering/dependency relationship between stages in a Workflow definition. It is validated by the Workflow definition validator and participates in Workflow publication/execution.
+
+The `Dependency` Eloquent model represents only the first concept. Workflow Stage dependencies must not be persisted or validated through the Work Dependency model.
