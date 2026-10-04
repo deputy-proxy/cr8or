@@ -9,11 +9,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['workflow_id', 'key', 'name', 'sequence', 'dependencies', 'expert_slugs', 'capability_slugs', 'input_contract', 'output_contract', 'repeatable', 'completion_criteria'])]
+#[Fillable([
+    'workflow_id',
+    'key',
+    'name',
+    'sequence',
+    'dependencies',
+    'expert_slugs',
+    'capability_slugs',
+    'capability_input_contract',
+    'capability_output_contract',
+    'input_contract',
+    'output_contract',
+    'repeatable',
+    'completion_criteria',
+])]
 /**
  * @property array<int, string>|null $dependencies
  * @property array<int, string>|null $expert_slugs
  * @property array<int, string>|null $capability_slugs
+ * @property array<string, string>|null $capability_input_contract
+ * @property array<string, string>|null $capability_output_contract
  * @property array<string, mixed>|null $input_contract
  * @property array<string, mixed>|null $output_contract
  * @property array<string, mixed>|null $completion_criteria
@@ -25,7 +41,17 @@ class WorkflowStage extends Model
 
     protected function casts(): array
     {
-        return ['dependencies' => 'array', 'expert_slugs' => 'array', 'capability_slugs' => 'array', 'input_contract' => 'array', 'output_contract' => 'array', 'repeatable' => 'boolean', 'completion_criteria' => 'array'];
+        return [
+            'dependencies' => 'array',
+            'expert_slugs' => 'array',
+            'capability_slugs' => 'array',
+            'capability_input_contract' => 'array',
+            'capability_output_contract' => 'array',
+            'input_contract' => 'array',
+            'output_contract' => 'array',
+            'repeatable' => 'boolean',
+            'completion_criteria' => 'array',
+        ];
     }
 
     /** @return BelongsTo<Workflow, $this> */

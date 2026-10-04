@@ -113,6 +113,8 @@ final class WorkflowVersionService
             'dependencies' => $stage->dependencies ?? [],
             'expert_slugs' => $stage->expert_slugs ?? [],
             'capability_slugs' => $stage->capability_slugs ?? [],
+            'capability_input_contract' => $stage->capability_input_contract ?? [],
+            'capability_output_contract' => $stage->capability_output_contract ?? [],
             'input_contract' => $stage->input_contract ?? [],
             'output_contract' => $stage->output_contract ?? [],
             'repeatable' => (bool) $stage->repeatable,

@@ -12,7 +12,10 @@ use App\Models\WorkflowVersion;
 
 final class WorkflowDefinitionValidator
 {
-    public function __construct(private readonly CapabilityRegistry $capabilities) {}
+    public function __construct(
+        private readonly CapabilityRegistry $capabilities,
+        private readonly ExpertCapabilityResolver $expertCapabilities,
+    ) {}
 
     public function validateWorkflow(Workflow $workflow): void
     {
@@ -51,6 +54,8 @@ final class WorkflowDefinitionValidator
                 'dependencies' => json_encode($definition['dependencies'] ?? [], JSON_THROW_ON_ERROR),
                 'expert_slugs' => json_encode($definition['expert_slugs'] ?? [], JSON_THROW_ON_ERROR),
                 'capability_slugs' => json_encode($definition['capability_slugs'] ?? [], JSON_THROW_ON_ERROR),
+                'capability_input_contract' => json_encode($definition['capability_input_contract'] ?? [], JSON_THROW_ON_ERROR),
+                'capability_output_contract' => json_encode($definition['capability_output_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'input_contract' => json_encode($definition['input_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'output_contract' => json_encode($definition['output_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'repeatable' => (bool) ($definition['repeatable'] ?? false),
@@ -178,6 +183,42 @@ final class WorkflowDefinitionValidator
                         );
                     }
 
+                }
+            }
+
+            if (count($expertSlugs) === 1 && count($capabilitySlugs) === 1) {
+                try {
+                    $definition = $this->expertCapabilities->resolve($expertSlugs[0], $capabilitySlugs[0]);
+                    $storedInputContract = $this->array($stage->getAttribute('capability_input_contract'));
+                    $storedOutputContract = $this->array($stage->getAttribute('capability_output_contract'));
+
+                    if ($storedInputContract !== [] && $storedInputContract !== $definition->inputContract) {
+                        $errors[] = $this->stageError(
+                            $stage,
+                            'capability.input_contract.mismatch',
+                            "Workflow stage [{$key}] contains a Capability input contract that does not match the canonical definition.",
+                            expert: $expertSlugs[0],
+                            capability: $capabilitySlugs[0],
+                        );
+                    }
+
+                    if ($storedOutputContract !== [] && $storedOutputContract !== $definition->outputContract) {
+                        $errors[] = $this->stageError(
+                            $stage,
+                            'capability.output_contract.mismatch',
+                            "Workflow stage [{$key}] contains a Capability output contract that does not match the canonical definition.",
+                            expert: $expertSlugs[0],
+                            capability: $capabilitySlugs[0],
+                        );
+                    }
+                } catch (\Throwable $exception) {
+                    $errors[] = $this->stageError(
+                        $stage,
+                        'capability.resolution.failed',
+                        $exception->getMessage(),
+                        expert: $expertSlugs[0],
+                        capability: $capabilitySlugs[0],
+                    );
                 }
             }
 

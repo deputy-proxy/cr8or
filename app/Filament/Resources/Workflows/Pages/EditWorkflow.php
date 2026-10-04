@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Workflows\Pages;
 
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Workflow;
+use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -21,5 +22,13 @@ class EditWorkflow extends EditRecord
         }
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        /** @var Workflow $workflow */
+        $workflow = $this->record;
+
+        app(WorkflowStageConfigurationService::class)->synchronizeCapabilityContracts($workflow);
     }
 }

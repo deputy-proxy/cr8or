@@ -234,3 +234,43 @@ it('fails closed across enterprises for Workflow MCP entry points', function ():
 
     expect(AgentExecution::query()->count())->toBe(0);
 });
+
+it('rejects Workflow creation for a non-manager even when the actor can view the enterprise', function (): void {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    Membership::factory()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(CreateWorkflowTool::class, [
+            'enterprise_id' => $enterprise->id,
+            'name' => 'Unauthorized MCP workflow',
+            'stages' => workflowMcpInput(),
+        ])
+        ->assertHasErrors();
+
+    expect(Workflow::query()->where('name', 'Unauthorized MCP workflow')->exists())->toBeFalse();
+});
+
+it('rejects a Workflow stage capability that is not exposed by its Expert', function (): void {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    workflowMcpOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    $input = workflowMcpInput();
+    $input[0]['capability_slugs'] = ['marketing.strategy.create'];
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(CreateWorkflowTool::class, [
+            'enterprise_id' => $enterprise->id,
+            'name' => 'Invalid Expert Capability workflow',
+            'stages' => $input,
+        ])
+        ->assertHasErrors();
+
+    expect(Workflow::query()->where('name', 'Invalid Expert Capability workflow')->exists())->toBeFalse();
+});
