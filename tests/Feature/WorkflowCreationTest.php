@@ -26,6 +26,7 @@ it('creates a workflow with its canonical key through the governed entry point',
                 'sequence' => 1,
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.strategy.create'],
+                'output_contract' => [],
             ],
         ],
     ]);
@@ -62,7 +63,6 @@ it('requires enterprise-scoped Workflow creation authorization', function (): vo
         ],
     ]))->toThrow(AuthorizationException::class);
 });
-
 it('reconciles a workflow stage schema missing canonical capability contract snapshot columns', function (): void {
     $schema = \Illuminate\Support\Facades\Schema::connection('sqlite');
     $schema->table('workflow_stages', function (\Illuminate\Database\Schema\Blueprint $table): void {
