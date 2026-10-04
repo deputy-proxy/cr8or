@@ -137,16 +137,13 @@ class WorkflowResource extends Resource
                                 ->required()
                                 ->maxLength(255),
 
-                            Textarea::make('instruction')
-                                ->label('Instruction')
-                                ->rows(5)
-                                ->maxLength(10000)
-                                ->helperText('Instructions for the model when generating this stage output. This is separate from the Capability input contract.'),
-
                             TextInput::make('sequence')
                                 ->numeric()
                                 ->required()
-                                ->default(1),
+                                ->default(1),   
+                                
+                            Toggle::make('repeatable')
+                                ->default(false),
 
                             Select::make('expert_slugs')
                                 ->label('Expert')
@@ -226,9 +223,12 @@ class WorkflowResource extends Resource
                                 ->formatStateUsing(fn ($state, Get $get): string => static::formatCapabilityContract($state, $get, false))
                                 ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
                                 ->helperText('Read-only. Derived from the selected CapabilityRegistry definition.'),
-
-                            Toggle::make('repeatable')
-                                ->default(false),
+                            
+                            Textarea::make('instruction')
+                                ->label('Instruction')
+                                ->rows(5)
+                                ->maxLength(10000)
+                                ->helperText('Instructions for the model when generating this stage output. This is separate from the Capability input contract.'),                            
 
                             Textarea::make('input_contract')
                                 ->label('Workflow Input Mapping / Defaults')
