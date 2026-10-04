@@ -109,3 +109,38 @@ it('rejects an Agent Execution with a conflicting enterprise identity', function
         'execution_context' => ['enterprise_identity' => ['id' => $enterprise->getKey(), 'slug' => 'blckdsgncom']],
     ])->create())->toThrow(\LogicException::class, 'enterprise identity does not match');
 });
+
+it('resolves a dotted canonical slug without converting it to a hyphenated slug', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization,
+        'name' => 'plan.gifts',
+        'slug' => 'plan.gifts',
+    ]);
+
+    $resolved = app(EnterpriseIdentityResolver::class)->resolve($user, slug: 'plan.gifts');
+
+    expect($resolved->is($enterprise))->toBeTrue();
+});
+
+it('prefers an exact canonical slug when both dotted and normalized slugs exist', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
+    $canonical = Enterprise::factory()->create([
+        'organization_id' => $organization,
+        'name' => 'plan.gifts',
+        'slug' => 'plan.gifts',
+    ]);
+    Enterprise::factory()->create([
+        'organization_id' => $organization,
+        'name' => 'plan-gifts',
+        'slug' => 'plan-gifts',
+    ]);
+
+    $resolved = app(EnterpriseIdentityResolver::class)->resolve($user, slug: 'plan.gifts');
+
+    expect($resolved->is($canonical))->toBeTrue();
+});
