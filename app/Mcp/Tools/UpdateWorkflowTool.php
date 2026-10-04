@@ -56,6 +56,7 @@ class UpdateWorkflowTool extends GovernedCapabilityTool
                 'stages' => ['sometimes', 'array', 'min:1'],
                 'stages.*.key' => ['required_with:stages', 'string', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
                 'stages.*.name' => ['nullable', 'string', 'max:255'],
+                'stages.*.instruction' => ['nullable', 'string', 'max:10000'],
                 'stages.*.sequence' => ['nullable', 'integer', 'min:1'],
                 'stages.*.dependencies' => ['nullable', 'array'],
                 'stages.*.expert_slugs' => ['required_with:stages', 'array', 'min:1'],
