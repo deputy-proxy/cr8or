@@ -26,14 +26,13 @@ it('gets an enterprise by canonical slug', function () {
         ->assertSee([(string) $enterprise->getKey(), 'valid-guide', 'valid.guide']);
 });
 
-it('gets an enterprise by a human-entered name that normalizes to its canonical slug', function () {
+it('rejects a non-canonical human-entered name', function () {
     [$user, $organization] = getEnterpriseActor();
-    Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'valid-guide']);
+    Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'valid.guide']);
 
     Cr8orServer::actingAs($user, 'api')
-        ->tool(GetEnterpriseTool::class, ['slug' => 'valid.guide'])
-        ->assertOk()
-        ->assertSee('valid-guide');
+        ->tool(GetEnterpriseTool::class, ['slug' => 'valid-guide'])
+        ->assertHasErrors();
 });
 
 it('keeps id lookup compatible and returns the authoritative identity pair', function () {
