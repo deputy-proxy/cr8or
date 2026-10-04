@@ -113,7 +113,7 @@ final class WorkflowExecutionService
             $failed = WorkflowExecution::query()->find($execution->getKey());
 
             if ($failed !== null && $failed->status !== WorkflowExecution::STATUS_COMPLETED) {
-                $failed->continuation_token = (string) str()->uuid();
+                $failed->continuation_token = (string) str()->uuid()->toString();
                 $failed->fail($exception->getMessage())->save();
             }
 
@@ -295,8 +295,11 @@ final class WorkflowExecutionService
                 continue;
             }
 
+            $asArray = str_ends_with($source, '[]');
+            $path = $asArray ? substr($source, 0, -2) : $source;
+
             $value = $context;
-            foreach (explode('.', $source) as $segment) {
+            foreach (explode('.', $path) as $segment) {
                 if (! is_array($value) || ! array_key_exists($segment, $value)) {
                     $value = null;
                     break;
@@ -305,7 +308,7 @@ final class WorkflowExecutionService
             }
 
             if ($value !== null) {
-                $resolved[$target] = $value;
+                $resolved[$target] = $asArray ? [$value] : $value;
             }
         }
 
