@@ -3,6 +3,7 @@
 namespace App\Capabilities;
 
 use App\Contracts\Operation;
+use App\Enums\CapabilityExecutionMode;
 use InvalidArgumentException;
 use Laravel\Mcp\Server\Tool;
 
@@ -23,6 +24,8 @@ final readonly class CapabilityDefinition
         public string $approvalRequirement,
         public CapabilityFailureContract $failureContract = new CapabilityFailureContract([]),
         public string $category = 'business',
+        /** @var list<CapabilityExecutionMode> */
+        public array $executionModes = [CapabilityExecutionMode::HUMAN, CapabilityExecutionMode::AGENT, CapabilityExecutionMode::WORKFLOW],
     ) {
         if ($key === '' || ! preg_match('/^[a-z0-9]+(?:\.[a-z0-9_-]+)+$/', $key)) {
             throw new InvalidArgumentException("Invalid capability identifier [{$key}].");
@@ -48,6 +51,14 @@ final readonly class CapabilityDefinition
             throw new InvalidArgumentException("Capability [{$key}] must define authorization requirements.");
         }
 
+        if ($executionModes === []) {
+            throw new InvalidArgumentException("Capability [{$key}] must define supported execution modes.");
+        }
+
+        if (count(array_unique(array_map(static fn (CapabilityExecutionMode $mode): string => $mode->value, $executionModes))) !== count($executionModes)) {
+            throw new InvalidArgumentException("Capability [{$key}] must not repeat execution modes.");
+        }
+
         if ($failureContract->toArray() === []) {
             throw new InvalidArgumentException("Capability [{$key}] must define a failure contract.");
         }
@@ -59,5 +70,10 @@ final readonly class CapabilityDefinition
         if (! in_array($category, ['business', 'lifecycle', 'read', 'support'], true)) {
             throw new InvalidArgumentException("Invalid Capability category [{$category}] for [{$key}].");
         }
+    }
+
+    public function supportsExecutionMode(CapabilityExecutionMode $mode): bool
+    {
+        return in_array($mode, $this->executionModes, true);
     }
 }
