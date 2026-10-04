@@ -30,7 +30,7 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
     }
 
     /** @param array<string, mixed> $input */
-    protected function humanAbility(User $actor, array $input): ?array
+    protected function humanAbility(User $actor, array $input): ?array{string, mixed}
     {
         return null;
     }
