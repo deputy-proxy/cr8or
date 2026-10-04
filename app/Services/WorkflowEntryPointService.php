@@ -53,6 +53,7 @@ final class WorkflowEntryPointService
                     'workflow_id' => $workflow->getKey(),
                     'key' => $stage['key'],
                     'name' => $stage['name'] ?? $stage['key'],
+                    'instruction' => $stage['instruction'] ?? null,
                     'sequence' => $stage['sequence'] ?? 0,
                     'dependencies' => $stage['dependencies'] ?? [],
                     'expert_slugs' => $expertSlugs,
@@ -131,6 +132,7 @@ final class WorkflowEntryPointService
 
                     $stageModel->fill([
                         'name' => $stage['name'] ?? $stage['key'],
+                        'instruction' => $stage['instruction'] ?? null,
                         'sequence' => $stage['sequence'] ?? 1,
                         'dependencies' => $stage['dependencies'] ?? [],
                         'expert_slugs' => $expertSlugs,
@@ -242,6 +244,7 @@ final class WorkflowEntryPointService
             'id' => $stage->getKey(),
             'key' => $stage->key,
             'name' => $stage->name,
+            'instruction' => $stage->instruction,
             'sequence' => $stage->sequence,
             'dependencies' => $stage->dependencies,
             'expert_slugs' => $stage->expert_slugs,

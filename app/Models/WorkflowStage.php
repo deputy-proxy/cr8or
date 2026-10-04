@@ -13,6 +13,7 @@ use LogicException;
     'workflow_id',
     'key',
     'name',
+    'instruction',
     'sequence',
     'dependencies',
     'expert_slugs',
@@ -25,6 +26,7 @@ use LogicException;
     'completion_criteria',
 ])]
 /**
+ * @property string|null $instruction
  * @property array<int, string>|null $dependencies
  * @property array<int, string>|null $expert_slugs
  * @property array<int, string>|null $capability_slugs

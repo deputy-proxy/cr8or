@@ -124,6 +124,7 @@ it('preserves caller-owned workflow required inputs when editing a persisted sta
         'stages' => [[
             'key' => 'audience',
             'name' => 'Create audience',
+            'instruction' => 'Define the audience precisely from the strategy context.',
             'sequence' => 1,
             'expert_slugs' => ['marketing'],
             'capability_slugs' => ['marketing.audience.create'],
@@ -140,6 +141,7 @@ it('preserves caller-owned workflow required inputs when editing a persisted sta
     \Livewire\Livewire::test(\App\Filament\Resources\Workflows\Pages\EditWorkflow::class, [
         'record' => $workflow->getKey(),
     ])
+        ->assertSet('data.stages.record-1.instruction', 'Define the audience precisely from the strategy context.')
         ->assertSet('data.stages.record-1.input_contract', json_encode([
             'required' => ['name', 'description'],
             'defaults' => [],

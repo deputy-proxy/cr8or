@@ -25,6 +25,7 @@ function workflowUpdateStages(string $stageKey = 'research'): array
     return [[
         'key' => $stageKey,
         'name' => ucfirst($stageKey),
+        'instruction' => 'Generate stage output using the supplied context and keep the result specific to the workflow objective.',
         'sequence' => 1,
         'dependencies' => [],
         'expert_slugs' => ['business-analysis'],
@@ -91,6 +92,7 @@ it('updates workflow metadata and stages through the governed MCP capability', f
         ->and($workflow->purpose)->toBe('Updated through MCP.')
         ->and($workflow->stages()->count())->toBe(1)
         ->and($workflow->stages()->firstOrFail()->key)->toBe('analysis')
+        ->and($workflow->stages()->firstOrFail()->instruction)->toBe('Generate stage output using the supplied context and keep the result specific to the workflow objective.')
         ->and($workflow->stages()->firstOrFail()->capability_input_contract)->not->toBe([])
         ->and($workflow->published_version_id)->toBeNull();
 });
@@ -118,7 +120,8 @@ it('keeps the immutable published version until the edited workflow is republish
     expect($workflow->refresh()->published_version_id)->toBe($version->id)
         ->and($version->refresh()->status)->toBe('published')
         ->and($version->name)->toBe('Published workflow')
-        ->and($version->stage_definitions[0]['key'])->toBe('research');
+        ->and($version->stage_definitions[0]['key'])->toBe('research')
+        ->and($version->stage_definitions[0]['instruction'])->toBe('Generate stage output using the supplied context and keep the result specific to the workflow objective.');
 });
 
 it('rejects workflow updates for non-managers', function (): void {
