@@ -161,6 +161,7 @@ it('resolves structured execution input per stage and preserves workflow context
             [
                 'key' => 'first',
                 'name' => 'First',
+                'instruction' => 'Generate the first stage output from the supplied context.',
                 'sequence' => 1,
                 'dependencies' => [],
                 'expert_slugs' => ['business-analysis'],
@@ -177,6 +178,7 @@ it('resolves structured execution input per stage and preserves workflow context
             [
                 'key' => 'second',
                 'name' => 'Second',
+                'instruction' => 'Generate the second stage output using the completed first stage.',
                 'sequence' => 2,
                 'dependencies' => ['first'],
                 'expert_slugs' => ['business-analysis'],
@@ -232,6 +234,7 @@ it('gives mapped values precedence over supplied stage input', function (): void
             [
                 'key' => 'first',
                 'name' => 'First',
+                'instruction' => 'Generate the first stage output from the supplied context.',
                 'sequence' => 1,
                 'dependencies' => [],
                 'expert_slugs' => ['business-analysis'],
@@ -248,6 +251,7 @@ it('gives mapped values precedence over supplied stage input', function (): void
             [
                 'key' => 'second',
                 'name' => 'Second',
+                'instruction' => 'Generate the second stage output using the completed first stage.',
                 'sequence' => 2,
                 'dependencies' => ['first'],
                 'expert_slugs' => ['business-analysis'],
