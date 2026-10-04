@@ -156,8 +156,20 @@ class WorkflowResource extends Resource
                             }
 
                             $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $state);
-                            $set('capability_input_contract', $definition->inputContract);
-                            $set('capability_output_contract', $definition->outputContract);
+                            $set(
+                                'capability_input_contract',
+                                static::formatJsonContract($definition->inputContract),
+                            );
+                            $set(
+                                'capability_output_contract',
+                                static::formatJsonContract($definition->outputContract),
+                            );
+                            $set(
+                                'input_contract',
+                                static::formatJsonContract(
+                                    static::workflowInputContract($definition->inputContract, $get('input_contract')),
+                                ),
+                            );
                         }),
 
                     Textarea::make('capability_input_contract')
@@ -199,6 +211,60 @@ class WorkflowResource extends Resource
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $contract
+     */
+    public static function formatJsonContract(array $contract): string
+    {
+        return (string) json_encode(
+            $contract,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
+    }
+
+    /**
+     * Build the Workflow orchestration input contract from the canonical Capability input contract.
+     *
+     * The Capability contract answers what the Capability accepts. The Workflow contract answers
+     * how those values are supplied at execution time, so defaults and mappings remain editable.
+     *
+     * @param  array<string, string>  $capabilityInputContract
+     * @return array<string, mixed>
+     */
+    public static function workflowInputContract(array $capabilityInputContract, mixed $currentState = null): array
+    {
+        $existing = [];
+
+        if (is_array($currentState)) {
+            $existing = $currentState;
+        } elseif (is_string($currentState) && trim($currentState) !== '') {
+            try {
+                $decoded = json_decode($currentState, true, 512, JSON_THROW_ON_ERROR);
+                $existing = is_array($decoded) ? $decoded : [];
+            } catch (\JsonException) {
+                $existing = [];
+            }
+        }
+
+        $required = [];
+        foreach ($capabilityInputContract as $key => $rule) {
+            $rules = explode('|', $rule);
+            if (in_array('required', $rules, true)) {
+                $required[] = $key;
+            }
+        }
+
+        $existing['required'] = $required;
+        $existing['defaults'] = is_array($existing['defaults'] ?? null)
+            ? $existing['defaults']
+            : [];
+        $existing['mappings'] = is_array($existing['mappings'] ?? null)
+            ? $existing['mappings']
+            : [];
+
+        return $existing;
+    }
+
     public static function formatCapabilityContract(mixed $state, Get $get, bool $input): string
     {
         $contract = is_array($state) && $state !== [] ? $state : null;
@@ -216,7 +282,7 @@ class WorkflowResource extends Resource
         }
 
         return is_array($contract)
-            ? (string) json_encode($contract, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
+            ? static::formatJsonContract($contract)
             : (string) ($state ?? '');
     }
 
