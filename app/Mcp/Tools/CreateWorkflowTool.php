@@ -43,6 +43,7 @@ class CreateWorkflowTool extends GovernedCapabilityTool
                 'stages' => ['required', 'array', 'min:1'],
                 'stages.*.key' => ['required', 'string', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
                 'stages.*.name' => ['nullable', 'string', 'max:255'],
+                'stages.*.instruction' => ['nullable', 'string', 'max:10000'],
                 'stages.*.sequence' => ['nullable', 'integer', 'min:0'],
                 'stages.*.dependencies' => ['nullable', 'array'],
                 'stages.*.expert_slugs' => ['required', 'array', 'min:1'],
