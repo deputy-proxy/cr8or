@@ -40,6 +40,8 @@ final class WorkflowExecutionService
             return $existing;
         }
 
+        $this->validateExecutionInput($version, $input);
+
         $execution = DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId): WorkflowExecution {
             return WorkflowExecution::query()->create([
                 'workflow_id' => $workflow->getKey(),
@@ -53,11 +55,7 @@ final class WorkflowExecutionService
                 'continuation_token' => (string) str()->uuid(),
                 'input' => $input,
                 'outputs' => [],
-                'context' => [
-                    ...$input,
-                    'workflow_version_id' => $version->getKey(),
-                    'workflow_version' => $version->version,
-                ],
+                'context' => $this->initialExecutionContext($input, $version),
             ]);
         });
 
@@ -244,8 +242,9 @@ final class WorkflowExecutionService
         $required = is_array($requiredValue) ? $requiredValue : [];
 
         $inputValue = $execution->getAttribute('input');
-        /** @var array<string, mixed> $input */
-        $input = is_array($inputValue) ? $inputValue : [];
+        /** @var array<string, mixed> $executionInput */
+        $executionInput = is_array($inputValue) ? $inputValue : [];
+        $input = $this->resolveStageInput($stage, $executionInput);
         $mappedInput = $this->resolveMappedInput($stage, $context);
         $defaultsValue = $inputContract['defaults'] ?? [];
         /** @var array<string, mixed> $defaults */
@@ -281,6 +280,127 @@ final class WorkflowExecutionService
         );
 
         return $this->capabilities->invoke($request);
+    }
+
+    /**
+     * Build the durable execution context from workflow-level input.
+     *
+     * Structured input keeps workflow-level values under `workflow` so they cannot
+     * overwrite stage input when the Capability request target context is assembled.
+     * Legacy flat input preserves the historical context shape for existing workflows.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function initialExecutionContext(array $input, WorkflowVersion $version): array
+    {
+        if (! array_key_exists('stages', $input)) {
+            return [
+                ...$input,
+                'workflow_version_id' => $version->getKey(),
+                'workflow_version' => $version->version,
+            ];
+        }
+
+        $workflowInput = is_array($input['workflow'] ?? null) ? $input['workflow'] : [];
+
+        return [
+            'workflow' => $workflowInput,
+            'workflow_version_id' => $version->getKey(),
+            'workflow_version' => $version->version,
+        ];
+    }
+
+    /**
+     * Resolve caller-supplied input for the current stage.
+     *
+     * Structured execution input uses `stages.<stage_key>`. The legacy flat input
+     * shape remains supported for existing workflows that have not yet migrated.
+     *
+     * @param  array<string, mixed>  $executionInput
+     * @return array<string, mixed>
+     */
+    private function resolveStageInput(WorkflowStage $stage, array $executionInput): array
+    {
+        if (! array_key_exists('stages', $executionInput)) {
+            return $executionInput;
+        }
+
+        $stages = $executionInput['stages'];
+
+        if (! is_array($stages)) {
+            return [];
+        }
+
+        $stageInput = $stages[$stage->key] ?? [];
+
+        return is_array($stageInput) ? $stageInput : [];
+    }
+
+    /**
+     * Validate the top-level structure of a structured Workflow execution input.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function validateExecutionInput(WorkflowVersion $version, array $input): void
+    {
+        if (! array_key_exists('stages', $input)) {
+            return;
+        }
+
+        if (! is_array($input['stages'])) {
+            throw ValidationException::withMessages([
+                'workflow.stages' => 'Workflow execution input [stages] must be an object keyed by Workflow stage key.',
+            ]);
+        }
+
+        $definitions = $version->getAttribute('stage_definitions');
+        $stageDefinitions = is_array($definitions) ? $definitions : [];
+        $knownStages = [];
+        $allowedInputs = [];
+
+        foreach ($stageDefinitions as $definition) {
+            if (! is_array($definition) || ! is_string($definition['key'] ?? null)) {
+                continue;
+            }
+
+            $key = $definition['key'];
+            $knownStages[$key] = true;
+            $contract = $definition['capability_input_contract'] ?? [];
+            $allowedInputs[$key] = is_array($contract) ? array_keys($contract) : [];
+        }
+
+        $errors = [];
+
+        foreach ($input['stages'] as $stageKey => $stageInput) {
+            if (! is_string($stageKey) || ! isset($knownStages[$stageKey])) {
+                $errors["workflow.stages.{$stageKey}"] = "Workflow execution input references unknown stage [{$stageKey}].";
+
+                continue;
+            }
+
+            if (! is_array($stageInput)) {
+                $errors["workflow.{$stageKey}"] = "Workflow stage input [{$stageKey}] must be an object.";
+
+                continue;
+            }
+
+            $allowed = $allowedInputs[$stageKey] ?? [];
+
+            if ($allowed === []) {
+                continue;
+            }
+
+            foreach (array_keys($stageInput) as $inputKey) {
+                if (is_string($inputKey) && ! in_array($inputKey, $allowed, true)) {
+                    $errors["workflow.{$stageKey}.{$inputKey}"] = "Workflow stage [{$stageKey}] does not declare input [{$inputKey}].";
+                }
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     /** @param array<string, mixed> $context

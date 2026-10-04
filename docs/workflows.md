@@ -16,6 +16,49 @@ The Workflow runtime resolves the declared Capability through `CapabilityRegistr
 
 Deterministic Workflow execution is provider-free. A ModelProvider is required only when an Agent is actually performing model-driven reasoning.
 
+## Execution input contract
+
+Workflow execution accepts either the legacy flat input shape or the structured input shape. New callers should use the structured form:
+
+```json
+{
+  "workflow": {
+    "target_context": {},
+    "objective": "...",
+    "constraints": {}
+  },
+  "stages": {
+    "<stage_key>": {
+      "<input_key>": "<value>"
+    }
+  }
+}
+```
+
+`workflow` contains execution-level input and is preserved in the durable WorkflowExecution context. `stages.<stage_key>` contains caller-supplied input for that specific stage. A stage never receives another stage's supplied input.
+
+The effective input for a stage is resolved in this order:
+
+```
+caller-supplied stage input
+        +
+mapped dependency values
+        +
+stage defaults
+        ↓
+effective stage input
+        ↓
+input-contract validation
+        ↓
+Capability invocation
+```
+
+Mapped values take precedence over supplied values for fields controlled by mappings. This prevents callers from overriding dependency-created identifiers or other values that the persisted WorkflowVersion owns. Defaults provide values only when neither supplied nor mapped input exists.
+
+When a published WorkflowVersion contains a Capability input contract, structured stage input is rejected if it references an unknown stage or an undeclared input field. Existing legacy flat executions remain supported so published workflows can migrate without changing historical execution semantics.
+
+Generated content may therefore be prepared by the caller and supplied directly to the applicable workflow stages. The Workflow engine does not generate content or invoke a ModelProvider; it deterministically validates and executes the supplied inputs through the declared Expert → Capability → Operation path.
+
 ## Continuation and idempotency
 
 WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation is provider-free and uses durable continuation tokens. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.

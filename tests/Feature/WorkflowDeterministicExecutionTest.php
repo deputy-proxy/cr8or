@@ -147,6 +147,190 @@ it('executes a multi-stage published workflow without creating an AgentExecution
         ->and(AgentExecution::query()->count())->toBe(0);
 });
 
+it('resolves structured execution input per stage and preserves workflow context', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+        'stage_definitions' => [
+            [
+                'key' => 'first',
+                'name' => 'First',
+                'sequence' => 1,
+                'dependencies' => [],
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'capability_input_contract' => [
+                    'enterprise_id' => 'integer|required',
+                    'target_context' => 'object|nullable',
+                ],
+                'input_contract' => ['required' => ['enterprise_id', 'target_context']],
+                'output_contract' => ['required' => ['target_context']],
+                'repeatable' => false,
+                'completion_criteria' => [],
+            ],
+            [
+                'key' => 'second',
+                'name' => 'Second',
+                'sequence' => 2,
+                'dependencies' => ['first'],
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'capability_input_contract' => [
+                    'enterprise_id' => 'integer|required',
+                    'target_context' => 'object|nullable',
+                ],
+                'input_contract' => ['required' => ['enterprise_id', 'target_context']],
+                'output_contract' => ['required' => ['target_context']],
+                'repeatable' => false,
+                'completion_criteria' => [],
+            ],
+        ],
+    ]);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        [
+            'workflow' => ['target_context' => ['objective' => 'Launch Plan.gifts']],
+            'stages' => [
+                'first' => [
+                    'enterprise_id' => $enterprise->id,
+                    'target_context' => ['stage' => 'first'],
+                ],
+                'second' => [
+                    'enterprise_id' => $enterprise->id,
+                    'target_context' => ['stage' => 'second'],
+                ],
+            ],
+        ],
+        'structured-stage-input',
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($execution->outputs['first']['target_context'])->toBe(['stage' => 'first'])
+        ->and($execution->outputs['second']['target_context'])->toBe(['stage' => 'second'])
+        ->and($execution->context['workflow']['target_context']['objective'])->toBe('Launch Plan.gifts');
+});
+
+it('gives mapped values precedence over supplied stage input', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+        'stage_definitions' => [
+            [
+                'key' => 'first',
+                'name' => 'First',
+                'sequence' => 1,
+                'dependencies' => [],
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'capability_input_contract' => [
+                    'enterprise_id' => 'integer|required',
+                    'target_context' => 'object|nullable',
+                ],
+                'input_contract' => ['required' => ['enterprise_id', 'target_context']],
+                'output_contract' => ['required' => ['target_context']],
+                'repeatable' => false,
+                'completion_criteria' => [],
+            ],
+            [
+                'key' => 'second',
+                'name' => 'Second',
+                'sequence' => 2,
+                'dependencies' => ['first'],
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'capability_input_contract' => [
+                    'enterprise_id' => 'integer|required',
+                    'target_context' => 'object|nullable',
+                ],
+                'input_contract' => [
+                    'required' => ['enterprise_id', 'target_context'],
+                    'mappings' => ['target_context' => 'stages.first.target_context'],
+                ],
+                'output_contract' => ['required' => ['target_context']],
+                'repeatable' => false,
+                'completion_criteria' => [],
+            ],
+        ],
+    ]);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        [
+            'stages' => [
+                'first' => [
+                    'enterprise_id' => $enterprise->id,
+                    'target_context' => ['source' => 'first'],
+                ],
+                'second' => [
+                    'enterprise_id' => $enterprise->id,
+                    'target_context' => ['source' => 'caller'],
+                ],
+            ],
+        ],
+        'mapped-input-precedence',
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($execution->outputs['second']['target_context'])->toBe(['source' => 'first']);
+});
+
+it('rejects unknown stages and undeclared stage input fields', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+        'stage_definitions' => [[
+            'key' => 'first',
+            'name' => 'First',
+            'sequence' => 1,
+            'dependencies' => [],
+            'expert_slugs' => ['test-expert'],
+            'capability_slugs' => ['test.capability'],
+            'capability_input_contract' => ['value' => 'string|required'],
+            'input_contract' => ['required' => ['value']],
+            'output_contract' => [],
+            'repeatable' => false,
+            'completion_criteria' => [],
+        ]],
+    ]);
+
+    expect(fn () => app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        ['stages' => ['missing' => ['value' => 'x']]],
+        'unknown-stage',
+    ))->toThrow(ValidationException::class, 'unknown stage [missing]');
+
+    expect(fn () => app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        ['stages' => ['first' => ['unknown' => 'x']]],
+        'unknown-field',
+    ))->toThrow(ValidationException::class, 'does not declare input [unknown]');
+
+    expect(WorkflowExecution::query()->where('workflow_version_id', $version->id)->count())->toBe(0);
+});
+
 it('persists a failed execution when a started workflow stage fails', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
