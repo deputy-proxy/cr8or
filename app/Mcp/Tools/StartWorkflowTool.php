@@ -22,8 +22,10 @@ class StartWorkflowTool extends GovernedCapabilityTool
         return ['enterprise_id' => $schema->integer()->min(1)->required(), 'workflow_id' => $schema->integer()->min(1)->required(), 'input' => $schema->object(), 'idempotency_key' => $schema->string()->min(1)->max(128)->required(), 'correlation_id' => $schema->string()->max(255)];
     }
 
-    /** @param array<string, mixed> $input */
-    protected function humanAbility(User $actor, array $input): ?array{string, mixed}
+    /** @param array<string, mixed> $input
+     * @return array{string, mixed}|null
+     */
+    protected function humanAbility(User $actor, array $input): ?array
     {
         $workflow = $input['workflow'] ?? Workflow::query()->findOrFail((int) $input['workflow_id']);
 
