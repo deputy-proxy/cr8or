@@ -24,7 +24,7 @@ class WorkflowExecutionResource extends Resource
 
     protected static ?string $navigationLabel = 'Workflow Executions';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 40;
 
     public static function table(Table $table): Table
     {
