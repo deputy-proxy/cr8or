@@ -106,7 +106,7 @@ class WorkflowResource extends Resource
                         ->defaultItems(1)
                         ->addActionLabel('Add stage')
                         ->orderColumn('sequence')
-                        ->itemLabel(fn (array $state): ?string => filled($state['key'] ?? null) ? (string) $state['key'] : 'Stage')
+                        ->itemLabel(fn (array $state): string => filled($state['key'] ?? null) ? (string) $state['key'] : 'Stage')
                         ->collapsed()
                         ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
                             $expert = is_array($data['expert_slugs'] ?? null) ? ($data['expert_slugs'][0] ?? null) : ($data['expert_slugs'] ?? null);
