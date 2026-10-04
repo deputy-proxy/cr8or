@@ -20,7 +20,6 @@ final class EnterpriseIdentityResolver
 
         $canonicalSlug = $slug === null ? null : trim($slug);
 
-
         if ($id !== null) {
             $enterprise = (clone $query)->whereKey($id)->first();
 
