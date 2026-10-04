@@ -886,6 +886,10 @@ Capability
 Operation
 ```
 
+## 13.1 Work Dependencies
+
+Work Dependencies are directional `blocks` relationships between Project, Task, WorkItem, or Milestone records. They are Enterprise-scoped, optionally Project-scoped, reject unsupported endpoints, duplicate relationships, self-links, and cycles, and are included in authorized agent Work context. They are distinct from Workflow Stage dependencies, which belong to Workflow definition validation and orchestration.
+
 ## Workflow publication
 
 Persisted workflow definitions are validated before publication.
