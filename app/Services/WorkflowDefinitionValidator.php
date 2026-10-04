@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Enums\CapabilityExecutionMode;
 use App\Exceptions\WorkflowDefinitionException;
 use App\Experts\Expert;
 use App\Models\ExpertDescriptor;
@@ -171,6 +172,16 @@ final class WorkflowDefinitionValidator
                         );
 
                         continue;
+                    }
+
+                    if (! $definition->supportsExecutionMode(CapabilityExecutionMode::WORKFLOW)) {
+                        $errors[] = $this->stageError(
+                            $stage,
+                            'capability.execution_mode.unsupported',
+                            "Capability [{$capabilitySlug}] does not support deterministic Workflow execution.",
+                            expert: $expertSlug,
+                            capability: $capabilitySlug,
+                        );
                     }
 
                     if (! in_array($capabilitySlug, $expertCapabilities, true)) {
