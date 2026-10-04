@@ -33,7 +33,7 @@ final class EnterpriseIdentityResolver
                     'Enterprise identity mismatch: id [%d] resolves to slug [%s], not [%s].',
                     $id,
                     $enterprise->slug,
-                    $normalizedSlug,
+                    trim($slug),
                 ));
             }
 
