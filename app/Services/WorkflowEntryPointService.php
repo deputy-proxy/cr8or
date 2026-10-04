@@ -270,7 +270,7 @@ final class WorkflowEntryPointService
                 'id' => $workflow->publishedVersion->getKey(),
                 'version' => $workflow->publishedVersion->version,
                 'status' => $workflow->publishedVersion->status,
-                'published_at' => $workflow->publishedVersion->published_at?->toIso8601String(),
+                'published_at' => $workflow->publishedVersion->published_at,
                 'stage_definitions' => $workflow->publishedVersion->stage_definitions,
                 'execution_policy' => $workflow->publishedVersion->execution_policy,
                 'completion_criteria' => $workflow->publishedVersion->completion_criteria,
