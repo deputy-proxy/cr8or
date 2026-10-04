@@ -23,7 +23,7 @@ class StartWorkflowTool extends GovernedCapabilityTool
     }
 
     /** @param array<string, mixed> $input */
-    protected function humanAbility(User $actor, array $input): ?array
+    protected function humanAbility(User $actor, array $input): ?array{string, mixed}
     {
         $workflow = $input['workflow'] ?? Workflow::query()->findOrFail((int) $input['workflow_id']);
 
