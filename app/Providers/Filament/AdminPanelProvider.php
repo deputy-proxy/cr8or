@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 'Organization & Enterprise Scope',
                 'Enterprise Context',
+                'Work',
                 'Knowledge Management',
                 'Agentic Flow',
                 'Workflow Flow',
