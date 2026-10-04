@@ -98,6 +98,25 @@ class WorkflowResource extends Resource
                 ->defaultItems(1)
                 ->addActionLabel('Add stage')
                 ->orderColumn('sequence')
+                ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
+                    $expert = is_array($data['expert_slugs'] ?? null) ? ($data['expert_slugs'][0] ?? null) : ($data['expert_slugs'] ?? null);
+                    $capability = is_array($data['capability_slugs'] ?? null) ? ($data['capability_slugs'][0] ?? null) : ($data['capability_slugs'] ?? null);
+
+                    $data['expert_slugs'] = filled($expert) ? (string) $expert : null;
+                    $data['capability_slugs'] = filled($capability) ? (string) $capability : null;
+
+                    if (is_string($expert) && $expert !== '' && is_string($capability) && $capability !== '') {
+                        $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $capability);
+                        $data['capability_input_contract'] = $definition->inputContract;
+                        $data['capability_output_contract'] = $definition->outputContract;
+                        $data['input_contract'] = static::workflowInputContract($definition->inputContract, $data['input_contract'] ?? null);
+                        $data['output_contract'] = ! empty($data['output_contract'] ?? null)
+                            ? $data['output_contract']
+                            : $definition->outputContract;
+                    }
+
+                    return $data;
+                })
                 ->schema([
                     TextInput::make('key')
                         ->required()
@@ -116,7 +135,6 @@ class WorkflowResource extends Resource
                     Select::make('expert_slugs')
                         ->label('Expert')
                         ->options(fn (): array => app(ExpertRegistry::class)->options())
-                        ->formatStateUsing(fn ($state): ?string => is_array($state) ? ($state[0] ?? null) : (filled($state) ? (string) $state : null))
                         ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
                         ->searchable()
                         ->preload()
@@ -138,7 +156,6 @@ class WorkflowResource extends Resource
                                 ? app(ExpertCapabilityResolver::class)->capabilityOptions($expert)
                                 : [];
                         })
-                        ->formatStateUsing(fn ($state): ?string => is_array($state) ? ($state[0] ?? null) : (filled($state) ? (string) $state : null))
                         ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
                         ->searchable()
                         ->disabled(fn (Get $get): bool => blank($get('expert_slugs')))

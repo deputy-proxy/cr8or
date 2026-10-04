@@ -69,3 +69,39 @@ it('uses the canonical capability output contract for workflow output configurat
     expect(\App\Filament\Resources\Workflows\WorkflowResource::formatJsonContract($definition->outputContract))
         ->toBe(json_encode($definition->outputContract, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
 });
+it('hydrates persisted Workflow stage Expert and Capability selections as scalar Select state', function (): void {
+    $organization = \App\Models\Organization::factory()->create();
+    $owner = \App\Models\User::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $owner->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+    $enterprise = \App\Models\Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+    \App\Models\ExpertDescriptor::query()->updateOrCreate(
+        ['slug' => 'marketing'],
+        ['runtime_class' => \App\Experts\MarketingExpert::class, 'enabled' => true],
+    );
+
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($owner, $enterprise, [
+        'name' => 'Workflow hydration test',
+        'stages' => [[
+            'key' => 'strategy',
+            'name' => 'Create strategy',
+            'sequence' => 1,
+            'expert_slugs' => ['marketing'],
+            'capability_slugs' => ['marketing.strategy.create'],
+        ]],
+    ]);
+
+    expect($workflow->stages->first()->expert_slugs)->toBe(['marketing'])
+        ->and($workflow->stages->first()->capability_slugs)->toBe(['marketing.strategy.create']);
+
+    $this->actingAs($owner);
+
+    \Livewire\Livewire::test(\App\Filament\Resources\Workflows\Pages\EditWorkflow::class, [
+        'record' => $workflow->getKey(),
+    ])
+        ->assertStatus(200)
+        ->assertSet('data.stages.record-1.expert_slugs', 'marketing')
+        ->assertSet('data.stages.record-1.capability_slugs', 'marketing.strategy.create');
+});
