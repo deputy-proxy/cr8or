@@ -248,7 +248,6 @@ class WorkflowResource extends Resource
                         ->columnSpan(3),
                 ]),
         ]);
-;
     }
 
     /**
