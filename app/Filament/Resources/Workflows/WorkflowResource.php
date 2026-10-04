@@ -127,6 +127,12 @@ class WorkflowResource extends Resource
                         ->required()
                         ->maxLength(255),
 
+                    Textarea::make('instruction')
+                        ->label('Instruction')
+                        ->rows(5)
+                        ->maxLength(10000)
+                        ->helperText('Instructions for the model when generating this stage output. This is separate from the Capability input contract.'),
+
                     TextInput::make('sequence')
                         ->numeric()
                         ->required()
