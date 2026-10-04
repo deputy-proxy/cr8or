@@ -28,8 +28,8 @@ use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
-use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
+use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
 use App\Operations\CampaignLifecycle;
@@ -85,8 +85,8 @@ use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
-use App\Operations\UpdateWorkItem;
 use App\Operations\UpdateWorkflow;
+use App\Operations\UpdateWorkItem;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -176,18 +176,18 @@ final class CapabilityRegistry
             /** @var class-string $toolClass */
             $toolClass = $definition->toolClass;
             $source = (new \ReflectionClass($toolClass))->getFileName();
-            if (! is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
+            if (!is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
                 throw new InvalidArgumentException(
                     "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not implement the Capability boundary.",
                 );
             }
 
-            if (! is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
-                && ! is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true)) {
-                if ($source === false || ! str_contains((string) file_get_contents($source), 'invokeCapability(')) {
+            if (!is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
+                && !is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
+                && !is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
+                && !is_a($definition->toolClass, \App\Mcp\Tools\KnowledgeResourceTool::class, true)
+                && !is_a($definition->toolClass, \App\Mcp\Tools\MemoryResourceTool::class, true)) {
+                if ($source === false || !str_contains((string) file_get_contents($source), 'invokeCapability(')) {
                     throw new InvalidArgumentException(
                         "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not delegate to the Capability invocation boundary.",
                     );
