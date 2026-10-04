@@ -48,7 +48,7 @@ class WorkflowResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make(4)
+            Grid::make(8)
                 ->schema([
                     Section::make('Workflow')
                         ->schema([
@@ -98,7 +98,7 @@ class WorkflowResource extends Resource
                                 ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
                                 ->helperText('JSON object describing when the workflow is complete.'),
                         ])
-                        ->columnSpan(1),
+                        ->columnSpan(2),
 
                     Repeater::make('stages')
                         ->relationship()
