@@ -17,6 +17,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -46,196 +48,207 @@ class WorkflowResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')
-                ->label('Enterprise')
-                ->options(fn (): array => Enterprise::query()
-                    ->whereIn('organization_id', static::manageableOrganizationIds())
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all())
-                ->searchable()
-                ->preload()
-                ->required(),
-
-            TextInput::make('name')
-                ->required()
-                ->maxLength(255),
-
-            TextInput::make('canonical_key')
-                ->label('Canonical key')
-                ->maxLength(150)
-                ->regex('/^[a-z0-9][a-z0-9._-]*$/')
-                ->helperText('Optional stable identifier, for example strategy.create.'),
-
-            Textarea::make('purpose')
-                ->rows(3)
-                ->maxLength(10000),
-
-            Select::make('status')
-                ->options([
-                    Workflow::STATUS_PENDING => 'Pending',
-                    Workflow::STATUS_RUNNING => 'Running',
-                    Workflow::STATUS_SUCCEEDED => 'Succeeded',
-                    Workflow::STATUS_FAILED => 'Failed',
-                ])
-                ->required(),
-
-            Textarea::make('execution_policy')
-                ->rows(5)
-                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
-                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                ->helperText('JSON object controlling execution mode and provider requirements.'),
-
-            Textarea::make('completion_criteria')
-                ->rows(5)
-                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
-                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                ->helperText('JSON object describing when the workflow is complete.'),
-
-            Repeater::make('stages')
-                ->relationship()
-                ->label('Stages')
-                ->defaultItems(1)
-                ->addActionLabel('Add stage')
-                ->orderColumn('sequence')
-                ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
-                    $expert = is_array($data['expert_slugs'] ?? null) ? ($data['expert_slugs'][0] ?? null) : ($data['expert_slugs'] ?? null);
-                    $capability = is_array($data['capability_slugs'] ?? null) ? ($data['capability_slugs'][0] ?? null) : ($data['capability_slugs'] ?? null);
-
-                    $data['expert_slugs'] = filled($expert) ? (string) $expert : null;
-                    $data['capability_slugs'] = filled($capability) ? (string) $capability : null;
-
-                    if (is_string($expert) && $expert !== '' && is_string($capability) && $capability !== '') {
-                        $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $capability);
-                        $data['capability_input_contract'] = $definition->inputContract;
-                        $data['capability_output_contract'] = $definition->outputContract;
-                        $data['input_contract'] = static::workflowInputContract($definition->inputContract, $data['input_contract'] ?? null, false);
-                        $data['output_contract'] = ! empty($data['output_contract'] ?? null)
-                            ? $data['output_contract']
-                            : $definition->outputContract;
-                    }
-
-                    return $data;
-                })
+            Grid::make(4)
                 ->schema([
-                    TextInput::make('key')
-                        ->required()
-                        ->maxLength(150)
-                        ->regex('/^[a-z0-9][a-z0-9._-]*$/'),
+                    Section::make('Workflow')
+                        ->schema([
+                            Select::make('enterprise_id')
+                                ->label('Enterprise')
+                                ->options(fn (): array => Enterprise::query()
+                                    ->whereIn('organization_id', static::manageableOrganizationIds())
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all())
+                                ->searchable()
+                                ->preload()
+                                ->required(),
 
-                    TextInput::make('name')
-                        ->required()
-                        ->maxLength(255),
+                            TextInput::make('name')
+                                ->required()
+                                ->maxLength(255),
 
-                    Textarea::make('instruction')
-                        ->label('Instruction')
-                        ->rows(5)
-                        ->maxLength(10000)
-                        ->helperText('Instructions for the model when generating this stage output. This is separate from the Capability input contract.'),
+                            TextInput::make('canonical_key')
+                                ->label('Canonical key')
+                                ->maxLength(150)
+                                ->regex('/^[a-z0-9][a-z0-9._-]*$/')
+                                ->helperText('Optional stable identifier, for example strategy.create.'),
 
-                    TextInput::make('sequence')
-                        ->numeric()
-                        ->required()
-                        ->default(1),
+                            Textarea::make('purpose')
+                                ->rows(3)
+                                ->maxLength(10000),
 
-                    Select::make('expert_slugs')
-                        ->label('Expert')
-                        ->options(fn (): array => app(ExpertRegistry::class)->options())
-                        ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
-                        ->searchable()
-                        ->preload()
-                        ->live()
-                        ->required()
-                        ->afterStateUpdated(function (Set $set): void {
-                            $set('capability_slugs', null);
-                            $set('capability_input_contract', []);
-                            $set('capability_output_contract', []);
-                        }),
+                            Select::make('status')
+                                ->options([
+                                    Workflow::STATUS_PENDING => 'Pending',
+                                    Workflow::STATUS_RUNNING => 'Running',
+                                    Workflow::STATUS_SUCCEEDED => 'Succeeded',
+                                    Workflow::STATUS_FAILED => 'Failed',
+                                ])
+                                ->required(),
 
-                    Select::make('capability_slugs')
-                        ->label('Capability')
-                        ->options(function (Get $get): array {
-                            $expert = $get('expert_slugs');
-                            $expert = is_array($expert) ? ($expert[0] ?? null) : $expert;
+                            Textarea::make('execution_policy')
+                                ->rows(5)
+                                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('JSON object controlling execution mode and provider requirements.'),
 
-                            return is_string($expert) && $expert !== ''
-                                ? app(ExpertCapabilityResolver::class)->capabilityOptions($expert)
-                                : [];
-                        })
-                        ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
-                        ->searchable()
-                        ->disabled(fn (Get $get): bool => blank($get('expert_slugs')))
-                        ->required()
-                        ->live()
-                        ->afterStateUpdated(function (Get $get, Set $set, $state): void {
-                            $expert = $get('expert_slugs');
-                            $expert = is_array($expert) ? ($expert[0] ?? null) : $expert;
+                            Textarea::make('completion_criteria')
+                                ->rows(5)
+                                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('JSON object describing when the workflow is complete.'),
+                        ])
+                        ->columnSpan(1),
 
-                            if (! is_string($expert) || $expert === '' || ! is_string($state) || $state === '') {
-                                $set('capability_input_contract', []);
-                                $set('capability_output_contract', []);
+                    Repeater::make('stages')
+                        ->relationship()
+                        ->label('Stages')
+                        ->defaultItems(1)
+                        ->addActionLabel('Add stage')
+                        ->orderColumn('sequence')
+                        ->itemLabel(fn (array $state): ?string => filled($state['key'] ?? null) ? (string) $state['key'] : 'Stage')
+                        ->collapsed()
+                        ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
+                            $expert = is_array($data['expert_slugs'] ?? null) ? ($data['expert_slugs'][0] ?? null) : ($data['expert_slugs'] ?? null);
+                            $capability = is_array($data['capability_slugs'] ?? null) ? ($data['capability_slugs'][0] ?? null) : ($data['capability_slugs'] ?? null);
 
-                                return;
+                            $data['expert_slugs'] = filled($expert) ? (string) $expert : null;
+                            $data['capability_slugs'] = filled($capability) ? (string) $capability : null;
+
+                            if (is_string($expert) && $expert !== '' && is_string($capability) && $capability !== '') {
+                                $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $capability);
+                                $data['capability_input_contract'] = $definition->inputContract;
+                                $data['capability_output_contract'] = $definition->outputContract;
+                                $data['input_contract'] = static::workflowInputContract($definition->inputContract, $data['input_contract'] ?? null, false);
+                                $data['output_contract'] = ! empty($data['output_contract'] ?? null)
+                                    ? $data['output_contract']
+                                    : $definition->outputContract;
                             }
 
-                            $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $state);
-                            $set(
-                                'capability_input_contract',
-                                static::formatJsonContract($definition->inputContract),
-                            );
-                            $set(
-                                'capability_output_contract',
-                                static::formatJsonContract($definition->outputContract),
-                            );
-                            $set(
-                                'input_contract',
-                                static::formatJsonContract(
-                                    static::workflowInputContract($definition->inputContract, $get('input_contract')),
-                                ),
-                            );
-                            $set(
-                                'output_contract',
-                                static::formatJsonContract($definition->outputContract),
-                            );
-                        }),
+                            return $data;
+                        })
+                        ->schema([
+                            TextInput::make('key')
+                                ->required()
+                                ->maxLength(150)
+                                ->regex('/^[a-z0-9][a-z0-9._-]*$/'),
 
-                    Textarea::make('capability_input_contract')
-                        ->label('Capability Input Contract')
-                        ->rows(5)
-                        ->disabled()
-                        ->dehydrated()
-                        ->formatStateUsing(fn ($state, Get $get): string => static::formatCapabilityContract($state, $get, true))
-                        ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                        ->helperText('Read-only. Derived from the selected CapabilityRegistry definition.'),
+                            TextInput::make('name')
+                                ->required()
+                                ->maxLength(255),
 
-                    Textarea::make('capability_output_contract')
-                        ->label('Capability Output Contract')
-                        ->rows(5)
-                        ->disabled()
-                        ->dehydrated()
-                        ->formatStateUsing(fn ($state, Get $get): string => static::formatCapabilityContract($state, $get, false))
-                        ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                        ->helperText('Read-only. Derived from the selected CapabilityRegistry definition.'),
+                            Textarea::make('instruction')
+                                ->label('Instruction')
+                                ->rows(5)
+                                ->maxLength(10000)
+                                ->helperText('Instructions for the model when generating this stage output. This is separate from the Capability input contract.'),
 
-                    Toggle::make('repeatable')
-                        ->default(false),
+                            TextInput::make('sequence')
+                                ->numeric()
+                                ->required()
+                                ->default(1),
 
-                    Textarea::make('input_contract')
-                        ->label('Workflow Input Mapping / Defaults')
-                        ->rows(4)
-                        ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
-                        ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                        ->helperText('Workflow orchestration settings such as required inputs, defaults, and stage mappings. Kept separate from the canonical Capability contract.'),
+                            Select::make('expert_slugs')
+                                ->label('Expert')
+                                ->options(fn (): array => app(ExpertRegistry::class)->options())
+                                ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
+                                ->searchable()
+                                ->preload()
+                                ->live()
+                                ->required()
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('capability_slugs', null);
+                                    $set('capability_input_contract', []);
+                                    $set('capability_output_contract', []);
+                                }),
 
-                    Textarea::make('output_contract')
-                        ->label('Workflow Output Contract')
-                        ->rows(4)
-                        ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
-                        ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
-                        ->helperText('Workflow-level output/completion configuration. The canonical Capability output contract is shown above.'),
-                ])
-                ->columns(2),
+                            Select::make('capability_slugs')
+                                ->label('Capability')
+                                ->options(function (Get $get): array {
+                                    $expert = $get('expert_slugs');
+                                    $expert = is_array($expert) ? ($expert[0] ?? null) : $expert;
+
+                                    return is_string($expert) && $expert !== ''
+                                        ? app(ExpertCapabilityResolver::class)->capabilityOptions($expert)
+                                        : [];
+                                })
+                                ->dehydrateStateUsing(fn ($state): array => filled($state) ? [(string) $state] : [])
+                                ->searchable()
+                                ->disabled(fn (Get $get): bool => blank($get('expert_slugs')))
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(function (Get $get, Set $set, $state): void {
+                                    $expert = $get('expert_slugs');
+                                    $expert = is_array($expert) ? ($expert[0] ?? null) : $expert;
+
+                                    if (! is_string($expert) || $expert === '' || ! is_string($state) || $state === '') {
+                                        $set('capability_input_contract', []);
+                                        $set('capability_output_contract', []);
+
+                                        return;
+                                    }
+
+                                    $definition = app(ExpertCapabilityResolver::class)->resolve($expert, $state);
+                                    $set(
+                                        'capability_input_contract',
+                                        static::formatJsonContract($definition->inputContract),
+                                    );
+                                    $set(
+                                        'capability_output_contract',
+                                        static::formatJsonContract($definition->outputContract),
+                                    );
+                                    $set(
+                                        'input_contract',
+                                        static::formatJsonContract(
+                                            static::workflowInputContract($definition->inputContract, $get('input_contract')),
+                                        ),
+                                    );
+                                    $set(
+                                        'output_contract',
+                                        static::formatJsonContract($definition->outputContract),
+                                    );
+                                }),
+
+                            Textarea::make('capability_input_contract')
+                                ->label('Capability Input Contract')
+                                ->rows(5)
+                                ->disabled()
+                                ->dehydrated()
+                                ->formatStateUsing(fn ($state, Get $get): string => static::formatCapabilityContract($state, $get, true))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('Read-only. Derived from the selected CapabilityRegistry definition.'),
+
+                            Textarea::make('capability_output_contract')
+                                ->label('Capability Output Contract')
+                                ->rows(5)
+                                ->disabled()
+                                ->dehydrated()
+                                ->formatStateUsing(fn ($state, Get $get): string => static::formatCapabilityContract($state, $get, false))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('Read-only. Derived from the selected CapabilityRegistry definition.'),
+
+                            Toggle::make('repeatable')
+                                ->default(false),
+
+                            Textarea::make('input_contract')
+                                ->label('Workflow Input Mapping / Defaults')
+                                ->rows(4)
+                                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('Workflow orchestration settings such as required inputs, defaults, and stage mappings. Kept separate from the canonical Capability contract.'),
+
+                            Textarea::make('output_contract')
+                                ->label('Workflow Output Contract')
+                                ->rows(4)
+                                ->formatStateUsing(fn ($state): string => is_array($state) ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) : (string) ($state ?? ''))
+                                ->dehydrateStateUsing(fn ($state): array => is_string($state) && trim($state) !== '' ? (json_decode($state, true, 512, JSON_THROW_ON_ERROR) ?: []) : [])
+                                ->helperText('Workflow-level output/completion configuration. The canonical Capability output contract is shown above.'),
+                        ])
+                        ->columns(2)
+                        ->columnSpan(3),
+                ]),
         ]);
+;
     }
 
     /**
