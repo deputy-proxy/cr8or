@@ -143,7 +143,9 @@ class WorkflowResource extends Resource
                                 ->default(1),   
                                 
                             Toggle::make('repeatable')
-                                ->default(false),
+                                ->default(false)
+                                ->label('Repeatable')
+                                ->extraAttributes(['class' => 'self-end']),
 
                             Select::make('expert_slugs')
                                 ->label('Expert')
