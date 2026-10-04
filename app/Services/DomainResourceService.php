@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Data\CapabilityExecutionContext;
+use App\Enums\CapabilityExecutionMode;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\Asset;
@@ -213,22 +215,46 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
-    public function createPlannedAsset(User $actor, Script $script, array $attributes): Asset
-    {
-        Gate::forUser($actor)->authorize('createForScript', [Asset::class, $script]);
+    public function createPlannedAsset(
+        User $actor,
+        Script $script,
+        array $attributes,
+        ?CapabilityExecutionContext $context = null,
+    ): Asset {
+        Gate::forUser($actor)->authorize('createForScript', [Asset::class, $script, $context]);
 
         $assignmentId = $attributes['agent_assignment_id'] ?? null;
         $executionId = $attributes['agent_execution_id'] ?? null;
-        if ($assignmentId === null || $executionId === null) {
-            throw new LogicException('Planned assets require Agent assignment and execution provenance.');
-        }
+        $workflowExecutionId = $context?->workflowExecutionId();
 
-        $execution = AgentExecution::query()->findOrFail((int) $executionId);
-        if ((int) $assignmentId !== (int) $script->agent_assignment_id
-            || (int) $execution->agent_assignment_id !== (int) $assignmentId
-            || (int) $execution->enterprise_id !== (int) $script->contentItem->enterprise_id
-        ) {
-            throw new LogicException('Planned asset provenance must match the script assignment and enterprise.');
+        if ($context?->mode === CapabilityExecutionMode::WORKFLOW) {
+            if ($workflowExecutionId === null) {
+                throw new LogicException('Workflow-planned assets require Workflow execution provenance.');
+            }
+
+            $workflowExecution = $context->workflowExecution;
+            if ($workflowExecution === null
+                || (int) $workflowExecution->enterprise_id !== (int) $script->contentItem->enterprise_id
+                || (int) $workflowExecution->actor_id !== (int) $actor->getKey()
+            ) {
+                throw new LogicException('Workflow asset provenance must belong to the script enterprise and actor.');
+            }
+
+            if ($assignmentId !== null || $executionId !== null) {
+                throw new LogicException('Workflow-planned assets cannot carry Agent provenance.');
+            }
+        } else {
+            if ($assignmentId === null || $executionId === null) {
+                throw new LogicException('Agent-planned assets require Agent assignment and execution provenance.');
+            }
+
+            $execution = AgentExecution::query()->findOrFail((int) $executionId);
+            if ((int) $assignmentId !== (int) $script->agent_assignment_id
+                || (int) $execution->agent_assignment_id !== (int) $assignmentId
+                || (int) $execution->enterprise_id !== (int) $script->contentItem->enterprise_id
+            ) {
+                throw new LogicException('Planned asset provenance must match the script assignment and enterprise.');
+            }
         }
 
         $requirement = [
@@ -250,6 +276,7 @@ final class DomainResourceService
             'enterprise_id' => $script->contentItem->enterprise_id,
             'content_item_id' => $script->content_item_id,
             'script_id' => $script->getKey(),
+            'workflow_execution_id' => $workflowExecutionId,
             'agent_assignment_id' => $assignmentId,
             'agent_execution_id' => $executionId,
             'name' => $attributes['name'],
