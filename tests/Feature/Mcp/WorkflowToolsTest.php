@@ -3,6 +3,7 @@
 use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
+use App\Mcp\Tools\GetWorkflowTool;
 use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\PublishWorkflowTool;
 use App\Mcp\Tools\ResumeWorkflowExecutionTool;
@@ -65,6 +66,7 @@ it('registers the canonical Workflow MCP entry points', function (): void {
         ListWorkflowsTool::class,
         StartWorkflowTool::class,
         GetWorkflowExecutionTool::class,
+        GetWorkflowTool::class,
         ResumeWorkflowExecutionTool::class,
     ]);
 });
@@ -127,6 +129,57 @@ it('creates publishes discovers starts inspects and resumes a Workflow without A
     expect($execution->refresh()->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and(AgentExecution::query()->count())->toBe(0)
         ->and(Queue::pushedJobs())->toBeEmpty();
+});
+
+it('gets a Workflow definition with current stages and published stage snapshot', function (): void {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    workflowMcpOwner($actor, $organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($actor, $enterprise, [
+        'name' => 'Workflow inspection workflow',
+        'canonical_key' => 'workflow.inspect.definition',
+        'purpose' => 'Expose persisted workflow stage data.',
+        'stages' => [
+            [
+                'key' => 'strategy',
+                'name' => 'Strategy',
+                'sequence' => 1,
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'input_contract' => ['required' => ['request']],
+                'output_contract' => ['required' => ['marketing_strategy_id']],
+            ],
+            [
+                'key' => 'campaign',
+                'name' => 'Campaign',
+                'sequence' => 2,
+                'dependencies' => ['strategy'],
+                'expert_slugs' => ['business-analysis'],
+                'capability_slugs' => ['business.analysis'],
+                'input_contract' => [
+                    'required' => ['marketing_strategy_id'],
+                    'mappings' => ['marketing_strategy_id' => 'strategy.marketing_strategy_id'],
+                ],
+                'output_contract' => ['required' => ['campaign_id']],
+            ],
+        ],
+    ]);
+    app(\App\Services\WorkflowVersionService::class)->publish($workflow, $actor, 'publish-workflow-get');
+    $workflow->refresh()->load('publishedVersion');
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(GetWorkflowTool::class, [
+            'enterprise_id' => $enterprise->id,
+            'workflow_id' => $workflow->id,
+        ])
+        ->assertOk()
+        ->assertSee('strategy')
+        ->assertSee('marketing_strategy_id')
+        ->assertSee('campaign')
+        ->assertSee('strategy.marketing_strategy_id')
+        ->assertSee((string) $workflow->published_version_id);
 });
 
 it('discovers a canonical Workflow by exact enterprise and canonical key', function (): void {

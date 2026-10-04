@@ -67,6 +67,7 @@ use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
+use App\Mcp\Tools\GetWorkflowTool;
 use App\Mcp\Tools\GetWorkItemTool;
 use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDelegationsTool;
@@ -251,6 +252,7 @@ class Cr8orServer extends Server
         ListWorkflowsTool::class,
         StartWorkflowTool::class,
         GetWorkflowExecutionTool::class,
+        GetWorkflowTool::class,
         ResumeWorkflowExecutionTool::class,
         UpdateWorkItemTool::class,
         CreateContentItemTool::class,

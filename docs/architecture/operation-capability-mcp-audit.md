@@ -291,6 +291,8 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | GetAgentDelegation | - | - | internal/read operation |
 | GetAgentExecution | - | - | internal/read operation |
 | GetKnowledgeIndex | - | - | internal/read operation |
+| GetWorkflow | workflow.get | workflow-get | read/query |
+| GetWorkflowTool | workflow.get | workflow-get | read/query MCP Tool |
 | GetKnowledgeUnit | - | - | internal/read operation |
 | GetMemory | - | - | internal/read operation |
 | InspectWorkflowExecution | workflow.inspect | mcp_workflow_inspect | lifecycle |
