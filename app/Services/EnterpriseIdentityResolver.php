@@ -40,20 +40,36 @@ final class EnterpriseIdentityResolver
             return $enterprise;
         }
 
+        $exactEnterprises = (clone $query)
+            ->where('slug', trim($slug))
+            ->orderBy('id')
+            ->get();
+
+        if ($exactEnterprises->count() > 1) {
+            throw new InvalidArgumentException(sprintf(
+                'Enterprise slug [%s] is ambiguous across the actor\\'s organizations.',
+                trim($slug),
+            ));
+        }
+
+        if ($exactEnterprises->isNotEmpty()) {
+            return $exactEnterprises->first();
+        }
+
+        $normalizedSlug = $slugCandidates[1] ?? $slugCandidates[0];
         $enterprises = $query
-            ->whereIn('slug', $slugCandidates)
-            ->orderByRaw('CASE WHEN slug = ? THEN 0 ELSE 1 END', [trim($slug)])
+            ->where('slug', $normalizedSlug)
             ->orderBy('id')
             ->get();
 
         if ($enterprises->isEmpty()) {
-            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$slugCandidates[0]]);
+            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$normalizedSlug]);
         }
 
         if ($enterprises->count() > 1) {
             throw new InvalidArgumentException(sprintf(
-                'Enterprise slug [%s] is ambiguous across the actor\'s organizations.',
-                trim($slug),
+                'Enterprise slug [%s] is ambiguous across the actor\\'s organizations.',
+                $normalizedSlug,
             ));
         }
 
