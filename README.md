@@ -695,6 +695,7 @@ A Capability definition associates the relevant execution contract, including:
 - output contract;
 - authorization requirements;
 - approval requirements;
+- supported execution modes (human, Agent, deterministic Workflow);
 - category;
 - tool class.
 
@@ -758,6 +759,10 @@ Its conceptual responsibility is:
 9. preserve relevant provenance and execution metadata.
 
 The service is not a replacement for authorization systems or domain policies. It is the common execution substrate through which the entry points converge.
+
+Execution provenance is explicit. Human execution uses normal resource/Enterprise authorization, Agent execution uses AgentAssignment + AgentExecution provenance, and deterministic Workflow execution uses WorkflowExecution + WorkflowStage provenance. A Capability must explicitly support the execution mode before it can be invoked through that boundary. Workflow publication and runtime invocation both enforce this contract.
+
+The detailed Capability execution-mode matrix and provenance rules are documented in docs/architecture/capability-execution-provenance.md.
 
 ---
 
