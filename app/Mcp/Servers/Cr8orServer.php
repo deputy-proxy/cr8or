@@ -35,8 +35,8 @@ use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkflowTool;
-use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
+
 use App\Mcp\Tools\DefineMarketingStrategySectionTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
@@ -126,6 +126,7 @@ use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
+use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\VerifyMarketingGraphTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
