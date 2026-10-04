@@ -19,15 +19,25 @@ it('resolves an enterprise by exact canonical slug for an authorized actor', fun
     expect($resolved->is($enterprise))->toBeTrue();
 });
 
-it('normalizes a named enterprise value to its canonical slug', function () {
+it('resolves the exact database slug for an enterprise', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'valid-guide']);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'plan.gifts', 'slug' => 'plan.gifts']);
 
-    $resolved = app(EnterpriseIdentityResolver::class)->resolve($user, slug: 'valid.guide');
+    $resolved = app(EnterpriseIdentityResolver::class)->resolve($user, slug: 'plan.gifts');
 
     expect($resolved->is($enterprise))->toBeTrue();
+});
+
+it('does not normalize a dotted slug into a hyphenated slug', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
+    Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'plan.gifts']);
+
+    expect(fn () => app(EnterpriseIdentityResolver::class)->resolve($user, slug: 'plan-gifts'))
+        ->toThrow(ModelNotFoundException::class);
 });
 
 it('keeps internal id lookup compatible', function () {
