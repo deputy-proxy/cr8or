@@ -246,7 +246,8 @@ class WorkflowResource extends Resource
                         ])
                         ->columns(2)
                         ->columnSpan(3),
-                ]),
+                ])
+                ->columnSpanFull(),
         ]);
     }
 
