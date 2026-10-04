@@ -224,7 +224,7 @@ it('enforces stage dependencies and input contracts before capability execution'
         $version,
         [],
         'workflow-missing-input',
-    ))->toThrow(AuthorizationException::class, 'missing required input [required_request]');
+    ))->toThrow(ValidationException::class, 'missing required input [required_request]');
 
     expect(AgentExecution::query()->count())->toBe(0);
 });
