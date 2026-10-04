@@ -176,6 +176,12 @@ final class CapabilityRegistry
             /** @var class-string $toolClass */
             $toolClass = $definition->toolClass;
             $source = (new \ReflectionClass($toolClass))->getFileName();
+            if (! is_a($definition->toolClass, \App\Contracts\CapabilityBoundaryTool::class, true)) {
+                throw new InvalidArgumentException(
+                    "Business MCP Tool [{$definition->toolClass}] for capability [{$definition->key}] does not implement the Capability boundary.",
+                );
+            }
+
             $usesGovernedBoundary = is_a($definition->toolClass, \App\Mcp\Tools\GovernedCapabilityTool::class, true)
                 || is_a($definition->toolClass, \App\Mcp\Tools\DomainMutationTool::class, true)
                 || is_a($definition->toolClass, \App\Mcp\Tools\DomainTransitionTool::class, true)
