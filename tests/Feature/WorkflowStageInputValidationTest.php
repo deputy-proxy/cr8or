@@ -69,7 +69,7 @@ final class WorkflowStageInputValidationTest extends TestCase
             );
             $this->assertStringContainsString(
                 'marketing_strategy_id',
-                $exception->getMessage() . ' ' . json_encode($exception->errors),
+                $exception->getMessage().' '.json_encode($exception->errors),
             );
         }
     }
