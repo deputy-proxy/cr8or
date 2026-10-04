@@ -19,7 +19,7 @@ final class EnterpriseIdentityResolver
         $organizationIds = $actor->memberships()->pluck('organization_id');
         $query = Enterprise::query()->whereIn('organization_id', $organizationIds);
 
-        $normalizedSlug = $slug === null ? null : $this->normalizeSlug($slug);
+        $slugCandidates = $slug === null ? [] : $this->slugCandidates($slug);
 
         if ($id !== null) {
             $enterprise = (clone $query)->whereKey($id)->first();
@@ -28,7 +28,7 @@ final class EnterpriseIdentityResolver
                 throw (new ModelNotFoundException)->setModel(Enterprise::class, [$id]);
             }
 
-            if ($normalizedSlug !== null && $enterprise->slug !== $normalizedSlug) {
+            if ($slug !== null && ! in_array($enterprise->slug, $slugCandidates, true)) {
                 throw new InvalidArgumentException(sprintf(
                     'Enterprise identity mismatch: id [%d] resolves to slug [%s], not [%s].',
                     $id,
@@ -41,22 +41,31 @@ final class EnterpriseIdentityResolver
         }
 
         $enterprises = $query
-            ->where('slug', $normalizedSlug)
+            ->whereIn('slug', $slugCandidates)
+            ->orderByRaw('CASE WHEN slug = ? THEN 0 ELSE 1 END', [trim($slug)])
             ->orderBy('id')
             ->get();
 
         if ($enterprises->isEmpty()) {
-            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$normalizedSlug]);
+            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$slugCandidates[0]]);
         }
 
         if ($enterprises->count() > 1) {
             throw new InvalidArgumentException(sprintf(
                 'Enterprise slug [%s] is ambiguous across the actor\'s organizations.',
-                $normalizedSlug,
+                trim($slug),
             ));
         }
 
         return $enterprises->first();
+    }
+
+    private function slugCandidates(string $value): array
+    {
+        $trimmed = trim($value);
+        $normalized = $this->normalizeSlug($trimmed);
+
+        return array_values(array_unique([$trimmed, $normalized]));
     }
 
     public function normalizeSlug(string $value): string
