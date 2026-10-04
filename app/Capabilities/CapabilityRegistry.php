@@ -14,6 +14,7 @@ use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
+use App\Mcp\Tools\GetWorkflowTool;
 use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
@@ -52,6 +53,7 @@ use App\Operations\EnterpriseContextRetrieve;
 use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
+use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingAudienceArchive;
@@ -247,6 +249,17 @@ final class CapabilityRegistry
                 'none',
                 'lifecycle',
                 'mcp_workflow_publish',
+            ),
+            $this->definition(
+                'workflow.get',
+                GetWorkflow::class,
+                GetWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'workflow'],
+                'WorkflowPolicy::view + enterprise scope',
+                'none',
+                'read',
+                'mcp_workflow_get',
             ),
             $this->definition(
                 'workflow.discover',
