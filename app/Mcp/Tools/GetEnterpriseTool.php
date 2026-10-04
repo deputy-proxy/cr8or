@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('get-enterprise')]
-#[Description('Get an authorized enterprise from CR8OR by canonical slug or internal id. Slug is preferred for named-enterprise workflows.')]
+#[Description('Get an authorized enterprise from CR8OR by canonical slug or internal id. Slug is the authoritative enterprise identifier for named-enterprise workflows.')]
 class GetEnterpriseTool extends DiscoveryGetTool
 {
     protected static function modelClass(): string
