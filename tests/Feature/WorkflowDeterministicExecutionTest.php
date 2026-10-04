@@ -373,3 +373,83 @@ it('rejects invalid workflow execution lifecycle transitions', function (): void
 
     expect(fn () => $execution->pause('too late'))->toThrow(LogicException::class, 'cannot transition from [completed] to [paused]');
 });
+it('creates planned assets through a deterministic workflow without Agent provenance', function (): void {
+    $this->seed(Database\Seeders\ExpertDescriptorSeeder::class);
+
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $strategy = \App\Models\MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $campaign = \App\Models\Campaign::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'marketing_strategy_id' => $strategy->getKey(),
+    ]);
+    $item = \App\Models\ContentItem::factory()->forCampaign($campaign)->create();
+
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+
+    WorkflowStage::factory()->create([
+        'workflow_id' => $workflow,
+        'key' => 'script',
+        'name' => 'Create script',
+        'sequence' => 1,
+        'dependencies' => [],
+        'expert_slugs' => ['copywriting'],
+        'capability_slugs' => ['marketing.script.create'],
+        'input_contract' => [
+            'required' => ['content_item_id', 'title', 'body'],
+        ],
+        'output_contract' => [
+            'properties' => ['id' => ['type' => 'integer']],
+            'required' => ['id'],
+        ],
+    ]);
+
+    WorkflowStage::factory()->create([
+        'workflow_id' => $workflow,
+        'key' => 'asset',
+        'name' => 'Plan asset',
+        'sequence' => 2,
+        'dependencies' => ['script'],
+        'expert_slugs' => ['copywriting'],
+        'capability_slugs' => ['marketing.asset.create'],
+        'input_contract' => [
+            'required' => ['script_id', 'name', 'type', 'purpose', 'channel', 'platform', 'format', 'creative_brief'],
+            'mappings' => ['script_id' => 'stages.script.id'],
+            'defaults' => [
+                'name' => 'Workflow hero',
+                'type' => 'image',
+                'purpose' => 'hero visual',
+                'channel' => 'social',
+                'platform' => 'instagram',
+                'format' => 'feed',
+                'creative_brief' => 'Deterministic workflow asset.',
+            ],
+        ],
+        'output_contract' => [
+            'properties' => ['id' => ['type' => 'integer']],
+            'required' => ['id'],
+        ],
+    ]);
+
+    $version = publishedWorkflow($workflow, $actor);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        [
+            'content_item_id' => $item->getKey(),
+            'title' => 'Workflow script',
+            'body' => 'Workflow body.',
+        ],
+        'workflow-asset-provenance',
+        'workflow-asset-provenance-correlation',
+    );
+
+    $asset = \App\Models\Asset::query()->firstOrFail();
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($asset->script_id)->not->toBeNull()
+        ->and($asset->workflow_execution_id)->toBe($execution->getKey())
+        ->and($asset->agent_assignment_id)->toBeNull()
+        ->and($asset->agent_execution_id)->toBeNull();
+});
