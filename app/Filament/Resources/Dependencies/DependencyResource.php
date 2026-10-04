@@ -15,6 +15,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 class DependencyResource extends Resource
 {
@@ -22,17 +23,17 @@ class DependencyResource extends Resource
 
     protected static ?string $model = Dependency::class;
 
-    protected static ?string $modelLabel = 'Dependencie';
+    protected static ?string $modelLabel = 'Dependency';
 
     protected static ?string $pluralModelLabel = 'Dependencies';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work';
 
     protected static ?string $navigationLabel = 'Dependencies';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {
@@ -62,7 +63,7 @@ class DependencyResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->check() && \Illuminate\Support\Facades\Gate::allows('viewAny', static::getModel());
+        return auth()->check() && Gate::allows('viewAny', static::getModel());
     }
 
     /** @return Builder<Enterprise> */
