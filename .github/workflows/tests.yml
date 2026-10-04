@@ -48,6 +48,21 @@ jobs:
           php artisan db:seed --class=ExpertDescriptorSeeder --force
           php -r "(file_exists('storage/oauth-private.key') && file_exists('storage/oauth-public.key')) ? print('Passport keys already exist.'.PHP_EOL) : passthru('php artisan passport:keys');"
 
+      # The PHP test suite renders Blade views that require the Vite manifest.
+      # Keep the frontend validation job independent while also preparing the
+      # frontend build required by the PHP tests in this isolated runner.
+      - name: Setup Node for PHP tests
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Build frontend for PHP tests
+        run: |
+          npm ci
+          npm run build
+
       - name: Run PHP CI Checks
         run: composer ci:check
 
