@@ -259,7 +259,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::view + enterprise scope',
                 'none',
                 'read',
-                'mcp_workflow_get',
+                'workflow-get',
             ),
             $this->definition(
                 'workflow.discover',
