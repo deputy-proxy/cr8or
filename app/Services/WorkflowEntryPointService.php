@@ -77,7 +77,7 @@ final class WorkflowEntryPointService
     {
         Gate::forUser($actor)->authorize('update', $workflow);
 
-        return DB::transaction(function () use ($actor, $workflow, $input): Workflow {
+        return DB::transaction(function () use ($workflow, $input): Workflow {
             /** @var Workflow $workflow */
             $workflow = Workflow::query()->lockForUpdate()->whereKey($workflow->getKey())->firstOrFail();
 
