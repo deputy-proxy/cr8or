@@ -18,12 +18,12 @@ function getEnterpriseActor(): array
 
 it('gets an enterprise by canonical slug', function () {
     [$user, $organization] = getEnterpriseActor();
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'valid-guide']);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'plan.gifts']);
 
     Cr8orServer::actingAs($user, 'api')
-        ->tool(GetEnterpriseTool::class, ['slug' => 'valid-guide'])
+        ->tool(GetEnterpriseTool::class, ['slug' => 'plan.gifts'])
         ->assertOk()
-        ->assertSee([(string) $enterprise->getKey(), 'valid-guide', 'valid.guide']);
+        ->assertSee([(string) $enterprise->getKey(), 'plan.gifts', 'valid.guide']);
 });
 
 it('rejects a non-canonical human-entered name', function () {
@@ -31,27 +31,27 @@ it('rejects a non-canonical human-entered name', function () {
     Enterprise::factory()->create(['organization_id' => $organization, 'name' => 'valid.guide', 'slug' => 'valid.guide']);
 
     Cr8orServer::actingAs($user, 'api')
-        ->tool(GetEnterpriseTool::class, ['slug' => 'valid-guide'])
+        ->tool(GetEnterpriseTool::class, ['slug' => 'plan.gifts'])
         ->assertHasErrors();
 });
 
 it('keeps id lookup compatible and returns the authoritative identity pair', function () {
     [$user, $organization] = getEnterpriseActor();
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'valid-guide']);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'plan.gifts']);
 
     Cr8orServer::actingAs($user, 'api')
         ->tool(GetEnterpriseTool::class, ['id' => $enterprise->getKey()])
         ->assertOk()
-        ->assertSee([(string) $enterprise->getKey(), 'valid-guide']);
+        ->assertSee([(string) $enterprise->getKey(), 'plan.gifts']);
 });
 
 it('fails closed when id and slug identify different enterprises', function () {
     [$user, $organization] = getEnterpriseActor();
-    $valid = Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'valid-guide']);
-    Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'blckdsgncom']);
+    $valid = Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'plan.gifts']);
+    Enterprise::factory()->create(['organization_id' => $organization, 'slug' => 'other.enterprise']);
 
     Cr8orServer::actingAs($user, 'api')
-        ->tool(GetEnterpriseTool::class, ['id' => $valid->getKey(), 'slug' => 'blckdsgncom'])
+        ->tool(GetEnterpriseTool::class, ['id' => $valid->getKey(), 'slug' => 'other.enterprise'])
         ->assertHasErrors();
 });
 
