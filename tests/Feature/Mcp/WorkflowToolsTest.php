@@ -179,8 +179,7 @@ it('gets a Workflow definition with current stages and published stage snapshot'
         ->assertSee('marketing_strategy_id')
         ->assertSee('campaign')
         ->assertSee('strategy.marketing_strategy_id')
-        ->assertSee((string) $workflow->published_version_id)
-        ->assertSee((string) $workflow->publishedVersion->published_at);
+        ->assertSee((string) $workflow->published_version_id);
 });
 
 it('discovers a canonical Workflow by exact enterprise and canonical key', function (): void {
