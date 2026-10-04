@@ -8,15 +8,20 @@ use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowVersion;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class WorkflowEntryPointService
 {
+    public function __construct(
+        private readonly ExpertCapabilityResolver $expertCapabilities,
+    ) {}
+
     /** @param array<string, mixed> $input */
     public function create(User $actor, Enterprise $enterprise, array $input): Workflow
     {
-        Gate::forUser($actor)->authorize('view', $enterprise);
+        Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $enterprise]);
 
         return DB::transaction(function () use ($enterprise, $input): Workflow {
             $workflow = Workflow::query()->create([
@@ -33,14 +38,27 @@ final class WorkflowEntryPointService
             ]);
 
             foreach ($input['stages'] as $stage) {
+                $expertSlugs = $this->list($stage['expert_slugs'] ?? []);
+                $capabilitySlugs = $this->list($stage['capability_slugs'] ?? []);
+
+                if (count($expertSlugs) !== 1 || count($capabilitySlugs) !== 1) {
+                    throw new AuthorizationException(
+                        'Each new Workflow stage must declare exactly one Expert and one Capability.',
+                    );
+                }
+
+                $capability = $this->expertCapabilities->resolve($expertSlugs[0], $capabilitySlugs[0]);
+
                 WorkflowStage::query()->create([
                     'workflow_id' => $workflow->getKey(),
                     'key' => $stage['key'],
                     'name' => $stage['name'] ?? $stage['key'],
                     'sequence' => $stage['sequence'] ?? 0,
                     'dependencies' => $stage['dependencies'] ?? [],
-                    'expert_slugs' => $stage['expert_slugs'] ?? [],
-                    'capability_slugs' => $stage['capability_slugs'] ?? [],
+                    'expert_slugs' => $expertSlugs,
+                    'capability_slugs' => $capabilitySlugs,
+                    'capability_input_contract' => $capability->inputContract,
+                    'capability_output_contract' => $capability->outputContract,
                     'input_contract' => $stage['input_contract'] ?? [],
                     'output_contract' => $stage['output_contract'] ?? [],
                     'repeatable' => (bool) ($stage['repeatable'] ?? false),
@@ -50,6 +68,21 @@ final class WorkflowEntryPointService
 
             return $workflow->refresh();
         });
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function list(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $value,
+            static fn (mixed $item): bool => is_string($item) && trim($item) !== '',
+        ));
     }
 
     /** @return array{items: list<array<string, mixed>>, pagination: array<string, int>} */

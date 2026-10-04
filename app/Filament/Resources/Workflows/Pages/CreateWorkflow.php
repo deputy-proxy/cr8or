@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Workflows\Pages;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
 use App\Models\Workflow;
+use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,5 +19,13 @@ class CreateWorkflow extends CreateRecord
         Gate::authorize('createForEnterprise', [Workflow::class, $enterprise]);
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        /** @var Workflow $workflow */
+        $workflow = $this->record;
+
+        app(WorkflowStageConfigurationService::class)->synchronizeCapabilityContracts($workflow);
     }
 }

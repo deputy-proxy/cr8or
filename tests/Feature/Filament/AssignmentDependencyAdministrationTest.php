@@ -3,6 +3,7 @@
 use App\Filament\Resources\Assignments\AssignmentResource;
 use App\Filament\Resources\Dependencies\DependencyResource;
 use App\Filament\Resources\KnowledgeVersions\KnowledgeVersionResource;
+use App\Filament\Resources\Workflows\Pages\ListWorkflows;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Assignment;
 use App\Models\Dependency;
@@ -14,6 +15,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkItem;
+use Filament\Actions\CreateAction;
 use Illuminate\Support\Facades\Gate;
 
 it('scopes assignment and dependency administration to the authenticated organizations', function () {
@@ -130,4 +132,35 @@ it('keeps historical knowledge versions read-only after creation', function () {
         ->and(Gate::forUser($user)->allows('update', $version))->toBeFalse()
         ->and(Gate::forUser($user)->allows('delete', $version))->toBeFalse()
         ->and(KnowledgeVersionResource::getPages())->not->toHaveKey('edit');
+});
+
+it('shows the Workflow Create action only to authorized managers', function (): void {
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+
+    Membership::factory()->owner()->create([
+        'user_id' => $owner,
+        'organization_id' => $organization,
+    ]);
+    Membership::factory()->create([
+        'user_id' => $member,
+        'organization_id' => $organization,
+    ]);
+
+    $page = app(ListWorkflows::class);
+    $method = new ReflectionMethod($page, 'getHeaderActions');
+    $method->setAccessible(true);
+
+    $this->actingAs($owner);
+    $ownerActions = $method->invoke($page);
+
+    expect($ownerActions)->toHaveCount(1)
+        ->and($ownerActions[0])->toBeInstanceOf(CreateAction::class)
+        ->and($ownerActions[0]->isVisible())->toBeTrue();
+
+    $this->actingAs($member);
+    $memberActions = $method->invoke($page);
+
+    expect($memberActions[0]->isVisible())->toBeFalse();
 });
