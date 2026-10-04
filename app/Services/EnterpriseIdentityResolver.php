@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Enterprise;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final class EnterpriseIdentityResolver
@@ -19,7 +18,8 @@ final class EnterpriseIdentityResolver
         $organizationIds = $actor->memberships()->pluck('organization_id');
         $query = Enterprise::query()->whereIn('organization_id', $organizationIds);
 
-        $slugCandidates = $slug === null ? [] : $this->slugCandidates($slug);
+        $canonicalSlug = $slug === null ? null : trim($slug);
+
 
         if ($id !== null) {
             $enterprise = (clone $query)->whereKey($id)->first();
@@ -28,70 +28,37 @@ final class EnterpriseIdentityResolver
                 throw (new ModelNotFoundException)->setModel(Enterprise::class, [$id]);
             }
 
-            if ($slug !== null && ! in_array($enterprise->slug, $slugCandidates, true)) {
+            if ($canonicalSlug !== null && $enterprise->slug !== $canonicalSlug) {
                 throw new InvalidArgumentException(sprintf(
                     'Enterprise identity mismatch: id [%d] resolves to slug [%s], not [%s].',
                     $id,
                     $enterprise->slug,
-                    trim($slug),
+                    $canonicalSlug,
                 ));
             }
 
             return $enterprise;
         }
 
-        $exactEnterprises = (clone $query)
-            ->where('slug', trim($slug))
-            ->orderBy('id')
-            ->get();
-
-        if ($exactEnterprises->count() > 1) {
-            throw new InvalidArgumentException(sprintf(
-                'Enterprise slug [%s] is ambiguous across the actor\'s organizations.',
-                trim($slug),
-            ));
-        }
-
-        if ($exactEnterprises->isNotEmpty()) {
-            return $exactEnterprises->first();
-        }
-
-        $normalizedSlug = $slugCandidates[1] ?? $slugCandidates[0];
         $enterprises = $query
-            ->where('slug', $normalizedSlug)
+            ->where('slug', $canonicalSlug)
             ->orderBy('id')
             ->get();
 
         if ($enterprises->isEmpty()) {
-            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$normalizedSlug]);
+            throw (new ModelNotFoundException)->setModel(Enterprise::class, [$canonicalSlug]);
         }
 
         if ($enterprises->count() > 1) {
             throw new InvalidArgumentException(sprintf(
-                'Enterprise slug [%s] is ambiguous across the actor\'s organizations.',
-                $normalizedSlug,
+                'Enterprise slug [%s] is ambiguous across the actor\\'s organizations.',
+                $canonicalSlug,
             ));
         }
 
         return $enterprises->first();
     }
 
-    private function slugCandidates(string $value): array
-    {
-        $trimmed = trim($value);
-        $normalized = $this->normalizeSlug($trimmed);
 
-        return array_values(array_unique([$trimmed, $normalized]));
-    }
 
-    public function normalizeSlug(string $value): string
-    {
-        $normalized = Str::slug(str_replace('.', ' ', trim($value)));
-
-        if ($normalized === '') {
-            throw new InvalidArgumentException('Enterprise slug cannot be empty.');
-        }
-
-        return $normalized;
-    }
 }
