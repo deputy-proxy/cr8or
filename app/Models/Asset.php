@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'content_item_id', 'script_id', 'agent_assignment_id', 'agent_execution_id', 'name', 'type', 'status', 'purpose', 'channel', 'platform', 'format', 'dimensions', 'duration_seconds', 'creative_brief'])]
+#[Fillable(['enterprise_id', 'content_item_id', 'script_id', 'workflow_execution_id', 'agent_assignment_id', 'agent_execution_id', 'name', 'type', 'status', 'purpose', 'channel', 'platform', 'format', 'dimensions', 'duration_seconds', 'creative_brief'])]
 class Asset extends Model
 {
     /** @use HasFactory<AssetFactory> */
@@ -50,16 +50,32 @@ class Asset extends Model
                 if ($asset->status !== self::STATUS_PENDING) {
                     throw new LogicException('Script-planned assets must remain pending until media generation is requested.');
                 }
-                if ($asset->agent_assignment_id === null || $asset->agent_execution_id === null) {
-                    throw new LogicException('Script-planned assets require Agent assignment and execution provenance.');
-                }
-                $execution = AgentExecution::query()->find($asset->agent_execution_id);
-                if ((int) $asset->agent_assignment_id !== (int) $script->agent_assignment_id
-                    || $execution === null
-                    || (int) $execution->agent_assignment_id !== (int) $asset->agent_assignment_id
-                    || (int) $execution->enterprise_id !== (int) $asset->enterprise_id
+                if ($asset->workflow_execution_id !== null
+                    && ($asset->agent_assignment_id !== null || $asset->agent_execution_id !== null)
                 ) {
-                    throw new LogicException('Planned asset provenance must match its script assignment and enterprise.');
+                    throw new LogicException('Script-planned assets cannot mix Workflow and Agent provenance.');
+                }
+
+                if ($asset->workflow_execution_id !== null) {
+                    $workflowExecution = WorkflowExecution::query()->find($asset->workflow_execution_id);
+                    if ($workflowExecution === null
+                        || (int) $workflowExecution->enterprise_id !== (int) $asset->enterprise_id
+                    ) {
+                        throw new LogicException('Workflow asset provenance must belong to the asset enterprise.');
+                    }
+                } else {
+                    if ($asset->agent_assignment_id === null || $asset->agent_execution_id === null) {
+                        throw new LogicException('Script-planned assets require Workflow or Agent provenance.');
+                    }
+
+                    $execution = AgentExecution::query()->find($asset->agent_execution_id);
+                    if ((int) $asset->agent_assignment_id !== (int) $script->agent_assignment_id
+                        || $execution === null
+                        || (int) $execution->agent_assignment_id !== (int) $asset->agent_assignment_id
+                        || (int) $execution->enterprise_id !== (int) $asset->enterprise_id
+                    ) {
+                        throw new LogicException('Planned asset provenance must match its script assignment and enterprise.');
+                    }
                 }
             }
 
@@ -83,6 +99,12 @@ class Asset extends Model
     public function script(): BelongsTo
     {
         return $this->belongsTo(Script::class);
+    }
+
+    /** @return BelongsTo<WorkflowExecution, $this> */
+    public function workflowExecution(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowExecution::class);
     }
 
     /** @return BelongsTo<AgentAssignment, $this> */
