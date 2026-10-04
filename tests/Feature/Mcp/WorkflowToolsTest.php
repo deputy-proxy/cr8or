@@ -167,6 +167,7 @@ it('gets a Workflow definition with current stages and published stage snapshot'
         ],
     ]);
     app(\App\Services\WorkflowVersionService::class)->publish($workflow, $actor, 'publish-workflow-get');
+    $workflow->refresh()->load('publishedVersion');
 
     Cr8orServer::actingAs($actor, 'api')
         ->tool(GetWorkflowTool::class, [
