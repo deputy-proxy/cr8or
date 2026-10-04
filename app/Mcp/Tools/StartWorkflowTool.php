@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
 use App\Models\User;
+use App\Models\Workflow;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -19,6 +20,14 @@ class StartWorkflowTool extends GovernedCapabilityTool
     public function schema(JsonSchema $schema): array
     {
         return ['enterprise_id' => $schema->integer()->min(1)->required(), 'workflow_id' => $schema->integer()->min(1)->required(), 'input' => $schema->object(), 'idempotency_key' => $schema->string()->min(1)->max(128)->required(), 'correlation_id' => $schema->string()->max(255)];
+    }
+
+    /** @param array<string, mixed> $input */
+    protected function humanAbility(User $actor, array $input): ?array
+    {
+        $workflow = $input['workflow'] ?? Workflow::query()->findOrFail((int) $input['workflow_id']);
+
+        return ['view', $workflow];
     }
 
     public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
