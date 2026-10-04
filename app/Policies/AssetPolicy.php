@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Data\CapabilityExecutionContext;
+use App\Enums\CapabilityExecutionMode;
 use App\Models\Asset;
 use App\Models\Enterprise;
 use App\Models\Script;
@@ -22,9 +24,21 @@ class AssetPolicy
         return (new EnterprisePolicy)->create($u);
     }
 
-    public function createForScript(User $u, Script $script): bool
-    {
-        return (new EnterprisePolicy)->createForOrganization($u, $script->contentItem->enterprise->organization)
+    public function createForScript(
+        User $u,
+        Script $script,
+        ?CapabilityExecutionContext $context = null,
+    ): bool {
+        $enterprise = $script->contentItem->enterprise;
+
+        if ($context?->mode === CapabilityExecutionMode::WORKFLOW) {
+            return $context->workflowExecution?->actor_id === $u->getKey()
+                && $context->workflowExecution?->enterprise_id === $enterprise->getKey()
+                && $context->workflowExecution?->workflow_id === $context->workflowStage?->workflow_id
+                && (new EnterprisePolicy)->view($u, $enterprise);
+        }
+
+        return (new EnterprisePolicy)->createForOrganization($u, $enterprise->organization)
             && $script->agent_assignment_id !== null
             && $script->agent_execution_id !== null;
     }

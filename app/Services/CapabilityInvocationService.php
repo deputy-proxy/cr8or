@@ -5,8 +5,10 @@ namespace App\Services;
 use App\AI\Contracts\FailureProvenance;
 use App\Capabilities\CapabilityDefinition;
 use App\Capabilities\CapabilityRegistry;
+use App\Data\CapabilityExecutionContext;
 use App\Data\CapabilityInvocationRequest;
 use App\Data\CapabilityRequest;
+use App\Enums\CapabilityExecutionMode;
 use App\Events\CapabilityAuthorized;
 use App\Events\CapabilityRequested;
 use App\Events\CapabilityResultReceived;
@@ -97,6 +99,12 @@ final class CapabilityInvocationService
     private function authorize(CapabilityInvocationRequest $request): void
     {
         if ($request->isWorkflowBacked()) {
+            if (! $this->capabilities->resolve($request->capability)->supportsExecutionMode(CapabilityExecutionMode::WORKFLOW)) {
+                throw new WorkflowDefinitionException(
+                    "Capability [{$request->capability}] is not supported by deterministic Workflow execution.",
+                );
+            }
+
             $stage = $request->workflowStage;
             $expertSlug = $request->expertSlug;
 
@@ -217,6 +225,17 @@ final class CapabilityInvocationService
         } else {
             $input['delegation'] ??= null;
         }
+
+        $input['execution_context'] = new CapabilityExecutionContext(
+            mode: $request->isWorkflowBacked()
+                ? CapabilityExecutionMode::WORKFLOW
+                : ($request->isAgentBacked() ? CapabilityExecutionMode::AGENT : CapabilityExecutionMode::HUMAN),
+            assignment: $request->assignment,
+            execution: $request->execution,
+            approval: $request->approval,
+            workflowExecution: $request->workflowExecution,
+            workflowStage: $request->workflowStage,
+        );
 
         try {
             return $this->capabilities->operation($definition->key)->execute($request->actor, $input);

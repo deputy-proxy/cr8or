@@ -3,6 +3,7 @@
 namespace App\Operations;
 
 use App\Contracts\Operation;
+use App\Data\CapabilityExecutionContext;
 use App\Models\Asset;
 use App\Models\Script;
 use App\Models\User;
@@ -18,6 +19,13 @@ final class CreatePlannedAsset implements Operation
             ? $input['script']
             : Script::query()->findOrFail((int) $input['script_id']);
 
-        return $this->domain->createPlannedAsset($actor, $script, $input);
+        return $this->domain->createPlannedAsset(
+            $actor,
+            $script,
+            $input,
+            ($input['execution_context'] ?? null) instanceof CapabilityExecutionContext
+                ? $input['execution_context']
+                : null,
+        );
     }
 }

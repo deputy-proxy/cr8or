@@ -3,6 +3,7 @@
 namespace App\Capabilities;
 
 use App\Contracts\Operation;
+use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateContentItemTool;
@@ -946,9 +947,47 @@ final class CapabilityRegistry
             outputContract: $outputContract,
             authorizationRequirement: $authorizationRequirement,
             approvalRequirement: $approvalRequirement,
+            executionModes: $this->executionModesFor($key),
             failureContract: CapabilityFailureContract::standard(),
             category: $category,
         );
+    }
+
+    /** @return list<CapabilityExecutionMode> */
+    private function executionModesFor(string $key): array
+    {
+        $workflowUnsupported = [
+            'workflow.create',
+            'workflow.update',
+            'workflow.publish',
+            'workflow.get',
+            'workflow.discover',
+            'workflow.execute',
+            'workflow.inspect',
+            'workflow.resume',
+            'agent.continue',
+            'agent.execute',
+            'agent.delegate',
+            'enterprise.create',
+            'approval.request',
+            'marketing.content.publication-ready',
+            'publication.publish',
+            'marketing.social-account.connect',
+            'marketing.social-account.update',
+            'marketing.social-account.disconnect',
+            'memory.create',
+            'memory.update',
+            'memory.archive',
+            'memory.retrieve',
+            'memory.record',
+            'agent.assignment.create',
+            'agent.assignment.update',
+            'agent.assignment.transition',
+        ];
+
+        return in_array($key, $workflowUnsupported, true)
+            ? [CapabilityExecutionMode::HUMAN, CapabilityExecutionMode::AGENT]
+            : [CapabilityExecutionMode::HUMAN, CapabilityExecutionMode::AGENT, CapabilityExecutionMode::WORKFLOW];
     }
 
     /**
