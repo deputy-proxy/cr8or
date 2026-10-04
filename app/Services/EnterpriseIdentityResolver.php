@@ -47,7 +47,7 @@ final class EnterpriseIdentityResolver
 
         if ($exactEnterprises->count() > 1) {
             throw new InvalidArgumentException(sprintf(
-                'Enterprise slug [%s] is ambiguous across the actor\\'s organizations.',
+                'Enterprise slug [%s] is ambiguous across the actor\'s organizations.',
                 trim($slug),
             ));
         }
