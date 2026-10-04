@@ -100,7 +100,11 @@ final class WorkflowEntryPointService
             if (array_key_exists('stages', $input)) {
                 $stages = is_array($input['stages']) ? $input['stages'] : [];
                 $keys = array_values(array_filter(array_map(
-                    static fn (mixed $stage): ?string => is_array($stage) && is_string($stage['key'] ?? null) ? $stage['key'] : null,
+                    static function (mixed $stage): ?string {
+                        return is_array($stage) && is_string($stage['key'] ?? null)
+                            ? $stage['key']
+                            : null;
+                    },
                     $stages,
                 )));
 
@@ -134,7 +138,7 @@ final class WorkflowEntryPointService
                         'capability_input_contract' => $capability->inputContract,
                         'capability_output_contract' => $capability->outputContract,
                         'input_contract' => $stage['input_contract'] ?? [],
-                        'output_contract' => ! empty($stage['output_contract'] ?? null)
+                        'output_contract' => filled($stage['output_contract'] ?? null)
                             ? $stage['output_contract']
                             : $capability->outputContract,
                         'repeatable' => (bool) ($stage['repeatable'] ?? false),
