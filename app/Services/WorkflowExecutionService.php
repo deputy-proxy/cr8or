@@ -12,6 +12,7 @@ use App\Models\WorkflowVersion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 final class WorkflowExecutionService
@@ -254,7 +255,9 @@ final class WorkflowExecutionService
 
         foreach ($required as $key) {
             if (is_string($key) && ! array_key_exists($key, $available)) {
-                throw new AuthorizationException("Workflow stage [{$stage->key}] is missing required input [{$key}].");
+                throw ValidationException::withMessages([
+                    "workflow.{$stage->key}.{$key}" => "Workflow stage [{$stage->key}] is missing required input [{$key}].",
+                ]);
             }
         }
 

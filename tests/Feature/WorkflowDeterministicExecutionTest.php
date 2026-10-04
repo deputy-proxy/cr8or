@@ -18,6 +18,7 @@ use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 beforeEach(function (): void {
@@ -159,7 +160,7 @@ it('persists a failed execution when a started workflow stage fails', function (
         [],
         'durable-failure',
         'durable-failure-correlation',
-    ))->toThrow(AuthorizationException::class, 'missing required input [required_request]');
+    ))->toThrow(ValidationException::class, 'missing required input [required_request]');
 
     $execution = WorkflowExecution::query()
         ->where('workflow_version_id', $version->id)
@@ -223,7 +224,7 @@ it('enforces stage dependencies and input contracts before capability execution'
         $version,
         [],
         'workflow-missing-input',
-    ))->toThrow(AuthorizationException::class, 'missing required input [required_request]');
+    ))->toThrow(ValidationException::class, 'missing required input [required_request]');
 
     expect(AgentExecution::query()->count())->toBe(0);
 });
