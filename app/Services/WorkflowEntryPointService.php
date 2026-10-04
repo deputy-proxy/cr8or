@@ -231,6 +231,53 @@ final class WorkflowEntryPointService
         ];
     }
 
+    /** @return array<string, mixed> */
+    public function get(User $actor, Workflow $workflow): array
+    {
+        Gate::forUser($actor)->authorize('view', $workflow);
+
+        $workflow->load(['enterprise', 'stages', 'publishedVersion']);
+
+        $stage = static fn (WorkflowStage $stage): array => [
+            'id' => $stage->getKey(),
+            'key' => $stage->key,
+            'name' => $stage->name,
+            'sequence' => $stage->sequence,
+            'dependencies' => $stage->dependencies,
+            'expert_slugs' => $stage->expert_slugs,
+            'capability_slugs' => $stage->capability_slugs,
+            'capability_input_contract' => $stage->capability_input_contract,
+            'capability_output_contract' => $stage->capability_output_contract,
+            'input_contract' => $stage->input_contract,
+            'output_contract' => $stage->output_contract,
+            'repeatable' => $stage->repeatable,
+            'completion_criteria' => $stage->completion_criteria,
+        ];
+
+        return [
+            'id' => $workflow->getKey(),
+            'enterprise_id' => $workflow->enterprise_id,
+            'name' => $workflow->name,
+            'canonical_key' => $workflow->canonical_key,
+            'purpose' => $workflow->purpose,
+            'status' => $workflow->status,
+            'version' => $workflow->version,
+            'execution_policy' => $workflow->execution_policy,
+            'completion_criteria' => $workflow->completion_criteria,
+            'published_version_id' => $workflow->published_version_id,
+            'stages' => $workflow->stages->map($stage)->values()->all(),
+            'published_version' => $workflow->publishedVersion === null ? null : [
+                'id' => $workflow->publishedVersion->getKey(),
+                'version' => $workflow->publishedVersion->version,
+                'status' => $workflow->publishedVersion->status,
+                'published_at' => $workflow->publishedVersion->published_at?->toIso8601String(),
+                'stage_definitions' => $workflow->publishedVersion->stage_definitions,
+                'execution_policy' => $workflow->publishedVersion->execution_policy,
+                'completion_criteria' => $workflow->publishedVersion->completion_criteria,
+            ],
+        ];
+    }
+
     public function publish(User $actor, Workflow $workflow, ?string $idempotencyKey = null): WorkflowVersion
     {
         return app(WorkflowVersionService::class)->publish($workflow, $actor, $idempotencyKey);
