@@ -320,6 +320,7 @@ class WorkflowResource extends Resource
             ])
             ->recordActions([
                 \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ]);
     }
 
