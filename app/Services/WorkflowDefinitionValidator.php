@@ -51,6 +51,7 @@ final class WorkflowDefinitionValidator
                 'workflow_id' => $workflow->getKey(),
                 'key' => $definition['key'] ?? null,
                 'name' => $definition['name'] ?? null,
+                'instruction' => $definition['instruction'] ?? null,
                 'sequence' => $definition['sequence'] ?? 0,
                 'dependencies' => json_encode($definition['dependencies'] ?? [], JSON_THROW_ON_ERROR),
                 'expert_slugs' => json_encode($definition['expert_slugs'] ?? [], JSON_THROW_ON_ERROR),
