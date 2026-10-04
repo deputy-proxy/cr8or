@@ -355,16 +355,19 @@ final class WorkflowDefinitionValidator
                     return false;
                 }
                 $node = is_array($node['properties'][$segment]) ? $node['properties'][$segment] : [];
+
                 continue;
             }
 
             if (array_key_exists($segment, $node)) {
                 $node = is_array($node[$segment]) ? $node[$segment] : [];
+
                 continue;
             }
 
             if (isset($node['required']) && is_array($node['required']) && in_array($segment, $node['required'], true)) {
                 $node = [];
+
                 continue;
             }
 
