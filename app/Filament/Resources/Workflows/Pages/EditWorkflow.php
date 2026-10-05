@@ -6,9 +6,9 @@ use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
 use App\Models\Workflow;
 use App\Services\WorkflowScopeService;
-use Illuminate\Database\Eloquent\Model;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
