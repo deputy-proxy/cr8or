@@ -73,6 +73,81 @@ final class WorkflowEntryPointService
         });
     }
 
+    public function duplicate(User $actor, Workflow $workflow): Workflow
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $workflow->enterprise]);
+
+        return DB::transaction(function () use ($workflow): Workflow {
+            /** @var Workflow $source */
+            $source = Workflow::query()
+                ->with('stages')
+                ->lockForUpdate()
+                ->whereKey($workflow->getKey())
+                ->firstOrFail();
+
+            $name = $this->nextDuplicateName($source);
+            $canonicalKey = $this->nextDuplicateCanonicalKey($source);
+
+            $duplicate = $source->replicate([
+                'version',
+                'published_version_id',
+                'status',
+            ]);
+            $duplicate->fill([
+                'name' => $name,
+                'canonical_key' => $canonicalKey,
+                'version' => 1,
+                'published_version_id' => null,
+                'status' => Workflow::STATUS_PENDING,
+            ]);
+            $duplicate->save();
+
+            foreach ($source->stages as $stage) {
+                $duplicate->stages()->save($stage->replicate());
+            }
+
+            return $duplicate->refresh();
+        });
+    }
+
+    private function nextDuplicateName(Workflow $workflow): string
+    {
+        $base = $workflow->name.' (Copy)';
+        $name = $base;
+        $suffix = 2;
+
+        while (Workflow::query()
+            ->where('enterprise_id', $workflow->enterprise_id)
+            ->where('name', $name)
+            ->exists()) {
+            $name = $workflow->name.' (Copy '.$suffix.')';
+            $suffix++;
+        }
+
+        return mb_substr($name, 0, 255);
+    }
+
+    private function nextDuplicateCanonicalKey(Workflow $workflow): ?string
+    {
+        if (! filled($workflow->canonical_key)) {
+            return null;
+        }
+
+        $base = $workflow->canonical_key.'.copy';
+        $key = $base;
+        $suffix = 2;
+
+        while (Workflow::query()
+            ->where('enterprise_id', $workflow->enterprise_id)
+            ->where('canonical_key', $key)
+            ->exists()) {
+            $key = $workflow->canonical_key.'.copy-'.$suffix;
+            $suffix++;
+        }
+
+        return mb_substr($key, 0, 150);
+    }
+
     /** @param array<string, mixed> $input */
     public function update(User $actor, Workflow $workflow, array $input): Workflow
     {
