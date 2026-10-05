@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Operations\DuplicateWorkflow;
 use App\Services\WorkflowEntryPointService;
-use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -42,7 +41,13 @@ it('duplicates a workflow definition without published versions or executions', 
         ]],
     ]);
 
-    app(WorkflowVersionService::class)->publish($source, $actor, 'test:workflow-duplicate-source');
+    $sourceVersion = \App\Models\WorkflowVersion::factory()->create([
+        'workflow_id' => $source,
+        'enterprise_id' => $enterprise,
+        'status' => \App\Models\WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+    ]);
+    $source->update(['version' => 1, 'published_version_id' => $sourceVersion->getKey()]);
 
     $duplicate = app(DuplicateWorkflow::class)->execute($actor, [
         'workflow' => $source,
