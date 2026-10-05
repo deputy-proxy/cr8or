@@ -14,6 +14,12 @@ class WorkflowVersionPolicy
 
     public function view(User $user, WorkflowVersion $record): bool
     {
+        $workflow = $record->workflow;
+
+        if ($workflow !== null && ! $workflow->isEnterpriseSpecific()) {
+            return $user->memberships()->exists();
+        }
+
         return $this->organizationRole($user, $record) !== null;
     }
 
@@ -48,8 +54,14 @@ class WorkflowVersionPolicy
 
     private function organizationRole(User $user, WorkflowVersion $record): ?MembershipRole
     {
+        $enterprise = $record->enterprise;
+
+        if ($enterprise === null) {
+            return null;
+        }
+
         return $user->memberships()
-            ->where('organization_id', $record->enterprise->organization_id)
+            ->where('organization_id', $enterprise->organization_id)
             ->first()?->role;
     }
 }
