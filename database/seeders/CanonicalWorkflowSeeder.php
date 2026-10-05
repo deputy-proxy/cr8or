@@ -165,6 +165,7 @@ class CanonicalWorkflowSeeder extends Seeder
                     'canonical_key' => $definition['canonical_key'],
                 ],
                 [
+                    'enterprise_specific' => true,
                     'name' => $definition['name'],
                     'purpose' => $definition['purpose'],
                     'execution_policy' => $definition['execution_policy'],
