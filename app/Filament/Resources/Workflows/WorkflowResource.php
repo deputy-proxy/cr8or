@@ -55,6 +55,14 @@ class WorkflowResource extends Resource
                 ->schema([
                     Section::make('Workflow')
                         ->schema([
+                            Toggle::make('enterprise_specific')
+                                ->label('Enterprise-specific')
+                                ->default(true)
+                                ->live()
+                                ->disabledOn('edit')
+                                ->dehydrated()
+                                ->helperText('Disable for a reusable Workflow that can execute in any Enterprise.'),
+
                             Select::make('enterprise_id')
                                 ->label('Enterprise')
                                 ->options(fn (): array => Enterprise::query()
@@ -64,7 +72,10 @@ class WorkflowResource extends Resource
                                     ->all())
                                 ->searchable()
                                 ->preload()
-                                ->required(),
+                                ->required(fn (Get $get): bool => (bool) $get('enterprise_specific'))
+                                ->disabledOn('edit')
+                                ->dehydrated()
+                                ->hidden(fn (Get $get): bool => ! (bool) $get('enterprise_specific')),
 
                             TextInput::make('name')
                                 ->required()
@@ -339,7 +350,10 @@ class WorkflowResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('canonical_key')->label('Canonical key')->searchable()->sortable(),
-                TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
+                TextColumn::make('scope')
+                    ->label('Scope')
+                    ->state(fn (Workflow $record): string => $record->isEnterpriseSpecific() ? (string) ($record->enterprise?->name ?: 'Enterprise-specific') : 'Generic')
+                    ->badge(),
                 TextColumn::make('publishedVersion.version')->label('Published version')->sortable(),
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
@@ -349,10 +363,12 @@ class WorkflowResource extends Resource
                 \Filament\Actions\Action::make('duplicate')
                     ->label('Duplicate')
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
-                    ->authorize(fn (Workflow $record): bool => Gate::forUser(auth()->user())->allows(
-                        'createForEnterprise',
-                        [Workflow::class, $record->enterprise],
-                    ))
+                    ->authorize(fn (Workflow $record): bool => $record->isEnterpriseSpecific()
+                        ? Gate::forUser(auth()->user())->allows(
+                            'createForEnterprise',
+                            [Workflow::class, $record->enterprise],
+                        )
+                        : Gate::forUser(auth()->user())->allows('create', Workflow::class))
                     ->requiresConfirmation()
                     ->action(function (Workflow $record): void {
                         $duplicate = app(CapabilityRegistry::class)
@@ -377,10 +393,14 @@ class WorkflowResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas(
-            'enterprise',
-            fn (Builder $query) => $query->whereIn('organization_id', static::authorizedOrganizationIds()),
-        );
+        return parent::getEloquentQuery()->where(function (Builder $query): void {
+            $query->where(function (Builder $query): void {
+                $query->where('enterprise_specific', false)->whereNull('enterprise_id');
+            })->orWhereHas(
+                'enterprise',
+                fn (Builder $query) => $query->whereIn('organization_id', static::authorizedOrganizationIds()),
+            );
+        });
     }
 
     public static function canViewAny(): bool

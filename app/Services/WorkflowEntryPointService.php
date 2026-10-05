@@ -19,13 +19,28 @@ final class WorkflowEntryPointService
     ) {}
 
     /** @param array<string, mixed> $input */
-    public function create(User $actor, Enterprise $enterprise, array $input): Workflow
+    public function create(User $actor, ?Enterprise $enterprise, array $input): Workflow
     {
-        Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $enterprise]);
+        $enterpriseSpecific = (bool) ($input['enterprise_specific'] ?? true);
 
-        return DB::transaction(function () use ($enterprise, $input): Workflow {
+        if ($enterpriseSpecific) {
+            if (! $enterprise instanceof Enterprise) {
+                throw new AuthorizationException('Enterprise-specific Workflow creation requires an enterprise.');
+            }
+
+            Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $enterprise]);
+        } else {
+            if ($enterprise !== null) {
+                throw new AuthorizationException('Generic Workflow must not be assigned to an enterprise.');
+            }
+
+            Gate::forUser($actor)->authorize('create', Workflow::class);
+        }
+
+        return DB::transaction(function () use ($enterprise, $enterpriseSpecific, $input): Workflow {
             $workflow = Workflow::query()->create([
-                'enterprise_id' => $enterprise->getKey(),
+                'enterprise_specific' => $enterpriseSpecific,
+                'enterprise_id' => $enterprise?->getKey(),
                 'project_id' => $input['project_id'] ?? null,
                 'task_id' => $input['task_id'] ?? null,
                 'work_item_id' => $input['work_item_id'] ?? null,
@@ -75,7 +90,11 @@ final class WorkflowEntryPointService
 
     public function duplicate(User $actor, Workflow $workflow): Workflow
     {
-        Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $workflow->enterprise]);
+        if ($workflow->isEnterpriseSpecific()) {
+            Gate::forUser($actor)->authorize('createForEnterprise', [Workflow::class, $workflow->enterprise]);
+        } else {
+            Gate::forUser($actor)->authorize('create', Workflow::class);
+        }
 
         return DB::transaction(function () use ($workflow): Workflow {
             /** @var Workflow $source */
@@ -119,7 +138,11 @@ final class WorkflowEntryPointService
             $name = mb_substr($workflow->name, 0, 255 - mb_strlen($label)).$label;
             $suffix++;
         } while (Workflow::query()
-            ->where('enterprise_id', $workflow->enterprise_id)
+            ->where('enterprise_specific', $workflow->enterprise_specific)
+            ->when($workflow->isEnterpriseSpecific(),
+                fn ($query) => $query->where('enterprise_id', $workflow->enterprise_id),
+                fn ($query) => $query->whereNull('enterprise_id'),
+            )
             ->where('name', $name)
             ->exists());
 
@@ -139,7 +162,11 @@ final class WorkflowEntryPointService
             $key = mb_substr($workflow->canonical_key, 0, 150 - mb_strlen($label)).$label;
             $suffix++;
         } while (Workflow::query()
-            ->where('enterprise_id', $workflow->enterprise_id)
+            ->where('enterprise_specific', $workflow->enterprise_specific)
+            ->when($workflow->isEnterpriseSpecific(),
+                fn ($query) => $query->where('enterprise_id', $workflow->enterprise_id),
+                fn ($query) => $query->whereNull('enterprise_id'),
+            )
             ->where('canonical_key', $key)
             ->exists());
 
@@ -251,8 +278,9 @@ final class WorkflowEntryPointService
 
         if ($canonicalKey !== null && $canonicalKey !== '') {
             $workflow = Workflow::query()
-                ->where('enterprise_id', $enterprise->getKey())
+                ->availableForEnterprise($enterprise)
                 ->where('canonical_key', $canonicalKey)
+                ->orderByDesc('enterprise_specific')
                 ->with('publishedVersion')
                 ->first();
 
@@ -272,7 +300,7 @@ final class WorkflowEntryPointService
             ];
         }
 
-        $query = Workflow::query()->where('enterprise_id', $enterprise->getKey())->with('publishedVersion');
+        $query = Workflow::query()->availableForEnterprise($enterprise)->with('publishedVersion');
 
         if ($search !== null && $search !== '') {
             $query->where(fn ($builder) => $builder
@@ -307,9 +335,13 @@ final class WorkflowEntryPointService
     }
 
     /** @return array<string, mixed> */
-    public function get(User $actor, Workflow $workflow): array
+    public function get(User $actor, Workflow $workflow, ?Enterprise $enterprise = null): array
     {
-        Gate::forUser($actor)->authorize('view', $workflow);
+        if ($enterprise instanceof Enterprise) {
+            Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
+        } else {
+            Gate::forUser($actor)->authorize('view', $workflow);
+        }
 
         $workflow->load(['enterprise', 'stages', 'publishedVersion']);
 
@@ -332,6 +364,7 @@ final class WorkflowEntryPointService
 
         return [
             'id' => $workflow->getKey(),
+            'enterprise_specific' => $workflow->isEnterpriseSpecific(),
             'enterprise_id' => $workflow->enterprise_id,
             'name' => $workflow->name,
             'canonical_key' => $workflow->canonical_key,
@@ -354,15 +387,29 @@ final class WorkflowEntryPointService
         ];
     }
 
-    public function publish(User $actor, Workflow $workflow, ?string $idempotencyKey = null): WorkflowVersion
+    public function publish(User $actor, Workflow $workflow, ?string $idempotencyKey = null, ?Enterprise $enterprise = null): WorkflowVersion
     {
+        if ($enterprise instanceof Enterprise) {
+            Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
+        } else {
+            Gate::forUser($actor)->authorize('view', $workflow);
+        }
+
         return app(WorkflowVersionService::class)->publish($workflow, $actor, $idempotencyKey);
     }
 
     /** @param array<string, mixed> $input */
-    public function start(User $actor, Workflow $workflow, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false): WorkflowExecution
+    public function start(User $actor, Workflow $workflow, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false, ?Enterprise $enterprise = null): WorkflowExecution
     {
-        return app(WorkflowExecutionService::class)->start($actor, $workflow, $input, $idempotencyKey, $correlationId, $returnFailed);
+        $enterprise ??= $workflow->enterprise;
+
+        if (! $enterprise instanceof Enterprise) {
+            throw new AuthorizationException('Generic Workflow execution requires an enterprise context.');
+        }
+
+        Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
+
+        return app(WorkflowExecutionService::class)->start($actor, $workflow, $input, $idempotencyKey, $correlationId, $returnFailed, $enterprise);
     }
 
     /** @return array<string, mixed> */

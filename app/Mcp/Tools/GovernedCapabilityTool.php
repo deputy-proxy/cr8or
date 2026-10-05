@@ -38,9 +38,16 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
     }
 
     /** @param array<string, mixed> $input */
+    protected function allowsNullEnterpriseContext(array $input): bool
+    {
+        return false;
+    }
+
+    /** @param array<string, mixed> $input */
     protected function executeCapability(CapabilityRegistry $registry, User $actor, array $input): mixed
     {
-        $enterprise = $this->resolveEnterprise($input);
+        $humanAbility = $this->humanAbility($actor, $input);
+        $enterprise = $this->resolveEnterprise($input, $this->allowsNullEnterpriseContext($input));
         $assignment = $this->resolveAssignment($input);
         $execution = $this->resolveExecution($input);
         $approval = $this->resolveApproval($input);
@@ -48,17 +55,17 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
         $targetContext = isset($input['target_context']) && is_array($input['target_context'])
             ? $input['target_context']
             : array_filter([
-                'enterprise_id' => $enterprise->getKey(),
+                'enterprise_id' => $enterprise?->getKey(),
                 'agent_assignment_id' => $assignment?->getKey(),
                 'agent_execution_id' => $execution?->getKey(),
                 'approval_request_id' => $approval?->getKey(),
             ], static fn (mixed $value): bool => $value !== null);
 
-        return $this->invokeCapability($registry, $actor, $enterprise, $input, $targetContext, $this->humanAbility($actor, $input), $this->expertSlug());
+        return $this->invokeCapability($registry, $actor, $enterprise, $input, $targetContext, $humanAbility, $this->expertSlug());
     }
 
     /** @param array<string, mixed> $input */
-    private function resolveEnterprise(array $input): Enterprise
+    private function resolveEnterprise(array $input, bool $allowNull = false): ?Enterprise
     {
         if (($input['enterprise'] ?? null) instanceof Enterprise) {
             return $input['enterprise'];
@@ -106,6 +113,10 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
                     return $related->getAttribute('enterprise');
                 }
             }
+        }
+
+        if ($allowNull) {
+            return null;
         }
 
         throw new \InvalidArgumentException('A governed Capability invocation requires an Enterprise context.');

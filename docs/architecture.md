@@ -142,7 +142,20 @@ The context applies deterministic per-collection limits. These limits are safety
 
 ### Workflow Flow
 
-Persisted workflow definitions, stages, and WorkflowExecutions. Workflow Stage dependencies are persisted as part of WorkflowStage definitions and are validated by the Workflow definition validator. They are distinct from Work Dependencies.
+Persisted workflow definitions, stages, WorkflowVersions, and WorkflowExecutions. Workflow Stage dependencies are persisted as part of WorkflowStage definitions and are validated by the Workflow definition validator. They are distinct from Work Dependencies.
+
+Workflow definitions have two explicit scope modes:
+
+- **Generic**: `enterprise_specific = false` and `enterprise_id = NULL`. The definition is reusable by any Enterprise, while each WorkflowExecution remains bound to the Enterprise in which it runs.
+- **Enterprise-specific**: `enterprise_specific = true` and `enterprise_id = <enterprise>`. The definition may only execute for that Enterprise.
+
+The scope invariant is enforced by the Workflow domain model. Generic Workflows must not reference enterprise-scoped Project, Task, or WorkItem context. Existing enterprise-specific Workflows retain their current scope.
+
+Workflow resolution for an Enterprise includes both generic definitions and definitions specifically scoped to that Enterprise. When both exist for the same canonical key, the enterprise-specific definition takes precedence for that Enterprise. A generic Workflow definition is never duplicated merely because multiple Enterprises execute it.
+
+WorkflowVersions follow the Workflow scope: generic WorkflowVersions have no Enterprise, while WorkflowExecutions always retain an explicit Enterprise execution context. This keeps reusable definitions separate from tenant-owned runtime history.
+
+Workflow scope is selected at creation and is immutable through the Filament edit form. Duplication preserves the source scope.
 
 | Resource | Filament class location |
 | --- | --- |

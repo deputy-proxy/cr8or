@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\CapabilityInvocationRequest;
 use App\Models\ApprovalRequest;
+use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
@@ -20,7 +21,7 @@ final class WorkflowExecutionService
     public function __construct(private readonly CapabilityInvocationService $capabilities) {}
 
     /** @param array<string, mixed> $input */
-    public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false): WorkflowExecution
+    public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false, ?Enterprise $enterprise = null): WorkflowExecution
     {
         $version = $definition instanceof WorkflowVersion ? $definition : $definition->publishedVersion;
 
@@ -29,7 +30,13 @@ final class WorkflowExecutionService
         }
 
         $workflow = $version->workflow;
-        Gate::forUser($actor)->authorize('view', $workflow);
+        $enterprise ??= $workflow->enterprise;
+
+        if (! $enterprise instanceof Enterprise) {
+            throw new AuthorizationException('Generic Workflow execution requires an enterprise context.');
+        }
+
+        Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
 
         $existing = WorkflowExecution::query()
             ->where('workflow_version_id', $version->getKey())
@@ -42,12 +49,12 @@ final class WorkflowExecutionService
 
         $this->validateExecutionInput($version, $input);
 
-        $execution = DB::transaction(function () use ($actor, $workflow, $version, $input, $idempotencyKey, $correlationId): WorkflowExecution {
+        $execution = DB::transaction(function () use ($actor, $workflow, $version, $enterprise, $input, $idempotencyKey, $correlationId): WorkflowExecution {
             return WorkflowExecution::query()->create([
                 'workflow_id' => $workflow->getKey(),
                 'workflow_version_id' => $version->getKey(),
                 'workflow_version' => $version->version,
-                'enterprise_id' => $workflow->enterprise_id,
+                'enterprise_id' => $enterprise->getKey(),
                 'actor_id' => $actor->getKey(),
                 'status' => WorkflowExecution::STATUS_PENDING,
                 'correlation_id' => $correlationId ?? str()->uuid()->toString(),

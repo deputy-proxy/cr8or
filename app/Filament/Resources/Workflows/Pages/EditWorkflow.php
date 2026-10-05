@@ -17,9 +17,15 @@ class EditWorkflow extends EditRecord
         /** @var Workflow $record */
         $record = $this->record;
 
-        if ((int) $data['enterprise_id'] !== (int) $record->enterprise_id) {
-            throw new AuthorizationException('Cannot reassign a workflow to another enterprise.');
+        if ((bool) ($data['enterprise_specific'] ?? true) !== $record->isEnterpriseSpecific()) {
+            throw new AuthorizationException('Cannot change Workflow scope after creation.');
         }
+
+        if ($record->isEnterpriseSpecific() && (int) $data['enterprise_id'] !== (int) $record->enterprise_id) {
+            throw new AuthorizationException('Cannot reassign a Workflow to another enterprise.');
+        }
+
+        $data['enterprise_id'] = $record->enterprise_id;
 
         return $data;
     }

@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Database\Factories\WorkflowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'canonical_key', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
-/** @property int|null $version
+#[Fillable(['enterprise_specific', 'enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'canonical_key', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
+/** @property bool $enterprise_specific
+ * @property int|null $version
  * @property array<string, mixed>|null $completion_criteria
  * @property array<string, mixed>|null $execution_policy
  */
@@ -40,7 +42,7 @@ class Workflow extends Model
 
     protected function casts(): array
     {
-        return ['execution_policy' => 'array', 'completion_criteria' => 'array'];
+        return ['enterprise_specific' => 'boolean', 'execution_policy' => 'array', 'completion_criteria' => 'array'];
     }
 
     /**
@@ -49,7 +51,40 @@ class Workflow extends Model
      */
     public function scopeForCanonicalKey(\Illuminate\Database\Eloquent\Builder $query, Enterprise $enterprise, string $canonicalKey): \Illuminate\Database\Eloquent\Builder
     {
-        return $query->where('enterprise_id', $enterprise->getKey())->where('canonical_key', $canonicalKey);
+        return $query->where('canonical_key', $canonicalKey)
+            ->where(function ($query) use ($enterprise): void {
+                $query->where(function ($query) use ($enterprise): void {
+                    $query->where('enterprise_specific', true)->where('enterprise_id', $enterprise->getKey());
+                })->orWhere(function ($query): void {
+                    $query->where('enterprise_specific', false)->whereNull('enterprise_id');
+                });
+            })
+            ->orderByDesc('enterprise_specific');
+    }
+
+    public function isEnterpriseSpecific(): bool
+    {
+        return (bool) $this->enterprise_specific;
+    }
+
+    public function isAvailableForEnterprise(Enterprise $enterprise): bool
+    {
+        return ! $this->isEnterpriseSpecific()
+            || (int) $this->enterprise_id === (int) $enterprise->getKey();
+    }
+
+    /** @param Builder<Workflow> $query
+     * @return Builder<Workflow>
+     */
+    public function scopeAvailableForEnterprise(Builder $query, Enterprise $enterprise): Builder
+    {
+        return $query->where(function ($query) use ($enterprise): void {
+            $query->where(function ($query): void {
+                $query->where('enterprise_specific', false)->whereNull('enterprise_id');
+            })->orWhere(function ($query) use ($enterprise): void {
+                $query->where('enterprise_specific', true)->where('enterprise_id', $enterprise->getKey());
+            });
+        });
     }
 
     /** @return BelongsTo<Enterprise, $this> */
@@ -176,11 +211,38 @@ class Workflow extends Model
 
     private function validateScope(): void
     {
+        if ($this->isEnterpriseSpecific()) {
+            if ($this->enterprise_id === null) {
+                throw new LogicException('Enterprise-specific Workflow must have an enterprise.');
+            }
+        } elseif ($this->enterprise_id !== null) {
+            throw new LogicException('Generic Workflow must not have an enterprise.');
+        }
+
+        if (! $this->isEnterpriseSpecific() && $this->canonical_key !== null) {
+            $duplicate = static::query()
+                ->whereKeyNot($this->getKey())
+                ->where('enterprise_specific', false)
+                ->whereNull('enterprise_id')
+                ->where('canonical_key', $this->canonical_key)
+                ->exists();
+
+            if ($duplicate) {
+                throw new LogicException("Generic Workflow canonical key [{$this->canonical_key}] already exists.");
+            }
+        }
+
         foreach (['project_id' => Project::class, 'task_id' => Task::class, 'work_item_id' => WorkItem::class] as $field => $model) {
             $id = $this->{$field};
             if ($id === null) {
                 continue;
-            }$record = $model::query()->find($id);
+            }
+
+            if ($this->enterprise_id === null) {
+                throw new LogicException("Generic Workflow cannot reference enterprise-scoped {$field}.");
+            }
+
+            $record = $model::query()->find($id);
             if ($record === null || $record->enterprise_id !== $this->enterprise_id) {
                 throw new LogicException("Workflow {$field} must belong to its enterprise.");
             }

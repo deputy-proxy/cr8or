@@ -13,7 +13,7 @@ final class CreateWorkflow implements Operation
 
     public function execute(User $actor, array $input): mixed
     {
-        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
+        $enterprise = $input['enterprise'] ?? (isset($input['enterprise_id']) ? Enterprise::query()->findOrFail((int) $input['enterprise_id']) : null);
 
         return $this->workflows->create($actor, $enterprise, $input);
     }

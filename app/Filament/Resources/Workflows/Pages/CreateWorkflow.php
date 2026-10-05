@@ -15,8 +15,17 @@ class CreateWorkflow extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('createForEnterprise', [Workflow::class, $enterprise]);
+        $enterpriseSpecific = (bool) ($data['enterprise_specific'] ?? true);
+
+        if ($enterpriseSpecific) {
+            $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
+            Gate::authorize('createForEnterprise', [Workflow::class, $enterprise]);
+        } else {
+            Gate::authorize('create', Workflow::class);
+            $data['enterprise_id'] = null;
+        }
+
+        $data['enterprise_specific'] = $enterpriseSpecific;
 
         return $data;
     }

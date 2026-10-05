@@ -14,7 +14,19 @@ class WorkflowPolicy
 
     public function view(User $user, Workflow $record): bool
     {
+        if (! $record->isEnterpriseSpecific()) {
+            return $user->memberships()->exists();
+        }
+
         return $this->organizationRole($user, $record) !== null;
+    }
+
+    public function viewForEnterprise(User $user, Workflow $record, Enterprise $enterprise): bool
+    {
+        return $record->isAvailableForEnterprise($enterprise)
+            && $user->memberships()
+                ->where('organization_id', $enterprise->organization_id)
+                ->exists();
     }
 
     public function create(User $user): bool
@@ -34,6 +46,12 @@ class WorkflowPolicy
 
     public function update(User $user, Workflow $record): bool
     {
+        if (! $record->isEnterpriseSpecific()) {
+            return $user->memberships()
+                ->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value])
+                ->exists();
+        }
+
         $role = $this->organizationRole($user, $record);
 
         return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
@@ -41,6 +59,12 @@ class WorkflowPolicy
 
     public function delete(User $user, Workflow $record): bool
     {
+        if (! $record->isEnterpriseSpecific()) {
+            return $user->memberships()
+                ->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value])
+                ->exists();
+        }
+
         $role = $this->organizationRole($user, $record);
 
         return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
@@ -48,8 +72,14 @@ class WorkflowPolicy
 
     private function organizationRole(User $user, Workflow $record): ?MembershipRole
     {
+        $enterprise = $record->enterprise;
+
+        if ($enterprise === null) {
+            return null;
+        }
+
         return $user->memberships()
-            ->where('organization_id', $record->enterprise->organization_id)
+            ->where('organization_id', $enterprise->organization_id)
             ->first()?->role;
     }
 }

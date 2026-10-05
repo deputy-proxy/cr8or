@@ -75,10 +75,7 @@ final class AgentExecutionService
         }
         $workflow = $request->workflow;
         if ($workflow !== null) {
-            Gate::forUser($actor)->authorize('view', $workflow);
-            if ($workflow->enterprise_id !== $enterprise->getKey()) {
-                throw new AuthorizationException('Workflow must belong to the Agent execution enterprise.');
-            }
+            Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
         }
 
         $descriptor = $assignment->agentDescriptor;
@@ -234,10 +231,7 @@ final class AgentExecutionService
         $runtimePolicies = $this->runtimePolicies ?? app(AgentRuntimePolicyService::class);
         $workflow = $request->workflow;
         if ($workflow !== null) {
-            Gate::forUser($actor)->authorize('view', $workflow);
-            if ($workflow->enterprise_id !== $enterprise->getKey()) {
-                throw new AuthorizationException('Workflow must belong to the Agent execution enterprise.');
-            }
+            Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
         }
         $runtimePolicy = $runtimePolicies->resolveForAssignment($actor, $assignment);
         $runtimePolicies->assertCanExecute($runtimePolicy);
@@ -1699,8 +1693,9 @@ final class AgentExecutionService
         }
 
         $workflow = Workflow::query()
-            ->where('enterprise_id', $assignment->enterprise_id)
+            ->availableForEnterprise($assignment->enterprise)
             ->where('canonical_key', $template)
+            ->orderByDesc('enterprise_specific')
             ->with('publishedVersion')
             ->first();
 

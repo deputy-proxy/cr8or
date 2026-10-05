@@ -425,8 +425,9 @@ class AgentExecution extends Model
     {
         if ($this->workflow_id !== null) {
             $workflow = Workflow::query()->find($this->workflow_id);
-            if ($workflow === null || $workflow->enterprise_id !== $this->enterprise_id) {
-                throw new LogicException('Agent execution workflow must belong to its enterprise.');
+            $enterprise = Enterprise::query()->find($this->enterprise_id);
+            if ($workflow === null || $enterprise === null || ! $workflow->isAvailableForEnterprise($enterprise)) {
+                throw new LogicException('Agent execution workflow must be available to its enterprise.');
             }
             if ($this->workflow_version !== null && $this->workflow_version !== $workflow->version) {
                 throw new LogicException('Agent execution workflow version must match the bound Workflow.');
