@@ -3,10 +3,13 @@
 namespace App\Filament\Resources\Workflows\Pages;
 
 use App\Filament\Resources\Workflows\WorkflowResource;
+use App\Models\Enterprise;
 use App\Models\Workflow;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class EditWorkflow extends EditRecord
 {
@@ -29,7 +32,7 @@ class EditWorkflow extends EditRecord
             ) {
                 $enterprise = $enterpriseId === null
                     ? null
-                    : AppModelsEnterprise::query()->findOrFail($enterpriseId);
+                    : Enterprise::query()->findOrFail($enterpriseId);
 
                 $workflow->changeScope($enterpriseSpecific, $enterprise);
             }
