@@ -112,19 +112,18 @@ final class WorkflowEntryPointService
 
     private function nextDuplicateName(Workflow $workflow): string
     {
-        $base = $workflow->name.' (Copy)';
-        $name = $base;
-        $suffix = 2;
+        $suffix = 1;
 
-        while (Workflow::query()
+        do {
+            $label = $suffix === 1 ? ' (Copy)' : ' (Copy '.$suffix.')';
+            $name = mb_substr($workflow->name, 0, 255 - mb_strlen($label)).$label;
+            $suffix++;
+        } while (Workflow::query()
             ->where('enterprise_id', $workflow->enterprise_id)
             ->where('name', $name)
-            ->exists()) {
-            $name = $workflow->name.' (Copy '.$suffix.')';
-            $suffix++;
-        }
+            ->exists());
 
-        return mb_substr($name, 0, 255);
+        return $name;
     }
 
     private function nextDuplicateCanonicalKey(Workflow $workflow): ?string
@@ -133,19 +132,18 @@ final class WorkflowEntryPointService
             return null;
         }
 
-        $base = $workflow->canonical_key.'.copy';
-        $key = $base;
-        $suffix = 2;
+        $suffix = 1;
 
-        while (Workflow::query()
+        do {
+            $label = $suffix === 1 ? '.copy' : '.copy-'.$suffix;
+            $key = mb_substr($workflow->canonical_key, 0, 150 - mb_strlen($label)).$label;
+            $suffix++;
+        } while (Workflow::query()
             ->where('enterprise_id', $workflow->enterprise_id)
             ->where('canonical_key', $key)
-            ->exists()) {
-            $key = $workflow->canonical_key.'.copy-'.$suffix;
-            $suffix++;
-        }
+            ->exists());
 
-        return mb_substr($key, 0, 150);
+        return $key;
     }
 
     /** @param array<string, mixed> $input */
