@@ -7,13 +7,12 @@ use App\Models\Workflow;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Auth\Access\AuthorizationException;
 
 class EditWorkflow extends EditRecord
 {
     protected static string $resource = WorkflowResource::class;
 
-    protected function handleRecordUpdate(IlluminateDatabaseEloquentModel $record, array $data): IlluminateDatabaseEloquentModel
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Workflow $workflow */
         $workflow = $record;
