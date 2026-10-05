@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Workflows;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Experts\ExpertRegistry;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
@@ -9,7 +10,6 @@ use App\Filament\Resources\Workflows\Pages\EditWorkflow;
 use App\Filament\Resources\Workflows\Pages\ListWorkflows;
 use App\Models\Enterprise;
 use App\Models\Workflow;
-use App\Operations\DuplicateWorkflow;
 use App\Services\ExpertCapabilityResolver;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
@@ -353,10 +353,13 @@ class WorkflowResource extends Resource
                         'createForEnterprise',
                         [Workflow::class, $record->enterprise],
                     ))
+                    ->requiresConfirmation()
                     ->action(function (Workflow $record): void {
-                        $duplicate = app(DuplicateWorkflow::class)->execute(auth()->user(), [
-                            'workflow' => $record,
-                        ]);
+                        $duplicate = app(CapabilityRegistry::class)
+                            ->operation('workflow.duplicate')
+                            ->execute(auth()->user(), [
+                                'workflow' => $record,
+                            ]);
 
                         Notification::make()
                             ->success()
