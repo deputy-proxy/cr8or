@@ -77,8 +77,11 @@ class UpdateWorkflowTool extends GovernedCapabilityTool
                 throw new AuthenticationException;
             }
 
-            if ((int) $validated['enterprise_id'] !== (int) Workflow::query()->whereKey($validated['workflow_id'])->value('enterprise_id')) {
-                throw new LogicException('The Workflow does not belong to the supplied Enterprise.');
+            $workflow = Workflow::query()->findOrFail((int) $validated['workflow_id']);
+            $enterprise = \App\Models\Enterprise::query()->findOrFail((int) $validated['enterprise_id']);
+
+            if (! $workflow->isAvailableForEnterprise($enterprise)) {
+                throw new LogicException('The Workflow is not available to the supplied Enterprise.');
             }
 
             $workflow = $this->executeCapability($registry, $actor, $validated);
