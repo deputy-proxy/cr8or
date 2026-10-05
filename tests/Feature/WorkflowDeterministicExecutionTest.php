@@ -225,11 +225,9 @@ it('resolves structured execution input per stage and preserves workflow context
             'workflow' => ['target_context' => ['objective' => 'Launch Plan.gifts']],
             'stages' => [
                 'first' => [
-                    'enterprise_id' => $enterprise->id,
                     'target_context' => ['stage' => 'first'],
                 ],
                 'second' => [
-                    'enterprise_id' => $enterprise->id,
                     'target_context' => ['stage' => 'second'],
                 ],
             ],
