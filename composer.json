@@ -61,7 +61,7 @@
             "@php artisan dev"
         ],
         "lint": [
-            "pint --parallel"
+            "pint --parallel --diff -v"
         ],
         "lint:check": [
             "pint --parallel"
