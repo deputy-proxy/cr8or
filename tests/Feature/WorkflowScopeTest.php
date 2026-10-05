@@ -102,8 +102,8 @@ it('rejects scope changes once workflow versions or executions exist', function 
     ]);
 
     WorkflowVersion::factory()->create([
-        'workflow_id' => $workflow,
-        'enterprise_id' => $enterprise,
+        'workflow_id' => $workflow->getKey(),
+        'enterprise_id' => $enterprise->getKey(),
     ]);
 
     expect(fn () => $workflow->changeScope(false))
