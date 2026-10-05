@@ -397,7 +397,7 @@ class WorkContextAssembler
     private function executionState(Enterprise $enterprise): array
     {
         $workflows = Workflow::query()
-            ->where('enterprise_id', $enterprise->getKey())
+            ->availableForEnterprise($enterprise)
             ->select([
                 'id',
                 'enterprise_id',
