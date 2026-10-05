@@ -969,6 +969,10 @@ final class CapabilityRegistry
     /** @return list<CapabilityExecutionMode> */
     private function executionModesFor(string $key): array
     {
+        if ($key === 'marketing.asset.create') {
+            return [CapabilityExecutionMode::AGENT, CapabilityExecutionMode::WORKFLOW];
+        }
+
         $workflowUnsupported = [
             'workflow.create',
             'workflow.duplicate',
