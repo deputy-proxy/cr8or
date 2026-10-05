@@ -101,10 +101,11 @@ it('rejects scope changes once workflow versions or executions exist', function 
         'enterprise_specific' => true,
     ]);
 
-    WorkflowVersion::factory()->create([
-        'workflow_id' => $workflow->getKey(),
-        'enterprise_id' => $enterprise->getKey(),
-    ]);
+    WorkflowVersion::factory()
+        ->for($workflow)
+        ->create([
+            'enterprise_id' => $enterprise->getKey(),
+        ]);
 
     expect(fn () => $workflow->changeScope(false))
         ->toThrow(LogicException::class, 'Workflow scope cannot be changed');
