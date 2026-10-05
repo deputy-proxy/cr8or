@@ -14,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 use Throwable;
 
 final class WorkflowExecutionService
@@ -110,115 +111,157 @@ final class WorkflowExecutionService
 
     public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false): WorkflowExecution
     {
-        try {
-            return DB::transaction(function () use ($actor, $execution, $continuationToken, $returnFailed): WorkflowExecution {
-                /** @var WorkflowExecution $locked */
-                $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
+        $claimed = DB::transaction(function () use ($actor, $execution, $continuationToken): WorkflowExecution {
+            /** @var WorkflowExecution $locked */
+            $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
-                if ($continuationToken !== null && ! hash_equals((string) $locked->continuation_token, $continuationToken)) {
-                    throw new AuthorizationException('Workflow continuation token is stale or invalid.');
-                }
-
-                return $this->continueLocked($actor, $locked, $returnFailed);
-            });
-        } catch (Throwable $exception) {
-            /** @var WorkflowExecution|null $failed */
-            $failed = WorkflowExecution::query()->find($execution->getKey());
-
-            if ($failed !== null && $failed->status !== WorkflowExecution::STATUS_COMPLETED) {
-                $failed->continuation_token = (string) str()->uuid()->toString();
-                $failed->fail($exception->getMessage())->save();
+            if ($continuationToken !== null && ! hash_equals((string) $locked->continuation_token, $continuationToken)) {
+                throw new AuthorizationException('Workflow continuation token is stale or invalid.');
             }
 
-            if ($returnFailed && $failed !== null) {
-                return $failed->refresh();
+            $locked->loadMissing(['workflow.enterprise', 'workflowVersion']);
+
+            if (! $locked->workflowVersion instanceof WorkflowVersion || $locked->workflowVersion->status === WorkflowVersion::STATUS_DRAFT) {
+                throw new AuthorizationException('Workflow execution must reference a published WorkflowVersion.');
             }
 
-            throw $exception;
+            Gate::forUser($actor)->authorize('view', $locked->workflow);
+
+            if ($locked->status === WorkflowExecution::STATUS_COMPLETED) {
+                return $locked;
+            }
+
+            if ($locked->status === WorkflowExecution::STATUS_RUNNING) {
+                throw new LogicException('Workflow execution is already running.');
+            }
+
+            if ($locked->status === WorkflowExecution::STATUS_FAILED) {
+                $locked->retry();
+            } else {
+                $locked->start();
+            }
+
+            // Rotate the token before releasing the lock so another caller cannot
+            // claim the same continuation while this execution is running.
+            $locked->continuation_token = (string) str()->uuid();
+            $locked->save();
+
+            return $locked->refresh();
+        });
+
+        if ($claimed->status === WorkflowExecution::STATUS_COMPLETED) {
+            return $claimed;
         }
+
+        return $this->runStages($actor, $claimed, $returnFailed);
     }
 
-    private function continueLocked(User $actor, WorkflowExecution $execution, bool $returnFailed = false): WorkflowExecution
+    private function runStages(User $actor, WorkflowExecution $execution, bool $returnFailed = false): WorkflowExecution
     {
-        $execution->loadMissing(['workflow.enterprise', 'workflowVersion']);
-
-        if (! $execution->workflowVersion instanceof WorkflowVersion || $execution->workflowVersion->status === WorkflowVersion::STATUS_DRAFT) {
-            throw new AuthorizationException('Workflow execution must reference a published WorkflowVersion.');
-        }
-
-        Gate::forUser($actor)->authorize('view', $execution->workflow);
-
-        if ($execution->status === WorkflowExecution::STATUS_COMPLETED) {
-            return $execution;
-        }
-
-        if ($execution->status === WorkflowExecution::STATUS_FAILED) {
-            $execution->retry()->save();
-        } else {
-            $execution->start()->save();
-        }
-
         try {
-            while ($stage = $this->nextStage($execution)) {
-                $execution->current_stage_key = $stage->key;
-                $execution->state_reason = null;
-                $execution->save();
+            while (true) {
+                $stage = DB::transaction(function () use ($execution): ?WorkflowStage {
+                    /** @var WorkflowExecution $locked */
+                    $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
-                $result = $this->executeStage($actor, $execution, $stage);
+                    if ($locked->status !== WorkflowExecution::STATUS_RUNNING) {
+                        return null;
+                    }
 
-                if ($result['status'] === 'waiting') {
-                    $contextValue = $execution->getAttribute('context');
-                    /** @var array<string, mixed> $context */
-                    $context = is_array($contextValue) ? $contextValue : [];
-                    $approval = $result['approval'] ?? null;
-                    $context['pending_approval_request_id'] = $approval instanceof ApprovalRequest ? $approval->getKey() : null;
-                    $execution->setAttribute('context', $context);
-                    $execution->continuation_token = (string) str()->uuid();
-                    $execution->waitForApproval($result['reason'] ?? 'Workflow stage is waiting for approval.')->save();
+                    $stage = $this->nextStage($locked);
 
+                    if ($stage === null) {
+                        $locked->complete()->save();
+
+                        if ($locked->workflow->status === Workflow::STATUS_PENDING) {
+                            $locked->workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
+                        }
+                        if ($locked->workflow->status === Workflow::STATUS_RUNNING) {
+                            $locked->workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
+                        }
+
+                        return null;
+                    }
+
+                    $locked->current_stage_key = $stage->key;
+                    $locked->state_reason = null;
+                    $locked->save();
+
+                    return $stage;
+                });
+
+                if ($stage === null) {
                     return $execution->refresh();
                 }
 
-                $stageOutput = is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
-                $stageOutput['termination'] = 'completed';
+                // The capability is deliberately invoked outside any transaction and
+                // therefore outside the WorkflowExecution row lock.
+                $result = $this->executeStage($actor, $execution->refresh(), $stage);
 
-                if (! $stage->completionSatisfied($stageOutput, [$result])) {
-                    throw new AuthorizationException("Workflow stage [{$stage->key}] did not satisfy its completion criteria.");
+                $state = DB::transaction(function () use ($execution, $stage, $result): array {
+                    /** @var WorkflowExecution $locked */
+                    $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
+
+                    if ($locked->status !== WorkflowExecution::STATUS_RUNNING || $locked->current_stage_key !== $stage->key) {
+                        throw new LogicException("Workflow execution changed while stage [{$stage->key}] was executing.");
+                    }
+
+                    if ($result['status'] === 'waiting') {
+                        $contextValue = $locked->getAttribute('context');
+                        /** @var array<string, mixed> $context */
+                        $context = is_array($contextValue) ? $contextValue : [];
+                        $approval = $result['approval'] ?? null;
+                        $context['pending_approval_request_id'] = $approval instanceof ApprovalRequest ? $approval->getKey() : null;
+                        $locked->setAttribute('context', $context);
+                        $locked->continuation_token = (string) str()->uuid();
+                        $locked->waitForApproval($result['reason'] ?? 'Workflow stage is waiting for approval.')->save();
+
+                        return ['waiting' => true];
+                    }
+
+                    $stageOutput = is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
+                    $stageOutput['termination'] = 'completed';
+
+                    if (! $stage->completionSatisfied($stageOutput, [$result])) {
+                        throw new AuthorizationException("Workflow stage [{$stage->key}] did not satisfy its completion criteria.");
+                    }
+
+                    $outputsValue = $locked->getAttribute('outputs');
+                    /** @var array<string, mixed> $outputs */
+                    $outputs = is_array($outputsValue) ? $outputsValue : [];
+                    $outputs[$stage->key] = $stageOutput;
+                    $locked->setAttribute('outputs', $outputs);
+                    $locked->continuation_token = (string) str()->uuid();
+
+                    $contextValue = $locked->getAttribute('context');
+                    /** @var array<string, mixed> $context */
+                    $context = is_array($contextValue) ? $contextValue : [];
+                    $context['stages'][$stage->key] = $stageOutput;
+                    unset($context['pending_approval_request_id']);
+                    $locked->setAttribute('context', $context);
+                    $locked->save();
+
+                    return ['waiting' => false];
+                });
+
+                if ($state['waiting']) {
+                    return $execution->refresh();
                 }
-
-                $outputsValue = $execution->getAttribute('outputs');
-                /** @var array<string, mixed> $outputs */
-                $outputs = is_array($outputsValue) ? $outputsValue : [];
-                $outputs[$stage->key] = $stageOutput;
-                $execution->setAttribute('outputs', $outputs);
-                $execution->continuation_token = (string) str()->uuid();
-
-                $contextValue = $execution->getAttribute('context');
-                /** @var array<string, mixed> $context */
-                $context = is_array($contextValue) ? $contextValue : [];
-                $context['stages'][$stage->key] = $stageOutput;
-                unset($context['pending_approval_request_id']);
-                $execution->setAttribute('context', $context);
-                $execution->save();
             }
-
-            $execution->complete()->save();
-
-            if ($execution->workflow->status === Workflow::STATUS_PENDING) {
-                $execution->workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
-            }
-            if ($execution->workflow->status === Workflow::STATUS_RUNNING) {
-                $execution->workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
-            }
-
-            return $execution->refresh();
         } catch (Throwable $exception) {
-            $execution->continuation_token = (string) str()->uuid();
-            $execution->fail($exception->getMessage())->save();
+            DB::transaction(function () use ($execution, $exception): void {
+                /** @var WorkflowExecution $locked */
+                $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
-            if ($execution->workflow->status === Workflow::STATUS_RUNNING) {
-                $execution->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
-            }
+                if ($locked->status !== WorkflowExecution::STATUS_COMPLETED) {
+                    $locked->continuation_token = (string) str()->uuid();
+                    $locked->fail($exception->getMessage())->save();
+
+                    if ($locked->workflow->status === Workflow::STATUS_RUNNING) {
+                        $locked->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
+                    }
+                }
+            });
 
             if ($returnFailed) {
                 return $execution->refresh();

@@ -17,6 +17,8 @@ use App\Models\WorkItem;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -145,6 +147,27 @@ it('executes a multi-stage published workflow without creating an AgentExecution
         ->and($execution->correlation_id)->toBe('workflow-correlation-1')
         ->and($execution->outputs)->toHaveKeys(['research', 'strategy'])
         ->and(AgentExecution::query()->count())->toBe(0);
+});
+
+it('executes capabilities outside the WorkflowExecution transaction lock', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    governedStage($workflow, 'research', 1);
+    $version = publishedWorkflow($workflow, $actor);
+
+    Event::listen(\App\Events\CapabilityRequested::class, function (): void {
+        expect(DB::transactionLevel())->toBe(0);
+    });
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        ['request' => 'Analyze the enterprise.'],
+        'workflow-unlocked-capability',
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED);
 });
 
 it('resolves structured execution input per stage and preserves workflow context', function (): void {
