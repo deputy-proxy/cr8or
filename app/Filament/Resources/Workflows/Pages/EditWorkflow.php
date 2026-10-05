@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Workflows\Pages;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
 use App\Models\Workflow;
+use App\Services\WorkflowScopeService;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
@@ -34,7 +35,12 @@ class EditWorkflow extends EditRecord
                     ? null
                     : Enterprise::query()->findOrFail($enterpriseId);
 
-                $workflow->changeScope($enterpriseSpecific, $enterprise);
+                $workflow = app(WorkflowScopeService::class)->change(
+                    auth()->user(),
+                    $workflow,
+                    $enterpriseSpecific,
+                    $enterprise,
+                );
             }
         } catch (LogicException $exception) {
             throw ValidationException::withMessages([
