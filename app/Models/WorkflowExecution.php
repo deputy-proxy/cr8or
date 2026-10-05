@@ -162,12 +162,13 @@ class WorkflowExecution extends Model
                 throw new LogicException("Invalid workflow execution status [{$execution->status}].");
             }
             $workflow = Workflow::query()->find($execution->workflow_id);
-            if ($workflow === null || $workflow->enterprise_id !== $execution->enterprise_id) {
-                throw new LogicException('Workflow execution must belong to its Enterprise.');
+            $enterprise = $execution->enterprise;
+            if ($workflow === null || $enterprise === null || ! $workflow->isAvailableForEnterprise($enterprise)) {
+                throw new LogicException('Workflow execution must use a Workflow available to its Enterprise.');
             }
             $version = WorkflowVersion::query()->find($execution->workflow_version_id);
-            if ($version === null || $version->workflow_id !== $workflow->getKey() || $version->enterprise_id !== $execution->enterprise_id) {
-                throw new LogicException('Workflow execution must reference an exact WorkflowVersion in its Enterprise.');
+            if ($version === null || $version->workflow_id !== $workflow->getKey() || (int) $version->enterprise_id !== (int) $workflow->enterprise_id) {
+                throw new LogicException('Workflow execution must reference an exact WorkflowVersion for its Workflow scope.');
             }
             if ($version->status !== WorkflowVersion::STATUS_PUBLISHED && $execution->status === self::STATUS_PENDING) {
                 throw new LogicException('Workflow execution can only start from a published WorkflowVersion.');
