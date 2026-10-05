@@ -10,6 +10,7 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateWorkflowTool;
+use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
@@ -45,6 +46,7 @@ use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateWorkflow;
+use App\Operations\DuplicateWorkflow;
 use App\Operations\CreateWorkItem;
 use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
@@ -228,6 +230,17 @@ final class CapabilityRegistry
                 'none',
                 'lifecycle',
                 'mcp_workflow_create',
+            ),
+            $this->definition(
+                'workflow.duplicate',
+                DuplicateWorkflow::class,
+                DuplicateWorkflowTool::class,
+                ['enterprise_id' => 'integer|required', 'workflow_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'workflow'],
+                'WorkflowPolicy::createForEnterprise + source workflow scope',
+                'none',
+                'lifecycle',
+                'mcp_workflow_duplicate',
             ),
             $this->definition(
                 'workflow.update',
@@ -958,6 +971,7 @@ final class CapabilityRegistry
     {
         $workflowUnsupported = [
             'workflow.create',
+            'workflow.duplicate',
             'workflow.update',
             'workflow.publish',
             'workflow.get',
