@@ -9,6 +9,7 @@ use App\Models\WorkflowExecution;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
+use LogicException;
 
 beforeEach(function (): void {
     ExpertDescriptor::query()->updateOrCreate([
@@ -104,6 +105,26 @@ it('rejects stale continuation tokens after the execution advances', function ()
 
     expect(fn () => $service->continue($actor, $execution->refresh(), $staleToken))
         ->toThrow(AuthorizationException::class, 'stale or invalid');
+});
+
+it('does not fail an execution when a second continuation observes it already running', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = continuationActor($enterprise);
+    $workflow = continuationWorkflow($enterprise, $actor, [['key' => 'research', 'name' => 'Research']]);
+
+    $execution = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $workflow->published_version_id,
+        'workflow_version' => $workflow->publishedVersion->version,
+        'enterprise_id' => $enterprise->id,
+        'actor_id' => $actor->id,
+        'status' => WorkflowExecution::STATUS_RUNNING,
+    ]);
+
+    expect(fn () => app(WorkflowExecutionService::class)->continue($actor, $execution, $execution->continuation_token))
+        ->toThrow(LogicException::class, 'already running');
+
+    expect($execution->refresh()->status)->toBe(WorkflowExecution::STATUS_RUNNING);
 });
 
 it('retries a failed execution using the same durable stage idempotency boundary', function (): void {
