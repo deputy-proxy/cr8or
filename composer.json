@@ -64,8 +64,7 @@
             "pint --parallel --diff -v"
         ],
         "lint:check": [
-            "pint --parallel",
-            "git diff --no-ext-diff --unified=20 -- app/Capabilities/CapabilityRegistry.php"
+            "pint --parallel --test"
         ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
