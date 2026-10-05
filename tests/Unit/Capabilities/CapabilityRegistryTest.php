@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(67);
+    expect($registry->all())->toHaveCount(68);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
@@ -110,7 +110,9 @@ it('resolves a Tool class using the authoritative registry mapping', function ()
     $registry = app(CapabilityRegistry::class);
 
     expect($registry->forTool(CreateContentItemTool::class)->key)->toBe('marketing.content.create')
-        ->and($registry->forTool(CreateContentItemTool::class)->operation)->toBe(CreateContentItem::class);
+        ->and($registry->forTool(CreateContentItemTool::class)->operation)->toBe(CreateContentItem::class)
+        ->and($registry->resolve('workflow.duplicate')->operation)->toBe(App\Operations\DuplicateWorkflow::class)
+        ->and($registry->resolve('workflow.duplicate')->tool)->toBe('mcp_workflow_duplicate');
 });
 
 it('rejects unknown capabilities and tools before authorization can grant them', function () {

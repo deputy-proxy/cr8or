@@ -37,6 +37,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | Capability | Operation | MCP Tool | Tool class | Category | Workflow | Direct | Entry | Authorization | Approval | Correlation | Idempotency | Failure |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | workflow.create | CreateWorkflow | mcp_workflow_create | CreateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::create + enterprise scope | none | no | no | standard |
+| workflow.duplicate | DuplicateWorkflow | mcp_workflow_duplicate | DuplicateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::createForEnterprise + source workflow scope | none | no | no | standard |
 | workflow.update | UpdateWorkflow | mcp_workflow_update | UpdateWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::update + enterprise scope | none | no | no | standard |
 | workflow.publish | PublishWorkflow | mcp_workflow_publish | PublishWorkflowTool | lifecycle | no | yes | CapabilityInvocationService | WorkflowPolicy::view + immutable version publication | none | no | yes | standard |
 | workflow.discover | DiscoverWorkflows | list-workflows | ListWorkflowsTool | business | yes | yes | CapabilityInvocationService | Enterprise view authorization | none | no | no | standard |

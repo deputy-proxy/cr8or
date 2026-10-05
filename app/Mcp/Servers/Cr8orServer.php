@@ -39,6 +39,7 @@ use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DefineMarketingStrategySectionTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetAgentAssignmentTool;
@@ -247,6 +248,7 @@ class Cr8orServer extends Server
 
         CreateWorkItemTool::class,
         CreateWorkflowTool::class,
+        DuplicateWorkflowTool::class,
         UpdateWorkflowTool::class,
         PublishWorkflowTool::class,
         ListWorkflowsTool::class,

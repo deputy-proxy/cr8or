@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Workflows;
 
+use App\Capabilities\CapabilityRegistry;
 use App\Experts\ExpertRegistry;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -26,6 +28,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 class WorkflowResource extends Resource
 {
@@ -343,6 +346,31 @@ class WorkflowResource extends Resource
             ])
             ->recordActions([
                 \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon(Heroicon::OutlinedDocumentDuplicate)
+                    ->authorize(fn (Workflow $record): bool => Gate::forUser(auth()->user())->allows(
+                        'createForEnterprise',
+                        [Workflow::class, $record->enterprise],
+                    ))
+                    ->requiresConfirmation()
+                    ->action(function (Workflow $record): void {
+                        $duplicate = app(CapabilityRegistry::class)
+                            ->operation('workflow.duplicate')
+                            ->execute(auth()->user(), [
+                                'workflow' => $record,
+                            ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Workflow duplicated')
+                            ->body("Created {$duplicate->name}.")
+                            ->send();
+
+                        redirect()->to(
+                            WorkflowResource::getUrl('edit', ['record' => $duplicate]),
+                        );
+                    }),
                 \Filament\Actions\DeleteAction::make(),
             ]);
     }
