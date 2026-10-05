@@ -97,7 +97,7 @@ it('rejects scope changes once workflow versions or executions exist', function 
     $enterprise = Enterprise::factory()->create();
 
     $workflow = Workflow::factory()->create([
-        'enterprise_id' => $enterprise,
+        'enterprise_id' => $enterprise->getKey(),
         'enterprise_specific' => true,
     ]);
 
