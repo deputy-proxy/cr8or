@@ -7,8 +7,10 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowVersion;
 use App\Services\WorkflowEntryPointService;
 use App\Services\WorkflowExecutionService;
+use App\Services\WorkflowScopeService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
 use LogicException;
@@ -70,48 +72,82 @@ it('enforces the generic and enterprise-specific scope invariant', function (): 
     ]))->toThrow(LogicException::class);
 });
 
-it('allows an existing unversioned workflow to change scope', function (): void {
+it('allows an existing workflow to change scope', function (): void {
     $enterpriseA = Enterprise::factory()->create();
     $enterpriseB = Enterprise::factory()->create();
+    $actor = scopeActorForEnterprises($enterpriseA, $enterpriseB);
 
     $workflow = Workflow::factory()->create([
         'enterprise_id' => $enterpriseA->getKey(),
         'enterprise_specific' => true,
     ]);
 
-    $workflow->changeScope(false);
+    app(WorkflowScopeService::class)->change($actor, $workflow, false);
 
     expect($workflow->refresh()->enterprise_specific)->toBeFalse()
         ->and($workflow->enterprise_id)->toBeNull();
 
-    $workflow->changeScope(true, $enterpriseB);
+    app(WorkflowScopeService::class)->change($actor, $workflow, true, $enterpriseB);
 
     expect($workflow->refresh()->enterprise_specific)->toBeTrue()
         ->and($workflow->enterprise_id)->toBe($enterpriseB->getKey());
 });
 
-it('rejects scope changes after a workflow version exists', function (): void {
+it('creates a new published version when changing the scope of an existing published workflow', function (): void {
+    $enterpriseA = Enterprise::factory()->create();
+    $actor = scopeActorForEnterprises($enterpriseA);
+
+    $workflow = Workflow::factory()->create([
+        'enterprise_id' => $enterpriseA->getKey(),
+        'enterprise_specific' => true,
+        'canonical_key' => 'scope.migration',
+    ]);
+    scopeStage($workflow);
+
+    $published = app(WorkflowVersionService::class)->publish(
+        $workflow,
+        $actor,
+        'scope-migration-publish',
+    );
+
+    $changed = app(WorkflowScopeService::class)->change($actor, $workflow, false);
+
+    $changed->load('publishedVersion');
+
+    expect($changed->enterprise_specific)->toBeFalse()
+        ->and($changed->enterprise_id)->toBeNull()
+        ->and($changed->publishedVersion?->enterprise_id)->toBeNull()
+        ->and($changed->publishedVersion?->version)->toBe($published->version + 1)
+        ->and($published->refresh()->status)->toBe(WorkflowVersion::STATUS_RETIRED);
+});
+
+it('rejects scope changes while a workflow execution is active', function (): void {
     $enterprise = Enterprise::factory()->create();
+    $actor = scopeActorForEnterprises($enterprise);
 
     $workflow = Workflow::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'enterprise_specific' => true,
     ]);
+    scopeStage($workflow);
 
-    \Illuminate\Support\Facades\DB::table('workflow_versions')->insert([
+    $version = app(WorkflowVersionService::class)->publish(
+        $workflow,
+        $actor,
+        'active-scope-publish',
+    );
+
+    \App\Models\WorkflowExecution::factory()->create([
         'workflow_id' => $workflow->getKey(),
+        'workflow_version_id' => $version->getKey(),
+        'workflow_version' => $version->version,
         'enterprise_id' => $enterprise->getKey(),
-        'version' => 1,
-        'status' => 'draft',
-        'name' => 'Test version',
-        'stage_definitions' => json_encode([]),
-        'created_by' => User::factory()->create()->getKey(),
-        'created_at' => now(),
-        'updated_at' => now(),
+        'actor_id' => $actor->getKey(),
+        'status' => \App\Models\WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
     ]);
 
-    expect(fn () => $workflow->changeScope(false))
-        ->toThrow(LogicException::class, 'Workflow scope cannot be changed');
+    expect(fn () => app(WorkflowScopeService::class)->change($actor, $workflow, false))
+        ->toThrow(LogicException::class, 'Workflow scope cannot be changed while an execution is active');
 });
 
 it('resolves a generic canonical workflow for every enterprise and prefers an enterprise-specific override', function (): void {
