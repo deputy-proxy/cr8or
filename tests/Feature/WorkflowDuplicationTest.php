@@ -1,8 +1,8 @@
 <?php
 
-use AppModels\Enterprise;
-use AppModels\Membership;
-use AppModels\User;
+use App\Models\Enterprise;
+use App\Models\Membership;
+use App\Models\User;
 use App\Models\Workflow;
 use App\Operations\DuplicateWorkflow;
 use App\Services\WorkflowEntryPointService;
