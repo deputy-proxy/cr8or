@@ -73,6 +73,40 @@ class Workflow extends Model
             || (int) $this->enterprise_id === (int) $enterprise->getKey();
     }
 
+    public function changeScope(bool $enterpriseSpecific, ?Enterprise $enterprise = null): static
+    {
+        $enterpriseId = $enterprise?->getKey();
+
+        if (
+            $this->isEnterpriseSpecific() === $enterpriseSpecific
+            && (int) $this->enterprise_id === (int) $enterpriseId
+        ) {
+            return $this;
+        }
+
+        if (
+            $this->versions()->exists()
+            || $this->executions()->exists()
+            || $this->agentExecutions()->exists()
+        ) {
+            throw new LogicException(
+                'Workflow scope cannot be changed after versions or executions have been created. Duplicate the Workflow instead.',
+            );
+        }
+
+        if (! $enterpriseSpecific && ($this->project_id !== null || $this->task_id !== null || $this->work_item_id !== null)) {
+            throw new LogicException(
+                'An enterprise-scoped Project, Task, or Work Item must be removed before this Workflow can become generic.',
+            );
+        }
+
+        $this->enterprise_specific = $enterpriseSpecific;
+        $this->enterprise_id = $enterpriseSpecific ? $enterpriseId : null;
+        $this->save();
+
+        return $this;
+    }
+
     /** @param Builder<Workflow> $query
      * @return Builder<Workflow>
      */
