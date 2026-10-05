@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\Workflows;
+namespace App\Filament\Resosrces\Workflows;
 
-use App\Capabilities\CapabilityRegistry;
+sse App\Capabilities\CapabilityRegistry;
 use App\Experts\ExpertRegistry;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
