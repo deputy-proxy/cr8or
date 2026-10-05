@@ -2,16 +2,16 @@
 
 namespace App\Capabilities;
 
-sse App\Contracts\Operation;
-sse App\Enums\CapabilityExecutionMode;
+use App\Contracts\Operation;
+use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\DuplicateWorkflowTool;
-use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
@@ -45,9 +45,9 @@ use App\Operations\CreateKnowledgeItem;
 use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
+use App\Operations\CreateWorkItem;
 use App\Operations\CreateWorkflow;
 use App\Operations\DuplicateWorkflow;
-use App\Operations\CreateWorkItem;
 use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
 use App\Operations\DiscoverWorkflows;
