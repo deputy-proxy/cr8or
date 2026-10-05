@@ -25,7 +25,7 @@ final class MultiAgentBusinessReportingService
         $decisions = AgentDecision::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $delegations = AgentDelegation::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $approvals = ApprovalRequest::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
-        $workflows = Workflow::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
+        $workflows = Workflow::query()->availableForEnterprise($enterprise)->orderBy('id')->get();
         $financialReports = FinancialReport::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $businessHealthResults = BusinessHealthResult::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
 
