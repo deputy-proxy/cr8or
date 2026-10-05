@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowVersion;
+use App\Models\WorkflowExecution;
 use App\Services\WorkflowEntryPointService;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowScopeService;
@@ -137,13 +138,13 @@ it('rejects scope changes while a workflow execution is active', function (): vo
         'active-scope-publish',
     );
 
-    \App\Models\WorkflowExecution::factory()->create([
+    WorkflowExecution::factory()->create([
         'workflow_id' => $workflow->getKey(),
         'workflow_version_id' => $version->getKey(),
         'workflow_version' => $version->version,
         'enterprise_id' => $enterprise->getKey(),
         'actor_id' => $actor->getKey(),
-        'status' => \App\Models\WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
+        'status' => WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
     ]);
 
     expect(fn () => app(WorkflowScopeService::class)->change($actor, $workflow, false))
