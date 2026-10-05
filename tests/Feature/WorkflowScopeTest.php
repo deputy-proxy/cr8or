@@ -7,6 +7,8 @@ use App\Models\Membership;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
+use App\Models\WorkflowVersion;
+use App\Models\WorkflowExecution;
 use App\Services\WorkflowEntryPointService;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
@@ -99,7 +101,7 @@ it('rejects scope changes once workflow versions or executions exist', function 
         'enterprise_specific' => true,
     ]);
 
-    \AppModels\WorkflowVersion::factory()->create([
+    WorkflowVersion::factory()->create([
         'workflow_id' => $workflow,
         'enterprise_id' => $enterprise,
     ]);
@@ -112,7 +114,7 @@ it('rejects scope changes once workflow versions or executions exist', function 
         'enterprise_specific' => true,
     ]);
 
-    \AppModels\WorkflowExecution::factory()->create([
+    WorkflowExecution::factory()->create([
         'workflow_id' => $workflowWithoutVersion,
         'enterprise_id' => $enterprise,
     ]);
