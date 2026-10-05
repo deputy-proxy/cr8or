@@ -9,6 +9,7 @@ use App\Filament\Resources\Workflows\Pages\EditWorkflow;
 use App\Filament\Resources\Workflows\Pages\ListWorkflows;
 use App\Models\Enterprise;
 use App\Models\Workflow;
+use App\Operations\DuplicateWorkflow;
 use App\Services\ExpertCapabilityResolver;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
@@ -25,6 +26,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Builder;
 
 class WorkflowResource extends Resource
@@ -343,6 +346,28 @@ class WorkflowResource extends Resource
             ])
             ->recordActions([
                 \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon(Heroicon::OutlinedDocumentDuplicate)
+                    ->authorize(fn (Workflow $record): bool => Gate::forUser(auth()->user())->allows(
+                        'createForEnterprise',
+                        [Workflow::class, $record->enterprise],
+                    ))
+                    ->action(function (Workflow $record): void {
+                        $duplicate = app(DuplicateWorkflow::class)->execute(auth()->user(), [
+                            'workflow' => $record,
+                        ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Workflow duplicated')
+                            ->body("Created {$duplicate->name}.")
+                            ->send();
+
+                        redirect()->to(
+                            WorkflowResource::getUrl('edit', ['record' => $duplicate]),
+                        );
+                    }),
                 \Filament\Actions\DeleteAction::make(),
             ]);
     }
