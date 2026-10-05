@@ -3,6 +3,7 @@
 namespace App\Operations;
 
 use App\Contracts\Operation;
+use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Services\WorkflowEntryPointService;
@@ -15,6 +16,8 @@ final class GetWorkflow implements Operation
     {
         $workflow = $input['workflow'] ?? Workflow::query()->findOrFail((int) $input['workflow_id']);
 
-        return $this->workflows->get($actor, $workflow);
+        $enterprise = $input['enterprise'] ?? Enterprise::query()->findOrFail((int) $input['enterprise_id']);
+
+        return $this->workflows->get($actor, $workflow, $enterprise);
     }
 }
