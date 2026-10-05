@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkItem;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 
@@ -27,12 +28,33 @@ class WorkContextAssembler
         Gate::forUser($user)->authorize('view', $enterprise);
 
         $projects = $enterprise->projects()
+            ->select([
+                'id',
+                'enterprise_id',
+                'name',
+                'description',
+                'status',
+                'strategy_id',
+                'plan_id',
+                'initiative_id',
+            ])
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
         $tasks = $enterprise->tasks()
+            ->select([
+                'id',
+                'enterprise_id',
+                'project_id',
+                'parent_task_id',
+                'name',
+                'description',
+                'status',
+                'priority',
+                'due_at',
+            ])
             ->orderByRaw('due_at IS NULL, due_at ASC')
             ->orderByDesc('updated_at')
             ->orderBy('id')
@@ -40,18 +62,36 @@ class WorkContextAssembler
             ->get();
 
         $workItems = $enterprise->workItems()
+            ->select([
+                'id',
+                'enterprise_id',
+                'project_id',
+                'name',
+                'description',
+                'status',
+            ])
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
         $milestones = $enterprise->milestones()
+            ->select([
+                'id',
+                'enterprise_id',
+                'project_id',
+                'name',
+                'description',
+                'due_at',
+                'status',
+            ])
             ->orderByRaw('due_at IS NULL, due_at ASC')
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
+        $taskRelations = $this->taskRelations($enterprise, $tasks);
         $workReferences = $this->workReferences($projects, $tasks, $workItems, $milestones);
 
         return [
@@ -74,17 +114,8 @@ class WorkContextAssembler
                 'status' => $task->status,
                 'priority' => $task->priority,
                 'due_at' => $this->timestamp($task->due_at),
-                'children' => $task->children()
-                    ->orderBy('id')
-                    ->limit(self::RELATION_LIMIT)
-                    ->pluck('id')
-                    ->all(),
-                'parent' => $task->parent === null ? null : [
-                    'id' => $task->parent->getKey(),
-                    'project_id' => $task->parent->project_id,
-                    'name' => $task->parent->name,
-                    'status' => $task->parent->status,
-                ],
+                'children' => $taskRelations['children'][$task->getKey()] ?? [],
+                'parent' => $taskRelations['parents'][$task->getKey()] ?? null,
             ])->all(),
             'work_items' => $workItems->map(fn (WorkItem $item) => [
                 'id' => $item->getKey(),
@@ -104,6 +135,71 @@ class WorkContextAssembler
             'assignments' => $this->assignments($enterprise, $workReferences),
             'dependencies' => $this->dependencies($enterprise, $workReferences),
             'execution_state' => $this->executionState($enterprise),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Task>  $tasks
+     * @return array{parents: array<int, array<string, mixed>>, children: array<int, list<int>>}
+     */
+    private function taskRelations(Enterprise $enterprise, Collection $tasks): array
+    {
+        if ($tasks->isEmpty()) {
+            return ['parents' => [], 'children' => []];
+        }
+
+        $taskIds = $tasks->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $parentIds = $tasks->pluck('parent_task_id')->filter()->unique()->values()->all();
+
+        $parents = $parentIds === []
+            ? collect()
+            : Task::query()
+                ->where('enterprise_id', $enterprise->getKey())
+                ->whereIn('id', $parentIds)
+                ->select(['id', 'enterprise_id', 'project_id', 'name', 'status'])
+                ->get()
+                ->keyBy('id');
+
+        $children = Task::query()
+            ->where('enterprise_id', $enterprise->getKey())
+            ->whereIn('parent_task_id', $taskIds)
+            ->select(['id', 'parent_task_id'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy('parent_task_id')
+            ->mapWithKeys(function (Collection $items, $parentId): array {
+                return [(int) $parentId => $items
+                    ->take(self::RELATION_LIMIT)
+                    ->pluck('id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->values()
+                    ->all()];
+            });
+
+        /** @var Collection<int, Task> $parents */
+        $parentData = $tasks->mapWithKeys(function (Task $task) use ($parents): array {
+            if ($task->parent_task_id === null) {
+                return [];
+            }
+
+            $parent = $parents->get($task->parent_task_id);
+
+            return $parent === null ? [] : [
+                (int) $task->getKey() => [
+                    'id' => $parent->getKey(),
+                    'project_id' => $parent->project_id,
+                    'name' => $parent->name,
+                    'status' => $parent->status,
+                ],
+            ];
+        });
+
+        /** @var array<int, list<int>> $childrenData */
+        $childrenData = $children->all();
+
+        return [
+            'parents' => $parentData->all(),
+            'children' => $childrenData,
         ];
     }
 
@@ -134,7 +230,20 @@ class WorkContextAssembler
      */
     private function assignments(Enterprise $enterprise, array $references): array
     {
-        $query = Assignment::query()
+        $hasReferences = false;
+
+        foreach ($references as $ids) {
+            if ($ids !== []) {
+                $hasReferences = true;
+                break;
+            }
+        }
+
+        if (! $hasReferences) {
+            return [];
+        }
+
+        return Assignment::query()
             ->where('enterprise_id', $enterprise->getKey())
             ->where(function ($query) use ($references): void {
                 foreach ($references as $type => $ids) {
@@ -148,16 +257,23 @@ class WorkContextAssembler
                     });
                 }
             })
+            ->select([
+                'id',
+                'assignable_type',
+                'assignable_id',
+                'user_id',
+                'agent_assignment_id',
+            ])
             ->orderByDesc('id')
-            ->limit(self::CONTEXT_LIMIT);
-
-        return $query->get()->map(fn (Assignment $assignment) => [
-            'id' => $assignment->getKey(),
-            'assignable_type' => $assignment->assignable_type,
-            'assignable_id' => $assignment->assignable_id,
-            'user_id' => $assignment->user_id,
-            'agent_assignment_id' => $assignment->agent_assignment_id,
-        ])->all();
+            ->limit(self::CONTEXT_LIMIT)
+            ->get()
+            ->map(fn (Assignment $assignment) => [
+                'id' => $assignment->getKey(),
+                'assignable_type' => $assignment->assignable_type,
+                'assignable_id' => $assignment->assignable_id,
+                'user_id' => $assignment->user_id,
+                'agent_assignment_id' => $assignment->agent_assignment_id,
+            ])->all();
     }
 
     /**
@@ -166,7 +282,20 @@ class WorkContextAssembler
      */
     private function dependencies(Enterprise $enterprise, array $references): array
     {
-        $query = Dependency::query()
+        $hasReferences = false;
+
+        foreach ($references as $ids) {
+            if ($ids !== []) {
+                $hasReferences = true;
+                break;
+            }
+        }
+
+        if (! $hasReferences) {
+            return [];
+        }
+
+        $dependencies = Dependency::query()
             ->where('enterprise_id', $enterprise->getKey())
             ->where(function ($query) use ($references): void {
                 foreach ($references as $type => $ids) {
@@ -187,25 +316,27 @@ class WorkContextAssembler
                     });
                 }
             })
+            ->select([
+                'id',
+                'enterprise_id',
+                'project_id',
+                'predecessor_type',
+                'predecessor_id',
+                'successor_type',
+                'successor_id',
+                'type',
+            ])
             ->orderByDesc('id')
-            ->limit(self::CONTEXT_LIMIT);
+            ->limit(self::CONTEXT_LIMIT)
+            ->get();
 
-        return $query->get()->filter(function (Dependency $dependency) use ($enterprise): bool {
-            if (! DependencyService::isSupportedEndpointType($dependency->predecessor_type) || ! DependencyService::isSupportedEndpointType($dependency->successor_type)) {
-                return false;
-            }
+        $endpoints = $this->dependencyEndpoints($enterprise, $dependencies);
 
-            try {
-                $predecessor = DependencyService::endpointClass($dependency->predecessor_type)::query()->whereKey($dependency->predecessor_id)->first();
-                $successor = DependencyService::endpointClass($dependency->successor_type)::query()->whereKey($dependency->successor_id)->first();
-            } catch (\InvalidArgumentException) {
-                return false;
-            }
+        return $dependencies->filter(function (Dependency $dependency) use ($endpoints): bool {
+            $predecessor = $endpoints[$dependency->predecessor_type][$dependency->predecessor_id] ?? null;
+            $successor = $endpoints[$dependency->successor_type][$dependency->successor_id] ?? null;
 
-            return $predecessor !== null
-                && $successor !== null
-                && (int) $predecessor->enterprise_id === (int) $enterprise->getKey()
-                && (int) $successor->enterprise_id === (int) $enterprise->getKey();
+            return $predecessor !== null && $successor !== null;
         })->map(fn (Dependency $dependency) => [
             'id' => $dependency->getKey(),
             'project_id' => $dependency->project_id,
@@ -222,26 +353,101 @@ class WorkContextAssembler
     }
 
     /**
+     * @param  Collection<int, Dependency>  $dependencies
+     * @return array<string, array<int, true>>
+     */
+    private function dependencyEndpoints(Enterprise $enterprise, Collection $dependencies): array
+    {
+        $references = [];
+
+        foreach ($dependencies as $dependency) {
+            foreach ([
+                [$dependency->predecessor_type, $dependency->predecessor_id],
+                [$dependency->successor_type, $dependency->successor_id],
+            ] as [$type, $id]) {
+                if (! DependencyService::isSupportedEndpointType($type)) {
+                    continue;
+                }
+
+                $references[$type][] = (int) $id;
+            }
+        }
+
+        $endpoints = [];
+
+        foreach ($references as $type => $ids) {
+            $model = DependencyService::endpointClass($type);
+            $records = $model::query()
+                ->where('enterprise_id', $enterprise->getKey())
+                ->whereIn('id', array_values(array_unique($ids)))
+                ->select(['id', 'enterprise_id'])
+                ->get();
+
+            foreach ($records as $record) {
+                $endpoints[$type][$record->getKey()] = true;
+            }
+        }
+
+        return $endpoints;
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     private function executionState(Enterprise $enterprise): array
     {
         $workflows = Workflow::query()
             ->where('enterprise_id', $enterprise->getKey())
-            ->with(['project:id,name', 'task:id,name', 'workItem:id,name'])
+            ->select([
+                'id',
+                'enterprise_id',
+                'name',
+                'status',
+                'project_id',
+                'task_id',
+                'work_item_id',
+            ])
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
-        $executions = WorkflowExecution::query()
-            ->whereIn('workflow_id', $workflows->pluck('id')->all())
-            ->orderByDesc('id')
-            ->get()
-            ->groupBy('workflow_id')
-            ->map(fn (Collection $items) => $items->first());
+        if ($workflows->isEmpty()) {
+            return [];
+        }
 
-        return $workflows->map(function (Workflow $workflow) use ($executions) {
+        $workflowIds = $workflows->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        $latestExecutionIds = WorkflowExecution::query()
+            ->selectRaw('workflow_id, MAX(id) as id')
+            ->whereIn('workflow_id', $workflowIds)
+            ->groupBy('workflow_id');
+
+        $executions = WorkflowExecution::query()
+            ->joinSub($latestExecutionIds, 'latest_executions', function ($join): void {
+                $join->on('workflow_executions.workflow_id', '=', 'latest_executions.workflow_id')
+                    ->on('workflow_executions.id', '=', 'latest_executions.id');
+            })
+            ->select([
+                'workflow_executions.id',
+                'workflow_executions.workflow_id',
+                'workflow_executions.workflow_version_id',
+                'workflow_executions.workflow_version',
+                'workflow_executions.status',
+                'workflow_executions.current_stage_key',
+                'workflow_executions.started_at',
+                'workflow_executions.completed_at',
+                'workflow_executions.failure_reason',
+                'workflow_executions.correlation_id',
+                'workflow_executions.idempotency_key',
+            ])
+            ->get()
+            ->keyBy('workflow_id');
+
+        /** @var Collection<int, WorkflowExecution> $executions */
+        $executions = $executions;
+
+        return $workflows->map(function (Workflow $workflow) use ($executions): array {
             $execution = $executions->get($workflow->getKey());
 
             return [
@@ -259,8 +465,8 @@ class WorkContextAssembler
                     'workflow_version' => $execution->workflow_version,
                     'status' => $execution->status,
                     'current_stage_key' => $execution->current_stage_key,
-                    'started_at' => $execution->started_at?->toISOString(),
-                    'completed_at' => $execution->completed_at?->toISOString(),
+                    'started_at' => $this->isoTimestamp($execution->started_at),
+                    'completed_at' => $this->isoTimestamp($execution->completed_at),
                     'failure_reason' => $execution->failure_reason,
                     'correlation_id' => $execution->correlation_id,
                     'idempotency_key' => $execution->idempotency_key,
@@ -283,6 +489,11 @@ class WorkContextAssembler
     private function timestamp(mixed $value): ?string
     {
         return $value === null ? null : (string) $value;
+    }
+
+    private function isoTimestamp(mixed $value): ?string
+    {
+        return $value instanceof CarbonInterface ? $value->toISOString() : ($value === null ? null : (string) $value);
     }
 
     /** @return array{id: int|string, name: string, slug: string, status: string} */

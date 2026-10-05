@@ -206,3 +206,143 @@ it('bounds each work context collection', function () {
         ->and($data['work_items'])->toHaveCount(100)
         ->and($data['milestones'])->toHaveCount(100);
 });
+it('does not broaden assignments when no work references are selected', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    Assignment::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'assignable_type' => Task::class,
+        'assignable_id' => 999999,
+        'user_id' => $user->getKey(),
+    ]);
+
+    $data = app(WorkContextAssembler::class)->assemble($user, $enterprise);
+
+    expect($data['assignments'])->toBe([]);
+});
+
+it('loads task relationships and dependency endpoints with bounded query growth', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $project = Project::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+    ]);
+
+    $parentTasks = Task::factory()->count(10)->forProject($project)->create();
+    $childTasks = collect();
+
+    foreach ($parentTasks as $parentTask) {
+        $childTasks->push(Task::factory()->forProject($project)->create([
+            'parent_task_id' => $parentTask->getKey(),
+        ]));
+    }
+
+    foreach ($parentTasks->values() as $index => $parentTask) {
+        Dependency::factory()->create([
+            'enterprise_id' => $enterprise->getKey(),
+            'project_id' => $project->getKey(),
+            'predecessor_type' => $parentTask->getMorphClass(),
+            'predecessor_id' => $parentTask->getKey(),
+            'successor_type' => $parentTask->getMorphClass(),
+            'successor_id' => $childTasks[$index]->getKey(),
+        ]);
+    }
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    $data = app(WorkContextAssembler::class)->assemble($user, $enterprise);
+
+    expect($queries)->toBeLessThan(20)
+        ->and($data['tasks'])->toHaveCount(20)
+        ->and($data['dependencies'])->toHaveCount(10);
+});
+
+it('returns only the latest workflow execution without hydrating execution payload columns', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    $workflow = Workflow::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+    ]);
+
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow->getKey(),
+        'enterprise_id' => $enterprise->getKey(),
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+    ]);
+
+    $first = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow->getKey(),
+        'workflow_version_id' => $version->getKey(),
+        'workflow_version' => 1,
+        'enterprise_id' => $enterprise->getKey(),
+        'actor_id' => $user->getKey(),
+        'status' => WorkflowExecution::STATUS_FAILED,
+        'failure_reason' => 'first',
+        'input' => ['large' => str_repeat('x', 5000)],
+        'outputs' => ['stage' => ['value' => 'first']],
+        'context' => ['large' => str_repeat('y', 5000)],
+    ]);
+
+    $latest = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow->getKey(),
+        'workflow_version_id' => $version->getKey(),
+        'workflow_version' => 1,
+        'enterprise_id' => $enterprise->getKey(),
+        'actor_id' => $user->getKey(),
+        'status' => WorkflowExecution::STATUS_FAILED,
+        'failure_reason' => 'latest',
+        'input' => ['large' => str_repeat('x', 5000)],
+        'outputs' => ['stage' => ['value' => 'latest']],
+        'context' => ['large' => str_repeat('y', 5000)],
+    ]);
+
+    $workflowExecutionQueries = [];
+    DB::listen(function ($query) use (&$workflowExecutionQueries): void {
+        if (str_contains(strtolower($query->sql), 'from `workflow_executions`')) {
+            $workflowExecutionQueries[] = strtolower($query->sql);
+        }
+    });
+
+    $data = app(WorkContextAssembler::class)->assemble($user, $enterprise);
+
+    expect($data['execution_state'][0]['execution'])->toMatchArray([
+        'id' => $latest->getKey(),
+        'failure_reason' => 'latest',
+    ])
+        ->and($data['execution_state'][0]['execution']['id'])->not->toBe($first->getKey())
+        ->and($data['execution_state'][0]['execution'])->not->toHaveKeys(['input', 'outputs', 'context']);
+});

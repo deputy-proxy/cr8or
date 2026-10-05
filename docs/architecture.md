@@ -130,6 +130,12 @@ Agents, Experts, assignments, execution state, delegation, memory, and approvals
 
 Operational work structure and Work-domain relationships. Work Dependencies are directional relationships between supported Work records and are consumed by WorkContextAssembler. They are not Workflow orchestration dependencies.
 
+The authorized Agent `work` context is a bounded read model composed of Enterprise identity, Projects, Tasks, WorkItems, Milestones, assignments, Work Dependencies, and the latest execution state for the Enterprise's selected Workflows. The assembler preserves Enterprise authorization and tenancy at the query boundary. Relationship data is resolved in bulk rather than through per-record queries, and WorkflowExecution context/input/output JSON is not loaded when only execution metadata is required.
+
+The context applies deterministic per-collection limits. These limits are safety bounds, not a relevance-ranking mechanism. Task parent records and up to 20 child IDs per selected Task are resolved in bulk. Dependency endpoints are resolved by supported morph type in bounded bulk queries. When no Work references are selected, assignments and dependencies are empty rather than broadening to unrelated Enterprise records.
+
+`execution_state` remains part of the existing `work` payload for compatibility. It is conceptually Workflow orchestration state and may be separated into a dedicated context category in a future contract change once consumers explicitly require that boundary.
+
 | Resource | Filament class location |
 | --- | --- |
 | Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
