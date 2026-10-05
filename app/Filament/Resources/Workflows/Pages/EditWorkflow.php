@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Workflows\Pages;
 
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Workflow;
+use Illuminate\Database\Eloquent\Model;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Auth\Access\AuthorizationException;
