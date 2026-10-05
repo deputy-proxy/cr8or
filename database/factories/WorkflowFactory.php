@@ -11,9 +11,18 @@ class WorkflowFactory extends Factory
 {
     protected $model = Workflow::class;
 
+    public function generic(): static
+    {
+        return $this->state([
+            'enterprise_specific' => false,
+            'enterprise_id' => null,
+        ]);
+    }
+
     public function definition(): array
     {
         return [
+            'enterprise_specific' => true,
             'enterprise_id' => Enterprise::factory(),
             'project_id' => null,
             'task_id' => null,
