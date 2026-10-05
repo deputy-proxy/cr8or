@@ -70,6 +70,57 @@ it('enforces the generic and enterprise-specific scope invariant', function (): 
     ]))->toThrow(LogicException::class);
 });
 
+
+it('allows an existing unversioned workflow to change scope', function (): void {
+    $enterpriseA = Enterprise::factory()->create();
+    $enterpriseB = Enterprise::factory()->create();
+
+    $workflow = Workflow::factory()->create([
+        'enterprise_id' => $enterpriseA,
+        'enterprise_specific' => true,
+    ]);
+
+    $workflow->changeScope(false);
+
+    expect($workflow->refresh()->enterprise_specific)->toBeFalse()
+        ->and($workflow->enterprise_id)->toBeNull();
+
+    $workflow->changeScope(true, $enterpriseB);
+
+    expect($workflow->refresh()->enterprise_specific)->toBeTrue()
+        ->and($workflow->enterprise_id)->toBe($enterpriseB->getKey());
+});
+
+it('rejects scope changes once workflow versions or executions exist', function (): void {
+    $enterprise = Enterprise::factory()->create();
+
+    $workflow = Workflow::factory()->create([
+        'enterprise_id' => $enterprise,
+        'enterprise_specific' => true,
+    ]);
+
+    \AppModels\WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+    ]);
+
+    expect(fn () => $workflow->changeScope(false))
+        ->toThrow(LogicException::class, 'Workflow scope cannot be changed');
+
+    $workflowWithoutVersion = Workflow::factory()->create([
+        'enterprise_id' => $enterprise,
+        'enterprise_specific' => true,
+    ]);
+
+    \AppModels\WorkflowExecution::factory()->create([
+        'workflow_id' => $workflowWithoutVersion,
+        'enterprise_id' => $enterprise,
+    ]);
+
+    expect(fn () => $workflowWithoutVersion->changeScope(false))
+        ->toThrow(LogicException::class, 'Workflow scope cannot be changed');
+});
+
 it('resolves a generic canonical workflow for every enterprise and prefers an enterprise-specific override', function (): void {
     $enterpriseA = Enterprise::factory()->create();
     $enterpriseB = Enterprise::factory()->create();
