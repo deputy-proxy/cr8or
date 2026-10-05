@@ -3,31 +3,57 @@
 namespace App\Filament\Resources\Workflows\Pages;
 
 use App\Filament\Resources\Workflows\WorkflowResource;
+use App\Models\Enterprise;
 use App\Models\Workflow;
+use App\Services\WorkflowScopeService;
 use App\Services\WorkflowStageConfigurationService;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class EditWorkflow extends EditRecord
 {
     protected static string $resource = WorkflowResource::class;
 
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        /** @var Workflow $record */
-        $record = $this->record;
+        /** @var Workflow $workflow */
+        $workflow = $record;
 
-        if ((bool) ($data['enterprise_specific'] ?? true) !== $record->isEnterpriseSpecific()) {
-            throw new AuthorizationException('Cannot change Workflow scope after creation.');
+        $enterpriseSpecific = (bool) ($data['enterprise_specific'] ?? true);
+        $enterpriseId = isset($data['enterprise_id']) && $data['enterprise_id'] !== ''
+            ? (int) $data['enterprise_id']
+            : null;
+
+        try {
+            if (
+                $enterpriseSpecific !== $workflow->isEnterpriseSpecific()
+                || $enterpriseId !== $workflow->enterprise_id
+            ) {
+                $enterprise = $enterpriseId === null
+                    ? null
+                    : Enterprise::query()->findOrFail($enterpriseId);
+
+                $workflow = app(WorkflowScopeService::class)->change(
+                    auth()->user(),
+                    $workflow,
+                    $enterpriseSpecific,
+                    $enterprise,
+                );
+            }
+        } catch (LogicException $exception) {
+            throw ValidationException::withMessages([
+                'enterprise_specific' => $exception->getMessage(),
+            ]);
         }
 
-        if ($record->isEnterpriseSpecific() && (int) $data['enterprise_id'] !== (int) $record->enterprise_id) {
-            throw new AuthorizationException('Cannot reassign a Workflow to another enterprise.');
-        }
+        unset($data['enterprise_specific'], $data['enterprise_id']);
 
-        $data['enterprise_id'] = $record->enterprise_id;
+        $workflow->fill($data);
+        $workflow->save();
 
-        return $data;
+        return $workflow;
     }
 
     protected function afterSave(): void

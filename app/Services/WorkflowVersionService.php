@@ -143,6 +143,13 @@ final class WorkflowVersionService
 
     private function publishVersionLocked(WorkflowVersion $version, Workflow $workflow): WorkflowVersion
     {
+        if (
+            ($workflow->isEnterpriseSpecific() && (int) $version->enterprise_id !== (int) $workflow->enterprise_id)
+            || (! $workflow->isEnterpriseSpecific() && $version->enterprise_id !== null)
+        ) {
+            throw new AuthorizationException('WorkflowVersion scope must match the current Workflow scope before publication.');
+        }
+
         WorkflowVersion::query()
             ->where('workflow_id', $workflow->getKey())
             ->where('status', WorkflowVersion::STATUS_PUBLISHED)

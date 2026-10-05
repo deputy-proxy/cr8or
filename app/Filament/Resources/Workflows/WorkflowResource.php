@@ -59,7 +59,6 @@ class WorkflowResource extends Resource
                                 ->label('Enterprise-specific')
                                 ->default(true)
                                 ->live()
-                                ->disabledOn('edit')
                                 ->dehydrated()
                                 ->helperText('Disable for a reusable Workflow that can execute in any Enterprise.'),
 
@@ -73,7 +72,6 @@ class WorkflowResource extends Resource
                                 ->searchable()
                                 ->preload()
                                 ->required(fn (Get $get): bool => (bool) $get('enterprise_specific'))
-                                ->disabledOn('edit')
                                 ->dehydrated()
                                 ->hidden(fn (Get $get): bool => ! (bool) $get('enterprise_specific')),
 

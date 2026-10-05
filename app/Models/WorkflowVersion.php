@@ -78,8 +78,8 @@ class WorkflowVersion extends Model
                 throw new LogicException("Invalid WorkflowVersion status [{$version->status}].");
             }
             $workflow = Workflow::query()->find($version->workflow_id);
-            if ($workflow === null || (int) $workflow->enterprise_id !== (int) $version->enterprise_id) {
-                throw new LogicException('WorkflowVersion enterprise scope must match its Workflow.');
+            if ($workflow === null) {
+                throw new LogicException('WorkflowVersion must reference an existing Workflow.');
             }
             if ((int) $version->version < 1) {
                 throw new LogicException('WorkflowVersion number must be positive.');

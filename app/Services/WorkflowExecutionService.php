@@ -38,6 +38,13 @@ final class WorkflowExecutionService
 
         Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
 
+        if (
+            $version->enterprise_id !== null
+            && (int) $version->enterprise_id !== (int) $enterprise->getKey()
+        ) {
+            throw new AuthorizationException('WorkflowVersion is not available for the execution Enterprise.');
+        }
+
         $existing = WorkflowExecution::query()
             ->where('workflow_version_id', $version->getKey())
             ->where('idempotency_key', $idempotencyKey)
