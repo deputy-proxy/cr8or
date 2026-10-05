@@ -205,3 +205,11 @@ it('declares every canonical failure code in the standard Capability contract', 
 
     expect($declared)->toContain(...array_values($reflection->getConstants()));
 });
+
+it('does not advertise planned asset creation as a human capability', function () {
+    $definition = app(CapabilityRegistry::class)->resolve('marketing.asset.create');
+
+    expect($definition->supportsExecutionMode(App\\Enums\\CapabilityExecutionMode::HUMAN))->toBeFalse()
+        ->and($definition->supportsExecutionMode(App\\Enums\\CapabilityExecutionMode::AGENT))->toBeTrue()
+        ->and($definition->supportsExecutionMode(App\\Enums\\CapabilityExecutionMode::WORKFLOW))->toBeTrue();
+});
