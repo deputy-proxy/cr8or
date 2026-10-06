@@ -66,7 +66,7 @@ it('uses the dedicated mcp_ namespace for lifecycle MCP Tools', function () {
 it('enforces the Capability boundary for every business MCP Tool', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->business())->toHaveCount(48);
+    expect($registry->business())->toHaveCount(49);
 
     $registry->assertBusinessToolSurface();
 
