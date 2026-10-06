@@ -8,7 +8,6 @@ use App\Models\IntegrationConnection;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 
 it('registers the create connection MCP tool for an organization member', function (): void {
     $user = User::factory()->create();
