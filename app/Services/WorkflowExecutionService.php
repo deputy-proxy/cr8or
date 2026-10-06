@@ -306,8 +306,16 @@ final class WorkflowExecutionService
         $defaultsValue = $inputContract['defaults'] ?? [];
         /** @var array<string, mixed> $defaults */
         $defaults = is_array($defaultsValue) ? $defaultsValue : [];
-        $available = array_merge($input, $mappedInput, $defaults, $context);
-        $inputPayload = array_merge($defaults, $input, $mappedInput);
+        // Enterprise context is trusted execution context, not stage-generated data.
+        // It must be available to every stage that declares enterprise_id without
+        // requiring callers to repeat it for every stage. Caller/mapping input must
+        // never be able to override the enterprise selected and authorized at start.
+        $trustedExecutionContext = [
+            'enterprise_id' => $execution->enterprise_id,
+        ];
+
+        $available = array_merge($input, $mappedInput, $defaults, $context, $trustedExecutionContext);
+        $inputPayload = array_merge($defaults, $input, $mappedInput, $trustedExecutionContext);
 
         foreach ($required as $key) {
             if (is_string($key) && ! array_key_exists($key, $available)) {
