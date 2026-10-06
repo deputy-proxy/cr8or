@@ -161,6 +161,50 @@ it('fails generated input resolution when the workflow policy is provider-free',
     ))->toThrow(\App\Exceptions\WorkflowDefinitionException::class, 'does not permit a ModelProvider');
 });
 
+it('waits for requested caller input without invoking a ModelProvider', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = inputResolutionActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    $version = WorkflowVersion::factory()->create([
+        'workflow_id' => $workflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+        'version' => 1,
+        'execution_policy' => [
+            'mode' => 'interactive',
+            'requires_model_provider' => false,
+        ],
+    ]);
+    $stage = WorkflowStage::factory()->make([
+        'workflow_id' => $workflow,
+        'key' => 'caller_input',
+        'input_contract' => [
+            'required' => ['name'],
+            'requested' => ['name'],
+        ],
+        'capability_input_contract' => ['name' => 'string|required'],
+    ]);
+    $execution = WorkflowExecution::factory()->create([
+        'workflow_id' => $workflow,
+        'workflow_version_id' => $version,
+        'workflow_version' => 1,
+        'enterprise_id' => $enterprise,
+        'actor_id' => $actor,
+        'context' => [],
+    ]);
+
+    $resolved = app(WorkflowStageInputResolver::class)->resolve(
+        $execution,
+        $version,
+        $stage,
+        [],
+    );
+
+    expect($resolved->requested)->toBe(['name'])
+        ->and($resolved->unresolved)->toBe(['name'])
+        ->and($resolved->inputs)->not->toHaveKey('name');
+});
+
 it('validates generated values against the capability input contract', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = inputResolutionActor($enterprise);

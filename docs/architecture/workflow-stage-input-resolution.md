@@ -207,7 +207,9 @@ Use a **default** when the value is deterministic and should be supplied when no
 
 Use **generated** when the value is semantic and should be derived from the stage instruction and authorized execution context.
 
-Use **requested** when the value must come from a human rather than being inferred or generated.
+Use **requested** when the value must come from a human or calling application rather than being inferred or generated. A requested field does not require a ModelProvider. If it is missing, the WorkflowExecution enters `waiting_for_input`; the caller supplies the missing stage fields through Workflow continuation and the same published WorkflowVersion resumes.
+
+This is the canonical pattern for interactive, caller-driven Workflows. An MCP caller can therefore provide the semantic inputs directly without creating an AgentExecution or connecting an Agent/model provider.
 
 Do not mark relationship identifiers as generated.
 
