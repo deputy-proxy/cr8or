@@ -110,3 +110,11 @@ An empty plan means waiting_for_input. A Capability returning waiting means the 
 Autonomous mode remains model-driven. The ModelProvider produces structured Capability requests, which are then adapted through the same CapabilityExecutionService and canonical Capability invocation boundary.
 
 Neither mode creates a second authorization or Operation execution path. Interactive completion requires completion of the supplied Capability workflow, not merely creation of an execution context.
+
+### Integration connections
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `integration.connection.create` | `IntegrationConnectionCreate` | `create-connection` | Create an enterprise-scoped external integration connection using a credential reference without exposing credential material through MCP. |
+
+Integration connections are durable configuration resources used by external-system Operations. The MCP creation boundary persists only the credential reference and non-secret connection identity; credentials themselves remain outside the MCP payload. Connection creation is enterprise-scoped and requires organization owner/admin authority.

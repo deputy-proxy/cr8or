@@ -6,6 +6,7 @@ use App\Contracts\Operation;
 use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
+use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -40,6 +41,7 @@ use App\Operations\ContentSeriesLifecycle;
 use App\Operations\ContinueAgentExecution;
 use App\Operations\CreateAgentAssignment;
 use App\Operations\CreateContentItem;
+use App\Operations\IntegrationConnectionCreate;
 use App\Operations\CreateKnowledgeIndex;
 use App\Operations\CreateKnowledgeItem;
 use App\Operations\CreateKnowledgeUnit;
@@ -727,7 +729,26 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
+                'integration.connection.create',
+                IntegrationConnectionCreate::class,
+                CreateConnectionTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'provider' => 'string|required',
+                    'external_account_id' => 'string|nullable',
+                    'credential_reference' => 'string|required',
+                    'status' => 'string|nullable',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'agent_execution_id' => 'integer|nullable',
+                    'approval_request_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'integration-connection'],
+                'McpCapabilityAuthorizer::authorizeMutation + IntegrationConnection policy',
+                'none',
+            ),
+            $this->definition(
                 'marketing.social-account.connect',
+            'integration.connection.create',
                 SocialAccountConnect::class,
                 \App\Mcp\Tools\ConnectSocialAccountTool::class,
                 ['input' => 'object'],

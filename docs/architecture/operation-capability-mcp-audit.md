@@ -327,6 +327,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | ResumeWorkflowExecution | workflow.resume | mcp_workflow_resume | lifecycle |
 | RetrieveKnowledge | knowledge.retrieve | retrieve-knowledge | governed |
 | RetrieveMemory | memory.retrieve | retrieve-memory | governed |
+| IntegrationConnectionCreate | integration.connection.create | create-connection | governed |
 | SocialAccountConnect | marketing.social-account.connect | connect-social-account | governed |
 | SocialAccountDisconnect | marketing.social-account.disconnect | disconnect-social-account | governed |
 | SocialAccountUpdate | marketing.social-account.update | update-social-account | governed |

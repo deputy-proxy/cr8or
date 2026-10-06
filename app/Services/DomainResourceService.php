@@ -16,6 +16,7 @@ use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
 use App\Models\Goal;
 use App\Models\Initiative;
+use App\Models\IntegrationConnection;
 use App\Models\Kpi;
 use App\Models\MarketingStrategy;
 use App\Models\Objective;
@@ -409,6 +410,22 @@ final class DomainResourceService
         $channel->save();
 
         return $channel->refresh();
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function createIntegrationConnection(User $actor, Enterprise $enterprise, array $attributes): IntegrationConnection
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [IntegrationConnection::class, $enterprise]);
+
+        return IntegrationConnection::query()->create([
+            'organization_id' => $enterprise->organization_id,
+            'enterprise_id' => $enterprise->getKey(),
+            'provider' => $attributes['provider'],
+            'external_account_id' => $attributes['external_account_id'] ?? null,
+            'credential_reference' => $attributes['credential_reference'],
+            'status' => $attributes['status'] ?? IntegrationConnection::STATUS_ACTIVE,
+            'metadata' => $attributes['metadata'] ?? null,
+        ]);
     }
 
     /** @param array<string, mixed> $attributes */

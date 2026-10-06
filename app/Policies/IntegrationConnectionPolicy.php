@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Enterprise;
 use App\Models\IntegrationConnection;
 use App\Models\User;
 use App\Policies\Concerns\HasExplicitCrudContract;
@@ -18,6 +19,11 @@ class IntegrationConnectionPolicy
     public function create(User $user): bool
     {
         return (new EnterprisePolicy)->create($user);
+    }
+
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
+    {
+        return (new EnterprisePolicy)->update($user, $enterprise);
     }
 
     public function update(User $user, IntegrationConnection $connection): bool

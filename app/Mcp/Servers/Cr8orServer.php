@@ -15,6 +15,7 @@ use App\Mcp\Tools\ArchiveMemoryTool;
 use App\Mcp\Tools\CancelAgentExecutionTool;
 use App\Mcp\Tools\ConnectSocialAccountTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
+use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\CreateAgentExecutionTool;
 use App\Mcp\Tools\CreateAssetTool;
@@ -241,6 +242,7 @@ class Cr8orServer extends Server
         ArchiveChannelTool::class,
         ArchiveMarketingStrategyTool::class,
         ConnectSocialAccountTool::class,
+        CreateConnectionTool::class,
         UpdateSocialAccountTool::class,
         DisconnectSocialAccountTool::class,
         CreateProjectTool::class,
