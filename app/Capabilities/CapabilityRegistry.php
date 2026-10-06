@@ -748,7 +748,6 @@ final class CapabilityRegistry
             ),
             $this->definition(
                 'marketing.social-account.connect',
-            'integration.connection.create',
                 SocialAccountConnect::class,
                 \App\Mcp\Tools\ConnectSocialAccountTool::class,
                 ['input' => 'object'],
@@ -1012,6 +1011,7 @@ final class CapabilityRegistry
             'marketing.content.publication-ready',
             'publication.publish',
             'marketing.social-account.connect',
+            'integration.connection.create',
             'marketing.social-account.update',
             'marketing.social-account.disconnect',
             'memory.create',
