@@ -21,6 +21,7 @@ use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
+use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
@@ -241,6 +242,7 @@ class Cr8orServer extends Server
         ArchiveChannelTool::class,
         ArchiveMarketingStrategyTool::class,
         ConnectSocialAccountTool::class,
+        CreateConnectionTool::class,
         UpdateSocialAccountTool::class,
         DisconnectSocialAccountTool::class,
         CreateProjectTool::class,

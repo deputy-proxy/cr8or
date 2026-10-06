@@ -6,6 +6,7 @@ use App\Contracts\Operation;
 use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
+use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -58,6 +59,7 @@ use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
+use App\Operations\IntegrationConnectionCreate;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingAudienceArchive;
 use App\Operations\MarketingAudienceCreate;
@@ -727,6 +729,24 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
+                'integration.connection.create',
+                IntegrationConnectionCreate::class,
+                CreateConnectionTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'provider' => 'string|required',
+                    'external_account_id' => 'string|nullable',
+                    'credential_reference' => 'string|required',
+                    'status' => 'string|nullable',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'agent_execution_id' => 'integer|nullable',
+                    'approval_request_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'integration-connection'],
+                'McpCapabilityAuthorizer::authorizeMutation + IntegrationConnection policy',
+                'none',
+            ),
+            $this->definition(
                 'marketing.social-account.connect',
                 SocialAccountConnect::class,
                 \App\Mcp\Tools\ConnectSocialAccountTool::class,
@@ -991,6 +1011,7 @@ final class CapabilityRegistry
             'marketing.content.publication-ready',
             'publication.publish',
             'marketing.social-account.connect',
+            'integration.connection.create',
             'marketing.social-account.update',
             'marketing.social-account.disconnect',
             'memory.create',
