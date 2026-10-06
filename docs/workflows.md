@@ -16,6 +16,37 @@ The Workflow runtime resolves the declared Capability through `CapabilityRegistr
 
 Workflow orchestration remains deterministic and persisted. A ModelProvider is optional and is required only when the published WorkflowVersion explicitly permits model-backed stage input generation or when an Agent is performing model-driven reasoning.
 
+## Generic and Enterprise-specific Workflows
+
+CR8OR supports two Workflow ownership models:
+
+- **Platform-owned generic Workflow:** `enterprise_specific=false`, `enterprise_id=null`. The reusable definition is shared by eligible Enterprises. Enterprise context is supplied at execution time and becomes execution-owned context.
+- **Enterprise-specific Workflow:** `enterprise_specific=true`, with an owning Enterprise. Only that Enterprise's authorized users may execute or modify it.
+
+Generic Workflows must not be duplicated per Enterprise merely to attach runtime context. A generic WorkflowVersion remains reusable and deterministic while each WorkflowExecution carries the actual Enterprise.
+
+The canonical generic Marketing System Creation Workflow is `marketing.system.create`. It creates and verifies the marketing graph through existing governed Capabilities:
+
+```
+Strategy
+  ↓
+Audience
+  ↓
+Campaign
+  ↓
+Content Series
+  ↓
+Content Item
+  ↓
+Script
+  ↓
+Planned Asset
+  ↓
+Graph Verification
+```
+
+The Workflow uses deterministic mappings for upstream identifiers and the generic stage-input resolver for semantic fields. It does not create business records itself and does not call business MCP Tools.
+
 ## Execution input contract
 
 Workflow execution accepts either the legacy flat input shape or the structured input shape. New callers should use the structured form:
@@ -79,7 +110,7 @@ MCP is an entry and continuation interface for Workflow lifecycle operations. Li
 
 ## Enterprise isolation
 
-Workflow, WorkflowVersion and WorkflowExecution are Enterprise-scoped. Cross-Enterprise access fails closed. Published versions are immutable so later edits cannot silently change historical execution semantics.
+Enterprise-specific Workflows and their WorkflowVersions are Enterprise-scoped. Platform-owned generic Workflows have no Enterprise owner and may be executed only with an authorized Enterprise context. Every WorkflowExecution is Enterprise-owned, and Capability authorization is evaluated against that execution Enterprise. Published versions are immutable so later edits cannot silently change historical execution semantics.
 ## Work Dependencies vs Workflow Stage Dependencies
 
 CR8OR contains two independent dependency concepts.

@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             AgentDescriptorSeeder::class,
             ExpertDescriptorSeeder::class,
             CanonicalWorkflowSeeder::class,
+            GenericMarketingWorkflowSeeder::class,
         ]);
     }
 }
