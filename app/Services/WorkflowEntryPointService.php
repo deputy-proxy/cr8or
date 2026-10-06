@@ -418,8 +418,9 @@ final class WorkflowEntryPointService
         return app(WorkflowExecutionService::class)->inspect($actor, $execution);
     }
 
-    public function resume(User $actor, WorkflowExecution $execution, ?string $continuationToken = null): WorkflowExecution
+    /** @param array<string, mixed> $input */
+    public function resume(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, array $input = []): WorkflowExecution
     {
-        return app(WorkflowExecutionService::class)->continue($actor, $execution, $continuationToken);
+        return app(WorkflowExecutionService::class)->continue($actor, $execution, $continuationToken, false, $input);
     }
 }

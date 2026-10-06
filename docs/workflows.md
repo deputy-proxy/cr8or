@@ -98,7 +98,7 @@ Workflow stages remain deterministic in their orchestration and business executi
 
 ## Continuation and idempotency
 
-WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation uses durable continuation tokens. A continuation may invoke a ModelProvider only when the published stage contract explicitly requires generated input. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.
+WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation uses durable continuation tokens. A continuation may supply caller-owned `workflow` and `stages` input, allowing `requested` fields to be resolved without a ModelProvider. A continuation may invoke a ModelProvider only when the published stage contract explicitly requires generated input. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.
 
 ## Agent relationship
 

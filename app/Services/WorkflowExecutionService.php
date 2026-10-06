@@ -113,9 +113,10 @@ final class WorkflowExecutionService
         ];
     }
 
-    public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false): WorkflowExecution
+    /** @param array<string, mixed> $input */
+    public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false, array $input = []): WorkflowExecution
     {
-        $claimed = DB::transaction(function () use ($actor, $execution, $continuationToken): WorkflowExecution {
+        $claimed = DB::transaction(function () use ($actor, $execution, $continuationToken, $input): WorkflowExecution {
             /** @var WorkflowExecution $locked */
             $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
@@ -133,6 +134,39 @@ final class WorkflowExecutionService
 
             if ($locked->status === WorkflowExecution::STATUS_COMPLETED) {
                 return $locked;
+            }
+
+            if ($input !== []) {
+                $this->validateExecutionInput($locked->workflowVersion, $input);
+                $currentInput = $locked->getAttribute('input');
+                $currentInput = is_array($currentInput) ? $currentInput : [];
+                $mergedInput = $currentInput;
+
+                if (isset($input['workflow']) && is_array($input['workflow'])) {
+                    $mergedInput['workflow'] = array_replace(
+                        is_array($mergedInput['workflow'] ?? null) ? $mergedInput['workflow'] : [],
+                        $input['workflow'],
+                    );
+                }
+
+                if (isset($input['stages']) && is_array($input['stages'])) {
+                    $mergedInput['stages'] = is_array($mergedInput['stages'] ?? null) ? $mergedInput['stages'] : [];
+                    foreach ($input['stages'] as $stageKey => $stageInput) {
+                        $mergedInput['stages'][$stageKey] = array_replace(
+                            is_array($mergedInput['stages'][$stageKey] ?? null) ? $mergedInput['stages'][$stageKey] : [],
+                            is_array($stageInput) ? $stageInput : [],
+                        );
+                    }
+                }
+
+                foreach ($input as $key => $value) {
+                    if ($key !== 'workflow' && $key !== 'stages') {
+                        $mergedInput[$key] = $value;
+                    }
+                }
+
+                $locked->setAttribute('input', $mergedInput);
+                $locked->save();
             }
 
             if ($locked->status === WorkflowExecution::STATUS_RUNNING) {

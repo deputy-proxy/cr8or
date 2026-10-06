@@ -1,9 +1,5 @@
 <?php
 
-use App\AI\Contracts\ModelProvider;
-use App\AI\Data\ModelRequest;
-use App\AI\Data\ModelResult;
-use App\AI\Providers\FakeModelProvider;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\User;
@@ -76,59 +72,25 @@ it('executes the generic marketing system workflow end to end for an authorized 
         $workflow->publishedVersion instanceof WorkflowVersion,
     );
 
-    $generated = [
-        'strategy' => [
-            'name' => 'Generic Growth Strategy',
-            'description' => 'A generated strategy for the authorized Enterprise.',
-        ],
-        'audience' => [
-            'name' => 'Primary Growth Audience',
-            'description' => 'The primary audience defined from Enterprise context.',
-        ],
-        'campaign' => [
-            'name' => 'Primary Growth Campaign',
-            'description' => 'The first campaign aligned to the strategy.',
-        ],
-        'content_series' => [
-            'name' => 'Primary Growth Series',
-            'description' => 'A reusable series for the campaign.',
-        ],
-        'content' => [
-            'title' => 'Primary Growth Content',
-            'body' => 'Generated content body for the primary campaign.',
-        ],
-        'script' => [
-            'title' => 'Primary Growth Script',
-            'body' => 'Generated production script for the primary content item.',
-        ],
-        'asset' => [
-            'name' => 'Primary Growth Asset',
-            'type' => 'video',
-            'purpose' => 'Introduce the campaign message.',
-            'channel' => 'social',
-            'platform' => 'instagram',
-            'format' => 'reel',
-            'creative_brief' => 'A concise visual treatment for the primary growth campaign.',
+    $callerInput = [
+        'stages' => [
+            'strategy' => ['name' => 'Generic Growth Strategy', 'description' => 'Caller-supplied strategy.'],
+            'audience' => ['name' => 'Primary Growth Audience', 'description' => 'Caller-supplied audience.'],
+            'campaign' => ['name' => 'Primary Growth Campaign', 'description' => 'Caller-supplied campaign.'],
+            'content_series' => ['name' => 'Primary Growth Series', 'description' => 'Caller-supplied series.'],
+            'content' => ['title' => 'Primary Growth Content', 'body' => 'Caller-supplied content body.'],
+            'script' => ['title' => 'Primary Growth Script', 'body' => 'Caller-supplied production script.'],
+            'asset' => [
+                'name' => 'Primary Growth Asset',
+                'type' => 'video',
+                'purpose' => 'Introduce the campaign message.',
+                'channel' => 'social',
+                'platform' => 'instagram',
+                'format' => 'reel',
+                'creative_brief' => 'A concise visual treatment for the primary growth campaign.',
+            ],
         ],
     ];
-
-    app()->instance(
-        ModelProvider::class,
-        new FakeModelProvider(
-            static function (ModelRequest $request) use ($generated): ModelResult {
-                $stageKey = $request->context['stage']['key'] ?? null;
-
-                return new ModelResult(
-                    text: 'Generated workflow input.',
-                    structured: is_string($stageKey) ? ($generated[$stageKey] ?? []) : [],
-                    provider: 'fake',
-                    model: 'fake-model',
-                    invocationId: 'generic-marketing-e2e-'.$stageKey,
-                    correlationId: $request->correlationId,
-                );
-            },
-        ),
-    );
 
     $execution = app(WorkflowExecutionService::class)->start(
         $actor,
@@ -138,6 +100,17 @@ it('executes the generic marketing system workflow end to end for an authorized 
         'generic-marketing-system-e2e-correlation',
         false,
         $enterprise,
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_WAITING_FOR_INPUT)
+        ->and($execution->current_stage_key)->toBe('strategy');
+
+    $execution = app(WorkflowExecutionService::class)->continue(
+        $actor,
+        $execution,
+        $execution->continuation_token,
+        false,
+        $callerInput,
     );
 
     expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
@@ -152,13 +125,21 @@ it('executes the generic marketing system workflow end to end for an authorized 
             'verification',
         ])
         ->and($execution->outputs['verification']['verification_passed'])->toBeTrue()
-        ->and($execution->context['stage_input_resolutions']['campaign']['sources']['marketing_strategy_id'])->toBe('mapped')
+        ->and($execution->context['stage_input_resolutions']['strategy']['sources'])->toMatchArray([
+            'name' => 'explicit',
+            'description' => 'explicit',
+        ])
+        ->and($execution->context['stage_input_resolutions']['campaign']['sources'])->toMatchArray([
+            'marketing_strategy_id' => 'mapped',
+            'name' => 'explicit',
+            'description' => 'explicit',
+        ])
         ->and($execution->context['stage_input_resolutions']['content']['sources'])->toMatchArray([
             'campaign_id' => 'mapped',
             'content_series_id' => 'mapped',
             'audience_id' => 'mapped',
-            'title' => 'generated',
-            'body' => 'generated',
+            'title' => 'explicit',
+            'body' => 'explicit',
         ])
         ->and($execution->context['stage_input_resolutions']['verification']['sources'])->toMatchArray([
             'marketing_strategy_id' => 'mapped',

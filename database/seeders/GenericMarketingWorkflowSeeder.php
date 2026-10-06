@@ -32,9 +32,9 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                     'purpose' => 'Create a complete, reusable marketing system graph for an authorized Enterprise from strategy through planned creative assets.',
                     'execution_policy' => [
                         'template' => 'marketing.system.create',
-                        'mode' => 'deterministic',
+                        'mode' => 'interactive',
                         'new_only' => true,
-                        'requires_model_provider' => true,
+                        'requires_model_provider' => false,
                         'model_provider' => null,
                         'model' => null,
                     ],
@@ -55,15 +55,97 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             );
         }
 
-        if ($workflow->publishedVersion?->status === 'published') {
+        $published = $workflow->publishedVersion;
+        $publishedPolicy = $published instanceof \App\Models\WorkflowVersion && is_array($published->getAttribute('execution_policy'))
+            ? $published->getAttribute('execution_policy')
+            : [];
+
+        if (
+            $published?->status === 'published'
+            && (($publishedPolicy['requires_model_provider'] ?? null) === false)
+            && $this->isCallerDriven($workflow)
+        ) {
             return;
         }
 
+        $definition = [
+            'execution_policy' => [
+                'template' => 'marketing.system.create',
+                'mode' => 'interactive',
+                'new_only' => true,
+                'requires_model_provider' => false,
+                'model_provider' => null,
+                'model' => null,
+            ],
+        ];
+
+        $workflow->update([
+            'execution_policy' => $definition['execution_policy'],
+            'completion_criteria' => [
+                'required_stage_keys' => [
+                    'strategy',
+                    'audience',
+                    'campaign',
+                    'content_series',
+                    'content',
+                    'script',
+                    'asset',
+                    'verification',
+                ],
+            ],
+        ]);
+
+        foreach ($this->stages() as $stage) {
+            $workflow->stages()
+                ->where('key', $stage['key'])
+                ->update([
+                    'name' => $stage['name'],
+                    'instruction' => $stage['instruction'],
+                    'sequence' => $stage['sequence'],
+                    'dependencies' => $stage['dependencies'],
+                    'input_contract' => $stage['input_contract'],
+                    'output_contract' => $stage['output_contract'],
+                    'completion_criteria' => $stage['completion_criteria'],
+                ]);
+        }
+
         app(WorkflowVersionService::class)->publish(
-            $workflow,
+            $workflow->refresh(),
             $actor,
-            'canonical:generic:marketing.system.create',
+            'canonical:generic:marketing.system.create:v2:caller-driven',
         );
+    }
+
+    private function isCallerDriven(Workflow $workflow): bool
+    {
+        foreach ($workflow->stages as $stage) {
+            $contractValue = $stage->getAttribute('input_contract');
+            /** @var array<string, mixed> $contract */
+            $contract = is_array($contractValue) ? $contractValue : [];
+            $stageKey = (string) $stage->getAttribute('key');
+
+            if (($contract['requested'] ?? []) === [] && $this->hasSemanticRequiredInputs($stageKey)) {
+                return false;
+            }
+            if (($contract['generated'] ?? []) !== []) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function hasSemanticRequiredInputs(string $stageKey): bool
+    {
+        return in_array($stageKey, [
+            'strategy',
+            'audience',
+            'campaign',
+            'content_series',
+            'content',
+            'script',
+            'asset',
+        ], true);
     }
 
     /** @return list<array<string, mixed>> */
@@ -73,14 +155,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'strategy',
                 'name' => 'Create Marketing Strategy',
-                'instruction' => 'Create a coherent marketing strategy for the authorized Enterprise. Generate only the strategy name and description; downstream identifiers must remain deterministic.',
+                'instruction' => 'Create a coherent marketing strategy for the authorized Enterprise. Request the strategy name and description from the caller; downstream identifiers must remain deterministic.',
                 'sequence' => 1,
                 'dependencies' => [],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.strategy.create'],
                 'input_contract' => [
                     'required' => ['name', 'description'],
-                    'generated' => ['name', 'description'],
+                    'requested' => ['name', 'description'],
                 ],
                 'output_contract' => ['required' => ['id']],
                 'completion_criteria' => [
@@ -91,14 +173,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'audience',
                 'name' => 'Create Target Audience',
-                'instruction' => 'Define the primary target audience for the marketing system from the Enterprise context and strategy context. Generate only semantic audience fields.',
+                'instruction' => 'Define the primary target audience for the marketing system from the Enterprise context and strategy context. Request only semantic audience fields from the caller.',
                 'sequence' => 2,
                 'dependencies' => ['strategy'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.audience.create'],
                 'input_contract' => [
                     'required' => ['name', 'description'],
-                    'generated' => ['name', 'description'],
+                    'requested' => ['name', 'description'],
                 ],
                 'output_contract' => ['required' => ['id']],
                 'completion_criteria' => [
@@ -109,14 +191,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'campaign',
                 'name' => 'Create Campaign',
-                'instruction' => 'Create the primary campaign aligned with the generated marketing strategy and audience. The strategy identifier is deterministic and must never be generated.',
+                'instruction' => 'Create the primary campaign aligned with the caller-supplied marketing strategy and audience. The strategy identifier is deterministic and must never be generated.',
                 'sequence' => 3,
                 'dependencies' => ['strategy', 'audience'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.campaign.create'],
                 'input_contract' => [
                     'required' => ['marketing_strategy_id', 'name', 'description'],
-                    'generated' => ['name', 'description'],
+                    'requested' => ['name', 'description'],
                     'mappings' => [
                         'marketing_strategy_id' => 'stages.strategy.id',
                     ],
@@ -130,14 +212,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'content_series',
                 'name' => 'Create Content Series',
-                'instruction' => 'Create the primary content series for the campaign. Generate only semantic series fields; campaign identity is deterministic.',
+                'instruction' => 'Create the primary content series for the campaign. Request semantic series fields from the caller; campaign identity is deterministic.',
                 'sequence' => 4,
                 'dependencies' => ['campaign'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.content-series.create'],
                 'input_contract' => [
                     'required' => ['campaign_id', 'name', 'description'],
-                    'generated' => ['name', 'description'],
+                    'requested' => ['name', 'description'],
                     'mappings' => [
                         'campaign_id' => 'stages.campaign.id',
                     ],
@@ -151,14 +233,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'content',
                 'name' => 'Create Content Item',
-                'instruction' => 'Create the primary content item for the campaign and series. Generate the title and body from the upstream marketing context. Preserve all upstream identifiers exactly.',
+                'instruction' => 'Create the primary content item for the campaign and series. Request the title and body from the caller using the upstream marketing context. Preserve all upstream identifiers exactly.',
                 'sequence' => 5,
                 'dependencies' => ['campaign', 'content_series', 'audience'],
                 'expert_slugs' => ['copywriting'],
                 'capability_slugs' => ['marketing.content.create'],
                 'input_contract' => [
                     'required' => ['campaign_id', 'content_series_id', 'audience_id', 'title', 'body'],
-                    'generated' => ['title', 'body'],
+                    'requested' => ['title', 'body'],
                     'mappings' => [
                         'campaign_id' => 'stages.campaign.id',
                         'content_series_id' => 'stages.content_series.id',
@@ -174,14 +256,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'script',
                 'name' => 'Create Script',
-                'instruction' => 'Create the production script for the generated content item. Generate the script title and body from the complete upstream context.',
+                'instruction' => 'Create the production script for the caller-supplied content item. Request the script title and body from the caller from the complete upstream context.',
                 'sequence' => 6,
                 'dependencies' => ['content'],
                 'expert_slugs' => ['copywriting'],
                 'capability_slugs' => ['marketing.script.create'],
                 'input_contract' => [
                     'required' => ['content_item_id', 'title', 'body'],
-                    'generated' => ['title', 'body'],
+                    'requested' => ['title', 'body'],
                     'mappings' => [
                         'content_item_id' => 'stages.content.id',
                     ],
@@ -195,7 +277,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'asset',
                 'name' => 'Create Planned Asset',
-                'instruction' => 'Create the planned creative asset specification for the script. Generate semantic production fields only. The script identifier is deterministic.',
+                'instruction' => 'Create the planned creative asset specification for the script. Request semantic production fields from the caller only. The script identifier is deterministic.',
                 'sequence' => 7,
                 'dependencies' => ['script'],
                 'expert_slugs' => ['copywriting'],
@@ -211,7 +293,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                         'format',
                         'creative_brief',
                     ],
-                    'generated' => [
+                    'requested' => [
                         'name',
                         'type',
                         'purpose',
