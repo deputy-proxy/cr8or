@@ -14,7 +14,7 @@ Each published stage declares its Expert, Capability, dependencies and input/out
 
 The Workflow runtime resolves the declared Capability through `CapabilityRegistry` and invokes the mapped Operation through the common Capability execution boundary. It does not invoke MCP business Tools, call Operations by arbitrary class name, or grant an Agent direct Capability authority.
 
-Deterministic Workflow execution is provider-free. A ModelProvider is required only when an Agent is actually performing model-driven reasoning.
+Workflow orchestration remains deterministic and persisted. A ModelProvider is optional and is required only when the published WorkflowVersion explicitly permits model-backed stage input generation or when an Agent is performing model-driven reasoning.
 
 ## Execution input contract
 
@@ -37,31 +37,37 @@ Workflow execution accepts either the legacy flat input shape or the structured 
 
 `workflow` contains execution-level input and is preserved in the durable WorkflowExecution context. `stages.<stage_key>` contains caller-supplied input for that specific stage. A stage never receives another stage's supplied input.
 
-The effective input for a stage is resolved in this order:
+The effective input for a stage is resolved by the generic Workflow stage input resolver:
 
 ```
-caller-supplied stage input
-        +
-mapped dependency values
-        +
+explicit input
+    ↓
+deterministic mappings
+    ↓
 stage defaults
-        ↓
-effective stage input
-        ↓
-input-contract validation
-        ↓
+    ↓
+trusted execution context
+    ↓
+generated inputs (when explicitly declared and permitted)
+    ↓
+requested input (when explicitly declared)
+    ↓
+contract validation
+    ↓
 Capability invocation
 ```
 
-Mapped values take precedence over supplied values for fields controlled by mappings. This prevents callers from overriding dependency-created identifiers or other values that the persisted WorkflowVersion owns. Defaults provide values only when neither supplied nor mapped input exists.
+Mapped values take precedence over supplied values for fields controlled by mappings. This prevents callers from overriding dependency-created identifiers or other values that the persisted WorkflowVersion owns. Defaults provide values only when neither supplied nor mapped input exists. Generated values are opt-in and are only resolved for fields explicitly declared as `generated` by the persisted stage contract.
+
+The complete contract and provenance model is documented in [`docs/architecture/workflow-stage-input-resolution.md`](architecture/workflow-stage-input-resolution.md).
 
 When a published WorkflowVersion contains a Capability input contract, structured stage input is rejected if it references an unknown stage or an undeclared input field. Existing legacy flat executions remain supported so published workflows can migrate without changing historical execution semantics.
 
-Generated content may therefore be prepared by the caller and supplied directly to the applicable workflow stages. The Workflow engine does not generate content or invoke a ModelProvider; it deterministically validates and executes the supplied inputs through the declared Expert → Capability → Operation path.
+Workflow stages remain deterministic in their orchestration and business execution. A stage may explicitly opt into model-backed input generation through its published execution policy. The model provider only resolves declared missing stage inputs; it does not invoke business Capabilities, Operations, MCP Tools, or persistence directly. Provider-free WorkflowVersions continue to reject generated-input stages.
 
 ## Continuation and idempotency
 
-WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation is provider-free and uses durable continuation tokens. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.
+WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation uses durable continuation tokens. A continuation may invoke a ModelProvider only when the published stage contract explicitly requires generated input. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.
 
 ## Agent relationship
 
