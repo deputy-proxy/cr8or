@@ -25,6 +25,9 @@ use LogicException;
  * @property string $continuation_token
  * @property string|null $failure_reason
  * @property string|null $state_reason
+ * @property array<string, mixed>|null $input
+ * @property array<string, mixed>|null $outputs
+ * @property array<string, mixed>|null $context
  */
 class WorkflowExecution extends Model
 {

@@ -24,7 +24,7 @@ final class WorkflowDefinitionValidator
 
         /** @var list<WorkflowStage> $stageList */
         $stageList = $stages->values()->all();
-        $this->validateStages($stageList, $workflow->getKey());
+        $this->validateStages($stageList, $workflow->getKey(), $this->array($workflow->getAttribute('execution_policy')));
     }
 
     public function validateVersion(WorkflowVersion $version): void
@@ -66,13 +66,14 @@ final class WorkflowDefinitionValidator
             $stages[] = $stage;
         }
 
-        $this->validateStages($stages, $workflow->getKey());
+        $this->validateStages($stages, $workflow->getKey(), $this->array($version->getAttribute('execution_policy')));
     }
 
     /**
      * @param  list<WorkflowStage>  $stages
+     * @param  array<string, mixed>  $executionPolicy
      */
-    private function validateStages(array $stages, int|string $workflowId): void
+    private function validateStages(array $stages, int|string $workflowId, array $executionPolicy = []): void
     {
         $errors = [];
         $keys = [];
@@ -214,6 +215,10 @@ final class WorkflowDefinitionValidator
                         );
                     }
 
+                    if (($executionPolicy['mode'] ?? 'interactive') !== 'agent') {
+                        $errors = [...$errors, ...$this->validateCapabilityInputCoverage($stage, $definition->inputContract)];
+                    }
+
                     if ($storedOutputContract !== [] && $storedOutputContract !== $definition->outputContract) {
                         $errors[] = $this->stageError(
                             $stage,
@@ -236,6 +241,10 @@ final class WorkflowDefinitionValidator
 
             $errors = [...$errors, ...$this->validateMappings($stage, $keys)];
             $errors = [...$errors, ...$this->validateRequiredInputs($stage, $stages)];
+
+            if (($executionPolicy['mode'] ?? 'interactive') !== 'agent') {
+                $errors = [...$errors, ...$this->validateGeneratedInputs($stage, $executionPolicy)];
+            }
         }
 
         $errors = [...$errors, ...$this->validateDependencyCycles($stages)];
@@ -299,6 +308,90 @@ final class WorkflowDefinitionValidator
             $dependencies = $this->list($stage->getAttribute('dependencies'));
             if (! in_array($root, $dependencies, true)) {
                 $errors[] = $this->stageError($stage, 'mapping.dependency.missing', "Workflow stage [{$stage->key}] maps from stage [{$root}] without declaring it as a dependency.");
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Ensure every required Capability input has a declared Workflow source.
+     *
+     * @param  array<string, string>  $capabilityContract
+     * @return list<array{stage?: string, code: string, message: string, expert?: string, capability?: string}>
+     */
+    private function validateCapabilityInputCoverage(WorkflowStage $stage, array $capabilityContract): array
+    {
+        $contract = $this->array($stage->getAttribute('input_contract'));
+        $required = $this->list($contract['required'] ?? []);
+        $defaults = $this->array($contract['defaults'] ?? []);
+        $mappings = $this->array($contract['mappings'] ?? []);
+        $generated = $this->list($contract['generated'] ?? []);
+        $declared = array_flip([...$required, ...array_keys($defaults), ...array_keys($mappings), ...$generated]);
+        $errors = [];
+
+        foreach ($capabilityContract as $field => $definition) {
+            if (! str_contains($definition, '|required') || in_array($field, $this->runtimeProvidedInputs(), true)) {
+                continue;
+            }
+
+            if (! isset($declared[$field])) {
+                $errors[] = $this->stageError(
+                    $stage,
+                    'capability.input_source.missing',
+                    "Workflow stage [{$stage->key}] invokes a Capability requiring [{$field}] but declares no stage input source.",
+                );
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Generated inputs are explicit Workflow authoring metadata. They are only
+     * valid when the field is required and the published execution policy allows
+     * a ModelProvider. Mappings and defaults remain deterministic sources and
+     * therefore must not be marked as generated.
+     *
+     * @param  array<string, mixed>  $executionPolicy
+     * @return list<array{stage?: string, code: string, message: string, expert?: string, capability?: string}>
+     */
+    private function validateGeneratedInputs(WorkflowStage $stage, array $executionPolicy): array
+    {
+        $contract = $this->array($stage->getAttribute('input_contract'));
+        $generated = $this->list($contract['generated'] ?? []);
+        if ($generated === []) {
+            return [];
+        }
+
+        $required = $this->list($contract['required'] ?? []);
+        $defaults = $this->array($contract['defaults'] ?? []);
+        $mappings = $this->array($contract['mappings'] ?? []);
+        $errors = [];
+
+        if (($executionPolicy['requires_model_provider'] ?? false) !== true) {
+            $errors[] = $this->stageError(
+                $stage,
+                'stage.input_generation.provider_required',
+                "Workflow stage [{$stage->key}] declares generated inputs but its execution policy does not allow a ModelProvider.",
+            );
+        }
+
+        foreach ($generated as $field) {
+            if (! in_array($field, $required, true)) {
+                $errors[] = $this->stageError(
+                    $stage,
+                    'stage.input_generation.not_required',
+                    "Workflow stage [{$stage->key}] marks [{$field}] as generated but it is not a required input.",
+                );
+            }
+
+            if (array_key_exists($field, $defaults) || array_key_exists($field, $mappings)) {
+                $errors[] = $this->stageError(
+                    $stage,
+                    'stage.input_generation.deterministic_source',
+                    "Workflow stage [{$stage->key}] marks [{$field}] as generated while also declaring a deterministic default or mapping.",
+                );
             }
         }
 

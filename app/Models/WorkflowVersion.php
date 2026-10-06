@@ -12,6 +12,12 @@ use Illuminate\Support\Carbon;
 use LogicException;
 
 #[Fillable(['workflow_id', 'enterprise_id', 'version', 'status', 'name', 'purpose', 'execution_policy', 'completion_criteria', 'stage_definitions', 'idempotency_key', 'created_by', 'published_at', 'retired_at'])]
+/**
+ * @property array<string, mixed>|null $execution_policy
+ * @property array<string, mixed>|null $completion_criteria
+ * @property list<array<string, mixed>>|null $stage_definitions
+ * @property int|null $created_by
+ */
 class WorkflowVersion extends Model
 {
     /** @use HasFactory<WorkflowVersionFactory> */

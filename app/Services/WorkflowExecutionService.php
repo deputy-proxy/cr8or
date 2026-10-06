@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Data\CapabilityInvocationRequest;
+use App\Data\ResolvedWorkflowStageInput;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\User;
@@ -19,7 +20,10 @@ use Throwable;
 
 final class WorkflowExecutionService
 {
-    public function __construct(private readonly CapabilityInvocationService $capabilities) {}
+    public function __construct(
+        private readonly CapabilityInvocationService $capabilities,
+        private readonly WorkflowStageInputResolver $inputResolver,
+    ) {}
 
     /** @param array<string, mixed> $input */
     public function start(User $actor, Workflow|WorkflowVersion $definition, array $input, string $idempotencyKey, ?string $correlationId = null, bool $returnFailed = false, ?Enterprise $enterprise = null): WorkflowExecution
@@ -219,6 +223,13 @@ final class WorkflowExecutionService
                         return ['waiting' => true];
                     }
 
+                    if ($result['status'] === 'waiting_for_input') {
+                        $locked->continuation_token = (string) str()->uuid();
+                        $locked->waitForInput($result['reason'] ?? 'Workflow stage is waiting for input.')->save();
+
+                        return ['waiting' => true];
+                    }
+
                     $stageOutput = is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
                     $stageOutput['termination'] = 'completed';
 
@@ -292,38 +303,23 @@ final class WorkflowExecutionService
             ? ApprovalRequest::query()->find((int) $context['pending_approval_request_id'])
             : null;
 
-        $inputContractValue = $stage->getAttribute('input_contract');
-        /** @var array<string, mixed> $inputContract */
-        $inputContract = is_array($inputContractValue) ? $inputContractValue : [];
-        $requiredValue = $inputContract['required'] ?? [];
-        $required = is_array($requiredValue) ? $requiredValue : [];
-
         $inputValue = $execution->getAttribute('input');
         /** @var array<string, mixed> $executionInput */
         $executionInput = is_array($inputValue) ? $inputValue : [];
-        $input = $this->resolveStageInput($stage, $executionInput);
-        $mappedInput = $this->resolveMappedInput($stage, $context);
-        $defaultsValue = $inputContract['defaults'] ?? [];
-        /** @var array<string, mixed> $defaults */
-        $defaults = is_array($defaultsValue) ? $defaultsValue : [];
-        // Enterprise context is trusted execution context, not stage-generated data.
-        // It must be available to every stage that declares enterprise_id without
-        // requiring callers to repeat it for every stage. Caller/mapping input must
-        // never be able to override the enterprise selected and authorized at start.
-        $trustedExecutionContext = [
-            'enterprise_id' => $execution->enterprise_id,
-        ];
+        $version = $execution->workflowVersion()->firstOrFail();
+        $resolved = $this->inputResolver->resolve($execution, $version, $stage, $executionInput);
 
-        $available = array_merge($input, $mappedInput, $defaults, $context, $trustedExecutionContext);
-        $inputPayload = array_merge($defaults, $input, $mappedInput, $trustedExecutionContext);
+        if ($resolved->requested !== []) {
+            $this->persistInputResolution($execution, $stage, $resolved);
 
-        foreach ($required as $key) {
-            if (is_string($key) && ! array_key_exists($key, $available)) {
-                throw ValidationException::withMessages([
-                    "workflow.{$stage->key}.{$key}" => "Workflow stage [{$stage->key}] is missing required input [{$key}].",
-                ]);
-            }
+            return [
+                'status' => 'waiting_for_input',
+                'reason' => 'Workflow stage requires additional input: '.implode(', ', $resolved->requested).'.',
+            ];
         }
+
+        $inputPayload = $resolved->inputs;
+        $this->persistInputResolution($execution, $stage, $resolved);
 
         $request = new CapabilityInvocationRequest(
             capability: $capability,
@@ -346,6 +342,20 @@ final class WorkflowExecutionService
         );
 
         return $this->capabilities->invoke($request);
+    }
+
+    private function persistInputResolution(WorkflowExecution $execution, WorkflowStage $stage, ResolvedWorkflowStageInput $resolved): void
+    {
+        $contextValue = $execution->getAttribute('context');
+        /** @var array<string, mixed> $context */
+        $context = is_array($contextValue) ? $contextValue : [];
+        $resolutions = is_array($context['stage_input_resolutions'] ?? null)
+            ? $context['stage_input_resolutions']
+            : [];
+        $resolutions[$stage->key] = $resolved->provenance();
+        $context['stage_input_resolutions'] = $resolutions;
+        $execution->setAttribute('context', $context);
+        $execution->save();
     }
 
     /**
@@ -375,32 +385,6 @@ final class WorkflowExecutionService
             'workflow_version_id' => $version->getKey(),
             'workflow_version' => $version->version,
         ];
-    }
-
-    /**
-     * Resolve caller-supplied input for the current stage.
-     *
-     * Structured execution input uses `stages.<stage_key>`. The legacy flat input
-     * shape remains supported for existing workflows that have not yet migrated.
-     *
-     * @param  array<string, mixed>  $executionInput
-     * @return array<string, mixed>
-     */
-    private function resolveStageInput(WorkflowStage $stage, array $executionInput): array
-    {
-        if (! array_key_exists('stages', $executionInput)) {
-            return $executionInput;
-        }
-
-        $stages = $executionInput['stages'];
-
-        if (! is_array($stages)) {
-            return [];
-        }
-
-        $stageInput = $stages[$stage->key] ?? [];
-
-        return is_array($stageInput) ? $stageInput : [];
     }
 
     /**
@@ -467,41 +451,6 @@ final class WorkflowExecutionService
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
-    }
-
-    /** @param array<string, mixed> $context
-     * @return array<string, mixed>
-     */
-    private function resolveMappedInput(WorkflowStage $stage, array $context): array
-    {
-        $contractValue = $stage->getAttribute('input_contract');
-        $contract = is_array($contractValue) ? $contractValue : [];
-        $mappings = is_array($contract['mappings'] ?? null) ? $contract['mappings'] : [];
-        $resolved = [];
-
-        foreach ($mappings as $target => $source) {
-            if (! is_string($target) || ! is_string($source)) {
-                continue;
-            }
-
-            $asArray = str_ends_with($source, '[]');
-            $path = $asArray ? substr($source, 0, -2) : $source;
-
-            $value = $context;
-            foreach (explode('.', $path) as $segment) {
-                if (! is_array($value) || ! array_key_exists($segment, $value)) {
-                    $value = null;
-                    break;
-                }
-                $value = $value[$segment];
-            }
-
-            if ($value !== null) {
-                $resolved[$target] = $asArray ? [$value] : $value;
-            }
-        }
-
-        return $resolved;
     }
 
     private function nextStage(WorkflowExecution $execution): ?WorkflowStage
