@@ -118,6 +118,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateAudienceTool | DomainMutationTool | governed business | marketing.audience.create | Operation direct |
 | CreateCampaignTool | DomainMutationTool | governed business | marketing.campaign.create | Operation direct |
 | CreateChannelTool | DomainMutationTool | governed business | marketing.channel.create | Operation direct |
+| CreateConnectionTool | DomainMutationTool | governed business | integration.connection.create | Operation direct |
 | CreateContentItemTool | GovernedCapabilityTool | governed business | marketing.content.create | CapabilityInvocationService |
 | CreateContentSeriesTool | DomainMutationTool | governed business | marketing.content-series.create | Operation direct |
 | CreateEnterpriseContextTool | DomainMutationTool | governed business | enterprise.context.create | Operation direct |
