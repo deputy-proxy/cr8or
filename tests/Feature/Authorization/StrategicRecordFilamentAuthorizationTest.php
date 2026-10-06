@@ -18,6 +18,8 @@ it('keeps strategic record resource visibility aligned with the authoritative po
 
     $resources = [MissionResource::class, VisionResource::class];
 
+    $this->actingAs($member);
+
     foreach ($resources as $resource) {
         expect(Gate::forUser($member)->allows('viewAny', $resource::getModel()))->toBeTrue()
             ->and($resource::canViewAny())->toBeTrue();
