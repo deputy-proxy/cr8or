@@ -11,6 +11,11 @@ use App\Models\Vision;
 
 class StrategicRecordPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return $user->memberships()->exists();
+    }
+
     public function view(User $user, Vision|Mission|Competitor $record): bool
     {
         return $this->enterpriseRole($user, $record->enterprise_id, MembershipRole::Owner, MembershipRole::Admin, MembershipRole::Member);
