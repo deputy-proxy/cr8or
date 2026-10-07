@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Data\Integrations\ConfigurationFieldDefinition;
 use App\Data\Integrations\IntegrationDefinition;
 use App\Data\Integrations\ProviderDefinition;
 use LogicException;
@@ -17,6 +18,7 @@ final class IntegrationRegistry
             'storage' => new IntegrationDefinition('storage', 'Storage', 'Canonical file and generated-media storage.'),
             'media' => new IntegrationDefinition('media', 'Media', 'Specialized media generation and rendering execution.'),
             'source_control' => new IntegrationDefinition('source_control', 'Source Control', 'Repository and software-development execution.'),
+            'automation' => new IntegrationDefinition('automation', 'Automation', 'External automation and workflow execution boundaries.'),
         ];
     }
 
@@ -29,7 +31,27 @@ final class IntegrationRegistry
             'cloudflare-r2' => new ProviderDefinition('cloudflare-r2', 'storage', 'Cloudflare R2', ['file.store']),
             'cr8or-media' => new ProviderDefinition('cr8or-media', 'media', 'CR8OR Media', ['media.generate', 'media.render']),
             'github' => new ProviderDefinition('github', 'source_control', 'GitHub', ['repository.execute']),
+            'n8n' => new ProviderDefinition(
+                'n8n',
+                'automation',
+                'n8n',
+                [],
+                [
+                    new ConfigurationFieldDefinition('webhook_url', 'Webhook URL', 'url', true),
+                    new ConfigurationFieldDefinition('authentication_mode', 'Authentication Mode', 'select', true, [
+                        'none' => 'None',
+                        'basic' => 'Basic auth',
+                        'header' => 'Header auth',
+                        'jwt' => 'JWT auth',
+                    ]),
+                ],
+            ),
         ];
+    }
+
+    public function hasProvider(string $key): bool
+    {
+        return isset($this->providers()[$key]);
     }
 
     public function provider(string $key): ProviderDefinition

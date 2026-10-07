@@ -423,6 +423,7 @@ final class DomainResourceService
             'provider' => $attributes['provider'],
             'external_account_id' => $attributes['external_account_id'] ?? null,
             'credential_reference' => $attributes['credential_reference'],
+            'configuration' => $attributes['configuration'] ?? null,
             'status' => $attributes['status'] ?? IntegrationConnection::STATUS_ACTIVE,
             'metadata' => $attributes['metadata'] ?? null,
         ]);

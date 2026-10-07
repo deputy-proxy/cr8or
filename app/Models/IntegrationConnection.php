@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Data\Integrations\CredentialReference;
+use App\Services\IntegrationConfigurationService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['organization_id', 'enterprise_id', 'provider', 'external_account_id', 'credential_reference', 'status', 'metadata'])]
+#[Fillable(['organization_id', 'enterprise_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
 class IntegrationConnection extends Model
 {
     public const STATUS_ACTIVE = 'active';
@@ -21,7 +22,10 @@ class IntegrationConnection extends Model
 
     protected function casts(): array
     {
-        return ['metadata' => 'array'];
+        return [
+            'configuration' => 'array',
+            'metadata' => 'array',
+        ];
     }
 
     protected static function booted(): void
@@ -52,9 +56,14 @@ class IntegrationConnection extends Model
                 throw new LogicException('Integration connection organization cannot be changed.');
             }
 
+            /** @var array<string, mixed>|null $configuration */
+            $configuration = $connection->configuration;
+            app(IntegrationConfigurationService::class)->validate($connection->provider, $configuration);
+
             /** @var array<string, mixed>|null $metadata */
             $metadata = $connection->metadata;
             self::assertSafeMetadata($metadata);
+            self::assertSafeConfiguration($configuration);
         });
     }
 
@@ -102,6 +111,34 @@ class IntegrationConnection extends Model
         $this->status = $status;
 
         return $this;
+    }
+
+    /** @param array<string, mixed>|null $configuration */
+    private static function assertSafeConfiguration(?array $configuration): void
+    {
+        if ($configuration === null) {
+            return;
+        }
+
+        $sensitive = ['token', 'access_token', 'refresh_token', 'secret', 'client_secret', 'password', 'api_key', 'private_key'];
+
+        $walk = function (array $values) use (&$walk, $sensitive): void {
+            foreach ($values as $key => $value) {
+                $normalized = strtolower((string) $key);
+
+                foreach ($sensitive as $needle) {
+                    if ($normalized === $needle || str_contains($normalized, $needle)) {
+                        throw new LogicException('Integration connection configuration cannot contain credential material.');
+                    }
+                }
+
+                if (is_array($value)) {
+                    $walk($value);
+                }
+            }
+        };
+
+        $walk($configuration);
     }
 
     /** @param array<string, mixed>|null $metadata */
