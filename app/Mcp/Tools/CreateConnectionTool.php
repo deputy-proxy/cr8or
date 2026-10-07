@@ -22,6 +22,10 @@ class CreateConnectionTool extends DomainMutationTool
             'provider' => $schema->string()->min(1)->max(255)->required(),
             'external_account_id' => $schema->string()->min(1)->max(255),
             'credential_reference' => $schema->string()->min(1)->max(255)->required(),
+            'configuration' => $schema->object([
+                'webhook_url' => $schema->string(),
+                'authentication_mode' => $schema->string()->enum(['none', 'basic', 'header', 'jwt']),
+            ]),
             'status' => $schema->string()->min(1)->max(100),
             'agent_assignment_id' => $schema->integer()->min(1),
             'agent_execution_id' => $schema->integer()->min(1),
@@ -36,6 +40,9 @@ class CreateConnectionTool extends DomainMutationTool
             'provider' => ['required', 'string', 'min:1', 'max:255'],
             'external_account_id' => ['nullable', 'string', 'min:1', 'max:255'],
             'credential_reference' => ['required', 'string', 'min:1', 'max:255'],
+            'configuration' => ['nullable', 'array'],
+            'configuration.webhook_url' => ['nullable', 'string', 'url'],
+            'configuration.authentication_mode' => ['nullable', 'string', 'in:none,basic,header,jwt'],
             'status' => ['nullable', 'string', 'in:active,disabled,degraded,revoked'],
             'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
             'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
@@ -83,6 +90,7 @@ class CreateConnectionTool extends DomainMutationTool
             'provider' => $record->provider,
             'external_account_id' => $record->external_account_id,
             'credential_reference' => $record->credential_reference,
+            'configuration' => $record->configuration,
             'status' => $record->status,
         ];
     }

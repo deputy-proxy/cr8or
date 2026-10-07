@@ -40,6 +40,10 @@ it('creates an enterprise-scoped integration connection through the governed cap
             'provider' => 'n8n',
             'external_account_id' => 'marketing-webhook',
             'credential_reference' => 'secret://n8n/marketing-webhook',
+            'configuration' => [
+                'webhook_url' => 'https://auto-task.up.railway.app/webhook/test',
+                'authentication_mode' => 'none',
+            ],
         ])
         ->assertOk()
         ->assertSee(['n8n', 'marketing-webhook', 'secret://n8n/marketing-webhook', 'active']);
@@ -52,6 +56,10 @@ it('creates an enterprise-scoped integration connection through the governed cap
     expect($connection->organization_id)->toBe($organization->getKey())
         ->and($connection->external_account_id)->toBe('marketing-webhook')
         ->and($connection->credential_reference)->toBe('secret://n8n/marketing-webhook')
+        ->and($connection->configuration)->toBe([
+            'webhook_url' => 'https://auto-task.up.railway.app/webhook/test',
+            'authentication_mode' => 'none',
+        ])
         ->and($connection->status)->toBe(IntegrationConnection::STATUS_ACTIVE);
 });
 

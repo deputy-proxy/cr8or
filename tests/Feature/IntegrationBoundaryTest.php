@@ -40,7 +40,10 @@ it('defines a provider-independent integration registry for current external bou
         ->and($registry->provider('postiz')->integration)->toBe('publishing')
         ->and($registry->provider('cloudflare-r2')->integration)->toBe('storage')
         ->and($registry->provider('cr8or-media')->integration)->toBe('media')
-        ->and($registry->provider('github')->integration)->toBe('source_control');
+        ->and($registry->provider('github')->integration)->toBe('source_control')
+        ->and($registry->provider('n8n')->configurationFields)->toHaveCount(2)
+        ->and($registry->provider('n8n')->configurationFields[0]->key)->toBe('webhook_url')
+        ->and($registry->provider('n8n')->configurationFields[1]->key)->toBe('authentication_mode');
 
     $registry->assertOperation('creative', 'canva', 'design.create');
 
@@ -111,6 +114,58 @@ it('rejects connections outside the enterprise and non-operational lifecycle sta
         ->toThrow(LogicException::class);
 });
 
+it('validates provider configuration and keeps credential material out of it', function () {
+    [$organization, $user, $enterprise] = integrationBoundaryContext();
+
+    $connection = IntegrationConnection::query()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'provider' => 'n8n',
+        'credential_reference' => 'vault/n8n/default',
+        'configuration' => [
+            'webhook_url' => 'https://auto-task.up.railway.app/webhook/test',
+            'authentication_mode' => 'none',
+        ],
+        'status' => IntegrationConnection::STATUS_ACTIVE,
+    ]);
+
+    expect($connection->configuration)->toBe([
+        'webhook_url' => 'https://auto-task.up.railway.app/webhook/test',
+        'authentication_mode' => 'none',
+    ]);
+
+    expect(fn () => IntegrationConnection::query()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'provider' => 'n8n',
+        'credential_reference' => 'vault/n8n/default',
+        'configuration' => ['unknown' => 'value'],
+        'status' => IntegrationConnection::STATUS_ACTIVE,
+    ]))->toThrow(LogicException::class);
+
+    expect(fn () => IntegrationConnection::query()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'provider' => 'n8n',
+        'credential_reference' => 'vault/n8n/default',
+        'configuration' => ['webhook_url' => 'https://example.com'],
+        'status' => IntegrationConnection::STATUS_ACTIVE,
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect(fn () => IntegrationConnection::query()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'provider' => 'n8n',
+        'credential_reference' => 'vault/n8n/default',
+        'configuration' => [
+            'webhook_url' => 'https://example.com',
+            'authentication_mode' => 'none',
+            'api_token' => 'do-not-store',
+        ],
+        'status' => IntegrationConnection::STATUS_ACTIVE,
+    ]))->toThrow(LogicException::class);
+});
+
 it('keeps credential material out of connection metadata', function () {
     [$organization, $user, $enterprise] = integrationBoundaryContext();
 
@@ -154,6 +209,7 @@ it('keeps the integration boundary schema enterprise scoped', function () {
         'enterprise_id',
         'provider',
         'credential_reference',
+        'configuration',
         'status',
     ]))->toBeTrue();
 });
