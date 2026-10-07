@@ -213,3 +213,26 @@ it('keeps the integration boundary schema enterprise scoped', function () {
         'status',
     ]))->toBeTrue();
 });
+
+it('round-trips provider configuration through the Filament Builder state shape', function () {
+    $configuration = [
+        'webhook_url' => 'https://auto-task.up.railway.app/webhook/test',
+        'authentication_mode' => 'none',
+    ];
+
+    $builderState = \App\Filament\Resources\IntegrationConnections\IntegrationConnectionResource::configurationToBuilderState($configuration);
+
+    expect($builderState)->toBe([
+        [
+            'type' => 'webhook_url',
+            'data' => ['value' => 'https://auto-task.up.railway.app/webhook/test'],
+        ],
+        [
+            'type' => 'authentication_mode',
+            'data' => ['value' => 'none'],
+        ],
+    ]);
+
+    expect(\App\Filament\Resources\IntegrationConnections\IntegrationConnectionResource::builderStateToConfiguration($builderState))
+        ->toBe($configuration);
+});
