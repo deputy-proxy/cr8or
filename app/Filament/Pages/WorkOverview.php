@@ -51,7 +51,7 @@ class WorkOverview extends Page
     {
         $user = static::currentUser();
 
-        if (! $user instanceof User) {
+        if (! ($user instanceof User)) {
             abort(403);
         }
 
