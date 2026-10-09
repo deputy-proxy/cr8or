@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Assignments\AssignmentResource;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Decisions\DecisionResource;
 use App\Filament\Resources\Dependencies\DependencyResource;
 use App\Filament\Resources\EnterpriseDecisions\EnterpriseDecisionResource;
@@ -11,7 +12,6 @@ use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Filament\Resources\WorkItems\WorkItemResource;
-use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\Assignment;
 use App\Models\Decision;
 use App\Models\Dependency;
@@ -78,7 +78,7 @@ class WorkOverview extends Page
     }
 
     /**
-     * @param class-string<Assignment|Decision|Dependency|EnterpriseDecision|Milestone|Project|Task|WorkItem> $model
+     * @param  class-string<Assignment|Decision|Dependency|EnterpriseDecision|Milestone|Project|Task|WorkItem>  $model
      */
     private function countForAuthorizedEnterprises(string $model): int
     {
