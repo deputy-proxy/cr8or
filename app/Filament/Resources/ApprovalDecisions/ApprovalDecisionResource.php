@@ -20,11 +20,11 @@ class ApprovalDecisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
 
     protected static ?string $navigationLabel = 'Approval Decisions';
 
-    protected static ?int $navigationSort = 150;
+    protected static ?int $navigationSort = 60;
 
     public static function table(Table $table): Table
     {

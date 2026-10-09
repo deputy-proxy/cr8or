@@ -32,7 +32,7 @@ class ExpertDescriptorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Configuration';
 
     protected static ?string $navigationLabel = 'Experts';
 

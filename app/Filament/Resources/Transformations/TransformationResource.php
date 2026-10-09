@@ -25,11 +25,11 @@ class TransformationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Media Production';
 
     protected static ?string $navigationLabel = 'Transformations';
 
-    protected static ?int $navigationSort = 170;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {

@@ -9,9 +9,9 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkItem;
 
-it('places Work Dependencies under Work and exposes the complete endpoint set', function () {
-    expect(DependencyResource::getNavigationGroup())->toBe('Work')
-        ->and(DependencyResource::getNavigationSort())->toBe(10)
+it('places Work Dependencies under Work Management and exposes the complete endpoint set', function () {
+    expect(DependencyResource::getNavigationGroup())->toBe('Work Management')
+        ->and(DependencyResource::getNavigationSort())->toBe(60)
         ->and(DependencyResource::getPages())->toHaveKeys(['index', 'create', 'edit']);
 
     $schema = DependencyResource::form(new \Filament\Schemas\Schema);

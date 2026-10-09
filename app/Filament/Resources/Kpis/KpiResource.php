@@ -29,7 +29,7 @@ class KpiResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
 
     protected static ?string $navigationLabel = 'KPIs';
 

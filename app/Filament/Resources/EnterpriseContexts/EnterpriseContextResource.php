@@ -30,7 +30,7 @@ class EnterpriseContextResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInformationCircle;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
 
     protected static ?string $navigationLabel = 'Enterprise Contexts';
 

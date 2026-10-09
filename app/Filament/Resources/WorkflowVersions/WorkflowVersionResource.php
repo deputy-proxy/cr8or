@@ -20,7 +20,7 @@ class WorkflowVersionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Workflow Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflows';
 
     protected static ?string $navigationLabel = 'Workflow Versions';
 
