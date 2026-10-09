@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\AgentCollaborationReport;
+use App\Filament\Pages\WorkOverview;
 use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
 use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
 use App\Filament\Resources\Audiences\AudienceResource;
@@ -78,6 +79,12 @@ it('orders resources by user workflow within each navigation group', function ()
                 ->and($class::getNavigationSort())->toBe(($position + 1) * 10, "Resource {$resource}");
         }
     }
+});
+
+it('places Work Overview first in Work Management', function () {
+    expect(WorkOverview::getNavigationGroup())->toBe('Work Management')
+        ->and(WorkOverview::getNavigationSort())->toBe(0)
+        ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview');
 });
 
 it('places the custom agent collaboration report in Reporting & Analytics after report records', function () {
