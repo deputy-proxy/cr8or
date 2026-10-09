@@ -1,5 +1,11 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
 
+/* Reduce the admin's standard radius scale: lg -> md (6px), md -> sm (4px). */
+@theme {
+    --radius-md: 0.25rem;
+    --radius-lg: 0.375rem;
+}
+
 @source '../../../../app/Filament/**/*.php';
 @source '../../../../resources/views/filament/**/*.blade.php';
 @source '../../../../app/Providers/Filament/**/*.php';
