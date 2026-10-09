@@ -5,29 +5,49 @@
 @source '../../../../app/Providers/Filament/**/*.php';
 
 /*
- * Keep the admin canvas and component surfaces pure black without making
- * the existing dark text colors invisible against that canvas.
+ * CR8OR's admin uses a pure-black canvas. Keep this scoped to Filament's
+ * layout and major surfaces so component states and controls retain their
+ * own styling instead of being flattened by a descendant-wide override.
  */
-.fi-body,
-.fi-body * {
-    background-color: #000000 !important;
-    background-image: none !important;
-    color: #f9fafb !important;
+.fi-body {
+    @apply bg-black text-gray-100;
+    color-scheme: dark;
 }
 
-.fi-body {
-    color-scheme: dark;
+.fi-sidebar,
+.fi-sidebar-header,
+.fi-topbar,
+.fi-main-ctn,
+.fi-main {
+    @apply bg-black;
+}
+
+.fi-section,
+.fi-ta-ctn,
+.fi-modal-window,
+.fi-dropdown-panel {
+    @apply bg-black text-gray-100;
+}
+
+.fi-sidebar-item-label,
+.fi-topbar-item-label,
+.fi-breadcrumbs-item-label,
+.fi-section-header-heading,
+.fi-fo-field-wrp-label,
+.fi-ta-header-cell,
+.fi-ta-cell {
+    @apply text-gray-100;
 }
 
 .fi-body input::placeholder,
 .fi-body textarea::placeholder {
-    color: #9ca3af !important;
+    @apply text-gray-400;
 }
 
 .fi-body :disabled {
-    color: #9ca3af !important;
+    @apply text-gray-400;
 }
 
 .fi-body :focus-visible {
-    outline-color: #f59e0b;
+    @apply outline-amber-400;
 }
