@@ -4,15 +4,30 @@
 @source '../../../../resources/views/filament/**/*.blade.php';
 @source '../../../../app/Providers/Filament/**/*.php';
 
-/* CR8OR admin uses a true-black canvas, including nested panels and overlays. */
+/*
+ * Keep the admin canvas and component surfaces pure black without making
+ * the existing dark text colors invisible against that canvas.
+ */
 .fi-body,
-.fi-body *,
-.fi-body *::before,
-.fi-body *::after {
+.fi-body * {
     background-color: #000000 !important;
     background-image: none !important;
+    color: #f9fafb !important;
 }
 
 .fi-body {
     color-scheme: dark;
+}
+
+.fi-body input::placeholder,
+.fi-body textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+.fi-body :disabled {
+    color: #9ca3af !important;
+}
+
+.fi-body :focus-visible {
+    outline-color: #f59e0b;
 }
