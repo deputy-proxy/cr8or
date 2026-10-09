@@ -80,6 +80,12 @@ it('orders resources by user workflow within each navigation group', function ()
     }
 });
 
+it('places Work Overview first in Work Management', function () {
+    expect(WorkOverview::getNavigationGroup())->toBe('Work Management')
+        ->and(WorkOverview::getNavigationSort())->toBe(0)
+        ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview');
+});
+
 it('places the custom agent collaboration report in Reporting & Analytics after report records', function () {
     expect(AgentCollaborationReport::getNavigationGroup())->toBe('Reporting & Analytics')
         ->and(AgentCollaborationReport::getNavigationSort())->toBe(40);
