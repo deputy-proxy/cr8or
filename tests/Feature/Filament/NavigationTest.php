@@ -17,6 +17,7 @@ use App\Filament\Resources\Organizations\OrganizationResource;
 use App\Filament\Resources\Strategies\StrategyResource;
 use App\Filament\Resources\WorkItems\WorkItemResource;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Route;
 
 function expectedNavigation(): array
 {
@@ -84,7 +85,8 @@ it('orders resources by user workflow within each navigation group', function ()
 it('places Work Overview first in Work Management', function () {
     expect(WorkOverview::getNavigationGroup())->toBe('Work Management')
         ->and(WorkOverview::getNavigationSort())->toBe(0)
-        ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview');
+        ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview')
+        ->and(Route::has('filament.admin.pages.work-overview'))->toBeTrue();
 });
 
 it('places the custom agent collaboration report in Reporting & Analytics after report records', function () {
