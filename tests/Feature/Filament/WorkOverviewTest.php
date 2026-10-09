@@ -43,6 +43,16 @@ it('scopes Work Overview counts to organizations the user can access', function 
     expect($overview['Projects']['count'])->toBe(1)
         ->and($overview['Tasks']['count'])->toBe(1)
         ->and($overview['Work Items']['count'])->toBe(1);
+
+    $nodeIds = collect($page->sankeyData['nodes'])->pluck('name');
+    $linkPairs = collect($page->sankeyData['links'])->map(fn (array $link): string => $link['source'].'>'.$link['target']);
+
+    expect($nodeIds)
+        ->toContain('enterprise:'.$visibleEnterprise->id)
+        ->toContain('project:'.$visibleProject->id)
+        ->not->toContain('enterprise:'.$hiddenEnterprise->id)
+        ->not->toContain('project:'.$hiddenProject->id)
+        ->and($linkPairs)->toContain('enterprise:'.$visibleEnterprise->id.'>project:'.$visibleProject->id);
 });
 
 it('denies Work Overview access when the user has no organization membership', function () {
