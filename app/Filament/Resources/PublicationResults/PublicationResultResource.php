@@ -25,11 +25,11 @@ class PublicationResultResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Publishing';
 
     protected static ?string $navigationLabel = 'Publication Results';
 
-    protected static ?int $navigationSort = 210;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

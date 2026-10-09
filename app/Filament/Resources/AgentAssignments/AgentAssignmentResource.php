@@ -30,7 +30,7 @@ class AgentAssignmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Configuration';
 
     protected static ?string $navigationLabel = 'Agent Assignments';
 

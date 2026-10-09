@@ -20,11 +20,11 @@ class AgentEpisodicMemoryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
 
     protected static ?string $navigationLabel = 'Agent Episodic Memories';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 90;
 
     public static function table(Table $table): Table
     {

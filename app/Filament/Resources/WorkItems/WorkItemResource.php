@@ -30,11 +30,11 @@ class WorkItemResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
 
     protected static ?string $navigationLabel = 'Work Items';
 
-    protected static ?int $navigationSort = 140;
+    protected static ?int $navigationSort = 50;
 
     public static function form(Schema $schema): Schema
     {

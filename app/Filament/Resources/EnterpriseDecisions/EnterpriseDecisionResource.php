@@ -30,11 +30,11 @@ class EnterpriseDecisionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
 
     protected static ?string $navigationLabel = 'Enterprise Decisions';
 
-    protected static ?int $navigationSort = 160;
+    protected static ?int $navigationSort = 90;
 
     public static function form(Schema $schema): Schema
     {

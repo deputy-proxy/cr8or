@@ -30,11 +30,11 @@ class CompetitorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
 
     protected static ?string $navigationLabel = 'Competitors';
 
-    protected static ?int $navigationSort = 170;
+    protected static ?int $navigationSort = 100;
 
     public static function form(Schema $schema): Schema
     {

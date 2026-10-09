@@ -20,11 +20,11 @@ class AgentExecutionEventRecordResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
 
     protected static ?string $navigationLabel = 'Agent Execution Event Records';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 80;
 
     public static function table(Table $table): Table
     {

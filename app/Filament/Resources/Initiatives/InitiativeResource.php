@@ -30,11 +30,11 @@ class InitiativeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRocketLaunch;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Enterprise Context';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
 
     protected static ?string $navigationLabel = 'Initiatives';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {

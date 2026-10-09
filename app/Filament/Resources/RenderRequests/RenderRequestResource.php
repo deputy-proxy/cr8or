@@ -25,11 +25,11 @@ class RenderRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Media Production';
 
     protected static ?string $navigationLabel = 'Render Requests';
 
-    protected static ?int $navigationSort = 140;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

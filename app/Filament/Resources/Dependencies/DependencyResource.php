@@ -29,11 +29,11 @@ class DependencyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Work';
+    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
 
     protected static ?string $navigationLabel = 'Dependencies';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 60;
 
     public static function form(Schema $schema): Schema
     {

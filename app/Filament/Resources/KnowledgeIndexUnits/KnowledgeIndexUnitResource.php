@@ -20,7 +20,7 @@ class KnowledgeIndexUnitResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Knowledge Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Knowledge';
 
     protected static ?string $navigationLabel = 'Knowledge Index Units';
 

@@ -28,7 +28,7 @@ class OrganizationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Organization & Enterprise Scope';
+    protected static string|\UnitEnum|null $navigationGroup = 'Organization & Access';
 
     protected static ?string $navigationLabel = 'Organizations';
 

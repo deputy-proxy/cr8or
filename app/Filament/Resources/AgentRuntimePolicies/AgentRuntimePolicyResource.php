@@ -21,7 +21,7 @@ class AgentRuntimePolicyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Configuration';
 
     protected static ?string $navigationLabel = 'Agent Runtime Policies';
 

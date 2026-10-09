@@ -24,11 +24,11 @@ class AgentDelegationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agentic Flow';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
 
     protected static ?string $navigationLabel = 'Agent Delegations';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 20;
 
     public static function table(Table $table): Table
     {
