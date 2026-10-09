@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\AgentCollaborationReport;
+use App\Filament\Pages\WorkOverview;
 use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
 use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
 use App\Filament\Resources\Audiences\AudienceResource;
