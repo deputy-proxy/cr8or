@@ -32,9 +32,11 @@ class WorkOverview extends Page
 {
     use ScopesAuthorizedRecords;
 
-    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleGroup;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
     protected static ?string $navigationLabel = 'Work Overview';
+
+    protected static ?string $title = 'Work Overview';
 
     protected static string|UnitEnum|null $navigationGroup = 'Work Management';
 
