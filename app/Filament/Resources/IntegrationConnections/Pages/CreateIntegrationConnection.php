@@ -8,4 +8,13 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateIntegrationConnection extends CreateRecord
 {
     protected static string $resource = IntegrationConnectionResource::class;
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['configuration'] = IntegrationConnectionResource::builderStateToConfiguration(
+            $data['configuration'] ?? [],
+        );
+
+        return $data;
+    }
 }

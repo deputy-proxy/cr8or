@@ -150,10 +150,12 @@ class IntegrationConnectionResource extends Resource
     }
 
     /**
+     * Convert the persisted provider configuration into the native Filament Builder state.
+     *
      * @param  array<string, mixed>|null  $configuration
      * @return array<int, array{type: string, data: array{value: mixed}}>
      */
-    protected static function configurationToBuilderState(?array $configuration): array
+    public static function configurationToBuilderState(?array $configuration): array
     {
         return collect($configuration ?? [])
             ->map(fn (mixed $value, string|int $key): array => [
@@ -168,7 +170,7 @@ class IntegrationConnectionResource extends Resource
      * @param  array<int|string, array{type: string, data: array{value: mixed}}>|null  $state
      * @return array<string, mixed>
      */
-    protected static function builderStateToConfiguration(?array $state): array
+    public static function builderStateToConfiguration(?array $state): array
     {
         $configuration = [];
 
