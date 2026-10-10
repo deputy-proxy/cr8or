@@ -65,3 +65,7 @@
 .fi-logo{
     @apply pt-[3px];
 }
+
+.fi-main-ctn-sidebar-open .fi-main{
+    @apply mx-0;
+}
