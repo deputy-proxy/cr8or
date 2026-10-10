@@ -56,8 +56,3 @@
         </div>
     </x-filament::section>
 </x-filament-panels::page>
-
-
-@once
-    @vite('resources/js/work-overview.js')
-@endonce
