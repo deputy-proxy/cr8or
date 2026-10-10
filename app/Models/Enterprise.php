@@ -9,10 +9,115 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use LogicException;
 
-#[Fillable(['organization_id', 'name', 'slug', 'status'])]
+/** @property array<array-key, mixed>|null $connections */
+#[Fillable(['organization_id', 'enterprise_group_id', 'enterprise_category_id', 'name', 'slug', 'status', 'connections', 'github_repository', 'github_repository_url', 'github_issues_sync_status', 'github_issues_synced_at', 'github_issues_sync_error', 'website_domain'])]
 class Enterprise extends Model
 {
+    public const CONNECTION_TYPES = ['depends_on', 'supports', 'integrates_with', 'related_to', 'competes_with', 'owns'];
+
+    protected function casts(): array
+    {
+        return ['connections' => 'array', 'github_issues_synced_at' => 'immutable_datetime'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $enterprise): void {
+            foreach (['enterprise_group_id', 'enterprise_category_id'] as $field) {
+                $id = $enterprise->getAttribute($field);
+                if ($id === null) {
+                    continue;
+                }
+                $record = $field === 'enterprise_group_id'
+                    ? EnterpriseGroup::query()->find((int) $id)
+                    : EnterpriseCategory::query()->find((int) $id);
+                if ($record === null || (int) $record->organization_id !== (int) $enterprise->organization_id) {
+                    throw new LogicException('Enterprise group and category must belong to the same organization.');
+                }
+            }
+
+            $connections = $enterprise->getAttribute('connections') ?? [];
+            if (! is_array($connections) || ! array_is_list($connections)) {
+                throw new LogicException('Enterprise connections must be a list.');
+            }
+            foreach ($connections as $connection) {
+                if (! is_array($connection)) {
+                    throw new LogicException('Enterprise connection entries must be objects.');
+                }
+                $targetId = $connection['target_enterprise_id'] ?? null;
+                $type = $connection['type'] ?? null;
+                $direction = $connection['direction'] ?? null;
+                $description = $connection['description'] ?? null;
+                if (! is_numeric($targetId) || (int) $targetId <= 0 || (int) $targetId === (int) $enterprise->getKey()
+                    || ! is_string($type) || ! in_array($type, self::CONNECTION_TYPES, true)
+                    || ! is_string($direction) || ! in_array($direction, ['incoming', 'outgoing', 'bidirectional'], true)
+                    || ($description !== null && (! is_string($description) || mb_strlen($description) > 500))
+                    || array_diff(array_keys($connection), ['target_enterprise_id', 'type', 'direction', 'description']) !== []) {
+                    throw new LogicException('Enterprise connection entry has an invalid shape or unsupported value.');
+                }
+                $target = self::query()->find((int) $targetId);
+                if ($target === null || (int) $target->organization_id !== (int) $enterprise->organization_id) {
+                    throw new LogicException('Enterprise connections must target an Enterprise in the same organization.');
+                }
+            }
+
+            $repository = $enterprise->getAttribute('github_repository');
+            $repositoryUrl = $enterprise->getAttribute('github_repository_url');
+            if (($repository === null) !== ($repositoryUrl === null)) {
+                throw new LogicException('GitHub repository identity and URL must be configured together.');
+            }
+            if ($repository !== null) {
+                $parsedRepositoryUrl = parse_url((string) $repositoryUrl);
+                if (preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', (string) $repository) !== 1
+                    || ! is_array($parsedRepositoryUrl)
+                    || ($parsedRepositoryUrl['scheme'] ?? null) !== 'https'
+                    || ($parsedRepositoryUrl['host'] ?? null) !== 'github.com'
+                    || array_intersect(['port', 'user', 'pass', 'query', 'fragment'], array_keys($parsedRepositoryUrl)) !== []
+                    || rtrim((string) ($parsedRepositoryUrl['path'] ?? ''), '/') !== '/'.$repository
+                ) {
+                    throw new LogicException('GitHub repository URL must match the canonical owner/repo identity.');
+                }
+            }
+
+            $domain = $enterprise->getAttribute('website_domain');
+            if ($domain !== null && (strtolower((string) $domain) !== (string) $domain || preg_match('/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/', (string) $domain) !== 1)) {
+                throw new LogicException('Website domain must be a lowercase hostname without a scheme or path.');
+            }
+        });
+    }
+
+    /** @return BelongsTo<EnterpriseGroup, $this> */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(EnterpriseGroup::class, 'enterprise_group_id');
+    }
+
+    /** @return BelongsTo<EnterpriseCategory, $this> */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(EnterpriseCategory::class, 'enterprise_category_id');
+    }
+
+    /** @return HasMany<IntegrationConnection, $this> */
+    public function integrationConnections(): HasMany
+    {
+        return $this->hasMany(IntegrationConnection::class);
+    }
+
+    /** @return HasMany<Issue, $this> */
+    public function issues(): HasMany
+    {
+        return $this->hasMany(Issue::class);
+    }
+
+    /** @return HasMany<Event, $this> */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
     /** @use HasFactory<EnterpriseFactory> */
     use HasFactory;
 

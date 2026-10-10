@@ -30,6 +30,24 @@ class Organization extends Model
         return $this->hasMany(Membership::class);
     }
 
+    /** @return HasMany<EnterpriseGroup, $this> */
+    public function enterpriseGroups(): HasMany
+    {
+        return $this->hasMany(EnterpriseGroup::class);
+    }
+
+    /** @return HasMany<EnterpriseCategory, $this> */
+    public function enterpriseCategories(): HasMany
+    {
+        return $this->hasMany(EnterpriseCategory::class);
+    }
+
+    /** @return HasMany<IntegrationConnection, $this> */
+    public function integrationConnections(): HasMany
+    {
+        return $this->hasMany(IntegrationConnection::class);
+    }
+
     /**
      * @return HasMany<Enterprise, $this>
      */

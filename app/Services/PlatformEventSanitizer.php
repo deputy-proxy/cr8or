@@ -15,7 +15,7 @@ final class PlatformEventSanitizer
         foreach ($payload as $key => $value) {
             $key = (string) $key;
 
-            if (preg_match('/(?:chain.?of.?thought|reasoning|analysis|thought|prompt|instruction|model.?output)/i', $key) === 1) {
+            if (preg_match('/(?:chain.?of.?thought|reasoning|analysis|thought|prompt|instruction|model.?output|token|secret|password|authorization|api.?key|credential|cookie|private.?key|email|phone|mobile|ssn|social.?security|date.?of.?birth|birthdate|ip.?address)/i', $key) === 1) {
                 continue;
             }
 

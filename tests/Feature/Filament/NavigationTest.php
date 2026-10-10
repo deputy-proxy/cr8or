@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Pages\AgentCollaborationReport;
+use App\Filament\Pages\EnterprisePortfolioDashboard;
 use App\Filament\Pages\WorkOverview;
 use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
 use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
@@ -9,6 +10,8 @@ use App\Filament\Resources\Campaigns\CampaignResource;
 use App\Filament\Resources\Channels\ChannelResource;
 use App\Filament\Resources\ContentItems\ContentItemResource;
 use App\Filament\Resources\ContentSeries\ContentSeriesResource;
+use App\Filament\Resources\EnterpriseCategories\EnterpriseCategoryResource;
+use App\Filament\Resources\EnterpriseGroups\EnterpriseGroupResource;
 use App\Filament\Resources\Enterprises\EnterpriseResource;
 use App\Filament\Resources\ExpertDescriptors\ExpertDescriptorResource;
 use App\Filament\Resources\Initiatives\InitiativeResource;
@@ -22,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 function expectedNavigation(): array
 {
     return [
-        'Organization & Access' => ['Organizations', 'Users', 'Memberships', 'Enterprises'],
+        'Organization & Access' => ['Organizations', 'Users', 'Memberships', 'Enterprises', 'EnterpriseGroups', 'EnterpriseCategories'],
         'Strategy & Planning' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'Strategies', 'Plans', 'Competitors', 'Products'],
         'Work Management' => ['Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Dependencies', 'Assignments', 'Decisions', 'EnterpriseDecisions'],
         'Knowledge' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
@@ -53,7 +56,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(96);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {
@@ -87,6 +90,15 @@ it('places Work Overview first in Work Management', function () {
         ->and(WorkOverview::getNavigationSort())->toBe(0)
         ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview')
         ->and(Route::has('filament.admin.pages.work-overview'))->toBeTrue();
+});
+
+it('places the Enterprise Portfolio dashboard immediately after Enterprises', function () {
+    expect(EnterprisePortfolioDashboard::getNavigationGroup())->toBe('Organization & Access')
+        ->and(EnterprisePortfolioDashboard::getNavigationSort())->toBe(45)
+        ->and(Route::has('filament.admin.pages.enterprise-portfolio-dashboard'))->toBeTrue()
+        ->and(EnterpriseResource::getNavigationSort())->toBeLessThan(EnterprisePortfolioDashboard::getNavigationSort())
+        ->and(EnterpriseGroupResource::getNavigationSort())->toBeGreaterThan(EnterprisePortfolioDashboard::getNavigationSort())
+        ->and(EnterpriseCategoryResource::getNavigationSort())->toBeGreaterThan(EnterprisePortfolioDashboard::getNavigationSort());
 });
 
 it('places the custom agent collaboration report in Reporting & Analytics after report records', function () {

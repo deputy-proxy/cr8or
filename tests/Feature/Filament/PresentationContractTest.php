@@ -5,7 +5,7 @@ use Filament\Resources\Resource;
 it('covers every discovered Filament resource with explicit presentation labels', function () {
     $files = glob(app_path('Filament/Resources/*/*Resource.php'));
 
-    expect($files)->toHaveCount(96);
+    expect($files)->toHaveCount(98);
 
     foreach ($files as $file) {
         $directory = basename(dirname($file));
