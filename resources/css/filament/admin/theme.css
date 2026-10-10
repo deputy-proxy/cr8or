@@ -15,8 +15,8 @@
  * layout and major surfaces so component states and controls retain their
  * own styling instead of being flattened by a descendant-wide override.
  */
-.fi-body:dark {
-    @apply bg-black text-gray-100;
+.fi-body {
+    @apply bg-black:dark text-gray-100;
     color-scheme: dark;
 }
 
