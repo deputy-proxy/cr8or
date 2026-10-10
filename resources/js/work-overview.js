@@ -2,6 +2,7 @@ import { init, use } from 'echarts/core';
 import { SankeyChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
+import { getWorkStatusColor } from './work-overview-status.js';
 
 use([SankeyChart, TooltipComponent, CanvasRenderer]);
 
@@ -11,7 +12,17 @@ const colors = {
     work: '#22c55e',
     supporting: '#f59e0b',
     governance: '#a855f7',
+    group: '#71717a',
 };
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll(String.fromCharCode(34), '&quot;')
+        .replaceAll(String.fromCharCode(39), '&#39;');
+}
 
 function initializeWorkOverviewCharts() {
     document.querySelectorAll('[data-work-overview-sankey]:not([data-initialized])').forEach((root) => {
@@ -41,10 +52,13 @@ function initializeWorkOverviewCharts() {
         const expanded = new Set(source.nodes.filter((node) => node.type === 'organization').map((node) => node.name));
         const childrenOf = (id) => source.links.filter((link) => link.source === id).map((link) => link.target);
 
-        function descendantsOf(id, result = []) {
+        function descendantsOf(id, result = [], seen = new Set()) {
+            if (seen.has(id)) return result;
+            seen.add(id);
             childrenOf(id).forEach((child) => {
+                if (seen.has(child)) return;
                 result.push(child);
-                descendantsOf(child, result);
+                descendantsOf(child, result, seen);
             });
             return result;
         }
@@ -65,7 +79,13 @@ function initializeWorkOverviewCharts() {
             const visible = visibleIds();
             const nodes = source.nodes.filter((node) => visible.has(node.name)).map((node) => ({
                 name: node.name,
-                itemStyle: { color: colors[node.type] || '#71717a' },
+                itemStyle: {
+                    color: node.type === 'group'
+                        ? colors.group
+                        : node.status
+                            ? getWorkStatusColor(node.status, node.overdue)
+                            : colors[node.type] || '#71717a',
+                },
             }));
             const links = source.links.filter((link) => visible.has(link.source) && visible.has(link.target));
 
@@ -81,11 +101,17 @@ function initializeWorkOverviewCharts() {
                         if (params.dataType === 'edge') {
                             const from = source.nodes.find((node) => node.name === params.data.source);
                             const to = source.nodes.find((node) => node.name === params.data.target);
-                            return `${from?.label || params.data.source} → ${to?.label || params.data.target}`;
+                            return `${escapeHtml(from?.label || params.data.source)} → ${escapeHtml(to?.label || params.data.target)}`;
                         }
                         const node = source.nodes.find((item) => item.name === params.data.name);
                         const count = childrenOf(params.data.name).length;
-                        return `<strong>${node?.label || params.data.name}</strong>${count ? `<br>${count} child record(s). Click to ${expanded.has(node.name) ? 'collapse' : 'expand'}.` : '<br>Click to open records.'}`;
+                        const status = node?.status ? `<br>Status: ${escapeHtml(node.status.replaceAll('_', ' '))}` : '';
+                        const dueAt = node?.dueAt ? `<br>Due: ${escapeHtml(new Date(node.dueAt).toLocaleDateString())}` : '';
+                        const overdue = node?.overdue ? '<br><strong>Overdue</strong>' : '';
+                        const interaction = count
+                            ? `<br>${count} child record(s). Click to ${expanded.has(node.name) ? 'collapse' : 'expand'}.`
+                            : node?.url && node.url !== '#' ? '<br>Click to open record.' : '';
+                        return `<strong>${escapeHtml(node?.label || params.data.name)}</strong>${status}${dueAt}${overdue}${interaction}`;
                     },
                 },
                 series: [{
@@ -139,6 +165,12 @@ function initializeWorkOverviewCharts() {
                 expanded.delete(id);
             } else {
                 expanded.add(id);
+                const node = source.nodes.find((item) => item.name === id);
+                if (node?.type === 'group' && node.groupType === 'tasks') {
+                    source.nodes
+                        .filter((item) => item.groupId === id && childrenOf(item.name).length > 0)
+                        .forEach((item) => expanded.add(item.name));
+                }
             }
             render();
         });
