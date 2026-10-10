@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../enterprise-portfolio.css';
 
 /* Reduce the admin's standard radius scale: lg -> md (6px), md -> sm (4px). */
 @theme {
