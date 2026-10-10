@@ -57,7 +57,7 @@ function initializeWorkOverviewCharts() {
                 visible.add(id);
                 if (expanded.has(id)) childrenOf(id).forEach(visit);
             };
-            roots.forEach(visit);
+            roots.forEach((node) => visit(node.name));
             return visible;
         }
 
