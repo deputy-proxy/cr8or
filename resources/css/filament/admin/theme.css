@@ -61,3 +61,7 @@
 .fi-ta-text{
     @apply p-2;
 }
+
+.fi-logo{
+    @apply pt-[3px];
+}
