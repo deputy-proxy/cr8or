@@ -15,6 +15,11 @@ class PublicationSchedule extends Model
 
     public const STATUS_COMPLETED = 'completed';
 
+    protected function casts(): array
+    {
+        return ['scheduled_at' => 'immutable_datetime'];
+    }
+
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {

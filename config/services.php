@@ -1,5 +1,8 @@
 <?php
 
+$githubCredentials = json_decode((string) env('GITHUB_CREDENTIALS', '{}'), true);
+$githubCredentials = is_array($githubCredentials) ? $githubCredentials : [];
+
 return [
 
     /*
@@ -35,6 +38,10 @@ return [
         ],
     ],
 
+    'github' => [
+        'timeout' => (int) env('GITHUB_TIMEOUT', 15),
+        'credentials' => array_merge(['default' => env('GITHUB_ACCESS_TOKEN')], $githubCredentials),
+    ],
     'canva' => [
         'url' => env('CANVA_API_URL', 'https://api.canva.com/rest/v1'),
         'timeout' => (int) env('CANVA_TIMEOUT', 15),

@@ -16,11 +16,27 @@ use App\Contracts\MediaStorage;
 use App\Contracts\PublishingProvider;
 use App\Events\AgentExecutionEvent;
 use App\Listeners\RecordAgentExecutionEvent;
+use App\Listeners\RecordEnterpriseActivityEvent;
+use App\Models\Campaign;
 use App\Models\Competitor;
+use App\Models\ContentItem;
+use App\Models\Enterprise;
+use App\Models\EnterpriseContext;
+use App\Models\IntegrationConnection;
+use App\Models\IntegrationJob;
+use App\Models\IntegrationResult;
+use App\Models\Milestone;
 use App\Models\Mission;
+use App\Models\Project;
+use App\Models\Publication;
+use App\Models\PublicationResult;
+use App\Models\PublicationSchedule;
+use App\Models\Task;
 use App\Models\Vision;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
+use App\Models\WorkItem;
+use App\Observers\EnterpriseActivityObserver;
 use App\Policies\StrategicRecordPolicy;
 use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
@@ -33,6 +49,8 @@ use App\Services\KnowledgeLexicalRetrievalProvider;
 use App\Services\KnowledgeSemanticRetrievalProvider;
 use App\Services\R2MediaStorage;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -97,9 +115,24 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Passport::authorizationView('mcp.authorize');
+        HandleCors::skipWhen(static fn (Request $request): bool => $request->is('api/events/website'));
 
         $this->configureDefaults();
         Event::listen(AgentExecutionEvent::class, [RecordAgentExecutionEvent::class, 'handle']);
+        foreach ([
+            \App\Events\AgentExecutionCompleted::class,
+            \App\Events\AgentExecutionFailed::class,
+            \App\Events\AgentExecutionStarted::class,
+            \App\Events\ApprovalGranted::class,
+            \App\Events\ApprovalRequested::class,
+            \App\Events\OperationExecuted::class,
+        ] as $eventClass) {
+            Event::listen($eventClass, [RecordEnterpriseActivityEvent::class, 'handleAgent']);
+        }
+        Event::listen(\App\Events\StrategicContextVersionPublished::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
+        foreach ([Enterprise::class, EnterpriseContext::class, Project::class, Task::class, WorkItem::class, Milestone::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
+            $model::observe(EnterpriseActivityObserver::class);
+        }
         Gate::policy(Competitor::class, StrategicRecordPolicy::class);
         Gate::policy(Mission::class, StrategicRecordPolicy::class);
         Gate::policy(Vision::class, StrategicRecordPolicy::class);

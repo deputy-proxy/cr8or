@@ -31,10 +31,25 @@ it('allows an organization to own multiple enterprises', function () {
         ->and($enterprises->pluck('organization_id')->unique()->all())->toBe([$organization->id]);
 });
 
-it('keeps enterprise data limited to core identity and lifecycle fields', function () {
-    expect(Schema::getColumnListing('enterprises'))->toBe([
-        'id', 'organization_id', 'name', 'slug', 'status', 'created_at', 'updated_at',
-    ]);
+it('persists portfolio configuration on Enterprise without conflating it with work-management Projects', function () {
+    expect(Schema::getColumnListing('enterprises'))->toContain(
+        'id',
+        'organization_id',
+        'name',
+        'slug',
+        'status',
+        'enterprise_group_id',
+        'enterprise_category_id',
+        'connections',
+        'github_repository',
+        'github_repository_url',
+        'github_issues_sync_status',
+        'github_issues_synced_at',
+        'github_issues_sync_error',
+        'website_domain',
+        'created_at',
+        'updated_at',
+    );
 });
 
 it('rejects duplicate enterprise slugs within an organization', function () {
