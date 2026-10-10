@@ -30,7 +30,7 @@
                 class="overflow-x-auto rounded-sm border border-gray-200 bg-gray-950 dark:border-gray-700"
             >
                 <script type="application/json" data-work-overview-source>{!! json_encode($sankeyData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
-                <div data-work-overview-chart class="h-[620px] min-w-[900px] w-full"></div>
+                <div data-work-overview-chart class="h-[620px] min-w-[900px] w-full" style="height: 620px; min-width: 900px; width: 100%;"></div>
                 <div data-work-overview-empty hidden class="p-8 text-center text-sm text-gray-400">There are no linked work records to visualize yet. Add projects or related records to see the hierarchy.</div>
             </div>
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
