@@ -2,7 +2,7 @@
 <div
       x-data="projectMap()"
       x-cloak
-      class="enterprise-portfolio-map -mx-4 -mt-4 h-[calc(100vh-7rem)] min-h-[36rem] flex flex-col overflow-hidden bg-[#08080a] text-white sm:-mx-6"
+      class="enterprise-portfolio-map -mx-4 -mt-4 h-[calc(100vh-7rem)] min-h-[36rem] flex flex-col overflow-hidden text-white sm:-mx-6"
     >
       <!-- ===================== HEADER ===================== -->
       <header
@@ -1189,7 +1189,7 @@
           },
 
           get filterableFields() {
-            const excluded = ['project_id', 'stream_id', 'name', 'description'];
+            const excluded = ['project_id', 'stream_id', 'name', 'description', 'enterprise_id', 'website_domain', 'github_repository', 'projects_count', 'tasks_count'];
             if (!this.projects.length) return [];
             return Object.keys(this.projects[0]).filter((k) => !excluded.includes(k));
           },
