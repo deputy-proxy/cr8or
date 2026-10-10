@@ -9,9 +9,6 @@ it('provides exactly one Filament resource for every model', function () {
         $models[] = $match[1];
     }
 
-    // Immutable external snapshots and activity projections are managed through the portfolio dashboard, not generic CRUD resources.\n    $models = array_values(array_filter($models, fn (string $model): bool => ! in_array($model, ['Event', 'Issue'], true)));\n\n    // Immutable external snapshots and activity projections are managed through the portfolio dashboard, not generic CRUD resources.
-    $models = array_values(array_filter($models, fn (string $model): bool => ! in_array($model, ['Event', 'Issue'], true)));
-
     $resources = [];
 
     foreach (glob(app_path('Filament/Resources/**/*Resource.php')) as $file) {
