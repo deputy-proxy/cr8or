@@ -20,11 +20,11 @@ class MetricDefinitionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
+    protected static string|\UnitEnum|null $navigationGroup = 'Reporting & Analytics';
 
     protected static ?string $navigationLabel = 'Metric Definitions';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 40;
 
     public static function table(Table $table): Table
     {

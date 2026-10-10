@@ -23,7 +23,7 @@ function expectedNavigation(): array
 {
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships', 'Enterprises'],
-        'Strategy & Planning' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'MetricDefinitions', 'Strategies', 'Plans', 'Competitors', 'Products'],
+        'Strategy & Planning' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'Strategies', 'Plans', 'Competitors', 'Products'],
         'Work Management' => ['Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Dependencies', 'Assignments', 'Decisions', 'EnterpriseDecisions'],
         'Knowledge' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Agent Configuration' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments'],
@@ -33,7 +33,7 @@ function expectedNavigation(): array
         'Media Production' => ['Assets', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions'],
         'Publishing' => ['Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices', 'FinancialReports', 'BusinessHealthResults'],
-        'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues'],
+        'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues', 'MetricDefinitions'],
         'Integrations' => ['IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries'],
     ];
 }

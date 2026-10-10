@@ -34,7 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Zinc,
             ])
-             ->sidebarCollapsibleOnDesktop()
+            ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Organization & Access',
                 'Strategy & Planning',
