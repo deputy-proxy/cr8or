@@ -81,4 +81,5 @@
 
 .fi-width-7xl{
     @apply w-full!;
+    width: 100% !important;
 }
