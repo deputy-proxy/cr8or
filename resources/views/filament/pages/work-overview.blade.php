@@ -5,12 +5,12 @@
         description="Explore the work hierarchy across the organizations you can access. Select any node with children to expand or collapse that branch."
     >
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300">
-                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-gray-400"></span>Organization</span>
-                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-blue-500"></span>Planning</span>
-                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-green-500"></span>Work items</span>
-                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-amber-500"></span>Supporting records</span>
-                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-purple-500"></span>Governance</span>
+            <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300" aria-label="Work status legend">
+                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-green-500"></span>Completed</span>
+                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-blue-500"></span>Active / in progress</span>
+                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-gray-400"></span>Planned / to do / unknown</span>
+                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span>Blocked / overdue</span>
+                <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-zinc-500"></span>Cancelled / structural groups</span>
             </div>
             <div class="flex flex-wrap gap-2">
                 <x-filament::button color="gray" size="sm" outlined data-work-overview-action="expand-all">Expand all</x-filament::button>
