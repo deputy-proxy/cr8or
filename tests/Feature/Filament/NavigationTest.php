@@ -13,8 +13,10 @@ use App\Filament\Resources\ContentSeries\ContentSeriesResource;
 use App\Filament\Resources\EnterpriseCategories\EnterpriseCategoryResource;
 use App\Filament\Resources\EnterpriseGroups\EnterpriseGroupResource;
 use App\Filament\Resources\Enterprises\EnterpriseResource;
+use App\Filament\Resources\Events\EventResource;
 use App\Filament\Resources\ExpertDescriptors\ExpertDescriptorResource;
 use App\Filament\Resources\Initiatives\InitiativeResource;
+use App\Filament\Resources\Issues\IssueResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Organizations\OrganizationResource;
 use App\Filament\Resources\Strategies\StrategyResource;
@@ -37,7 +39,8 @@ function expectedNavigation(): array
         'Publishing' => ['Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices', 'FinancialReports', 'BusinessHealthResults'],
         'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues', 'MetricDefinitions'],
-        'Integrations' => ['IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries'],
+        'Integrations' => ['IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries', 'Issues'],
+        'Operations' => ['Events'],
     ];
 }
 
@@ -56,7 +59,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(100);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {
@@ -120,5 +123,16 @@ it('preserves agreed labels for primary navigation resources', function () {
         ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
         ->and(AudienceResource::getNavigationLabel())->toBe('Audiences')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
-        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests');
+        ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests')
+        ->and(EventResource::getNavigationLabel())->toBe('Events')
+        ->and(IssueResource::getNavigationLabel())->toBe('Issues');
+});
+
+it('registers read-only Events and Issues resources in their intended navigation groups', function () {
+    expect(EventResource::getNavigationGroup())->toBe('Operations')
+        ->and(IssueResource::getNavigationGroup())->toBe('Integrations')
+        ->and(Route::has('filament.admin.resources.events.index'))->toBeTrue()
+        ->and(Route::has('filament.admin.resources.issues.index'))->toBeTrue()
+        ->and(array_keys(EventResource::getPages()))->toBe(['index'])
+        ->and(array_keys(IssueResource::getPages()))->toBe(['index']);
 });
