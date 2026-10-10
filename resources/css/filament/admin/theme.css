@@ -67,9 +67,9 @@
 }
 
 .fi-main-ctn-sidebar-open .fi-main{
-    @apply fi-width-full mx-0;
+    @apply w-full mx-0;
 }
 
 #fi-main-content{
-    @apply fi-width-full mx-0;
+    @apply w-full mx-0;
 }
