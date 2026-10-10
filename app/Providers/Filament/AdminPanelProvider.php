@@ -73,6 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->spa()
+            ->brandLogo(fn () => view('filament.logo'))
             ->authMiddleware([
                 Authenticate::class,
             ]);
