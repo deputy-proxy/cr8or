@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/css/filament/admin/theme.css',
                 'resources/js/app.js',
                 'resources/js/passkeys.js',
+                'resources/js/work-overview.js',
             ],
             refresh: true,
             fonts: [

@@ -12,9 +12,9 @@
                 <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-purple-500"></span>Governance</span>
             </div>
             <div class="flex flex-wrap gap-2">
-                <x-filament::button color="gray" size="sm" outlined x-on:click="$dispatch('work-overview-expand-all')">Expand all</x-filament::button>
-                <x-filament::button color="gray" size="sm" outlined x-on:click="$dispatch('work-overview-collapse-all')">Collapse all</x-filament::button>
-                <x-filament::button color="gray" size="sm" outlined x-on:click="$dispatch('work-overview-reset')">Reset view</x-filament::button>
+                <x-filament::button color="gray" size="sm" outlined data-work-overview-action="expand-all">Expand all</x-filament::button>
+                <x-filament::button color="gray" size="sm" outlined data-work-overview-action="collapse-all">Collapse all</x-filament::button>
+                <x-filament::button color="gray" size="sm" outlined data-work-overview-action="reset">Reset view</x-filament::button>
             </div>
         </div>
 
@@ -25,14 +25,12 @@
         @else
             <div
                 wire:ignore
-                x-data="workOverviewSankey(@js($sankeyData))"
-                x-init="init()"
-                x-on:work-overview-expand-all.window="expandAll()"
-                x-on:work-overview-collapse-all.window="collapseAll()"
-                x-on:work-overview-reset.window="reset()"
+                data-work-overview-sankey
                 class="overflow-x-auto rounded-sm border border-gray-200 bg-gray-950 dark:border-gray-700"
             >
-                <div x-ref="chart" class="h-[620px] min-w-[900px] w-full"></div>
+                <script type="application/json" data-work-overview-source>{!! json_encode($sankeyData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
+                <div data-work-overview-chart class="h-[620px] min-w-[900px] w-full"></div>
+                <div data-work-overview-empty hidden class="p-8 text-center text-sm text-gray-400">There are no linked work records to visualize yet. Add projects or related records to see the hierarchy.</div>
             </div>
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
                 Sample-free view of persisted records. Link widths are illustrative. Tasks follow their current project/parent-task relationships; they are not implicitly attached to Work Items.
@@ -59,158 +57,7 @@
     </x-filament::section>
 </x-filament-panels::page>
 
+
 @once
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('workOverviewSankey', (source) => ({
-                chart: null,
-                source,
-                expanded: new Set(),
-
-                init() {
-                    if (!window.echarts || !this.$refs.chart) return;
-
-                    this.chart = window.echarts.init(this.$refs.chart);
-                    this.source.nodes.filter((node) => node.type === 'organization').forEach((node) => this.expanded.add(node.name));
-                    this.render();
-
-                    this.chart.on('click', (params) => {
-                        if (params.dataType !== 'node') return;
-                        const id = params.data.name;
-                        if (!this.childrenOf(id).length) {
-                            const node = this.source.nodes.find((item) => item.name === id);
-                            if (node?.url && node.url !== '#') window.location.href = node.url;
-                            return;
-                        }
-
-                        if (this.expanded.has(id)) {
-                            this.descendantsOf(id).forEach((child) => this.expanded.delete(child));
-                            this.expanded.delete(id);
-                        } else {
-                            this.expanded.add(id);
-                        }
-                        this.render();
-                    });
-
-                    window.addEventListener('resize', () => this.chart?.resize());
-                },
-
-                childrenOf(id) {
-                    return this.source.links.filter((link) => link.source === id).map((link) => link.target);
-                },
-
-                descendantsOf(id, result = []) {
-                    this.childrenOf(id).forEach((child) => {
-                        result.push(child);
-                        this.descendantsOf(child, result);
-                    });
-                    return result;
-                },
-
-                visibleIds() {
-                    const visible = new Set();
-                    const roots = this.source.nodes.filter((node) => !this.source.links.some((link) => link.target === node.name));
-                    const visit = (id) => {
-                        if (visible.has(id)) return;
-                        visible.add(id);
-                        if (this.expanded.has(id)) this.childrenOf(id).forEach(visit);
-                    };
-                    roots.forEach(visit);
-                    return visible;
-                },
-
-                render() {
-                    const visible = this.visibleIds();
-                    const nodes = this.source.nodes.filter((node) => visible.has(node.name)).map((node) => ({
-                        name: node.name,
-                        label: {
-                            formatter: () => {
-                                const hasChildren = this.childrenOf(node.name).length > 0;
-                                const marker = hasChildren ? (this.expanded.has(node.name) ? '▾ ' : '▸ ') : '';
-                                return marker + node.label;
-                            }
-                        },
-                        itemStyle: {
-                            color: ({
-                                organization: '#a1a1aa',
-                                planning: '#3b82f6',
-                                work: '#22c55e',
-                                supporting: '#f59e0b',
-                                governance: '#a855f7'
-                            })[node.type] || '#71717a'
-                        }
-                    }));
-                    const links = this.source.links.filter((link) => visible.has(link.source) && visible.has(link.target));
-
-                    this.chart.setOption({
-                        backgroundColor: 'transparent',
-                        animationDuration: 250,
-                        tooltip: {
-                            trigger: 'item',
-                            backgroundColor: '#18181b',
-                            borderColor: '#3f3f46',
-                            textStyle: { color: '#fafafa', fontSize: 12 },
-                            formatter: (params) => {
-                                if (params.dataType === 'edge') {
-                                    const from = this.source.nodes.find((node) => node.name === params.data.source);
-                                    const to = this.source.nodes.find((node) => node.name === params.data.target);
-                                    return (from?.label || params.data.source) + ' → ' + (to?.label || params.data.target);
-                                }
-                                const node = this.source.nodes.find((item) => item.name === params.data.name);
-                                const count = this.childrenOf(params.data.name).length;
-                                return '<strong>' + (node?.label || params.data.name) + '</strong>' +
-                                    (count ? '<br>' + count + ' child record(s). Click to ' + (this.expanded.has(node.name) ? 'collapse' : 'expand') + '.' : '<br>Click to open records.');
-                            }
-                        },
-                        series: [{
-                            type: 'sankey',
-                            orient: 'horizontal',
-                            left: 24,
-                            right: 310,
-                            top: 24,
-                            bottom: 24,
-                            nodeAlign: 'left',
-                            nodeWidth: 14,
-                            nodeGap: 16,
-                            nodeSort: null,
-                            layoutIterations: 32,
-                            data: nodes,
-                            links,
-                            emphasis: { focus: 'adjacency', lineStyle: { opacity: 0.8 } },
-                            itemStyle: { borderWidth: 0, borderRadius: 3 },
-                            lineStyle: { color: 'gradient', opacity: 0.3, curveness: 0.48 },
-                            label: {
-                                position: 'right',
-                                color: '#e4e4e7',
-                                fontSize: 11,
-                                distance: 8,
-                                width: 285,
-                                overflow: 'truncate',
-                                fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif'
-                            }
-                        }]
-                    }, true);
-                },
-
-                expandAll() {
-                    this.source.nodes.forEach((node) => {
-                        if (this.childrenOf(node.name).length) this.expanded.add(node.name);
-                    });
-                    this.render();
-                },
-
-                collapseAll() {
-                    this.expanded.clear();
-                    this.render();
-                },
-
-                reset() {
-                    this.expanded.clear();
-                    this.source.nodes.filter((node) => node.type === 'organization').forEach((node) => this.expanded.add(node.name));
-                    this.render();
-                }
-            }));
-        });
-    </script>
+    @vite('resources/js/work-overview.js')
 @endonce
