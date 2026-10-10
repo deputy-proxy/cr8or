@@ -1,4 +1,5 @@
 <x-filament-panels::page>
+    @vite('resources/js/app.js')
     <x-filament::section
         heading="Work Overview"
         description="Explore the work hierarchy across the organizations you can access. Select any node with children to expand or collapse that branch."
