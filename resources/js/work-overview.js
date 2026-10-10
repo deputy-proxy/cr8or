@@ -65,13 +65,6 @@ function initializeWorkOverviewCharts() {
             const visible = visibleIds();
             const nodes = source.nodes.filter((node) => visible.has(node.name)).map((node) => ({
                 name: node.name,
-                label: {
-                    formatter: () => {
-                        const hasChildren = childrenOf(node.name).length > 0;
-                        const marker = hasChildren ? (expanded.has(node.name) ? '▾ ' : '▸ ') : '';
-                        return marker + node.label;
-                    },
-                },
                 itemStyle: { color: colors[node.type] || '#71717a' },
             }));
             const links = source.links.filter((link) => visible.has(link.source) && visible.has(link.target));
@@ -120,6 +113,13 @@ function initializeWorkOverviewCharts() {
                         width: 285,
                         overflow: 'truncate',
                         fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+                        formatter: (params) => {
+                            const node = source.nodes.find((item) => item.name === params.name);
+                            if (!node) return params.name;
+                            const hasChildren = childrenOf(node.name).length > 0;
+                            const marker = hasChildren ? (expanded.has(node.name) ? '▾ ' : '▸ ') : '';
+                            return marker + node.label;
+                        },
                     },
                 }],
             }, true);
@@ -143,9 +143,18 @@ function initializeWorkOverviewCharts() {
             render();
         });
 
-        root.dataset.initialized = 'true';
         root._workOverviewChart = { chart, source, expanded, childrenOf, render };
-        render();
+
+        try {
+            render();
+            root.dataset.initialized = 'true';
+        } catch (error) {
+            chart.dispose();
+            delete root._workOverviewChart;
+            console.error('Work Overview Sankey failed to render.', error);
+            chartElement.textContent = 'The work hierarchy could not be rendered. Check the browser console for details.';
+            return;
+        }
 
         if ('ResizeObserver' in window) {
             const observer = new ResizeObserver(() => chart.resize());
