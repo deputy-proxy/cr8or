@@ -73,3 +73,7 @@
 #fi-main-content{
     @apply w-full! mx-0!;
 }
+
+.fi-width-7xl{
+    @apply w-full;
+}
