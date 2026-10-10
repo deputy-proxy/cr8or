@@ -33,7 +33,7 @@
 .fi-ta-ctn,
 .fi-modal-window,
 .fi-dropdown-panel {
-    @apply bg-black text-gray-100;
+    @apply dark:bg-black dark:text-gray-100;
     color-scheme: dark;
 }
 
@@ -44,23 +44,23 @@
 .fi-fo-field-wrp-label,
 .fi-ta-header-cell,
 .fi-ta-cell {
-    @apply text-gray-100;
+    @apply dark:text-gray-100;
     color-scheme: dark;
 }
 
 .fi-body input::placeholder,
 .fi-body textarea::placeholder {
-    @apply text-gray-400;
+    @apply dark:text-gray-400;
     color-scheme: dark;
 }
 
 .fi-body :disabled {
-    @apply text-gray-400;
+    @apply dark:text-gray-400;
     color-scheme: dark;
 }
 
 .fi-body :focus-visible {
-    @apply outline-amber-400;
+    @apply dark:outline-amber-400;
 }
 
 .fi-ta-text{
