@@ -2,7 +2,7 @@
 <div
       x-data="projectMap()"
       x-cloak
-      class="enterprise-portfolio-map -mx-4 -mt-4 h-[calc(100vh-7rem)] min-h-[36rem] flex flex-col overflow-hidden text-white sm:-mx-6"
+      class="enterprise-portfolio-map -mx-4 -mt-4 h-[calc(100vh-7rem)] bg-black min-h-[36rem] flex flex-col overflow-hidden text-white sm:-mx-6"
     >
       <!-- ===================== HEADER ===================== -->
       <header
