@@ -100,7 +100,11 @@ it('renders only authorized Enterprises on the portfolio dashboard', function ()
     $this->actingAs($user)
         ->get(route('filament.admin.pages.enterprise-portfolio-dashboard'))
         ->assertOk()
-        ->assertSee('Enterprise ecosystem')
+        ->assertSee('Project Ecosystem Map')
+        ->assertSee('My Projects')
+        ->assertSee('dot-grid')
+        ->assertDontSee('tailwindcss.com')
+        ->assertDontSee('cdn.jsdelivr.net/npm/alpinejs')
         ->assertSee('Visible portfolio enterprise')
         ->assertDontSee('Foreign portfolio enterprise');
 });
@@ -151,6 +155,30 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
         'direction' => 'outgoing',
         'description' => 'Updated from Filament',
     ]]);
+});
+
+it('renders the Project Ecosystem Map from authorized Enterprise records and connections', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user->id, 'organization_id' => $organization->id]);
+    $source = Enterprise::factory()->create(['organization_id' => $organization->id, 'name' => 'Source map enterprise']);
+    $target = Enterprise::factory()->create(['organization_id' => $organization->id, 'name' => 'Target map enterprise']);
+    $source->forceFill(['connections' => [[
+        'target_enterprise_id' => $target->id,
+        'type' => 'supports',
+        'direction' => 'outgoing',
+        'description' => 'Map relationship',
+    ]]])->save();
+
+    $this->actingAs($user)
+        ->get(route('filament.admin.pages.enterprise-portfolio-dashboard'))
+        ->assertOk()
+        ->assertSee('Source map enterprise')
+        ->assertSee('Target map enterprise')
+        ->assertSee('supports')
+        ->assertSee('arrow-supports')
+        ->assertDontSee('co.nt.ro')
+        ->assertDontSee('prop-001');
 });
 
 it('rejects selecting an Enterprise outside the user authorized organizations', function () {

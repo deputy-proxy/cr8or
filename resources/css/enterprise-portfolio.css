@@ -1,0 +1,33 @@
+.enterprise-portfolio-map [x-cloak] { display: none !important; }
+.enterprise-portfolio-map { margin: 0; padding: 0; background: #08080a; overscroll-behavior: none; font-family: Inter, system-ui, -apple-system, sans-serif; }
+.enterprise-portfolio-map .dot-grid { background-image: radial-gradient(circle, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 32px 32px; background-position: 0 0; }
+.enterprise-portfolio-map ::-webkit-scrollbar { height: 8px; width: 8px; }
+.enterprise-portfolio-map ::-webkit-scrollbar-track { background: transparent; }
+.enterprise-portfolio-map ::-webkit-scrollbar-thumb { background: #ffffff14; border-radius: 4px; }
+.enterprise-portfolio-map ::-webkit-scrollbar-thumb:hover { background: #ffffff26; }
+.enterprise-portfolio-map .stream-header { position: sticky !important; top: 0; z-index: 5; padding-bottom: .5rem; margin-bottom: 1.5rem; background: linear-gradient(to bottom, #08080a 70%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.enterprise-portfolio-map .streams-container { align-items: flex-start; }
+
+@media (max-width: 767px) {
+    .enterprise-portfolio-map .snap-scroll { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; overflow-x: auto; overflow-y: hidden; }
+    .enterprise-portfolio-map .canvas-area { min-width: 100% !important; }
+    .enterprise-portfolio-map .streams-container { min-width: 100% !important; flex-direction: row; gap: 0 !important; padding: 0 !important; }
+    .enterprise-portfolio-map .stream-col { min-width: 100vw !important; flex-basis: 100vw !important; scroll-snap-align: start; scroll-snap-stop: always; padding: 0 16px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .enterprise-portfolio-map .stream-header { position: sticky; top: 0; z-index: 5; }
+    .enterprise-portfolio-map .control-bar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-left: 16px; padding-right: 16px; }
+    .enterprise-portfolio-map .control-bar::-webkit-scrollbar { display: none; }
+    .enterprise-portfolio-map .search-wrapper { display: flex; align-items: center; }
+    .enterprise-portfolio-map .search-wrapper > svg:first-child { display: none !important; }
+    .enterprise-portfolio-map .search-wrapper > svg:first-child.x-show-shown { display: block !important; }
+    .enterprise-portfolio-map .search-input { width: 0 !important; min-width: 0 !important; padding: 0 !important; padding-left: 2rem !important; border-width: 1px !important; border-color: transparent !important; height: 1.5rem !important; opacity: 0; overflow: hidden; flex-shrink: 0; pointer-events: none; background: transparent !important; }
+    .enterprise-portfolio-map .mobile-search-btn { display: flex !important; flex-shrink: 0; }
+    .enterprise-portfolio-map .search-input.mobile-search-open { width: calc(100vw - 48px) !important; max-width: none !important; padding: .375rem .75rem .375rem 2rem !important; border-color: #ffffff1a !important; height: 1.5rem !important; opacity: 1; pointer-events: auto; background: #ffffff0a !important; }
+    .enterprise-portfolio-map .search-input.mobile-search-open:focus { border-color: #fff3 !important; background: #ffffff0f !important; }
+    .enterprise-portfolio-map .search-input.mobile-search-open ~ .mobile-search-btn { display: none !important; }
+    .enterprise-portfolio-map .control-bar > .mobile-filter-hide,
+    .enterprise-portfolio-map .control-bar > div > .mobile-filter-hide { opacity: 0; width: 0; margin: 0; overflow: hidden; pointer-events: none; }
+    .enterprise-portfolio-map .control-bar > .relative,
+    .enterprise-portfolio-map .control-bar > div > .relative { transition: opacity .5s ease, width .5s ease; flex-shrink: 0; }
+    .enterprise-portfolio-map .control-bar > div:last-child { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; }
+    .enterprise-portfolio-map .control-bar > div:last-child::-webkit-scrollbar { display: none; }
+}
