@@ -88,6 +88,13 @@ it('rejects non-canonical GitHub repository URLs', function () {
     ]))->toThrow(LogicException::class);
 });
 
+it('uses a pure black background for the Project Ecosystem Map', function () {
+    $css = file_get_contents(resource_path('css/enterprise-portfolio.css'));
+
+    expect($css)->toContain('background: #000000;')
+        ->and($css)->not->toContain('#08080a');
+});
+
 it('renders only authorized Enterprises on the portfolio dashboard', function () {
     $organization = Organization::factory()->create();
     $foreignOrganization = Organization::factory()->create();
@@ -100,11 +107,10 @@ it('renders only authorized Enterprises on the portfolio dashboard', function ()
     $this->actingAs($user)
         ->get(route('filament.admin.pages.enterprise-portfolio-dashboard'))
         ->assertOk()
-        ->assertSee('Project Ecosystem Map')
-        ->assertSee('My Projects')
+        ->assertSee('All Groups')
         ->assertSee('dot-grid')
         ->assertDontSee('bg-[#08080a]')
-        ->assertSee("const excluded = ['project_id', 'stream_id', 'name', 'description', 'enterprise_id', 'website_domain', 'github_repository', 'projects_count', 'tasks_count'];", false)
+        ->assertSee("const excluded = ['project_id', 'stream_id', 'name', 'description', 'enterprise_id', 'website_domain', 'github_repository', 'projects_count', 'tasks_count', 'work_items_count', 'content_items_count'];", false)
         ->assertDontSee('tailwindcss.com')
         ->assertDontSee('cdn.jsdelivr.net/npm/alpinejs')
         ->assertSee('Visible portfolio enterprise')
