@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\MembershipRole;
 use App\Filament\Resources\MetricDefinitions\MetricDefinitionResource;
 use App\Models\Enterprise;
 use App\Models\Membership;
