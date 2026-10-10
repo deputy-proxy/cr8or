@@ -15,46 +15,46 @@
  * layout and major surfaces so component states and controls retain their
  * own styling instead of being flattened by a descendant-wide override.
  */
-.fi-body {
+.fi-body:dark {
     @apply bg-black text-gray-100;
     color-scheme: dark;
 }
 
-.fi-sidebar,
-.fi-sidebar-header,
-.fi-topbar,
-.fi-main-ctn,
-.fi-main {
+.fi-sidebar:dark,
+.fi-sidebar-header:dark,
+.fi-topbar:dark,
+.fi-main-ctn:dark,
+.fi-main:dark {
     @apply bg-black;
 }
 
-.fi-section,
-.fi-ta-ctn,
-.fi-modal-window,
-.fi-dropdown-panel {
+.fi-section:dark,
+.fi-ta-ctn:dark,
+.fi-modal-window:dark,
+.fi-dropdown-panel:dark {
     @apply bg-black text-gray-100;
 }
 
-.fi-sidebar-item-label,
-.fi-topbar-item-label,
-.fi-breadcrumbs-item-label,
-.fi-section-header-heading,
-.fi-fo-field-wrp-label,
-.fi-ta-header-cell,
+.fi-sidebar-item-label:dark,
+.fi-topbar-item-label:dark,
+.fi-breadcrumbs-item-label:dark,
+.fi-section-header-heading:dark,
+.fi-fo-field-wrp-label:dark,
+.fi-ta-header-cell:dark,
 .fi-ta-cell {
     @apply text-gray-100;
 }
 
-.fi-body input::placeholder,
-.fi-body textarea::placeholder {
+.fi-body input::placeholder:dark,
+.fi-body textarea::placeholder:dark {
     @apply text-gray-400;
 }
 
-.fi-body :disabled {
+.fi-body :disabled:dark {
     @apply text-gray-400;
 }
 
-.fi-body :focus-visible {
+.fi-body :focus-visible:dark {
     @apply outline-amber-400;
 }
 
