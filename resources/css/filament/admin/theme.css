@@ -20,41 +20,46 @@
     color-scheme: dark;
 }
 
-.fi-sidebar:dark,
-.fi-sidebar-header:dark,
-.fi-topbar:dark,
-.fi-main-ctn:dark,
-.fi-main:dark {
+.fi-sidebar,
+.fi-sidebar-header,
+.fi-topbar,
+.fi-main-ctn,
+.fi-main {
     @apply bg-black;
+    color-scheme: dark;
 }
 
-.fi-section:dark,
-.fi-ta-ctn:dark,
-.fi-modal-window:dark,
-.fi-dropdown-panel:dark {
+.fi-section,
+.fi-ta-ctn,
+.fi-modal-window,
+.fi-dropdown-panel {
     @apply bg-black text-gray-100;
+    color-scheme: dark;
 }
 
-.fi-sidebar-item-label:dark,
-.fi-topbar-item-label:dark,
-.fi-breadcrumbs-item-label:dark,
-.fi-section-header-heading:dark,
-.fi-fo-field-wrp-label:dark,
-.fi-ta-header-cell:dark,
+.fi-sidebar-item-label,
+.fi-topbar-item-label,
+.fi-breadcrumbs-item-label,
+.fi-section-header-heading,
+.fi-fo-field-wrp-label,
+.fi-ta-header-cell,
 .fi-ta-cell {
     @apply text-gray-100;
+    color-scheme: dark;
 }
 
-.fi-body input::placeholder:dark,
-.fi-body textarea::placeholder:dark {
+.fi-body input::placeholder,
+.fi-body textarea::placeholder {
     @apply text-gray-400;
+    color-scheme: dark;
 }
 
-.fi-body :disabled:dark {
+.fi-body :disabled {
     @apply text-gray-400;
+    color-scheme: dark;
 }
 
-.fi-body :focus-visible:dark {
+.fi-body :focus-visible {
     @apply outline-amber-400;
 }
 
