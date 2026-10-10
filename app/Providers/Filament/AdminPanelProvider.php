@@ -32,8 +32,9 @@ class AdminPanelProvider extends PanelProvider
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Gray,
             ])
+             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Organization & Access',
                 'Strategy & Planning',
