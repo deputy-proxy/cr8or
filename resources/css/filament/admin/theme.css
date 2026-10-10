@@ -2,8 +2,8 @@
 
 /* Reduce the admin's standard radius scale: lg -> md (6px), md -> sm (4px). */
 @theme {
-    --radius-md: 0.25rem;
-    --radius-lg: 0.375rem;
+    --radius-md: 0.15rem;
+    --radius-lg: 0.275rem;
 }
 
 @source '../../../../app/Filament/**/*.php';
@@ -56,4 +56,8 @@
 
 .fi-body :focus-visible {
     @apply outline-amber-400;
+}
+
+.fi-ta-text{
+    @apply p-2;
 }
