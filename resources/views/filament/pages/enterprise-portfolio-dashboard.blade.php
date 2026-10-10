@@ -9,11 +9,6 @@
         class="px-6 py-3.5 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0"
       >
         <div class="flex items-center gap-4 min-w-0">
-          <span class="sr-only">Project Ecosystem Map</span>
-          <div class="relative flex-shrink-0 text-sm font-semibold tracking-tight text-white/90">My Projects</div>
-
-          <div class="h-5 w-px bg-white/15 flex-shrink-0"></div>
-
           <!-- Main dashboard filter -->
           <div class="relative flex-shrink-0" x-data="{ open: false, ddX: 0, ddY: 0, place() { const r = this.$refs.btn.getBoundingClientRect(); this.ddX = r.left; this.ddY = r.bottom + 4; } }">
             <button
