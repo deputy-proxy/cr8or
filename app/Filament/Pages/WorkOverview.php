@@ -23,6 +23,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkItem;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
@@ -96,10 +97,25 @@ class WorkOverview extends Page
     }
 
     /**
-     * Build the chart exclusively from records inside the user's authorized organizations.
-     * Tasks are intentionally attached to Projects because the current domain model does not
-     * define a Task-to-WorkItem relationship. Assignments, dependencies and decisions are
-     * linked to WorkItems only where their persisted polymorphic/foreign-key relationship says so.
+     * @return array{status: ?string, dueAt: ?string, overdue: bool}
+     */
+    private function statusMetadata(?string $status, mixed $dueAt = null): array
+    {
+        $normalizedStatus = strtolower((string) $status);
+        $isTerminal = in_array($normalizedStatus, ['completed', 'done', 'cancelled', 'canceled'], true);
+        $dueDate = $dueAt ? Carbon::parse($dueAt) : null;
+
+        return [
+            'status' => $status,
+            'dueAt' => $dueDate?->toIso8601String(),
+            'overdue' => $dueDate !== null && $dueDate->isPast() && ! $isTerminal,
+        ];
+    }
+
+    /**
+     * Build the chart only from records inside the user's authorized organizations.
+     * Tasks retain their persisted parent-child hierarchy and are not implicitly linked to Work Items.
+     * Assignments, dependencies, and decisions follow their persisted relationships to Work Items.
      *
      * @return array{nodes: array<int, array<string, mixed>>, links: array<int, array<string, mixed>>}
      */
@@ -115,13 +131,13 @@ class WorkOverview extends Page
         $links = [];
         $known = [];
 
-        $addNode = function (string $id, string $label, string $type, string $url, ?string $parent = null) use (&$nodes, &$links, &$known): void {
+        $addNode = function (string $id, string $label, string $type, string $url, ?string $parent = null, array $metadata = []) use (&$nodes, &$links, &$known): void {
             if (isset($known[$id])) {
                 return;
             }
 
             $known[$id] = true;
-            $nodes[] = ['name' => $id, 'label' => $label, 'type' => $type, 'url' => $url];
+            $nodes[] = array_merge(['name' => $id, 'label' => $label, 'type' => $type, 'url' => $url], $metadata);
             if ($parent !== null && isset($known[$parent])) {
                 $links[] = ['source' => $parent, 'target' => $id, 'value' => 1];
             }
@@ -154,34 +170,78 @@ class WorkOverview extends Page
             $parent = $project->initiative_id && isset($initiativeEnterprise[$project->initiative_id])
                 ? 'initiative:'.$project->initiative_id
                 : 'enterprise:'.$project->enterprise_id;
-            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', ProjectResource::getUrl(), $parent);
+            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', ProjectResource::getUrl(), $parent, $this->statusMetadata($project->status));
         }
 
         $workItems = WorkItem::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
         $workItemIds = $workItems->modelKeys();
-        foreach ($workItems as $workItem) {
-            $addNode('work-item:'.$workItem->id, 'Work Item: '.$workItem->name, 'work', WorkItemResource::getUrl(), 'project:'.$workItem->project_id);
-        }
-
         $milestones = Milestone::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
-        foreach ($milestones as $milestone) {
-            $addNode('milestone:'.$milestone->id, 'Milestone: '.$milestone->name, 'planning', MilestoneResource::getUrl(), 'project:'.$milestone->project_id);
+        $tasks = Task::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
+        $taskProjectIds = $tasks->pluck('project_id', 'id');
+        $projectGroups = [];
+
+        foreach ($projects as $project) {
+            $projectNodeId = 'project:'.$project->id;
+            $projectGroups[$project->id] = [
+                'milestones' => 'group:milestones:'.$project->id,
+                'work-items' => 'group:work-items:'.$project->id,
+                'tasks' => 'group:tasks:'.$project->id,
+            ];
+
+            $addNode($projectGroups[$project->id]['milestones'], 'Milestones ('.$milestones->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'milestones', 'projectId' => $project->id]);
+            $addNode($projectGroups[$project->id]['work-items'], 'Work Items ('.$workItems->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'work-items', 'projectId' => $project->id]);
+            $addNode($projectGroups[$project->id]['tasks'], 'Tasks ('.$tasks->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'tasks', 'projectId' => $project->id]);
         }
 
-        // Tasks are project-scoped in the current schema, not children of WorkItems.
-        $tasks = Task::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
-        $taskIds = $tasks->modelKeys();
+        foreach ($workItems as $workItem) {
+            if ($workItem->project_id === null || ! isset($projectGroups[$workItem->project_id])) {
+                continue;
+            }
+
+            $groupId = $projectGroups[$workItem->project_id]['work-items'];
+            $addNode('work-item:'.$workItem->id, 'Work Item: '.$workItem->name, 'work', WorkItemResource::getUrl(), $groupId, array_merge(
+                $this->statusMetadata($workItem->status),
+                ['groupId' => $groupId],
+            ));
+        }
+
+        foreach ($milestones as $milestone) {
+            if (! isset($projectGroups[$milestone->project_id])) {
+                continue;
+            }
+
+            $groupId = $projectGroups[$milestone->project_id]['milestones'];
+            $addNode('milestone:'.$milestone->id, 'Milestone: '.$milestone->name, 'planning', MilestoneResource::getUrl(), $groupId, array_merge(
+                $this->statusMetadata($milestone->status, $milestone->due_at),
+                ['groupId' => $groupId],
+            ));
+        }
+
+        // Tasks keep their persisted parent-child hierarchy inside the project Tasks group.
         foreach ($tasks as $task) {
-            $addNode('task:'.$task->id, 'Task: '.$task->name, 'supporting', TaskResource::getUrl(), 'project:'.$task->project_id);
+            if ($task->project_id === null || ! isset($projectGroups[$task->project_id])) {
+                continue;
+            }
+
+            $groupId = $projectGroups[$task->project_id]['tasks'];
+            $addNode('task:'.$task->id, 'Task: '.$task->name, 'supporting', TaskResource::getUrl(), null, array_merge(
+                $this->statusMetadata($task->status, $task->due_at),
+                ['groupId' => $groupId],
+            ));
         }
         foreach ($tasks as $task) {
-            if (! $task->parent_task_id || ! in_array($task->parent_task_id, $taskIds)) {
+            if ($task->project_id === null || ! isset($projectGroups[$task->project_id])) {
                 continue;
             }
 
             $taskNodeId = 'task:'.$task->id;
-            $links = array_values(array_filter($links, fn (array $link): bool => $link['target'] !== $taskNodeId));
-            $links[] = ['source' => 'task:'.$task->parent_task_id, 'target' => $taskNodeId, 'value' => 1];
+            if ($task->parent_task_id
+                && isset($taskProjectIds[$task->parent_task_id])
+                && (int) $taskProjectIds[$task->parent_task_id] === (int) $task->project_id) {
+                $links[] = ['source' => 'task:'.$task->parent_task_id, 'target' => $taskNodeId, 'value' => 1];
+            } else {
+                $links[] = ['source' => $projectGroups[$task->project_id]['tasks'], 'target' => $taskNodeId, 'value' => 1];
+            }
         }
 
         $workItemClass = (new WorkItem)->getMorphClass();
