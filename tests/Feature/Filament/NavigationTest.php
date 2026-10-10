@@ -33,7 +33,7 @@ function expectedNavigation(): array
         'Media Production' => ['Assets', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions'],
         'Publishing' => ['Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices', 'FinancialReports', 'BusinessHealthResults'],
-        'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues'],
+        'Reporting & Analytics' => ['Reports', 'ReportSnapshots', 'ReportMetricValues', 'MetricDefinitions'],
         'Integrations' => ['IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries'],
     ];
 }
