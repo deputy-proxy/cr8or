@@ -9,10 +9,9 @@
 .enterprise-portfolio-map .streams-container { align-items: flex-start; }
 
 @media (max-width: 767px) {
-    .enterprise-portfolio-map .snap-scroll { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; overflow-x: auto; overflow-y: hidden; }
-    .enterprise-portfolio-map .canvas-area { min-width: 100% !important; }
-    .enterprise-portfolio-map .streams-container { min-width: 100% !important; flex-direction: row; gap: 0 !important; padding: 0 !important; }
-    .enterprise-portfolio-map .stream-col { min-width: 100vw !important; flex-basis: 100vw !important; scroll-snap-align: start; scroll-snap-stop: always; padding: 0 16px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .enterprise-portfolio-map .canvas-area { width: 100%; min-width: 0 !important; }
+    .enterprise-portfolio-map .streams-container { width: 100%; min-width: 0 !important; flex-direction: column; gap: 1.5rem !important; padding: 0 16px !important; }
+    .enterprise-portfolio-map .stream-col { width: 100%; min-width: 0 !important; flex: 1 1 auto !important; padding: 0; height: auto; }
     .enterprise-portfolio-map .stream-header { position: sticky; top: 0; z-index: 5; }
     .enterprise-portfolio-map .control-bar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-left: 16px; padding-right: 16px; }
     .enterprise-portfolio-map .control-bar::-webkit-scrollbar { display: none; }

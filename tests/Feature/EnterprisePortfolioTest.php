@@ -95,6 +95,20 @@ it('uses a pure black background for the Project Ecosystem Map', function () {
         ->and($css)->not->toContain('#08080a');
 });
 
+it('sizes Enterprise card columns to the available width without horizontal card scrolling', function () {
+    $view = file_get_contents(resource_path('views/filament/pages/enterprise-portfolio-dashboard.blade.php'));
+    $css = file_get_contents(resource_path('css/enterprise-portfolio.css'));
+
+    expect($view)->toContain('canvas-area relative dot-grid w-full min-w-0')
+        ->and($view)->toContain('streams-container relative z-10 flex w-full min-w-0')
+        ->and($view)->toContain('stream-col relative min-w-0 flex-1')
+        ->and($view)->not->toContain('minCanvasWidth')
+        ->and($view)->not->toContain('minStreamWidth')
+        ->and($css)->toContain('flex-direction: column')
+        ->and($css)->not->toContain('scroll-snap-type: x mandatory')
+        ->and($css)->not->toContain('min-width: 100vw !important');
+});
+
 it('renders only authorized Enterprises on the portfolio dashboard', function () {
     $organization = Organization::factory()->create();
     $foreignOrganization = Organization::factory()->create();
