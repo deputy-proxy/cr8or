@@ -45,10 +45,23 @@ it('scopes Work Overview counts to organizations the user can access', function 
         ->and($overview['Tasks']['count'])->toBe(1)
         ->and($overview['Work Items']['count'])->toBe(1);
 
-    $nodeIds = collect($page->sankeyData['nodes'])->pluck('name');
-    $linkPairs = collect($page->sankeyData['links'])->map(fn (array $link): string => $link['source'].'>'.$link['target']);
+    $flatten = function (array $node, array &$nodes, array &$links) use (&$flatten): void {
+        foreach ($node['children'] ?? [] as $child) {
+            $nodes[] = $child;
+            $links[] = $node['name'].'>'.$child['name'];
+            $flatten($child, $nodes, $links);
+        }
+    };
+    $flatNodes = [];
+    $linkPairs = [];
+    foreach ($page->treeData as $root) {
+        $flatNodes[] = $root;
+        $flatten($root, $flatNodes, $linkPairs);
+    }
+    $nodeIds = collect($flatNodes)->pluck('name');
 
     expect($nodeIds)
+        ->toContain('root:work-overview')
         ->toContain('enterprise:'.$visibleEnterprise->id)
         ->toContain('project:'.$visibleProject->id)
         ->not->toContain('enterprise:'.$hiddenEnterprise->id)
@@ -100,8 +113,20 @@ it('groups project milestones, work items, and tasks and exposes status and over
     $page = app(WorkOverview::class);
     $page->mount();
 
-    $nodes = collect($page->sankeyData['nodes'])->keyBy('name');
-    $links = collect($page->sankeyData['links'])->map(fn (array $link): string => $link['source'].'>'.$link['target']);
+    $flatNodes = [];
+    $linkPairs = [];
+    $flatten = function (array $node) use (&$flatten, &$flatNodes, &$linkPairs): void {
+        $flatNodes[] = $node;
+        foreach ($node['children'] ?? [] as $child) {
+            $linkPairs[] = $node['name'].'>'.$child['name'];
+            $flatten($child);
+        }
+    };
+    foreach ($page->treeData as $root) {
+        $flatten($root);
+    }
+    $nodes = collect($flatNodes)->keyBy('name');
+    $links = collect($linkPairs);
     $milestonesGroup = 'group:milestones:'.$project->id;
     $workItemsGroup = 'group:work-items:'.$project->id;
     $tasksGroup = 'group:tasks:'.$project->id;
