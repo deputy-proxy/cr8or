@@ -82,5 +82,5 @@
 }
 
 .fi-sidebar-item .fi-active{
-    @apply border border-white/10 bg-white/[0.02];
+    @apply border! border-white/10! bg-white/[0.02]!;
 }
