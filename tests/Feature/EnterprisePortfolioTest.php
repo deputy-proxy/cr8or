@@ -32,9 +32,9 @@ it('persists organization-owned taxonomy and validates all Enterprise connection
     $foreignTarget = Enterprise::factory()->create(['organization_id' => $otherOrganization->id]);
 
     $connections = [
-        ['target_enterprise_id' => $target->id, 'type' => 'supports', 'direction' => 'incoming', 'description' => 'Incoming edge'],
+        ['target_enterprise_id' => $target->id, 'type' => 'partners_with', 'direction' => 'incoming', 'description' => 'Incoming edge'],
         ['target_enterprise_id' => $target->id, 'type' => 'integrates_with', 'direction' => 'outgoing', 'description' => 'Outgoing edge'],
-        ['target_enterprise_id' => $target->id, 'type' => 'related_to', 'direction' => 'bidirectional', 'description' => 'Two-way edge'],
+        ['target_enterprise_id' => $target->id, 'type' => 'integrates_with', 'direction' => 'bidirectional', 'description' => 'Two-way edge'],
     ];
     $source->forceFill(['connections' => $connections])->save();
 
@@ -44,13 +44,13 @@ it('persists organization-owned taxonomy and validates all Enterprise connection
 
     expect(fn () => $source->forceFill(['connections' => [[
         'target_enterprise_id' => $foreignTarget->id,
-        'type' => 'supports',
+        'type' => 'partners_with',
         'direction' => 'outgoing',
     ]]])->save())->toThrow(LogicException::class);
 
     expect(fn () => $source->forceFill(['connections' => [[
         'target_enterprise_id' => $source->id,
-        'type' => 'related_to',
+        'type' => 'integrates_with',
         'direction' => 'outgoing',
     ]]])->save())->toThrow(LogicException::class);
 
@@ -139,7 +139,7 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
     $target = Enterprise::factory()->create(['organization_id' => $organization->id]);
     $source->forceFill(['connections' => [[
         'target_enterprise_id' => $target->id,
-        'type' => 'supports',
+        'type' => 'partners_with',
         'direction' => 'bidirectional',
         'description' => 'Shared platform',
     ]]])->save();
@@ -152,7 +152,7 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
     expect($state[$key]['type'])->toBe('connection')
         ->and($state[$key]['data'])->toMatchArray([
             'target_enterprise_id' => $target->id,
-            'type' => 'supports',
+            'type' => 'partners_with',
             'direction' => 'bidirectional',
             'description' => 'Shared platform',
         ]);
@@ -163,7 +163,7 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
                 'type' => 'connection',
                 'data' => [
                     'target_enterprise_id' => $target->id,
-                    'type' => 'owns',
+                    'type' => 'owned_by',
                     'direction' => 'outgoing',
                     'description' => 'Updated from Filament',
                 ],
@@ -173,7 +173,7 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
 
     expect($source->fresh()->connections)->toBe([[
         'target_enterprise_id' => $target->id,
-        'type' => 'owns',
+        'type' => 'owned_by',
         'direction' => 'outgoing',
         'description' => 'Updated from Filament',
     ]]);
@@ -187,7 +187,7 @@ it('renders the Project Ecosystem Map from authorized Enterprise records and con
     $target = Enterprise::factory()->create(['organization_id' => $organization->id, 'name' => 'Target map enterprise']);
     $source->forceFill(['connections' => [[
         'target_enterprise_id' => $target->id,
-        'type' => 'supports',
+        'type' => 'partners_with',
         'direction' => 'outgoing',
         'description' => 'Map relationship',
     ]]])->save();
@@ -197,8 +197,8 @@ it('renders the Project Ecosystem Map from authorized Enterprise records and con
         ->assertOk()
         ->assertSee('Source map enterprise')
         ->assertSee('Target map enterprise')
-        ->assertSee('supports')
-        ->assertSee('arrow-supports')
+        ->assertSee('partners_with')
+        ->assertSee('arrow-partners_with')
         ->assertDontSee('co.nt.ro')
         ->assertDontSee('prop-001');
 });
@@ -380,9 +380,9 @@ it('renders incoming, outgoing, and bidirectional connections with their persist
     $target = Enterprise::factory()->create(['organization_id' => $organization->id, 'name' => 'Target Enterprise']);
 
     $source->forceFill(['connections' => [
-        ['target_enterprise_id' => $target->id, 'type' => 'supports', 'direction' => 'incoming', 'description' => 'Incoming edge'],
-        ['target_enterprise_id' => $target->id, 'type' => 'owns', 'direction' => 'outgoing', 'description' => 'Outgoing edge'],
-        ['target_enterprise_id' => $target->id, 'type' => 'related_to', 'direction' => 'bidirectional', 'description' => 'Two-way edge'],
+        ['target_enterprise_id' => $target->id, 'type' => 'partners_with', 'direction' => 'incoming', 'description' => 'Incoming edge'],
+        ['target_enterprise_id' => $target->id, 'type' => 'owned_by', 'direction' => 'outgoing', 'description' => 'Outgoing edge'],
+        ['target_enterprise_id' => $target->id, 'type' => 'integrates_with', 'direction' => 'bidirectional', 'description' => 'Two-way edge'],
     ]])->save();
 
     $this->actingAs($user);
@@ -393,13 +393,13 @@ it('renders incoming, outgoing, and bidirectional connections with their persist
     $data = $method->invoke($page);
     $links = collect($data['graphData']['links']);
 
-    expect($links->firstWhere('type', 'supports'))->toMatchArray([
+    expect($links->firstWhere('type', 'partners_with'))->toMatchArray([
         'source' => 'enterprise:'.$target->id,
         'target' => 'enterprise:'.$source->id,
-    ])->and($links->firstWhere('type', 'owns'))->toMatchArray([
+    ])->and($links->firstWhere('type', 'owned_by'))->toMatchArray([
         'source' => 'enterprise:'.$source->id,
         'target' => 'enterprise:'.$target->id,
-    ])->and($links->where('type', 'related_to')->pluck('source')->all())->toContain(
+    ])->and($links->where('type', 'integrates_with')->pluck('source')->all())->toContain(
         'enterprise:'.$source->id,
         'enterprise:'.$target->id,
     );

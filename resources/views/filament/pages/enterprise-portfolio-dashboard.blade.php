@@ -259,12 +259,12 @@
                 >
                   <path d="M 0 2 L 8 5 L 0 8 z" fill="#f59e0b" />
                 </marker>
-                <marker id="arrow-depends_on" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#f59e0b" /></marker>
-                <marker id="arrow-supports" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#22c55e" /></marker>
+                <marker id="arrow-promoted_by" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#22c55e" /></marker>
+                <marker id="arrow-owned_by" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#a78bfa" /></marker>
+                <marker id="arrow-partners_with" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#ec4899" /></marker>
                 <marker id="arrow-integrates_with" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#3b82f6" /></marker>
-                <marker id="arrow-related_to" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#9ca3af" /></marker>
-                <marker id="arrow-competes_with" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#ec4899" /></marker>
-                <marker id="arrow-owns" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#a78bfa" /></marker>
+                <marker id="arrow-depends_on" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#f59e0b" /></marker>
+                <marker id="arrow-provides_to" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M 0 2 L 8 5 L 0 8 z" fill="#14b8a6" /></marker>
               </defs>
               <g x-ref="pathsGroup"></g>
             </svg>
@@ -1087,11 +1087,11 @@
           // ---- CONFIG ----
           relationColors: {
             depends_on: '#f59e0b',
-            supports: '#22c55e',
+            promoted_by: '#22c55e',
+            owned_by: '#a78bfa',
+            partners_with: '#ec4899',
             integrates_with: '#3b82f6',
-            related_to: '#9ca3af',
-            competes_with: '#ec4899',
-            owns: '#a78bfa',
+            provides_to: '#14b8a6',
           },
           propertyTypeColors: {
             Apartment: '#3b82f6',
