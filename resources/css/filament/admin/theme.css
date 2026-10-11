@@ -28,7 +28,6 @@
 .fi-main-ctn,
 .fi-main {
     @apply dark:bg-black;
-    color-scheme: dark;
 }
 
 .fi-section,
@@ -36,7 +35,6 @@
 .fi-modal-window,
 .fi-dropdown-panel {
     @apply dark:bg-black dark:text-gray-100;
-    color-scheme: dark;
 }
 
 .fi-sidebar-item-label,
@@ -47,18 +45,19 @@
 .fi-ta-header-cell,
 .fi-ta-cell {
     @apply dark:text-gray-100;
-    color-scheme: dark;
 }
 
 .fi-body input::placeholder,
 .fi-body textarea::placeholder {
     @apply dark:text-gray-400;
-    color-scheme: dark;
 }
 
 .fi-body :disabled {
     @apply dark:text-gray-400;
-    color-scheme: dark;
+}
+
+.fi-body :focus-visible {
+    @apply dark:outline-gray-800 dark:outline-none;
 }
 
 .fi-ta-text{
