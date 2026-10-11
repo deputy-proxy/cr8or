@@ -66,9 +66,9 @@ function initializeWorkOverviewCharts() {
                         const count = Array.isArray(node.children) ? node.children.length : 0;
                         const interaction = count
                             ? `<br>${count} child record(s). Click to expand or collapse.`
-                            : node.url && node.url !== '#' ? '<br>Click to open record.' : '';
+                            : node.url && node.url !== '#' ? '<br>Double-click to edit record in a new tab.' : '';
 
-                        return `<strong>${escapeHtml(node.label || node.name)}</strong>${status}${dueAt}${overdue}${interaction}`;
+                        return `<strong>${escapeHtml(node.displayLabel || node.name)}</strong>${status}${dueAt}${overdue}${interaction}`;
                     },
                 },
                 series: [{
@@ -99,9 +99,7 @@ function initializeWorkOverviewCharts() {
                         formatter: (params) => {
                             const node = params.data;
                             if (!node || node.type === 'root') return '';
-                            const hasChildren = Array.isArray(node.children) && node.children.length > 0;
-                            const marker = hasChildren ? (node.collapsed ? '▸ ' : '▾ ') : '';
-                            return marker + (node.label || node.name);
+                            return node.displayLabel || node.name;
                         },
                     },
                     animationDurationUpdate: 350,
