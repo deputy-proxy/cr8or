@@ -58,7 +58,8 @@ it('scopes Work Overview counts to organizations the user can access', function 
         $flatNodes[] = $root;
         $flatten($root, $flatNodes, $linkPairs);
     }
-    $nodeIds = collect($flatNodes)->pluck('name');
+    $nodes = collect($flatNodes)->keyBy('name');
+    $nodeIds = $nodes->keys();
 
     expect($nodeIds)
         ->toContain('root:work-overview')
@@ -66,7 +67,10 @@ it('scopes Work Overview counts to organizations the user can access', function 
         ->toContain('project:'.$visibleProject->id)
         ->not->toContain('enterprise:'.$hiddenEnterprise->id)
         ->not->toContain('project:'.$hiddenProject->id)
-        ->and($linkPairs)->toContain('enterprise:'.$visibleEnterprise->id.'>project:'.$visibleProject->id);
+        ->and($linkPairs)->toContain('enterprise:'.$visibleEnterprise->id.'>project:'.$visibleProject->id)
+        ->and($page->treeData[0]['children'][0]['name'])->toBe('enterprise:'.$visibleEnterprise->id)
+        ->and(parse_url($nodes['enterprise:'.$visibleEnterprise->id]['url'], PHP_URL_PATH))->toEndWith('/'.$visibleEnterprise->id.'/edit')
+        ->and(parse_url($nodes['project:'.$visibleProject->id]['url'], PHP_URL_PATH))->toEndWith('/'.$visibleProject->id.'/edit');
 });
 
 it('denies Work Overview access when the user has no organization membership', function () {
@@ -146,6 +150,12 @@ it('groups project milestones, work items, and tasks and exposes status and over
         ->and($nodes['work-item:'.$workItem->id]['status'])->toBe('in_progress')
         ->and($nodes['task:'.$parentTask->id]['overdue'])->toBeTrue()
         ->and($nodes['task:'.$childTask->id]['overdue'])->toBeFalse()
+        ->and($nodes[$milestonesGroup]['url'])->toBe('#')
+        ->and($nodes[$workItemsGroup]['url'])->toBe('#')
+        ->and($nodes[$tasksGroup]['url'])->toBe('#')
+        ->and(parse_url($nodes['milestone:'.$milestone->id]['url'], PHP_URL_PATH))->toEndWith('/'.$milestone->id.'/edit')
+        ->and(parse_url($nodes['work-item:'.$workItem->id]['url'], PHP_URL_PATH))->toEndWith('/'.$workItem->id.'/edit')
+        ->and(parse_url($nodes['task:'.$parentTask->id]['url'], PHP_URL_PATH))->toEndWith('/'.$parentTask->id.'/edit')
         ->and($links)->toContain(
             'project:'.$project->id.'>'.$milestonesGroup,
             'project:'.$project->id.'>'.$workItemsGroup,
@@ -155,4 +165,34 @@ it('groups project milestones, work items, and tasks and exposes status and over
             $tasksGroup.'>task:'.$parentTask->id,
             'task:'.$parentTask->id.'>task:'.$childTask->id,
         );
+});
+it('does not expose edit links to members who can view but cannot edit records', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+
+    Membership::factory()->create([
+        'user_id' => $user,
+        'organization_id' => $organization,
+    ]);
+
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $project = Project::factory()->create(['enterprise_id' => $enterprise]);
+
+    $this->actingAs($user);
+    $page = app(WorkOverview::class);
+    $page->mount();
+
+    $flatten = function (array $node, array &$nodes) use (&$flatten): void {
+        $nodes[$node['name']] = $node;
+        foreach ($node['children'] ?? [] as $child) {
+            $flatten($child, $nodes);
+        }
+    };
+    $nodes = [];
+    foreach ($page->treeData as $root) {
+        $flatten($root, $nodes);
+    }
+
+    expect($nodes['enterprise:'.$enterprise->id]['url'])->toBe('#')
+        ->and($nodes['project:'.$project->id]['url'])->toBe('#');
 });

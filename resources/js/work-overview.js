@@ -2,7 +2,7 @@ import { init, use } from 'echarts/core';
 import { TreeChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { buildWorkOverviewTreeData } from './work-overview-tree.js';
+import { buildWorkOverviewTreeData, getWorkOverviewNodeEditUrl } from './work-overview-tree.js';
 
 use([TreeChart, TooltipComponent, CanvasRenderer]);
 
@@ -74,10 +74,10 @@ function initializeWorkOverviewCharts() {
                 series: [{
                     type: 'tree',
                     data,
-                    top: 24,
+                    top: 56,
                     left: 24,
                     bottom: 24,
-                    right: 260,
+                    right: 24,
                     orient: 'LR',
                     symbol: 'circle',
                     symbolSize: 8,
@@ -88,9 +88,9 @@ function initializeWorkOverviewCharts() {
                     lineStyle: { color: '#71717a', width: 1.2, curveness: 0.5 },
                     emphasis: { focus: 'descendant' },
                     label: {
-                        position: 'left',
-                        verticalAlign: 'middle',
-                        align: 'right',
+                        position: 'top',
+                        verticalAlign: 'bottom',
+                        align: 'center',
                         color: '#e4e4e7',
                         fontSize: 11,
                         distance: 8,
@@ -104,28 +104,30 @@ function initializeWorkOverviewCharts() {
                             return marker + (node.label || node.name);
                         },
                     },
-                    leaves: {
-                        label: {
-                            position: 'right',
-                            align: 'left',
-                            color: '#e4e4e7',
-                            fontSize: 11,
-                            width: 230,
-                            overflow: 'truncate',
-                            formatter: (params) => params.data?.label || params.data?.name || '',
-                        },
-                    },
                     animationDurationUpdate: 350,
                 }],
             }, true);
         }
 
-        chart.on('click', (params) => {
+        // ECharts owns single-click expand/collapse behavior. Navigation is
+        // deliberately separate so the first click of a double-click cannot
+        // redirect the current tab before the dblclick event is handled.
+        chart.on('dblclick', (params) => {
             if (params.dataType !== 'node') return;
-            const node = params.data;
-            if (node && (!Array.isArray(node.children) || node.children.length === 0) && node.url && node.url !== '#') {
-                window.location.href = node.url;
+
+            const url = getWorkOverviewNodeEditUrl(params.data);
+            if (!url) return;
+
+            let target;
+            try {
+                target = new URL(url, window.location.href);
+            } catch {
+                return;
             }
+
+            if (target.origin !== window.location.origin) return;
+
+            window.open(target.href, '_blank', 'noopener,noreferrer');
         });
 
         root._workOverviewChart = {
