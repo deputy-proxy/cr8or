@@ -473,7 +473,7 @@
             class="text-xs text-white/50 leading-relaxed mb-3"
             x-text="selectedProject?.description"
           ></div>
-          <div class="flex items-center gap-2 text-[11px] text-white/40 mb-3">
+          <div class="text-[11px] text-white/40 mb-3">
             <span class="text-white/25">Target:</span>
             <span x-text="selectedProject?.target"></span>
           </div>
