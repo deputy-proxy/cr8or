@@ -21,7 +21,7 @@ export function normalizeEnterpriseGraphData(data) {
         .map((link) => ({
             source: String(link.source),
             target: String(link.target),
-            type: String(link.type ?? 'related_to'),
+            type: String(link.type ?? 'integrates_with'),
             description: String(link.description ?? ''),
         }));
 

@@ -14,8 +14,8 @@ test('graph normalization removes edges to nodes outside the authorized node set
     const graph = normalizeEnterpriseGraphData({
         nodes: [{ id: 'enterprise:1', enterpriseId: 1, name: 'Visible', status: 'active' }],
         links: [
-            { source: 'enterprise:1', target: 'enterprise:1', type: 'supports' },
-            { source: 'enterprise:1', target: 'enterprise:999', type: 'related_to' },
+            { source: 'enterprise:1', target: 'enterprise:1', type: 'partners_with' },
+            { source: 'enterprise:1', target: 'enterprise:999', type: 'integrates_with' },
         ],
     });
     assert.equal(graph.nodes.length, 1);
@@ -36,5 +36,5 @@ test('graph normalization returns stable primitive fields for ECharts', () => {
         category: '',
         status: '',
     });
-    assert.equal(graph.links[0].type, 'related_to');
+    assert.equal(graph.links[0].type, 'integrates_with');
 });
