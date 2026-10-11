@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getWorkStatusColor } from '../../resources/js/work-overview-status.js';
-import { buildWorkOverviewTreeData } from '../../resources/js/work-overview-tree.js';
+import { buildWorkOverviewTreeData, getWorkOverviewNodeEditUrl } from '../../resources/js/work-overview-tree.js';
 
 test('maps persisted work statuses to consistent colors', () => {
     assert.equal(getWorkStatusColor('completed'), '#22c55e');
@@ -41,4 +41,15 @@ test('preserves overdue colors and neutral structural group colors in the tree',
     const [group] = buildWorkOverviewTreeData([{ name: 'group', type: 'group', children: [{ name: 'task', type: 'supporting', status: 'todo', overdue: true, children: [] }] }]);
     assert.equal(group.itemStyle.color, '#71717a');
     assert.equal(group.children[0].itemStyle.color, '#ef4444');
+});
+
+test('only persisted record nodes expose edit navigation targets', () => {
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'organization', url: '/admin/enterprises/1/edit' }), '/admin/enterprises/1/edit');
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'supporting', url: '/admin/tasks/12/edit' }), '/admin/tasks/12/edit');
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'group', url: '/admin/tasks' }), null);
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'root', url: '/admin/tasks' }), null);
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'unknown', url: '/admin/tasks/1/edit' }), null);
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'supporting', url: '#' }), null);
+    assert.equal(getWorkOverviewNodeEditUrl({ type: 'supporting' }), null);
+    assert.equal(getWorkOverviewNodeEditUrl(null), null);
 });

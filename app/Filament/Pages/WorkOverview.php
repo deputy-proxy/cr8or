@@ -7,6 +7,7 @@ use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Decisions\DecisionResource;
 use App\Filament\Resources\Dependencies\DependencyResource;
 use App\Filament\Resources\EnterpriseDecisions\EnterpriseDecisionResource;
+use App\Filament\Resources\Enterprises\EnterpriseResource;
 use App\Filament\Resources\Initiatives\InitiativeResource;
 use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Filament\Resources\Projects\ProjectResource;
@@ -25,8 +26,10 @@ use App\Models\User;
 use App\Models\WorkItem;
 use Carbon\Carbon;
 use Filament\Pages\Page;
+use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class WorkOverview extends Page
@@ -113,6 +116,18 @@ class WorkOverview extends Page
     }
 
     /**
+     * @param  class-string<resource>  $resourceClass
+     */
+    private function recordEditUrl(string $resourceClass, Model $record): string
+    {
+        if (! $resourceClass::canEdit($record)) {
+            return '#';
+        }
+
+        return $resourceClass::getUrl('edit', ['record' => $record]);
+    }
+
+    /**
      * Build a nested tree from records inside the user's authorized organizations.
      * Tasks retain their persisted parent-child hierarchy and are not implicitly linked to Work Items.
      * Assignments, dependencies, and decisions follow their persisted relationships to Work Items.
@@ -124,7 +139,7 @@ class WorkOverview extends Page
         $enterprises = Enterprise::query()
             ->whereIn('organization_id', static::authorizedOrganizationIds())
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'organization_id']);
 
         $ids = $enterprises->modelKeys();
         $nodes = [];
@@ -144,7 +159,7 @@ class WorkOverview extends Page
         };
 
         foreach ($enterprises as $enterprise) {
-            $addNode('enterprise:'.$enterprise->id, 'Enterprise: '.$enterprise->name, 'organization', '#');
+            $addNode('enterprise:'.$enterprise->id, 'Enterprise: '.$enterprise->name, 'organization', $this->recordEditUrl(EnterpriseResource::class, $enterprise));
         }
 
         $initiatives = Initiative::query()
@@ -161,13 +176,13 @@ class WorkOverview extends Page
             }
             $id = 'initiative:'.$initiative->id;
             $initiativeEnterprise[$initiative->id] = (int) $enterpriseId;
-            $addNode($id, 'Initiative: '.$initiative->name, 'planning', InitiativeResource::getUrl(), 'enterprise:'.$enterpriseId);
+            $addNode($id, 'Initiative: '.$initiative->name, 'planning', $this->recordEditUrl(InitiativeResource::class, $initiative), 'enterprise:'.$enterpriseId);
         }
 
         $projects = Project::query()->whereIn('enterprise_id', $ids)->orderBy('name')->get();
         $projectIds = $projects->modelKeys();
         foreach ($projects as $project) {
-            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', ProjectResource::getUrl(), 'enterprise:'.$project->enterprise_id, $this->statusMetadata($project->status));
+            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', $this->recordEditUrl(ProjectResource::class, $project), 'enterprise:'.$project->enterprise_id, $this->statusMetadata($project->status));
         }
 
         $workItems = WorkItem::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
@@ -196,7 +211,7 @@ class WorkOverview extends Page
             }
 
             $groupId = $projectGroups[$workItem->project_id]['work-items'];
-            $addNode('work-item:'.$workItem->id, 'Work Item: '.$workItem->name, 'work', WorkItemResource::getUrl(), $groupId, array_merge(
+            $addNode('work-item:'.$workItem->id, 'Work Item: '.$workItem->name, 'work', $this->recordEditUrl(WorkItemResource::class, $workItem), $groupId, array_merge(
                 $this->statusMetadata($workItem->status),
                 ['groupId' => $groupId],
             ));
@@ -208,7 +223,7 @@ class WorkOverview extends Page
             }
 
             $groupId = $projectGroups[$milestone->project_id]['milestones'];
-            $addNode('milestone:'.$milestone->id, 'Milestone: '.$milestone->name, 'planning', MilestoneResource::getUrl(), $groupId, array_merge(
+            $addNode('milestone:'.$milestone->id, 'Milestone: '.$milestone->name, 'planning', $this->recordEditUrl(MilestoneResource::class, $milestone), $groupId, array_merge(
                 $this->statusMetadata($milestone->status, $milestone->due_at),
                 ['groupId' => $groupId],
             ));
@@ -221,7 +236,7 @@ class WorkOverview extends Page
             }
 
             $groupId = $projectGroups[$task->project_id]['tasks'];
-            $addNode('task:'.$task->id, 'Task: '.$task->name, 'supporting', TaskResource::getUrl(), null, array_merge(
+            $addNode('task:'.$task->id, 'Task: '.$task->name, 'supporting', $this->recordEditUrl(TaskResource::class, $task), null, array_merge(
                 $this->statusMetadata($task->status, $task->due_at),
                 ['groupId' => $groupId],
             ));
@@ -251,7 +266,7 @@ class WorkOverview extends Page
             ->get();
         foreach ($assignments as $assignment) {
             $person = $assignment->user_id ? $assignment->user->name : ($assignment->agent_assignment_id ? 'Agent assignment #'.$assignment->agent_assignment_id : 'Unassigned');
-            $addNode('assignment:'.$assignment->id, 'Assignment: '.$person, 'supporting', AssignmentResource::getUrl(), 'work-item:'.$assignment->assignable_id);
+            $addNode('assignment:'.$assignment->id, 'Assignment: '.$person, 'supporting', $this->recordEditUrl(AssignmentResource::class, $assignment), 'work-item:'.$assignment->assignable_id);
         }
 
         $decisions = Decision::query()
@@ -260,7 +275,7 @@ class WorkOverview extends Page
             ->orderBy('id')
             ->get();
         foreach ($decisions as $decision) {
-            $addNode('decision:'.$decision->id, 'Decision: '.$decision->title, 'supporting', DecisionResource::getUrl(), 'work-item:'.$decision->work_item_id);
+            $addNode('decision:'.$decision->id, 'Decision: '.$decision->title, 'supporting', $this->recordEditUrl(DecisionResource::class, $decision), 'work-item:'.$decision->work_item_id);
         }
 
         $dependencies = Dependency::query()
@@ -281,12 +296,12 @@ class WorkOverview extends Page
             if (! isset($known['work-item:'.$parentWorkItemId])) {
                 continue;
             }
-            $addNode('dependency:'.$dependency->id, 'Dependency: '.$dependency->type, 'supporting', DependencyResource::getUrl(), 'work-item:'.$parentWorkItemId);
+            $addNode('dependency:'.$dependency->id, 'Dependency: '.$dependency->type, 'supporting', $this->recordEditUrl(DependencyResource::class, $dependency), 'work-item:'.$parentWorkItemId);
         }
 
         $enterpriseDecisions = EnterpriseDecision::query()->whereIn('enterprise_id', $ids)->orderBy('id')->get();
         foreach ($enterpriseDecisions as $decision) {
-            $addNode('enterprise-decision:'.$decision->id, 'Enterprise Decision: '.$decision->title, 'governance', EnterpriseDecisionResource::getUrl(), 'enterprise:'.$decision->enterprise_id);
+            $addNode('enterprise-decision:'.$decision->id, 'Enterprise Decision: '.$decision->title, 'governance', $this->recordEditUrl(EnterpriseDecisionResource::class, $decision), 'enterprise:'.$decision->enterprise_id);
         }
 
         $childrenByParent = [];

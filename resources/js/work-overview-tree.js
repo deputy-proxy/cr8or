@@ -60,3 +60,16 @@ export function buildWorkOverviewTreeData(tree, mode = 'initial') {
 
     return (Array.isArray(tree) ? tree : []).map((node) => visit(node)).filter(Boolean);
 }
+
+/**
+ * Return an edit URL only for persisted records. Structural nodes intentionally
+ * have no navigation target, even if malformed input happens to include one.
+ */
+export function getWorkOverviewNodeEditUrl(node) {
+    const recordTypes = ['organization', 'planning', 'work', 'supporting', 'governance'];
+
+    if (!node || !recordTypes.includes(node.type)) return null;
+    if (typeof node.url !== 'string' || node.url.trim() === '' || node.url === '#') return null;
+
+    return node.url;
+}
