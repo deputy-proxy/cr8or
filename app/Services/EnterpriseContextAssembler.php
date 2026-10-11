@@ -1,13 +1,13 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use App\\Data\\AgentContext;
-use App\\Data\\AgentContextSection;
-use App\\Models\\Enterprise;
-use App\\Models\\EnterpriseContext;
-use App\\Models\\User;
-use Illuminate\\Support\\Facades\\Gate;
+use App\Data\AgentContext;
+use App\Data\AgentContextSection;
+use App\Models\Enterprise;
+use App\Models\EnterpriseContext;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 final class EnterpriseContextAssembler
 {
