@@ -348,14 +348,14 @@
                             x-text="project.name"
                             @click.stop="selectProject(project)"
                           ></div>
-                          <div
-                            class="text-[10px] text-white/25"
-                            x-text="'→ ' + project.target"
-                          ></div>
                         </div>
                         <div
                           class="text-[11px] text-white/40 leading-relaxed mt-1"
                           x-text="project.description"
+                        ></div>
+                        <div
+                          class="text-[10px] text-white/25"
+                          x-text="'→ ' + project.target"
                         ></div>
                         <button
                           @click.stop="openIssuesModal(project)"
