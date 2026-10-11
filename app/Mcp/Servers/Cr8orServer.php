@@ -120,6 +120,7 @@ use App\Mcp\Tools\UpdateCampaignTool;
 use App\Mcp\Tools\UpdateChannelTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
+use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateKnowledgeIndexTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
@@ -232,6 +233,7 @@ class Cr8orServer extends Server
         VerifyMarketingGraphTool::class,
         CreateEnterpriseTool::class,
         CreateEnterpriseContextTool::class,
+        UpdateEnterpriseContextTool::class,
         UpdateContentSeriesTool::class,
         TransitionContentSeriesTool::class,
         CreateAudienceTool::class,
