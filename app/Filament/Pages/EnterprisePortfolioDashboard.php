@@ -176,7 +176,7 @@ class EnterprisePortfolioDashboard extends Page
                     default => [[$sourceNode, $targetNode]],
                 };
                 foreach ($edges as [$source, $destination]) {
-                    $key = implode('|', [$source, $destination, (string) ($connection['type'] ?? 'related_to')]);
+                    $key = implode('|', [$source, $destination, (string) ($connection['type'] ?? 'integrates_with')]);
                     if (isset($seenLinks[$key])) {
                         continue;
                     }
@@ -188,7 +188,7 @@ class EnterprisePortfolioDashboard extends Page
                         'target' => $destination,
                         'sourceName' => (string) (($graphById[$sourceId]->name ?? $source)),
                         'targetName' => (string) (($graphById[$destinationId]->name ?? $destination)),
-                        'type' => (string) ($connection['type'] ?? 'related_to'),
+                        'type' => (string) ($connection['type'] ?? 'integrates_with'),
                         'description' => is_string($connection['description'] ?? null) ? $connection['description'] : '',
                     ];
                     if (count($links) >= 1000) {

@@ -10,11 +10,11 @@ const charts = new WeakMap();
 
 const CONNECTION_COLORS = {
     depends_on: '#ef4444',
-    supports: '#22c55e',
+    promoted_by: '#22c55e',
+    owned_by: '#a855f7',
+    partners_with: '#ec4899',
     integrates_with: '#3b82f6',
-    related_to: '#a1a1aa',
-    competes_with: '#f59e0b',
-    owns: '#a855f7',
+    provides_to: '#14b8a6',
 };
 
 function escapeHtml(value) {
