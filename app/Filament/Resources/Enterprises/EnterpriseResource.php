@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
@@ -79,7 +80,17 @@ class EnterpriseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('organization.name')->searchable()->sortable(), TextColumn::make('group.name')->label('Group')->sortable(), TextColumn::make('category.name')->label('Category')->sortable(), TextColumn::make('status')->badge()])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
+        return $table
+            ->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('organization.name')->searchable()->sortable(), TextColumn::make('group.name')->label('Group')->sortable(), TextColumn::make('category.name')->label('Category')->sortable(), TextColumn::make('status')->badge()])
+            ->groups([
+                Group::make('enterprise_group_id')
+                    ->label('Group')
+                    ->getKeyFromRecordUsing(fn (Enterprise $record): int|string => $record->enterprise_group_id ?? 'ungrouped')
+                    ->getTitleFromRecordUsing(fn (Enterprise $record): string => $record->group->name ?? 'Ungrouped')
+                    ->titlePrefixedWithLabel(false),
+            ])
+            ->defaultGroup('enterprise_group_id')
+            ->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
     }
 
     public static function getEloquentQuery(): EloquentBuilder
