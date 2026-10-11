@@ -1,15 +1,15 @@
 <?php
 
-use App\Data\CapabilityInvocationRequest;
-use App\Models\Enterprise;
-use App\Models\EnterpriseContext;
-use App\Models\Membership;
-use App\Models\Organization;
-use App\Models\User;
-use App\Services\CapabilityInvocationService;
-use App\Services\EnterpriseContextService;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\\Data\\CapabilityInvocationRequest;
+use App\\Models\\Enterprise;
+use App\\Models\\EnterpriseContext;
+use App\\Models\\Membership;
+use App\\Models\\Organization;
+use App\\Models\\User;
+use App\\Services\\CapabilityInvocationService;
+use App\\Services\\EnterpriseContextService;
+use Illuminate\\Auth\\Access\\AuthorizationException;
+use Illuminate\\Database\\Eloquent\\ModelNotFoundException;
 
 it('creates and retrieves Enterprise Context through the Capability boundary', function () {
     $user = User::factory()->create();
@@ -41,8 +41,12 @@ it('creates and retrieves Enterprise Context through the Capability boundary', f
         idempotencyKey: 'enterprise-context-create-1',
     ));
 
+    $persistedContext = EnterpriseContext::query()
+        ->where('enterprise_id', $enterprise->getKey())
+        ->firstOrFail();
+
     expect($created['status'])->toBe('executed')
-        ->and(EnterpriseContext::query()->where('enterprise_id', $enterprise->getKey())->exists())->toBeTrue();
+        ->and($persistedContext)->toBeInstanceOf(EnterpriseContext::class);
 
     $retrieved = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
         capability: 'enterprise.context.retrieve',
@@ -56,6 +60,7 @@ it('creates and retrieves Enterprise Context through the Capability boundary', f
         ->and($retrieved['result'])->toMatchArray([
             'enterprise_id' => $enterprise->getKey(),
             'context' => [
+                'id' => $persistedContext->getKey(),
                 'description' => 'Persisted context for downstream runtime composition.',
                 'industry' => 'Software',
                 'business_model' => 'Subscription',
@@ -109,7 +114,7 @@ it('reports missing Enterprise Context without fabricating downstream context', 
         ->toBeFalse();
 });
 
-it('exposes persisted Enterprise Context through the canonical runtime assembler', function () {
+it('exposes persisted Enterprise Context and its primary key through the canonical runtime assembler', function () {
     $user = User::factory()->create();
     $organization = Organization::factory()->create();
 
@@ -122,7 +127,7 @@ it('exposes persisted Enterprise Context through the canonical runtime assembler
         'organization_id' => $organization->getKey(),
     ]);
 
-    EnterpriseContext::factory()->create([
+    $persistedContext = EnterpriseContext::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'description' => 'Downstream agents must discover this from persisted context.',
         'industry' => 'Education',
@@ -131,6 +136,7 @@ it('exposes persisted Enterprise Context through the canonical runtime assembler
     $result = app(EnterpriseContextService::class)->retrieve($user, $enterprise);
 
     expect($result['context'])->toMatchArray([
+        'id' => $persistedContext->getKey(),
         'description' => 'Downstream agents must discover this from persisted context.',
         'industry' => 'Education',
     ]);
