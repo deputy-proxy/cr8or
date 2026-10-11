@@ -472,7 +472,7 @@
           <div class="text-xs text-white/50 leading-relaxed mb-3">
             <span class="text-white/25">Description:</span>
             <span x-text="selectedProject?.description"></span>
-          ></div>
+          </div>
           <div class="text-[11px] text-white/40 mb-3">
             <span class="text-white/25">Target:</span>
             <span x-text="selectedProject?.target"></span>
