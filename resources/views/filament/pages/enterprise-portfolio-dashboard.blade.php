@@ -206,8 +206,7 @@
         >
           <div
             x-ref="canvas"
-            class="canvas-area relative dot-grid"
-            :style="`min-width: ${minCanvasWidth}px`"
+            class="canvas-area relative dot-grid w-full min-w-0"
           >
             <!-- SVG overlay (behind cards) -->
             <svg
@@ -276,15 +275,13 @@
 
             <!-- Streams -->
             <div
-              class="streams-container relative z-10 flex gap-6 pt-2 pb-12 px-6"
-              :style="`min-width: ${minCanvasWidth}px`"
+              class="streams-container relative z-10 flex w-full min-w-0 gap-6 pt-2 pb-12 px-6"
               @click="handleCanvasClick($event)"
             >
               <template x-for="stream in visibleStreams" :key="stream.id">
                 <div
-                  class="stream-col relative"
-                  :class="isSingleStream ? 'w-full max-w-[1400px] mx-auto' : 'flex-1'"
-                  :style="isSingleStream ? '' : `min-width: ${minStreamWidth}px;`"
+                  class="stream-col relative min-w-0 flex-1"
+                  :class="isSingleStream ? 'w-full max-w-[1400px] mx-auto' : 'flex-1 min-w-0'"
                 >
                   <!-- Vertical guide line -->
                   <div
@@ -1100,7 +1097,6 @@
           utilityTypes: utilityTypes,
 
           // ---- CONFIG ----
-          minStreamWidth: 250,
           relationColors: {
             depends_on: '#f59e0b',
             supports: '#22c55e',
@@ -1164,12 +1160,6 @@
           _resizeObserver: null,
 
           // ---- COMPUTED ----
-          get minCanvasWidth() {
-            const gap = 24;
-            const count = this.visibleStreams.length;
-            return count * this.minStreamWidth + (count - 1) * gap + 48;
-          },
-
           get visibleStreams() {
             if (this.activeStreamId === 'all') return this.streams;
             return this.streams.filter((s) => s.id === this.activeStreamId);
