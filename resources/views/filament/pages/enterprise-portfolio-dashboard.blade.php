@@ -6,7 +6,7 @@
     >
       <!-- ===================== HEADER ===================== -->
       <header
-        class="px-6 py-3.5 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0"
+        class="px-2 py-2 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0"
       >
         <div class="flex items-center gap-4 min-w-0">
           <!-- Main dashboard filter -->
@@ -91,7 +91,7 @@
       <div class="contents">
       <!-- ===================== CONTROL BAR (search + filters) ===================== -->
       <div
-        class="control-bar px-6 py-2.5 flex items-center justify-between gap-3 border-b border-white/[0.06] flex-shrink-0"
+        class="control-bar px-2 py-2 flex items-center justify-between gap-3 border-b border-white/[0.06] flex-shrink-0"
       >
         <!-- Filters (right) -->
         <div class="flex items-center gap-2 flex-shrink-0" :class="{ 'mobile-filter-hide': mobileSearchOpen }">
