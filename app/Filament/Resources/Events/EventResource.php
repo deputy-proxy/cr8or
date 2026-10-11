@@ -41,7 +41,6 @@ class EventResource extends Resource
                 TextColumn::make('event_type')->label('Type')->badge()->searchable()->sortable(),
                 TextColumn::make('source')->badge()->sortable(),
                 TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
-                TextColumn::make('organization.name')->label('Organization')->searchable()->sortable(),
                 TextColumn::make('actor.name')->label('Actor')->placeholder('System')->searchable(),
                 TextColumn::make('correlation_id')->label('Correlation ID')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('received_at')->label('Recorded')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
