@@ -61,6 +61,18 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
+    public function updateEnterpriseContext(User $actor, EnterpriseContext $context, array $attributes): EnterpriseContext
+    {
+        Gate::forUser($actor)->authorize('update', $context);
+
+        $context->update(array_intersect_key($attributes, array_flip([
+            'description', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
+        ])));
+
+        return $context->refresh();
+    }
+
+    /** @param array<string, mixed> $attributes */
     public function createObjective(User $actor, Enterprise $enterprise, array $attributes): Objective
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [Objective::class, $enterprise]);

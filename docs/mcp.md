@@ -28,6 +28,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | --- | --- | --- |
 | create-enterprise | enterprise.create | CreateEnterprise | Create an Enterprise under an organization where the authenticated actor has Enterprise creation authority. |
 | create-enterprise-context | enterprise.context.create | CreateEnterpriseContext | Create business context for an authorized Enterprise; each Enterprise has one context record. |
+| update-enterprise-context | enterprise.context.update | EnterpriseContextUpdate | Update an existing Enterprise Context while preserving Enterprise ownership and policy authorization. |
 | create-work-item | work.item.create | CreateWorkItem | Create a work item under an authorized enterprise. |
 | update-work-item | work.item.update | UpdateWorkItem | Update an existing work item without changing enterprise ownership. |
 | create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
