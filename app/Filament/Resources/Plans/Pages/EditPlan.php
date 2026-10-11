@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Plans\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Models\Plan;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditPlan extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = PlanResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

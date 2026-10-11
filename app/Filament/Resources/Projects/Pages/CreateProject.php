@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Models\Enterprise;
 use App\Models\Initiative;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateProject extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = ProjectResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

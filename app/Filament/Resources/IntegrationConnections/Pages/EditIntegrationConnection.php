@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\IntegrationConnections\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\IntegrationConnections\IntegrationConnectionResource;
 use Filament\Resources\Pages\EditRecord;
 
 class EditIntegrationConnection extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = IntegrationConnectionResource::class;
 
     protected function mutateFormDataBeforeFill(array $data): array

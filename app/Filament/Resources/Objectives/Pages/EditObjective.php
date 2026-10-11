@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Objectives\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Models\Enterprise;
 use App\Models\Goal;
@@ -13,6 +14,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditObjective extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = ObjectiveResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

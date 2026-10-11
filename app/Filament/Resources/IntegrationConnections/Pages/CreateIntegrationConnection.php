@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\IntegrationConnections\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\IntegrationConnections\IntegrationConnectionResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateIntegrationConnection extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = IntegrationConnectionResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

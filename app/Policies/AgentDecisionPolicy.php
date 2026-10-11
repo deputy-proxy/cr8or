@@ -16,6 +16,9 @@ class AgentDecisionPolicy
         return $this->organizationRole($user, $record) !== null;
     }
 
+    /**
+     * This record is created through its domain operation, not generic Filament CRUD.
+     */
     public function create(User $user): bool
     {
         return false;

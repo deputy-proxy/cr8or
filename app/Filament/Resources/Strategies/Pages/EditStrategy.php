@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Strategies\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Strategies\StrategyResource;
 use App\Models\Strategy;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditStrategy extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = StrategyResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

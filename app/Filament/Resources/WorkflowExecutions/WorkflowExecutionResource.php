@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WorkflowExecutions;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\WorkflowExecutions\Pages\ListWorkflowExecutions;
 use App\Models\WorkflowExecution;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class WorkflowExecutionResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = WorkflowExecution::class;
 
     protected static ?string $modelLabel = 'Workflow Execution';
@@ -25,6 +28,11 @@ class WorkflowExecutionResource extends Resource
     protected static ?string $navigationLabel = 'Workflow Executions';
 
     protected static ?int $navigationSort = 40;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

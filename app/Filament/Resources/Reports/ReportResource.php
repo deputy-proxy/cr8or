@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Reports;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Reports\Pages\ListReports;
 use App\Models\Report;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class ReportResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = Report::class;
 
     protected static ?string $modelLabel = 'Report';
@@ -25,6 +28,11 @@ class ReportResource extends Resource
     protected static ?string $navigationLabel = 'Reports';
 
     protected static ?int $navigationSort = 10;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

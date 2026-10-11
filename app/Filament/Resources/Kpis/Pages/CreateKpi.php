@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Kpis\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Kpis\KpiResource;
 use App\Models\Enterprise;
 use App\Models\Kpi;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateKpi extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = KpiResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

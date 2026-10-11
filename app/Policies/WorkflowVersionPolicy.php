@@ -23,11 +23,12 @@ class WorkflowVersionPolicy
         return $this->organizationRole($user, $record) !== null;
     }
 
+    /**
+     * This record is created through its domain operation, not generic Filament CRUD.
+     */
     public function create(User $user): bool
     {
-        return $user->memberships()
-            ->whereIn('role', [MembershipRole::Owner->value, MembershipRole::Admin->value])
-            ->exists();
+        return false;
     }
 
     public function createForEnterprise(User $user, Enterprise $enterprise): bool
@@ -38,18 +39,20 @@ class WorkflowVersionPolicy
             ->exists();
     }
 
+    /**
+     * Published workflow versions are managed through workflow lifecycle operations.
+     */
     public function update(User $user, WorkflowVersion $record): bool
     {
-        $role = $this->organizationRole($user, $record);
-
-        return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
+        return false;
     }
 
+    /**
+     * Published workflow versions are managed through workflow lifecycle operations.
+     */
     public function delete(User $user, WorkflowVersion $record): bool
     {
-        $role = $this->organizationRole($user, $record);
-
-        return in_array($role?->value, [MembershipRole::Owner->value, MembershipRole::Admin->value], true);
+        return false;
     }
 
     private function organizationRole(User $user, WorkflowVersion $record): ?MembershipRole

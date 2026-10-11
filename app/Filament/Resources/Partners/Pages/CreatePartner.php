@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Partners\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Partners\PartnerResource;
 use App\Models\Enterprise;
 use App\Models\Partner;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreatePartner extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = PartnerResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AgentExecutionEventRecords;
 
 use App\Filament\Resources\AgentExecutionEventRecords\Pages\ListAgentExecutionEventRecords;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentExecutionEventRecord;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class AgentExecutionEventRecordResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = AgentExecutionEventRecord::class;
 
     protected static ?string $modelLabel = 'Agent Execution Event Record';
@@ -25,6 +28,11 @@ class AgentExecutionEventRecordResource extends Resource
     protected static ?string $navigationLabel = 'Agent Execution Event Records';
 
     protected static ?int $navigationSort = 80;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

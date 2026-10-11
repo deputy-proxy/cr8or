@@ -19,7 +19,6 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Wezlo\FilamentSearchSpotlight\FilamentSearchSpotlightPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -75,9 +74,6 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->spa()
-            ->plugins([
-                FilamentSearchSpotlightPlugin::make(),
-            ])
             ->brandLogo(fn () => view('filament.logo'))
             ->authMiddleware([
                 Authenticate::class,

@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\MarketingStrategies\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\MarketingStrategies\MarketingStrategyResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditMarketingStrategy extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = MarketingStrategyResource::class;
 
     protected function getHeaderActions(): array

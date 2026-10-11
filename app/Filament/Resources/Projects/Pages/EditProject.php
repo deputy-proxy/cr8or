@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Models\Project;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditProject extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = ProjectResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

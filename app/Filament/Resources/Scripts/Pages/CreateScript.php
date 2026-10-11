@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Scripts\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Scripts\ScriptResource;
 use App\Models\ContentItem;
 use App\Models\Script;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateScript extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $item = ContentItem::query()->findOrFail((int) $data['content_item_id']);

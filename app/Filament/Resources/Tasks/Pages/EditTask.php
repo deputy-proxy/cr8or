@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tasks\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Task;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditTask extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = TaskResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

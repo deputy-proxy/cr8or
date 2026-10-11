@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseDecisions\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\EnterpriseDecisions\EnterpriseDecisionResource;
 use App\Models\Enterprise;
 use App\Models\EnterpriseDecision;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateEnterpriseDecision extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = EnterpriseDecisionResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

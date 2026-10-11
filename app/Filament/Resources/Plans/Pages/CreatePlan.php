@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Plans\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Models\Plan;
 use App\Models\Strategy;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreatePlan extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = PlanResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

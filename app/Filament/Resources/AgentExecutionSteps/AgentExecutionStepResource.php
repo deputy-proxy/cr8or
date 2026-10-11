@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AgentExecutionSteps;
 
 use App\Filament\Resources\AgentExecutionSteps\Pages\ListAgentExecutionSteps;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentExecutionStep;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class AgentExecutionStepResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = AgentExecutionStep::class;
 
     protected static ?string $modelLabel = 'Agent Execution Step';
@@ -25,6 +28,11 @@ class AgentExecutionStepResource extends Resource
     protected static ?string $navigationLabel = 'Agent Execution Steps';
 
     protected static ?int $navigationSort = 70;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

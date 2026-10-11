@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Memberships\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
 use App\Models\Organization;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateMembership extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = MembershipResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

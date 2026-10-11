@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AgentSemanticMemoryVersions;
 
 use App\Filament\Resources\AgentSemanticMemoryVersions\Pages\ListAgentSemanticMemoryVersions;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentSemanticMemoryVersion;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class AgentSemanticMemoryVersionResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = AgentSemanticMemoryVersion::class;
 
     protected static ?string $modelLabel = 'Agent Semantic Memory Version';
@@ -25,6 +28,11 @@ class AgentSemanticMemoryVersionResource extends Resource
     protected static ?string $navigationLabel = 'Agent Semantic Memory Versions';
 
     protected static ?int $navigationSort = 110;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

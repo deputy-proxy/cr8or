@@ -31,6 +31,11 @@ class EnterpriseDecisionPolicy
         return $this->enterprisePolicy()->update($user, $decision->enterprise);
     }
 
+    public function delete(User $user, EnterpriseDecision $decision): bool
+    {
+        return false;
+    }
+
     private function enterprisePolicy(): EnterprisePolicy
     {
         return new EnterprisePolicy;

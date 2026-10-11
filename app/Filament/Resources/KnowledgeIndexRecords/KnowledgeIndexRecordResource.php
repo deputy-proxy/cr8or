@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\KnowledgeIndexRecords;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\KnowledgeIndexRecords\Pages\ListKnowledgeIndexRecords;
 use App\Models\KnowledgeIndexRecord;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class KnowledgeIndexRecordResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = KnowledgeIndexRecord::class;
 
     protected static ?string $modelLabel = 'Knowledge Index Record';
@@ -25,6 +28,11 @@ class KnowledgeIndexRecordResource extends Resource
     protected static ?string $navigationLabel = 'Knowledge Index Records';
 
     protected static ?int $navigationSort = 80;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CommandWebhookDeliveries;
 
 use App\Filament\Resources\CommandWebhookDeliveries\Pages\ListCommandWebhookDeliveries;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\CommandWebhookDelivery;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class CommandWebhookDeliveryResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = CommandWebhookDelivery::class;
 
     protected static ?string $modelLabel = 'Command Webhook Delivery';
@@ -25,6 +28,11 @@ class CommandWebhookDeliveryResource extends Resource
     protected static ?string $navigationLabel = 'Command Webhook Deliveries';
 
     protected static ?int $navigationSort = 50;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

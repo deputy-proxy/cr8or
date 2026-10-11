@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Enterprise;
 use App\Models\Product;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateProduct extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = ProductResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

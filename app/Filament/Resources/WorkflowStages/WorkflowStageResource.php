@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WorkflowStages;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\WorkflowStages\Pages\ListWorkflowStages;
 use App\Models\WorkflowStage;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class WorkflowStageResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = WorkflowStage::class;
 
     protected static ?string $modelLabel = 'Workflow Stage';
@@ -25,6 +28,11 @@ class WorkflowStageResource extends Resource
     protected static ?string $navigationLabel = 'Workflow Stages';
 
     protected static ?int $navigationSort = 30;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

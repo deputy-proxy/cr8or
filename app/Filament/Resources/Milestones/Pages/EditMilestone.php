@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Milestones\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Models\Milestone;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditMilestone extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = MilestoneResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

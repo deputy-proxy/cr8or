@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\KnowledgeEmbeddings;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\KnowledgeEmbeddings\Pages\ListKnowledgeEmbeddings;
 use App\Models\KnowledgeEmbedding;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class KnowledgeEmbeddingResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = KnowledgeEmbedding::class;
 
     protected static ?string $modelLabel = 'Knowledge Embedding';
@@ -25,6 +28,11 @@ class KnowledgeEmbeddingResource extends Resource
     protected static ?string $navigationLabel = 'Knowledge Embeddings';
 
     protected static ?int $navigationSort = 100;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tasks\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Enterprise;
 use App\Models\Project;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateTask extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = TaskResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

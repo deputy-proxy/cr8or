@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\IntegrationResults;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationResults\Pages\ListIntegrationResults;
 use App\Models\IntegrationResult;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class IntegrationResultResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = IntegrationResult::class;
 
     protected static ?string $modelLabel = 'Integration Result';
@@ -25,6 +28,11 @@ class IntegrationResultResource extends Resource
     protected static ?string $navigationLabel = 'Integration Results';
 
     protected static ?int $navigationSort = 40;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

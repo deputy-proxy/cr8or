@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditProduct extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = ProductResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

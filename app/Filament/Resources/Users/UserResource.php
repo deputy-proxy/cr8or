@@ -9,6 +9,7 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
@@ -25,6 +26,18 @@ class UserResource extends Resource
     protected static ?string $navigationLabel = 'Users';
 
     protected static ?int $navigationSort = 20;
+
+    public static function getEloquentQuery(): Builder
+    {
+        $organizationIds = auth()->user()?->memberships()->select('organization_id');
+
+        if ($organizationIds === null) {
+            return parent::getEloquentQuery()->whereRaw('1 = 0');
+        }
+
+        return parent::getEloquentQuery()->whereHas('memberships', fn (Builder $query) => $query->whereIn('organization_id', $organizationIds)
+        );
+    }
 
     public static function table(Table $table): Table
     {

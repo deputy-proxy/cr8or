@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseCategories\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\EnterpriseCategories\EnterpriseCategoryResource;
 use App\Models\EnterpriseCategory;
 use App\Models\Organization;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateEnterpriseCategory extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = EnterpriseCategoryResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

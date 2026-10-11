@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseContexts\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\EnterpriseContexts\EnterpriseContextResource;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateEnterpriseContext extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = EnterpriseContextResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

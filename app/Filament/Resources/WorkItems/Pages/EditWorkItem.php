@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WorkItems\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\WorkItems\WorkItemResource;
 use App\Models\WorkItem;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditWorkItem extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = WorkItemResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

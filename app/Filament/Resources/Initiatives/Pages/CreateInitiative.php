@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Initiatives\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Initiatives\InitiativeResource;
 use App\Models\Initiative;
 use App\Models\Plan;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateInitiative extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = InitiativeResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
