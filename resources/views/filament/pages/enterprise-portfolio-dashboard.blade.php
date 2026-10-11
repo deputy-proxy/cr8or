@@ -48,18 +48,6 @@
             </template>
           </div>
         </div>
-        <div class="flex items-center gap-2 text-[11px] text-white/25">
-          <span><span x-text="projects.length"></span> projects</span>
-        </div>
-      </header>
-
-      <!-- ===================== PROJECTS DASHBOARD ===================== -->
-      <template x-if="activeDashboard === 'projects'">
-      <div class="contents">
-      <!-- ===================== CONTROL BAR (search + filters) ===================== -->
-      <div
-        class="control-bar px-6 py-2.5 flex items-center justify-between gap-3 border-b border-white/[0.06] flex-shrink-0"
-      >
         <!-- Search (left) -->
         <div class="relative search-wrapper flex-shrink-0">
           <svg
@@ -96,7 +84,15 @@
             </svg>
           </button>
         </div>
+      </header>
 
+      <!-- ===================== PROJECTS DASHBOARD ===================== -->
+      <template x-if="activeDashboard === 'projects'">
+      <div class="contents">
+      <!-- ===================== CONTROL BAR (search + filters) ===================== -->
+      <div
+        class="control-bar px-6 py-2.5 flex items-center justify-between gap-3 border-b border-white/[0.06] flex-shrink-0"
+      >
         <!-- Filters (right) -->
         <div class="flex items-center gap-2 flex-shrink-0" :class="{ 'mobile-filter-hide': mobileSearchOpen }">
           <!-- Relation type filter dropdown -->
