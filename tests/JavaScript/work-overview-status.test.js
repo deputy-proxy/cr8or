@@ -53,3 +53,42 @@ test('only persisted record nodes expose edit navigation targets', () => {
     assert.equal(getWorkOverviewNodeEditUrl({ type: 'supporting' }), null);
     assert.equal(getWorkOverviewNodeEditUrl(null), null);
 });
+
+test('positions hierarchy and structural group labels above nodes and record leaves to the right', () => {
+    const tree = [{
+        name: 'root',
+        type: 'root',
+        children: [{
+            name: 'enterprise:1',
+            type: 'organization',
+            children: [{
+                name: 'project:1',
+                type: 'planning',
+                children: [
+                    { name: 'group:milestones:1', type: 'group', children: [{ name: 'milestone:1', type: 'planning', children: [] }] },
+                    { name: 'group:work-items:1', type: 'group', children: [{ name: 'work-item:1', type: 'work', children: [] }] },
+                    { name: 'group:tasks:1', type: 'group', children: [{ name: 'task:1', type: 'supporting', children: [] }] },
+                    { name: 'group:empty:1', type: 'group', children: [] },
+                ],
+            }],
+        }],
+    }];
+
+    const [root] = buildWorkOverviewTreeData(tree);
+    const enterprise = root.children[0];
+    const project = enterprise.children[0];
+    const [milestones, workItems, tasks, emptyGroup] = project.children;
+
+    assert.equal(enterprise.label.position, 'top');
+    assert.equal(enterprise.label.align, 'center');
+    assert.equal(project.label.position, 'top');
+    assert.equal(project.label.align, 'center');
+    assert.equal(milestones.label.position, 'top');
+    assert.equal(milestones.label.align, 'center');
+    assert.equal(workItems.label.position, 'top');
+    assert.equal(tasks.label.position, 'top');
+    assert.equal(emptyGroup.label.position, 'top');
+    assert.equal(milestones.children[0].label.position, 'right');
+    assert.equal(workItems.children[0].label.position, 'right');
+    assert.equal(tasks.children[0].label.position, 'right');
+});

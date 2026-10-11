@@ -39,9 +39,19 @@ export function buildWorkOverviewTreeData(tree, mode = 'initial') {
                 ? getWorkStatusColor(node.status, node.overdue)
                 : TYPE_COLORS[node.type] || '#71717a';
 
+        const labelAbove = node.type === 'root'
+            || node.type === 'organization'
+            || node.type === 'group'
+            || hasChildren;
+
         const result = {
             ...node,
             children,
+            label: {
+                position: labelAbove ? 'top' : 'right',
+                verticalAlign: labelAbove ? 'bottom' : 'middle',
+                align: labelAbove ? 'center' : 'left',
+            },
             itemStyle: {
                 ...(node.type === 'root' ? { opacity: 0 } : {}),
                 color,
