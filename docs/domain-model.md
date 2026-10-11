@@ -24,9 +24,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Represent the enterprise being operated.
 
-**Persistent entities:** Enterprise, Enterprise Context, Vision, Mission, Goal, KPI, Product, Customer, Partner, Competitor, Enterprise Decision.
+**Persistent entities:** Enterprise, Enterprise Context (including Mission, Vision and Values), Goal, KPI, Product, Customer, Partner, Competitor, Enterprise Decision.
 
-**Relationships:** An enterprise has structured context, strategic direction, operational entities and recorded decisions. Enterprise Context is a dedicated one-to-one contextual record rather than part of enterprise identity.
+**Relationships:** An enterprise has one Enterprise Context record containing its current mission, vision, values and business context, alongside separate operational entities and recorded decisions.
 
 **Ownership:** CR8OR.
 
@@ -276,6 +276,4 @@ No database columns, migrations, REST endpoints, MCP schemas, queue payloads or 
 **Verified Phase 9.11 implementation:** `KnowledgeRetrievalObservability` records correlation, Enterprise scope, requested mode, candidate/result counts, latency and an allowlisted subset of provider metadata at the canonical retrieval application boundary. It deliberately excludes retrieved titles, summaries, bodies, references and arbitrary provider metadata from logs. Provider, validation and provenance failures are recorded separately from downstream Agent execution failures using the same correlation identifier and error class only. Lexical, semantic and hybrid paths remain covered by deterministic regression tests.
 ## Strategic Context
 
-Enterprise strategic context is first-class and enterprise-scoped. Vision, Mission and Competitor records are append-only versions with explicit `version`, `is_current`, effective dates and supersession links. Replacing strategic context archives the previous version rather than rewriting history.
-
-`StrategicContextService` is the write boundary for these records. Agents receive only the current Vision, Mission and active Competitor versions through the canonical EnterpriseContextAssembler. Historical versions remain queryable for audit and interpretation but are not injected into normal Agent context unless explicitly requested by a future capability.
+Enterprise Context is the authoritative enterprise identity and business-context record. It stores the current Mission and Vision as text fields and Values as a structured JSON list of `{name, description?}` objects edited through the Filament Builder. The model enforces the list/item contract regardless of whether data comes from Filament, MCP, or another application path. Agents and Experts receive these fields through the canonical EnterpriseContextAssembler. Competitor records remain versioned, enterprise-scoped records managed by `StrategicContextService`; replacing a competitor version archives the previous version.

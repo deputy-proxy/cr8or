@@ -59,6 +59,9 @@ final class EnterpriseContextAssembler
             'context' => $context === null ? null : [
                 'id' => $context->getKey(),
                 'description' => $context->description,
+                'mission' => $context->mission,
+                'vision' => $context->vision,
+                'values' => $context->values ?? [],
                 'industry' => $context->industry,
                 'business_model' => $context->business_model,
                 'target_market' => $context->target_market,

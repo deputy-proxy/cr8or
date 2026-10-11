@@ -26,20 +26,16 @@ use App\Models\IntegrationConnection;
 use App\Models\IntegrationJob;
 use App\Models\IntegrationResult;
 use App\Models\Milestone;
-use App\Models\Mission;
 use App\Models\Project;
 use App\Models\Publication;
 use App\Models\PublicationResult;
 use App\Models\PublicationSchedule;
 use App\Models\Task;
-use App\Models\Vision;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkItem;
 use App\Observers\EnterpriseActivityObserver;
 use App\Policies\CompetitorPolicy;
-use App\Policies\MissionPolicy;
-use App\Policies\VisionPolicy;
 use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
@@ -136,8 +132,6 @@ class AppServiceProvider extends ServiceProvider
             $model::observe(EnterpriseActivityObserver::class);
         }
         Gate::policy(Competitor::class, CompetitorPolicy::class);
-        Gate::policy(Mission::class, MissionPolicy::class);
-        Gate::policy(Vision::class, VisionPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
         Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }

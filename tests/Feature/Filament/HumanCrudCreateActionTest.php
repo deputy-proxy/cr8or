@@ -30,31 +30,6 @@ it('registers a create action for every resource with a create page', function (
     }
 });
 
-it('shows the Mission create action only when the policy permits creation', function () {
-    $organization = \App\Models\Organization::factory()->create();
-    $owner = \App\Models\User::factory()->create();
-    $member = \App\Models\User::factory()->create();
-
-    \App\Models\Membership::factory()->owner()->create([
-        'user_id' => $owner->id,
-        'organization_id' => $organization->id,
-    ]);
-    \App\Models\Membership::factory()->create([
-        'user_id' => $member->id,
-        'organization_id' => $organization->id,
-    ]);
-
-    $this->actingAs($owner);
-
-    \Livewire\Livewire::test(\App\Filament\Resources\Missions\Pages\ListMissions::class)
-        ->assertActionVisible('create');
-
-    $this->actingAs($member);
-
-    \Livewire\Livewire::test(\App\Filament\Resources\Missions\Pages\ListMissions::class)
-        ->assertActionHidden('create');
-});
-
 it('delegates resource create authorization to the model policy', function () {
     $organization = \App\Models\Organization::factory()->create();
     $owner = \App\Models\User::factory()->create();
@@ -73,7 +48,7 @@ it('delegates resource create authorization to the model policy', function () {
         \App\Filament\Resources\Enterprises\EnterpriseResource::class,
         \App\Filament\Resources\Products\ProductResource::class,
         \App\Filament\Resources\Strategies\StrategyResource::class,
-        \App\Filament\Resources\Missions\MissionResource::class,
+        \App\Filament\Resources\EnterpriseContexts\EnterpriseContextResource::class,
     ];
 
     $this->actingAs($owner);

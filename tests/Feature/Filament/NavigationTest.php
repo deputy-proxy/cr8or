@@ -28,7 +28,7 @@ function expectedNavigation(): array
 {
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships', 'Enterprises', 'EnterpriseGroups', 'EnterpriseCategories'],
-        'Strategy & Planning' => ['EnterpriseContexts', 'Visions', 'Missions', 'Goals', 'Objectives', 'Kpis', 'Strategies', 'Plans', 'Competitors', 'Products'],
+        'Strategy & Planning' => ['EnterpriseContexts', 'Goals', 'Objectives', 'Kpis', 'Strategies', 'Plans', 'Competitors', 'Products'],
         'Work Management' => ['Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Dependencies', 'Assignments', 'Decisions', 'EnterpriseDecisions'],
         'Knowledge' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Agent Configuration' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments'],
@@ -59,7 +59,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(100);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {

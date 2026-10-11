@@ -30,6 +30,9 @@ it('assembles complete authorized Enterprise context into the canonical Agent co
     EnterpriseContext::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'description' => 'A software business.',
+        'mission' => 'Serve small businesses.',
+        'vision' => 'A world of simpler business operations.',
+        'values' => [['name' => 'Clarity', 'description' => 'Make complexity understandable.']],
         'industry' => 'Software',
         'business_model' => 'Subscription',
         'target_market' => 'SMBs',
@@ -68,6 +71,9 @@ it('assembles complete authorized Enterprise context into the canonical Agent co
         ])
         ->and($data['context'])->toMatchArray([
             'description' => 'A software business.',
+            'mission' => 'Serve small businesses.',
+            'vision' => 'A world of simpler business operations.',
+            'values' => [['name' => 'Clarity', 'description' => 'Make complexity understandable.']],
             'industry' => 'Software',
             'business_model' => 'Subscription',
             'target_market' => 'SMBs',
@@ -138,8 +144,6 @@ it('assembles a stable partial Enterprise context when optional records are abse
         'strategic_context' => [
             'goals' => [],
             'kpis' => [],
-            'vision' => null,
-            'mission' => null,
             'competitors' => [],
         ],
         'products' => [],

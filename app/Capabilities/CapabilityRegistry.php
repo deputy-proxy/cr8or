@@ -688,7 +688,7 @@ final class CapabilityRegistry
                 'enterprise.context.update',
                 EnterpriseContextUpdate::class,
                 UpdateEnterpriseContextTool::class,
-                ['enterprise_context_id' => 'integer|required', 'description' => 'string|nullable', 'industry' => 'string|nullable', 'business_model' => 'string|nullable', 'target_market' => 'string|nullable', 'geography' => 'string|nullable', 'additional_context' => 'object|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['enterprise_context_id' => 'integer|required', 'description' => 'string|nullable', 'mission' => 'string|nullable', 'vision' => 'string|nullable', 'values' => 'array|nullable', 'industry' => 'string|nullable', 'business_model' => 'string|nullable', 'target_market' => 'string|nullable', 'geography' => 'string|nullable', 'additional_context' => 'object|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
                 'none',

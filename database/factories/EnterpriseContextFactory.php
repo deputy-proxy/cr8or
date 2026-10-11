@@ -14,6 +14,9 @@ class EnterpriseContextFactory extends Factory
         return [
             'enterprise_id' => Enterprise::factory(),
             'description' => fake()->optional()->paragraph(),
+            'mission' => null,
+            'vision' => null,
+            'values' => [],
             'industry' => fake()->optional()->jobTitle(),
             'business_model' => fake()->optional()->randomElement([
                 'subscription',

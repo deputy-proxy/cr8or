@@ -54,10 +54,10 @@ it('keeps generated and lifecycle-owned records outside generic CRUD mutations',
     }
 });
 
-it('requires versioned strategic records to be replaced rather than updated or deleted', function () {
+it('requires versioned competitor records to be replaced rather than updated or deleted', function () {
     $user = User::factory()->create();
 
-    foreach ([App\Models\Competitor::class, App\Models\Mission::class, App\Models\Vision::class] as $model) {
+    foreach ([App\Models\Competitor::class] as $model) {
         $record = new $model;
 
         expect(Gate::forUser($user)->allows('update', $record))->toBeFalse()

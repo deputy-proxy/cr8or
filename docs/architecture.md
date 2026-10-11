@@ -69,8 +69,6 @@ Enterprise goals, strategy, plans, work, decisions, and business context.
 | Resource | Filament class location |
 | --- | --- |
 | EnterpriseContexts | app/Filament/Resources/EnterpriseContexts/*Resource.php |
-| Visions | app/Filament/Resources/Visions/*Resource.php |
-| Missions | app/Filament/Resources/Missions/*Resource.php |
 | Goals | app/Filament/Resources/Goals/*Resource.php |
 | Objectives | app/Filament/Resources/Objectives/*Resource.php |
 | Kpis | app/Filament/Resources/Kpis/*Resource.php |

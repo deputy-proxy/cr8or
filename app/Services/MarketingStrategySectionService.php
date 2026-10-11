@@ -19,13 +19,13 @@ final class MarketingStrategySectionService
             'enterprise_context' => [
                 'enterprise' => $enterprise->only(['id', 'name', 'slug', 'status']),
                 'context' => $enterpriseContext?->only([
-                    'description', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
+                    'description', 'mission', 'vision', 'values', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
                 ]) ?? [],
             ],
             'business_market_context' => [
                 'enterprise' => $enterprise->only(['id', 'name', 'slug', 'status']),
                 'context' => $enterpriseContext?->only([
-                    'description', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
+                    'description', 'mission', 'vision', 'values', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
                 ]) ?? [],
             ],
             'target_audiences' => [

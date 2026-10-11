@@ -30,6 +30,9 @@ it('updates existing enterprise context fields without changing enterprise owner
     $context = EnterpriseContext::factory()->create([
         'enterprise_id' => $enterprise->id,
         'description' => 'Old description',
+        'mission' => 'Old mission',
+        'vision' => 'Old vision',
+        'values' => [['name' => 'Old value', 'description' => null]],
         'industry' => 'Old industry',
         'business_model' => 'Existing model',
         'additional_context' => ['old' => true],
@@ -38,6 +41,9 @@ it('updates existing enterprise context fields without changing enterprise owner
     Cr8orServer::actingAs($actor, 'api')->tool(UpdateEnterpriseContextTool::class, [
         'enterprise_context_id' => $context->id,
         'description' => 'Updated enterprise description',
+        'mission' => 'Updated mission',
+        'vision' => 'Updated vision',
+        'values' => [['name' => 'Integrity', 'description' => 'Act honestly.']],
         'industry' => 'Education technology',
         'additional_context' => ['positioning' => 'practical learning'],
     ])->assertOk()->assertSee(['Updated enterprise description', 'Education technology']);
@@ -46,6 +52,9 @@ it('updates existing enterprise context fields without changing enterprise owner
         ->and($context->description)->toBe('Updated enterprise description')
         ->and($context->industry)->toBe('Education technology')
         ->and($context->business_model)->toBe('Existing model')
+        ->and($context->mission)->toBe('Updated mission')
+        ->and($context->vision)->toBe('Updated vision')
+        ->and($context->values)->toBe([['name' => 'Integrity', 'description' => 'Act honestly.']])
         ->and($context->additional_context)->toBe(['positioning' => 'practical learning']);
 });
 
