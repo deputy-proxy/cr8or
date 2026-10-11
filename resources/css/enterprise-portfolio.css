@@ -10,9 +10,9 @@
 
 @media (max-width: 767px) {
     .enterprise-portfolio-map .canvas-area { width: 100%; min-width: 0 !important; }
-    .enterprise-portfolio-map .streams-container { width: 100%; min-width: 0 !important; flex-direction: column; gap: 1.5rem !important; padding: 0 16px !important; }
+    .enterprise-portfolio-map .streams-container { width: 100%; min-width: 0 !important; flex-direction: column; gap: 1.5rem !important; padding: 0 10px !important; }
     .enterprise-portfolio-map .stream-col { width: 100%; min-width: 0 !important; flex: 1 1 auto !important; padding: 0; height: auto; }
-    .enterprise-portfolio-map .stream-header { position: sticky; top: 0; z-index: 5; }
+    .enterprise-portfolio-map .stream-header { position: sticky; top: 0; z-index: 5; padding-top: .25rem; margin-bottom: 1rem; }
     .enterprise-portfolio-map .control-bar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-left: 16px; padding-right: 16px; }
     .enterprise-portfolio-map .control-bar::-webkit-scrollbar { display: none; }
     .enterprise-portfolio-map .search-wrapper { display: flex; align-items: center; }
