@@ -79,6 +79,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | marketing.content-series.update | MarketingContentSeriesUpdate | update-content-series | UpdateContentSeriesTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy | none | no | no | standard |
 | marketing.content-series.lifecycle | ContentSeriesLifecycle | transition-content-series | TransitionContentSeriesTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + ContentSeries policy | none | no | no | standard |
 | enterprise.context.create | EnterpriseContextCreate | create-enterprise-context | CreateEnterpriseContextTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy | none | no | no | standard |
+| enterprise.context.update | EnterpriseContextUpdate | update-enterprise-context | UpdateEnterpriseContextTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy | none | no | no | standard |
 | enterprise.context.retrieve | EnterpriseContextRetrieve | retrieve-enterprise-context | RetrieveEnterpriseContextTool | business | yes | yes | CapabilityInvocationService | EnterprisePolicy::view + EnterpriseContextService authorization | none | no | no | standard |
 | marketing.objective.create | ObjectiveCreate | create-objective | CreateObjectiveTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Objective policy | none | no | no | standard |
 | marketing.objective.update | ObjectiveUpdate | update-objective | UpdateObjectiveTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Objective policy | none | no | no | standard |
@@ -122,6 +123,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateContentItemTool | GovernedCapabilityTool | governed business | marketing.content.create | CapabilityInvocationService |
 | CreateContentSeriesTool | DomainMutationTool | governed business | marketing.content-series.create | Operation direct |
 | CreateEnterpriseContextTool | DomainMutationTool | governed business | enterprise.context.create | Operation direct |
+| UpdateEnterpriseContextTool | DomainMutationTool | governed business | enterprise.context.update | Operation direct |
 | CreateEnterpriseTool | AuthorizedTool | governed business | enterprise.create | Operation direct |
 | CreateKnowledgeIndexTool | GovernedCapabilityTool | governed business | knowledge.index.create | CapabilityInvocationService |
 | CreateKnowledgeItemTool | GovernedCapabilityTool | governed business | knowledge.item.create | CapabilityInvocationService |
@@ -285,6 +287,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | DomainMutationToolOperation | - | - | framework adapter |
 | DomainTransitionToolOperation | - | - | framework adapter |
 | EnterpriseContextCreate | enterprise.context.create | create-enterprise-context | governed |
+| EnterpriseContextUpdate | enterprise.context.update | update-enterprise-context | governed |
 | EnterpriseContextRetrieve | enterprise.context.retrieve | retrieve-enterprise-context | governed |
 | EnterpriseCreate | enterprise.create | create-enterprise | governed |
 | ExecuteAgent | agent.execute | mcp_agent_execute | lifecycle |
