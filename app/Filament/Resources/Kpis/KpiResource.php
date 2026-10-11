@@ -33,7 +33,7 @@ class KpiResource extends Resource
 
     protected static ?string $navigationLabel = 'KPIs';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {

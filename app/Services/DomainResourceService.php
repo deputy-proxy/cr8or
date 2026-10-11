@@ -52,6 +52,9 @@ final class DomainResourceService
 
         return $enterprise->context()->create([
             'description' => $attributes['description'] ?? null,
+            'mission' => $attributes['mission'] ?? null,
+            'vision' => $attributes['vision'] ?? null,
+            'values' => $attributes['values'] ?? [],
             'industry' => $attributes['industry'] ?? null,
             'business_model' => $attributes['business_model'] ?? null,
             'target_market' => $attributes['target_market'] ?? null,
@@ -66,7 +69,7 @@ final class DomainResourceService
         Gate::forUser($actor)->authorize('update', $context);
 
         $context->update(array_intersect_key($attributes, array_flip([
-            'description', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
+            'description', 'mission', 'vision', 'values', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
         ])));
 
         return $context->refresh();

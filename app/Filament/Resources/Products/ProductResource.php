@@ -33,7 +33,7 @@ class ProductResource extends Resource
 
     protected static ?string $navigationLabel = 'Products';
 
-    protected static ?int $navigationSort = 100;
+    protected static ?int $navigationSort = 80;
 
     public static function form(Schema $schema): Schema
     {

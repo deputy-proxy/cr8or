@@ -36,6 +36,9 @@ it('allows an organization admin to create enterprise context through MCP', func
         ->tool(CreateEnterpriseContextTool::class, [
             'enterprise_id' => $enterprise->getKey(),
             'description' => 'A software company serving small businesses.',
+            'mission' => 'Serve small businesses.',
+            'vision' => 'Simplify business operations.',
+            'values' => [['name' => 'Trust', 'description' => 'Keep commitments.']],
             'industry' => 'Software',
             'business_model' => 'subscription',
             'target_market' => 'Small and medium businesses',
@@ -50,7 +53,10 @@ it('allows an organization admin to create enterprise context through MCP', func
         ->firstOrFail();
 
     expect($context->description)->toBe('A software company serving small businesses.')
-        ->and($context->additional_context)->toBe(['values' => ['simplicity', 'trust']]);
+        ->and($context->additional_context)->toBe(['values' => ['simplicity', 'trust']])
+        ->and($context->mission)->toBe('Serve small businesses.')
+        ->and($context->vision)->toBe('Simplify business operations.')
+        ->and($context->values)->toBe([['name' => 'Trust', 'description' => 'Keep commitments.']]);
 });
 
 it('denies enterprise context creation to organization members without admin authority', function () {
@@ -130,6 +136,26 @@ it('validates enterprise context input before persistence', function () {
         ->tool(CreateEnterpriseContextTool::class, [
             'enterprise_id' => $enterprise->getKey(),
             'additional_context' => 'not-an-object',
+        ])
+        ->assertHasErrors();
+
+    expect(EnterpriseContext::query()->where('enterprise_id', $enterprise->getKey())->exists())->toBeFalse();
+});
+
+it('rejects malformed enterprise values before persistence', function () {
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    Membership::factory()->owner()->create([
+        'user_id' => $user->getKey(),
+        'organization_id' => $organization->getKey(),
+    ]);
+
+    Cr8orServer::actingAs($user, 'api')
+        ->tool(CreateEnterpriseContextTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'values' => ['Trust'],
         ])
         ->assertHasErrors();
 

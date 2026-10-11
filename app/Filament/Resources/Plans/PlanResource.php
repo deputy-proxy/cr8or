@@ -34,7 +34,7 @@ class PlanResource extends Resource
 
     protected static ?string $navigationLabel = 'Plans';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 60;
 
     public static function form(Schema $schema): Schema
     {

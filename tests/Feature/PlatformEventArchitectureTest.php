@@ -21,7 +21,7 @@ it('classifies platform events without replacing authoritative state', function 
         enterpriseId: $enterprise->id,
         actorId: null,
         correlationId: 'corr-1',
-        data: ['record_type' => 'vision', 'version' => 2],
+        data: ['record_type' => 'enterprise_context', 'version' => 2],
     );
 
     $integration = new IntegrationEvent(

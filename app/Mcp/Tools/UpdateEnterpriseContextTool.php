@@ -20,6 +20,12 @@ class UpdateEnterpriseContextTool extends DomainMutationTool
         return [
             'enterprise_context_id' => $schema->integer()->min(1)->required(),
             'description' => $schema->string()->max(10000),
+            'mission' => $schema->string()->max(10000),
+            'vision' => $schema->string()->max(10000),
+            'values' => $schema->array()->items($schema->object([
+                'name' => $schema->string()->min(1)->max(120)->required(),
+                'description' => $schema->string()->max(1000),
+            ])->withoutAdditionalProperties()),
             'industry' => $schema->string()->max(255),
             'business_model' => $schema->string()->max(255),
             'target_market' => $schema->string()->max(255),
@@ -36,6 +42,12 @@ class UpdateEnterpriseContextTool extends DomainMutationTool
         return [
             'enterprise_context_id' => ['required', 'integer', 'min:1', 'exists:enterprise_contexts,id'],
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'mission' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'vision' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'values' => ['sometimes', 'array', 'list'],
+            'values.*' => ['required', 'array:name,description'],
+            'values.*.name' => ['required', 'string', 'max:120'],
+            'values.*.description' => ['nullable', 'string', 'max:1000'],
             'industry' => ['sometimes', 'nullable', 'string', 'max:255'],
             'business_model' => ['sometimes', 'nullable', 'string', 'max:255'],
             'target_market' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -87,7 +99,7 @@ class UpdateEnterpriseContextTool extends DomainMutationTool
         }
 
         $attributes = array_intersect_key($validated, array_flip([
-            'description', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
+            'description', 'mission', 'vision', 'values', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
         ]));
 
         if ($attributes === []) {
@@ -107,6 +119,9 @@ class UpdateEnterpriseContextTool extends DomainMutationTool
             'id' => $record->id,
             'enterprise_id' => $record->enterprise_id,
             'description' => $record->description,
+            'mission' => $record->mission,
+            'vision' => $record->vision,
+            'values' => $record->values ?? [],
             'industry' => $record->industry,
             'business_model' => $record->business_model,
             'target_market' => $record->target_market,

@@ -31,6 +31,9 @@ it('creates and retrieves Enterprise Context through the Capability boundary', f
         enterprise: $enterprise,
         inputPayload: [
             'description' => 'Persisted context for downstream runtime composition.',
+            'mission' => 'Deliver useful software.',
+            'vision' => 'Make business simpler.',
+            'values' => [['name' => 'Trust', 'description' => 'Keep commitments.']],
             'industry' => 'Software',
             'business_model' => 'Subscription',
             'target_market' => 'SMBs',
@@ -62,6 +65,9 @@ it('creates and retrieves Enterprise Context through the Capability boundary', f
             'context' => [
                 'id' => $persistedContext->getKey(),
                 'description' => 'Persisted context for downstream runtime composition.',
+                'mission' => 'Deliver useful software.',
+                'vision' => 'Make business simpler.',
+                'values' => [['name' => 'Trust', 'description' => 'Keep commitments.']],
                 'industry' => 'Software',
                 'business_model' => 'Subscription',
                 'target_market' => 'SMBs',
@@ -130,7 +136,13 @@ it('exposes persisted Enterprise Context and its primary key through the canonic
     $persistedContext = EnterpriseContext::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'description' => 'Downstream agents must discover this from persisted context.',
+        'mission' => 'Deliver reliable services.',
+        'vision' => 'Make work easier.',
+        'values' => [['name' => 'Reliability', 'description' => 'Do what we promise.']],
         'industry' => 'Education',
+        'mission' => 'Deliver reliable services.',
+        'vision' => 'Make work easier.',
+        'values' => [['name' => 'Reliability', 'description' => 'Do what we promise.']],
     ]);
 
     $result = app(EnterpriseContextService::class)->retrieve($user, $enterprise);
