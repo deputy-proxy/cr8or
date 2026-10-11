@@ -48,8 +48,8 @@ class WorkOverview extends Page
     /** @var array<int, array{label: string, count: int, url: string}> */
     public array $overview = [];
 
-    /** @var array{nodes: array<int, array<string, mixed>>, links: array<int, array<string, mixed>>} */
-    public array $sankeyData = ['nodes' => [], 'links' => []];
+    /** @var array<int, array<string, mixed>> */
+    public array $treeData = [];
 
     public function mount(): void
     {
@@ -78,7 +78,7 @@ class WorkOverview extends Page
             ['label' => 'Enterprise Decisions', 'count' => $this->countForAuthorizedEnterprises(EnterpriseDecision::class), 'url' => EnterpriseDecisionResource::getUrl()],
         ];
 
-        $this->sankeyData = $this->buildSankeyData();
+        $this->treeData = $this->buildTreeData();
     }
 
     public static function canAccess(): bool
@@ -113,13 +113,13 @@ class WorkOverview extends Page
     }
 
     /**
-     * Build the chart only from records inside the user's authorized organizations.
+     * Build a nested tree from records inside the user's authorized organizations.
      * Tasks retain their persisted parent-child hierarchy and are not implicitly linked to Work Items.
      * Assignments, dependencies, and decisions follow their persisted relationships to Work Items.
      *
-     * @return array{nodes: array<int, array<string, mixed>>, links: array<int, array<string, mixed>>}
+     * @return array<int, array<string, mixed>>
      */
-    private function buildSankeyData(): array
+    private function buildTreeData(): array
     {
         $enterprises = Enterprise::query()
             ->whereIn('organization_id', static::authorizedOrganizationIds())
@@ -167,10 +167,7 @@ class WorkOverview extends Page
         $projects = Project::query()->whereIn('enterprise_id', $ids)->orderBy('name')->get();
         $projectIds = $projects->modelKeys();
         foreach ($projects as $project) {
-            $parent = $project->initiative_id && isset($initiativeEnterprise[$project->initiative_id])
-                ? 'initiative:'.$project->initiative_id
-                : 'enterprise:'.$project->enterprise_id;
-            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', ProjectResource::getUrl(), $parent, $this->statusMetadata($project->status));
+            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', ProjectResource::getUrl(), 'enterprise:'.$project->enterprise_id, $this->statusMetadata($project->status));
         }
 
         $workItems = WorkItem::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
@@ -292,6 +289,62 @@ class WorkOverview extends Page
             $addNode('enterprise-decision:'.$decision->id, 'Enterprise Decision: '.$decision->title, 'governance', EnterpriseDecisionResource::getUrl(), 'enterprise:'.$decision->enterprise_id);
         }
 
-        return ['nodes' => $nodes, 'links' => $links];
+        $childrenByParent = [];
+        $childIds = [];
+        foreach ($links as $link) {
+            $childrenByParent[$link['source']][] = $link['target'];
+            $childIds[$link['target']] = true;
+        }
+
+        $nodesById = [];
+        foreach ($nodes as $node) {
+            $nodesById[$node['name']] = $node;
+        }
+
+        $buildNode = function (string $id, array $ancestors = []) use (&$buildNode, $nodesById, $childrenByParent): ?array {
+            if (isset($ancestors[$id]) || ! isset($nodesById[$id])) {
+                return null;
+            }
+
+            $node = $nodesById[$id];
+            $node['children'] = [];
+            $nextAncestors = $ancestors;
+            $nextAncestors[$id] = true;
+
+            foreach ($childrenByParent[$id] ?? [] as $childId) {
+                $child = $buildNode($childId, $nextAncestors);
+                if ($child !== null) {
+                    $node['children'][] = $child;
+                }
+            }
+
+            return $node;
+        };
+
+        $enterpriseRoots = [];
+        foreach ($nodes as $node) {
+            if ($node['type'] !== 'organization' || isset($childIds[$node['name']])) {
+                continue;
+            }
+
+            $root = $buildNode($node['name']);
+            if ($root !== null) {
+                $enterpriseRoots[] = $root;
+            }
+        }
+
+        if ($enterpriseRoots === []) {
+            return [];
+        }
+
+        // ECharts tree renders one root per series; this is a presentation-only container,
+        // not a CR8OR domain entity or relationship.
+        return [[
+            'name' => 'root:work-overview',
+            'label' => 'Authorized Enterprises',
+            'type' => 'root',
+            'url' => '#',
+            'children' => $enterpriseRoots,
+        ]];
     }
 }

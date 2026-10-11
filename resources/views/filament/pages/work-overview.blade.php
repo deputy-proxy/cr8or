@@ -19,22 +19,22 @@
             </div>
         </div>
 
-        @if (empty($sankeyData['nodes']))
+        @if (empty($treeData))
             <div class="rounded-sm border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
                 No work records are available in your authorized organizations yet.
             </div>
         @else
             <div
                 wire:ignore
-                data-work-overview-sankey
-                class="overflow-x-auto rounded-sm border border-gray-200 bg-gray-950 dark:border-gray-700"
+                data-work-overview-tree
+                class="rounded-sm border border-gray-200 bg-gray-950 dark:border-gray-700"
             >
-                <script type="application/json" data-work-overview-source>{!! json_encode($sankeyData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
-                <div data-work-overview-chart class="h-[620px] min-w-[900px] w-full" style="height: 620px; min-width: 900px; width: 100%;"></div>
+                <script type="application/json" data-work-overview-source>{!! json_encode($treeData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
+                <div data-work-overview-chart class="h-[680px] w-full" style="height: 680px; width: 100%;"></div>
                 <div data-work-overview-empty hidden class="p-8 text-center text-sm text-gray-400">There are no linked work records to visualize yet. Add projects or related records to see the hierarchy.</div>
             </div>
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Sample-free view of persisted records. Link widths are illustrative. Tasks follow their current project/parent-task relationships; they are not implicitly attached to Work Items.
+                Hierarchy of persisted records. Tasks follow their current project and parent-task relationships; they are not implicitly attached to Work Items.
             </p>
         @endif
     </x-filament::section>

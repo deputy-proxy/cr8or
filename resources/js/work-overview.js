@@ -1,19 +1,10 @@
 import { init, use } from 'echarts/core';
-import { SankeyChart } from 'echarts/charts';
+import { TreeChart } from 'echarts/charts';
 import { TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { getWorkStatusColor } from './work-overview-status.js';
+import { buildWorkOverviewTreeData } from './work-overview-tree.js';
 
-use([SankeyChart, TooltipComponent, CanvasRenderer]);
-
-const colors = {
-    organization: '#a1a1aa',
-    planning: '#3b82f6',
-    work: '#22c55e',
-    supporting: '#f59e0b',
-    governance: '#a855f7',
-    group: '#71717a',
-};
+use([TreeChart, TooltipComponent, CanvasRenderer]);
 
 function escapeHtml(value) {
     return String(value)
@@ -25,7 +16,7 @@ function escapeHtml(value) {
 }
 
 function initializeWorkOverviewCharts() {
-    document.querySelectorAll('[data-work-overview-sankey]:not([data-initialized])').forEach((root) => {
+    document.querySelectorAll('[data-work-overview-tree]:not([data-initialized])').forEach((root) => {
         const sourceElement = root.querySelector('[data-work-overview-source]');
         const chartElement = root.querySelector('[data-work-overview-chart]');
         const emptyElement = root.querySelector('[data-work-overview-empty]');
@@ -37,11 +28,11 @@ function initializeWorkOverviewCharts() {
             source = JSON.parse(sourceElement.textContent);
         } catch (error) {
             chartElement.textContent = 'The work hierarchy data could not be read.';
-            console.error('Work Overview Sankey data is invalid.', error);
+            console.error('Work Overview tree data is invalid.', error);
             return;
         }
 
-        if (!source.nodes?.length || !source.links?.length) {
+        if (!Array.isArray(source) || source.length === 0) {
             chartElement.hidden = true;
             emptyElement.hidden = false;
             root.dataset.initialized = 'true';
@@ -49,46 +40,10 @@ function initializeWorkOverviewCharts() {
         }
 
         const chart = init(chartElement, null, { renderer: 'canvas' });
-        const expanded = new Set(source.nodes.filter((node) => node.type === 'organization').map((node) => node.name));
-        const childrenOf = (id) => source.links.filter((link) => link.source === id).map((link) => link.target);
-
-        function descendantsOf(id, result = [], seen = new Set()) {
-            if (seen.has(id)) return result;
-            seen.add(id);
-            childrenOf(id).forEach((child) => {
-                if (seen.has(child)) return;
-                result.push(child);
-                descendantsOf(child, result, seen);
-            });
-            return result;
-        }
-
-        function visibleIds() {
-            const visible = new Set();
-            const roots = source.nodes.filter((node) => !source.links.some((link) => link.target === node.name));
-            const visit = (id) => {
-                if (visible.has(id)) return;
-                visible.add(id);
-                if (expanded.has(id)) childrenOf(id).forEach(visit);
-            };
-            roots.forEach((node) => visit(node.name));
-            return visible;
-        }
+        let expansionMode = 'initial';
 
         function render() {
-            const visible = visibleIds();
-            const nodes = source.nodes.filter((node) => visible.has(node.name)).map((node) => ({
-                name: node.name,
-                itemStyle: {
-                    color: node.type === 'group'
-                        ? colors.group
-                        : node.status
-                            ? getWorkStatusColor(node.status, node.overdue)
-                            : colors[node.type] || '#71717a',
-                },
-            }));
-            const links = source.links.filter((link) => visible.has(link.source) && visible.has(link.target));
-
+            const data = buildWorkOverviewTreeData(source, expansionMode);
             chart.setOption({
                 backgroundColor: 'transparent',
                 animationDuration: 250,
@@ -98,84 +53,88 @@ function initializeWorkOverviewCharts() {
                     borderColor: '#3f3f46',
                     textStyle: { color: '#fafafa', fontSize: 12 },
                     formatter: (params) => {
-                        if (params.dataType === 'edge') {
-                            const from = source.nodes.find((node) => node.name === params.data.source);
-                            const to = source.nodes.find((node) => node.name === params.data.target);
-                            return `${escapeHtml(from?.label || params.data.source)} → ${escapeHtml(to?.label || params.data.target)}`;
-                        }
-                        const node = source.nodes.find((item) => item.name === params.data.name);
-                        const count = childrenOf(params.data.name).length;
-                        const status = node?.status ? `<br>Status: ${escapeHtml(node.status.replaceAll('_', ' '))}` : '';
-                        const dueAt = node?.dueAt ? `<br>Due: ${escapeHtml(new Date(node.dueAt).toLocaleDateString())}` : '';
-                        const overdue = node?.overdue ? '<br><strong>Overdue</strong>' : '';
+                        const node = params.data;
+                        if (!node) return '';
+
+                        const status = node.status
+                            ? `<br>Status: ${escapeHtml(String(node.status).replaceAll('_', ' '))}`
+                            : '';
+                        const dueAt = node.dueAt
+                            ? `<br>Due: ${escapeHtml(new Date(node.dueAt).toLocaleDateString())}`
+                            : '';
+                        const overdue = node.overdue ? '<br><strong>Overdue</strong>' : '';
+                        const count = Array.isArray(node.children) ? node.children.length : 0;
                         const interaction = count
-                            ? `<br>${count} child record(s). Click to ${expanded.has(node.name) ? 'collapse' : 'expand'}.`
-                            : node?.url && node.url !== '#' ? '<br>Click to open record.' : '';
-                        return `<strong>${escapeHtml(node?.label || params.data.name)}</strong>${status}${dueAt}${overdue}${interaction}`;
+                            ? `<br>${count} child record(s). Click to expand or collapse.`
+                            : node.url && node.url !== '#' ? '<br>Click to open record.' : '';
+
+                        return `<strong>${escapeHtml(node.label || node.name)}</strong>${status}${dueAt}${overdue}${interaction}`;
                     },
                 },
                 series: [{
-                    type: 'sankey',
-                    orient: 'horizontal',
-                    left: 24,
-                    right: 310,
+                    type: 'tree',
+                    data,
                     top: 24,
+                    left: 24,
                     bottom: 24,
-                    nodeAlign: 'left',
-                    nodeWidth: 14,
-                    nodeGap: 16,
-                    nodeSort: null,
-                    layoutIterations: 32,
-                    data: nodes,
-                    links,
-                    emphasis: { focus: 'adjacency', lineStyle: { opacity: 0.8 } },
-                    itemStyle: { borderWidth: 0, borderRadius: 3 },
-                    lineStyle: { color: 'gradient', opacity: 0.3, curveness: 0.48 },
+                    right: 260,
+                    orient: 'LR',
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    edgeShape: 'curve',
+                    edgeForkPosition: '50%',
+                    expandAndCollapse: true,
+                    roam: true,
+                    lineStyle: { color: '#71717a', width: 1.2, curveness: 0.5 },
+                    emphasis: { focus: 'descendant' },
                     label: {
-                        position: 'right',
+                        position: 'left',
+                        verticalAlign: 'middle',
+                        align: 'right',
                         color: '#e4e4e7',
                         fontSize: 11,
                         distance: 8,
-                        width: 285,
+                        width: 230,
                         overflow: 'truncate',
-                        fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
                         formatter: (params) => {
-                            const node = source.nodes.find((item) => item.name === params.name);
-                            if (!node) return params.name;
-                            const hasChildren = childrenOf(node.name).length > 0;
-                            const marker = hasChildren ? (expanded.has(node.name) ? '▾ ' : '▸ ') : '';
-                            return marker + node.label;
+                            const node = params.data;
+                            if (!node || node.type === 'root') return '';
+                            const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+                            const marker = hasChildren ? (node.collapsed ? '▸ ' : '▾ ') : '';
+                            return marker + (node.label || node.name);
                         },
                     },
+                    leaves: {
+                        label: {
+                            position: 'right',
+                            align: 'left',
+                            color: '#e4e4e7',
+                            fontSize: 11,
+                            width: 230,
+                            overflow: 'truncate',
+                            formatter: (params) => params.data?.label || params.data?.name || '',
+                        },
+                    },
+                    animationDurationUpdate: 350,
                 }],
             }, true);
         }
 
         chart.on('click', (params) => {
             if (params.dataType !== 'node') return;
-            const id = params.data.name;
-            if (!childrenOf(id).length) {
-                const node = source.nodes.find((item) => item.name === id);
-                if (node?.url && node.url !== '#') window.location.href = node.url;
-                return;
+            const node = params.data;
+            if (node && (!Array.isArray(node.children) || node.children.length === 0) && node.url && node.url !== '#') {
+                window.location.href = node.url;
             }
-
-            if (expanded.has(id)) {
-                descendantsOf(id).forEach((child) => expanded.delete(child));
-                expanded.delete(id);
-            } else {
-                expanded.add(id);
-                const node = source.nodes.find((item) => item.name === id);
-                if (node?.type === 'group' && node.groupType === 'tasks') {
-                    source.nodes
-                        .filter((item) => item.groupId === id && childrenOf(item.name).length > 0)
-                        .forEach((item) => expanded.add(item.name));
-                }
-            }
-            render();
         });
 
-        root._workOverviewChart = { chart, source, expanded, childrenOf, render };
+        root._workOverviewChart = {
+            chart,
+            setExpansionMode(mode) {
+                expansionMode = mode;
+                render();
+            },
+        };
 
         try {
             render();
@@ -183,7 +142,7 @@ function initializeWorkOverviewCharts() {
         } catch (error) {
             chart.dispose();
             delete root._workOverviewChart;
-            console.error('Work Overview Sankey failed to render.', error);
+            console.error('Work Overview tree failed to render.', error);
             chartElement.textContent = 'The work hierarchy could not be rendered. Check the browser console for details.';
             return;
         }
@@ -202,22 +161,16 @@ document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-work-overview-action]');
     if (!button) return;
 
-    const action = button.dataset.workOverviewAction;
-    document.querySelectorAll('[data-work-overview-sankey][data-initialized="true"]').forEach((root) => {
-        const state = root._workOverviewChart;
-        if (!state) return;
+    const modeByAction = {
+        'expand-all': 'expand',
+        'collapse-all': 'collapse',
+        reset: 'initial',
+    };
+    const mode = modeByAction[button.dataset.workOverviewAction];
+    if (!mode) return;
 
-        if (action === 'expand-all') {
-            state.source.nodes.forEach((node) => {
-                if (state.childrenOf(node.name).length) state.expanded.add(node.name);
-            });
-        } else if (action === 'collapse-all') {
-            state.expanded.clear();
-        } else if (action === 'reset') {
-            state.expanded.clear();
-            state.source.nodes.filter((node) => node.type === 'organization').forEach((node) => state.expanded.add(node.name));
-        }
-        state.render();
+    document.querySelectorAll('[data-work-overview-tree][data-initialized="true"]').forEach((root) => {
+        root._workOverviewChart?.setExpansionMode(mode);
     });
 });
 
