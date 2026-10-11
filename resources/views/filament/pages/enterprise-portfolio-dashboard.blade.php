@@ -984,7 +984,7 @@
       </div>
 
       <!-- ===================== REFRESH BAR ===================== -->
-      <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-white/[0.06] bg-[#0a0a0d]">
+      <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-white/[0.06] bg-black">
         <div class="flex items-center gap-2.5">
           <div class="relative w-4 h-4">
             <svg class="w-4 h-4 -rotate-90" viewBox="0 0 16 16">
