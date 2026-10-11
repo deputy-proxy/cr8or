@@ -67,6 +67,7 @@ Workflow definition publication rejects a Capability that does not support `work
 | marketing.content-series.update | ✓ | ✓ | ✓ |
 | marketing.content-series.lifecycle | ✓ | ✓ | ✓ |
 | enterprise.context.create | ✓ | ✓ | ✓ |
+| enterprise.context.update | ✓ | ✓ | ✓ |
 | enterprise.context.retrieve | ✓ | ✓ | ✓ |
 | marketing.objective.create | ✓ | ✓ | ✓ |
 | marketing.objective.update | ✓ | ✓ | ✓ |
