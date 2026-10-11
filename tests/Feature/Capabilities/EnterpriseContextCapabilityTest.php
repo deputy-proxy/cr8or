@@ -1,15 +1,15 @@
 <?php
 
-use App\\Data\\CapabilityInvocationRequest;
-use App\\Models\\Enterprise;
-use App\\Models\\EnterpriseContext;
-use App\\Models\\Membership;
-use App\\Models\\Organization;
-use App\\Models\\User;
-use App\\Services\\CapabilityInvocationService;
-use App\\Services\\EnterpriseContextService;
-use Illuminate\\Auth\\Access\\AuthorizationException;
-use Illuminate\\Database\\Eloquent\\ModelNotFoundException;
+use App\Data\CapabilityInvocationRequest;
+use App\Models\Enterprise;
+use App\Models\EnterpriseContext;
+use App\Models\Membership;
+use App\Models\Organization;
+use App\Models\User;
+use App\Services\CapabilityInvocationService;
+use App\Services\EnterpriseContextService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 it('creates and retrieves Enterprise Context through the Capability boundary', function () {
     $user = User::factory()->create();
