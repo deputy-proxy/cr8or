@@ -25,6 +25,7 @@ use App\Mcp\Tools\UpdateAudienceTool;
 use App\Mcp\Tools\UpdateCampaignTool;
 use App\Mcp\Tools\UpdateChannelTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
+use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
@@ -52,6 +53,7 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
     $tools = [
         CreateEnterpriseTool::class,
         CreateEnterpriseContextTool::class,
+        UpdateEnterpriseContextTool::class,
         CreateObjectiveTool::class,
         UpdateObjectiveTool::class,
         CreateCampaignTool::class,
