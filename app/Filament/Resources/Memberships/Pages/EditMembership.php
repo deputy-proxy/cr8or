@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Memberships\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Memberships\MembershipResource;
 use App\Models\Membership;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditMembership extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = MembershipResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

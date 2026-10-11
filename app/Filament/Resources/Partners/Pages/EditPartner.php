@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Partners\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Partners\PartnerResource;
 use App\Models\Partner;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditPartner extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = PartnerResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

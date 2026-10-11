@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MetricDefinitions\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\MetricDefinitions\MetricDefinitionResource;
 use App\Models\MetricDefinition;
 use Filament\Resources\Pages\EditRecord;
@@ -9,6 +10,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditMetricDefinition extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = MetricDefinitionResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

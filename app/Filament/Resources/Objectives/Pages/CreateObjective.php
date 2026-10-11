@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Objectives\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Models\Enterprise;
 use App\Models\Goal;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateObjective extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = ObjectiveResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

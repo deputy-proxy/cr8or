@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Customers\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Customer;
 use App\Models\Enterprise;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateCustomer extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = CustomerResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

@@ -37,7 +37,9 @@ use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkItem;
 use App\Observers\EnterpriseActivityObserver;
-use App\Policies\StrategicRecordPolicy;
+use App\Policies\CompetitorPolicy;
+use App\Policies\MissionPolicy;
+use App\Policies\VisionPolicy;
 use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
@@ -133,9 +135,9 @@ class AppServiceProvider extends ServiceProvider
         foreach ([Enterprise::class, EnterpriseContext::class, Project::class, Task::class, WorkItem::class, Milestone::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
             $model::observe(EnterpriseActivityObserver::class);
         }
-        Gate::policy(Competitor::class, StrategicRecordPolicy::class);
-        Gate::policy(Mission::class, StrategicRecordPolicy::class);
-        Gate::policy(Vision::class, StrategicRecordPolicy::class);
+        Gate::policy(Competitor::class, CompetitorPolicy::class);
+        Gate::policy(Mission::class, MissionPolicy::class);
+        Gate::policy(Vision::class, VisionPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
         Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }

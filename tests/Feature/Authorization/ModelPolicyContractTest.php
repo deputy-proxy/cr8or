@@ -15,7 +15,8 @@ it('has an explicit policy with the complete CRUD contract for every model', fun
             expect($reflection->hasMethod($ability))->toBeTrue("{$policy} is missing {$ability}()");
         }
 
-        expect(Gate::getPolicyFor($model))->not->toBeNull();
+        expect(Gate::getPolicyFor($model))
+            ->toBeInstanceOf($policy, "Unexpected policy mapping for {$model}");
     }
 });
 

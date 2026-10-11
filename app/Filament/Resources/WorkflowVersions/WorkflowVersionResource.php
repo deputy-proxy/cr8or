@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WorkflowVersions;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\WorkflowVersions\Pages\ListWorkflowVersions;
 use App\Models\WorkflowVersion;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class WorkflowVersionResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = WorkflowVersion::class;
 
     protected static ?string $modelLabel = 'Workflow Version';
@@ -25,6 +28,11 @@ class WorkflowVersionResource extends Resource
     protected static ?string $navigationLabel = 'Workflow Versions';
 
     protected static ?int $navigationSort = 20;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

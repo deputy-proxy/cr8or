@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\WorkItems\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\WorkItems\WorkItemResource;
 use App\Models\Enterprise;
 use App\Models\Project;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateWorkItem extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = WorkItemResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

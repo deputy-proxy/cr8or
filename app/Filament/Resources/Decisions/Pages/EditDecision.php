@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\Decisions\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Decisions\DecisionResource;
 use App\Models\Decision;
 use Filament\Resources\Pages\EditRecord;
 
 class EditDecision extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = DecisionResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\KnowledgeDocuments\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Concerns\KnowledgeEditIntegrity;
 use App\Filament\Resources\KnowledgeDocuments\KnowledgeDocumentResource;
 use Filament\Actions\DeleteAction;
@@ -9,6 +10,7 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditKnowledgeDocument extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
     use KnowledgeEditIntegrity;
 
     protected static string $resource = KnowledgeDocumentResource::class;

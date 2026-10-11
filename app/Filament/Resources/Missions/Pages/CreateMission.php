@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Missions\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Missions\MissionResource;
 use App\Models\Enterprise;
 use App\Services\StrategicContextService;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateMission extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = MissionResource::class;
 
     protected function handleRecordCreation(array $data): Model

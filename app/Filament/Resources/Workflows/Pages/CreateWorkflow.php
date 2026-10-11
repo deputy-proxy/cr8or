@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Workflows\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
 use App\Models\Workflow;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateWorkflow extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = WorkflowResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

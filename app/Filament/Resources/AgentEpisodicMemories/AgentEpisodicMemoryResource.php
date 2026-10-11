@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AgentEpisodicMemories;
 
 use App\Filament\Resources\AgentEpisodicMemories\Pages\ListAgentEpisodicMemories;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentEpisodicMemory;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class AgentEpisodicMemoryResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = AgentEpisodicMemory::class;
 
     protected static ?string $modelLabel = 'Agent Episodic Memory';
@@ -25,6 +28,11 @@ class AgentEpisodicMemoryResource extends Resource
     protected static ?string $navigationLabel = 'Agent Episodic Memories';
 
     protected static ?int $navigationSort = 90;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Initiatives\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Initiatives\InitiativeResource;
 use App\Models\Initiative;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditInitiative extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = InitiativeResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

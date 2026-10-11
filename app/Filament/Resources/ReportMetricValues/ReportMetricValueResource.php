@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ReportMetricValues;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ReportMetricValues\Pages\ListReportMetricValues;
 use App\Models\ReportMetricValue;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class ReportMetricValueResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = ReportMetricValue::class;
 
     protected static ?string $modelLabel = 'Report Metric Value';
@@ -25,6 +28,11 @@ class ReportMetricValueResource extends Resource
     protected static ?string $navigationLabel = 'Report Metric Values';
 
     protected static ?int $navigationSort = 30;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

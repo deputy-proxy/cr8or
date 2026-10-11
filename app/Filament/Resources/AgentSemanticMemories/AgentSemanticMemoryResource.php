@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AgentSemanticMemories;
 
 use App\Filament\Resources\AgentSemanticMemories\Pages\ListAgentSemanticMemories;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\AgentSemanticMemory;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class AgentSemanticMemoryResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = AgentSemanticMemory::class;
 
     protected static ?string $modelLabel = 'Agent Semantic Memory';
@@ -25,6 +28,11 @@ class AgentSemanticMemoryResource extends Resource
     protected static ?string $navigationLabel = 'Agent Semantic Memories';
 
     protected static ?int $navigationSort = 100;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

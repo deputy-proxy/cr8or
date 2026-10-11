@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ReportSnapshots;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ReportSnapshots\Pages\ListReportSnapshots;
 use App\Models\ReportSnapshot;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class ReportSnapshotResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = ReportSnapshot::class;
 
     protected static ?string $modelLabel = 'Report Snapshot';
@@ -25,6 +28,11 @@ class ReportSnapshotResource extends Resource
     protected static ?string $navigationLabel = 'Report Snapshots';
 
     protected static ?int $navigationSort = 20;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

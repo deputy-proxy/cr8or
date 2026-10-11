@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Workflows\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Workflows\WorkflowResource;
 use App\Models\Enterprise;
 use App\Models\Workflow;
@@ -14,6 +15,8 @@ use LogicException;
 
 class EditWorkflow extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = WorkflowResource::class;
 
     protected function handleRecordUpdate(Model $record, array $data): Model

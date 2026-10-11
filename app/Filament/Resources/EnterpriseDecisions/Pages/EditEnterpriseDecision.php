@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseDecisions\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\EnterpriseDecisions\EnterpriseDecisionResource;
 use App\Models\EnterpriseDecision;
 use Filament\Actions\DeleteAction;
@@ -9,6 +10,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditEnterpriseDecision extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = EnterpriseDecisionResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

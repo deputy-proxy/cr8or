@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ApprovalDecisions;
 
 use App\Filament\Resources\ApprovalDecisions\Pages\ListApprovalDecisions;
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Models\ApprovalDecision;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class ApprovalDecisionResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = ApprovalDecision::class;
 
     protected static ?string $modelLabel = 'Approval Decision';
@@ -25,6 +28,11 @@ class ApprovalDecisionResource extends Resource
     protected static ?string $navigationLabel = 'Approval Decisions';
 
     protected static ?int $navigationSort = 60;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

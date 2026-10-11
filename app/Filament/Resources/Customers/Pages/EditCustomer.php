@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Customers\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Customer;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditCustomer extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = CustomerResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

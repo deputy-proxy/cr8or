@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Strategies\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Strategies\StrategyResource;
 use App\Models\Objective;
 use App\Models\Strategy;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Gate;
 
 class CreateStrategy extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = StrategyResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

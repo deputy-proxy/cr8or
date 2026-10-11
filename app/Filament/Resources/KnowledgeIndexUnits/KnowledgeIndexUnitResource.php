@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\KnowledgeIndexUnits;
 
+use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\KnowledgeIndexUnits\Pages\ListKnowledgeIndexUnits;
 use App\Models\KnowledgeIndexUnit;
 use BackedEnum;
@@ -12,6 +13,8 @@ use Filament\Tables\Table;
 
 class KnowledgeIndexUnitResource extends Resource
 {
+    use ScopesAuthorizedRecords;
+
     protected static ?string $model = KnowledgeIndexUnit::class;
 
     protected static ?string $modelLabel = 'Knowledge Index Unit';
@@ -25,6 +28,11 @@ class KnowledgeIndexUnitResource extends Resource
     protected static ?string $navigationLabel = 'Knowledge Index Units';
 
     protected static ?int $navigationSort = 90;
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopeAuthorizedOwnership(parent::getEloquentQuery());
+    }
 
     public static function table(Table $table): Table
     {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Kpis\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Kpis\KpiResource;
 use App\Models\Kpi;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditKpi extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = KpiResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

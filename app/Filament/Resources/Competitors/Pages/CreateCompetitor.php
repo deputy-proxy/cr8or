@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Competitors\Pages;
 
 use App\Filament\Resources\Competitors\CompetitorResource;
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Models\Enterprise;
 use App\Services\StrategicContextService;
 use Filament\Resources\Pages\CreateRecord;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateCompetitor extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = CompetitorResource::class;
 
     protected function handleRecordCreation(array $data): Model

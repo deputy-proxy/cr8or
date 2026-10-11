@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\StatementEntries\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\StatementEntries\StatementEntryResource;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateStatementEntries extends CreateRecord
 {
+    use AuthorizesScopedRecordCreation;
+
     protected static string $resource = StatementEntryResource::class;
 }

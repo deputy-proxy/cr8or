@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Goals\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\Goals\GoalResource;
 use App\Models\Goal;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditGoal extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = GoalResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\EnterpriseContexts\Pages;
 
+use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
 use App\Filament\Resources\EnterpriseContexts\EnterpriseContextResource;
 use App\Models\EnterpriseContext;
 use Filament\Actions\DeleteAction;
@@ -10,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 
 class EditEnterpriseContext extends EditRecord
 {
+    use AuthorizesScopedRecordUpdate;
+
     protected static string $resource = EnterpriseContextResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array
