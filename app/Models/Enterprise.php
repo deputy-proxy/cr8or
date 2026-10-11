@@ -15,7 +15,14 @@ use LogicException;
 #[Fillable(['organization_id', 'enterprise_group_id', 'enterprise_category_id', 'name', 'slug', 'status', 'connections', 'github_repository', 'github_repository_url', 'github_issues_sync_status', 'github_issues_synced_at', 'github_issues_sync_error', 'website_domain'])]
 class Enterprise extends Model
 {
-    public const CONNECTION_TYPES = ['depends_on', 'supports', 'integrates_with', 'related_to', 'competes_with', 'owns'];
+    public const CONNECTION_TYPES = [
+    'promoted_by',
+    'owned_by',
+    'partners_with',
+    'integrates_with',
+    'depends_on',
+    'provides_to',
+];
 
     protected function casts(): array
     {
