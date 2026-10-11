@@ -6,7 +6,7 @@
     >
       <!-- ===================== HEADER ===================== -->
       <header
-        class="px-2 py-2 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0"
+        class="px-0 py-0 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0"
       >
         <div class="flex items-center gap-4 min-w-0">
           <!-- Main dashboard filter -->
