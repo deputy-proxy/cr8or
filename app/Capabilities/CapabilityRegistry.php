@@ -31,6 +31,7 @@ use App\Mcp\Tools\RetrieveMemoryTool;
 use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
+use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Mcp\Tools\UpdateWorkItemTool;
@@ -54,6 +55,7 @@ use App\Operations\DiscoverWorkflows;
 use App\Operations\DuplicateWorkflow;
 use App\Operations\EnterpriseContextCreate;
 use App\Operations\EnterpriseContextRetrieve;
+use App\Operations\EnterpriseContextUpdate;
 use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
@@ -678,6 +680,15 @@ final class CapabilityRegistry
                 EnterpriseContextCreate::class,
                 \App\Mcp\Tools\CreateEnterpriseContextTool::class,
                 ['input' => 'object'],
+                ['success' => 'boolean', 'result' => 'object'],
+                'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
+                'none',
+            ),
+            $this->definition(
+                'enterprise.context.update',
+                EnterpriseContextUpdate::class,
+                UpdateEnterpriseContextTool::class,
+                ['enterprise_context_id' => 'integer|required', 'description' => 'string|nullable', 'industry' => 'string|nullable', 'business_model' => 'string|nullable', 'target_market' => 'string|nullable', 'geography' => 'string|nullable', 'additional_context' => 'object|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + EnterpriseContext policy',
                 'none',
