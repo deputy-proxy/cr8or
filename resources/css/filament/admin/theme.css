@@ -61,10 +61,6 @@
     color-scheme: dark;
 }
 
-.fi-body :focus-visible {
-    @apply dark:outline-amber-400;
-}
-
 .fi-ta-text{
     @apply p-2;
 }
