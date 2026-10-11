@@ -349,14 +349,6 @@
                             @click.stop="selectProject(project)"
                           ></div>
                         </div>
-                        <div
-                          class="text-[11px] text-white/40 leading-relaxed mt-1"
-                          x-text="project.description"
-                        ></div>
-                        <div
-                          class="text-[10px] text-white/25"
-                          x-text="'→ ' + project.target"
-                        ></div>
                         <button
                           @click.stop="openIssuesModal(project)"
                           class="mt-2.5 w-full flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.02] px-2 py-1.5 text-[10px] text-white/50 hover:bg-white/[0.06] hover:text-white/70 hover:border-white/20 transition-all duration-150"
