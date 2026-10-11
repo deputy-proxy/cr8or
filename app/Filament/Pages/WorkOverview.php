@@ -152,7 +152,7 @@ class WorkOverview extends Page
             }
 
             $known[$id] = true;
-            $nodes[] = array_merge(['name' => $id, 'label' => $label, 'type' => $type, 'url' => $url], $metadata);
+            $nodes[] = array_merge(['name' => $id, 'displayLabel' => $label, 'type' => $type, 'url' => $url], $metadata);
             if ($parent !== null && isset($known[$parent])) {
                 $links[] = ['source' => $parent, 'target' => $id, 'value' => 1];
             }
