@@ -224,7 +224,7 @@ it('reuses persisted capability results when a worker retries a running step', f
             structured: [
                 'answer' => 'Should not be called.',
                 'capability_requests' => [[
-                    'capability' => 'work.item.create',
+                    'capability' => 'work.task.create',
                     'expert_slug' => 'operations',
                     'target_context' => ['enterprise_id' => $enterprise->getKey()],
                     'input_payload' => ['name' => 'Duplicate guard'],
@@ -246,14 +246,14 @@ it('reuses persisted capability results when a worker retries a running step', f
         prompt: 'Resume persisted step.',
         correlationId: 'persisted-step-retry',
     ));
-    $idempotencyKey = hash('sha256', implode('|', [$execution->idempotency_key, 1, 0, 'work.item.create']));
+    $idempotencyKey = hash('sha256', implode('|', [$execution->idempotency_key, 1, 0, 'work.task.create']));
 
     $modelResult = [
         'text' => 'Persisted model result.',
         'structured' => [
             'answer' => 'Persisted model result.',
             'capability_requests' => [[
-                'capability' => 'work.item.create',
+                'capability' => 'work.task.create',
                 'expert_slug' => 'operations',
                 'target_context' => ['enterprise_id' => $enterprise->getKey()],
                 'input_payload' => ['name' => 'Duplicate guard'],
@@ -269,10 +269,10 @@ it('reuses persisted capability results when a worker retries a running step', f
     ];
     $cachedResult = [
         'status' => 'executed',
-        'capability' => 'work.item.create',
+        'capability' => 'work.task.create',
         'idempotency_key' => $idempotencyKey,
         'result' => ['id' => 999, 'name' => 'Already executed'],
-        'provenance' => ['operation' => \App\Operations\CreateWorkItem::class],
+        'provenance' => ['operation' => \App\Operations\CreateTask::class],
     ];
 
     $step = AgentExecutionStep::query()->create([

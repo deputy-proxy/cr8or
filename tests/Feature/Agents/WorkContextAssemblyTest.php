@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowVersion;
-use App\Models\WorkItem;
 use App\Services\McpContextAssembler;
 use App\Services\WorkContextAssembler;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -42,7 +41,7 @@ it('assembles bounded authorized work context with coherent relationships and ex
         'name' => 'Child task',
         'due_at' => now()->addDay(),
     ]);
-    $workItem = WorkItem::factory()->create([
+    $workItem = Task::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'project_id' => $project->getKey(),
         'name' => 'Work item',
@@ -71,7 +70,6 @@ it('assembles bounded authorized work context with coherent relationships and ex
         'enterprise_id' => $enterprise->getKey(),
         'project_id' => $project->getKey(),
         'task_id' => $childTask->getKey(),
-        'work_item_id' => $workItem->getKey(),
         'status' => Workflow::STATUS_RUNNING,
     ]);
     $version = WorkflowVersion::factory()->create([
@@ -100,7 +98,7 @@ it('assembles bounded authorized work context with coherent relationships and ex
     expect($data['enterprise']['id'])->toBe($enterprise->getKey())
         ->and($data['projects'])->toHaveCount(1)
         ->and($data['projects'][0]['id'])->toBe($project->getKey())
-        ->and($data['tasks'])->toHaveCount(2)
+        ->and($data['tasks'])->toHaveCount(3)
         ->and($taskById[$childTask->getKey()])->toMatchArray([
             'id' => $childTask->getKey(),
             'project_id' => $project->getKey(),
@@ -112,7 +110,7 @@ it('assembles bounded authorized work context with coherent relationships and ex
             'name' => 'Parent task',
         ])
         ->and($taskById[$parentTask->getKey()]['children'])->toContain($childTask->getKey())
-        ->and($data['work_items'][0]['id'])->toBe($workItem->getKey())
+        ->and($taskById[$workItem->getKey()]['name'])->toBe('Work item')
         ->and($data['milestones'][0]['id'])->toBe($milestone->getKey())
         ->and($data['assignments'][0])->toMatchArray([
             'id' => $assignment->getKey(),
@@ -139,7 +137,6 @@ it('assembles bounded authorized work context with coherent relationships and ex
                 'status' => Workflow::STATUS_RUNNING,
                 'project_id' => $project->getKey(),
                 'task_id' => $childTask->getKey(),
-                'work_item_id' => $workItem->getKey(),
             ],
             'execution' => [
                 'id' => $execution->getKey(),
@@ -192,7 +189,7 @@ it('bounds each work context collection', function () {
     Task::factory()->count(101)->create([
         'enterprise_id' => $enterprise->getKey(),
     ]);
-    WorkItem::factory()->count(101)->create([
+    Task::factory()->count(101)->create([
         'enterprise_id' => $enterprise->getKey(),
     ]);
     Milestone::factory()->count(101)->forProject(
@@ -203,7 +200,7 @@ it('bounds each work context collection', function () {
 
     expect($data['projects'])->toHaveCount(100)
         ->and($data['tasks'])->toHaveCount(100)
-        ->and($data['work_items'])->toHaveCount(100)
+        ->and($data['tasks'])->toHaveCount(100)
         ->and($data['milestones'])->toHaveCount(100);
 });
 it('does not broaden assignments when no work references are selected', function () {

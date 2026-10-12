@@ -19,7 +19,7 @@ use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateStrategyTool;
-use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GetAgentDelegationTool;
@@ -33,7 +33,7 @@ use App\Mcp\Tools\GetKnowledgeIndexTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
 use App\Mcp\Tools\GetStrategyTool;
-use App\Mcp\Tools\GetWorkItemTool;
+use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDelegationsTool;
 use App\Mcp\Tools\ListAgentDescriptorTool;
@@ -138,7 +138,7 @@ it('routes the governed agent.execute MCP entrypoint explicitly to interactive m
         'mode' => 'interactive',
         'capability_requests' => [[
             'step' => 1,
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'expert_slug' => 'operations',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'input_payload' => ['name' => 'MCP interactive capability'],
@@ -277,7 +277,7 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
 
     foreach (['agent.delegate', 'marketing.plan', 'strategy.create'] as $capability) {
     }
-    foreach (['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'] as $capability) {
+    foreach (['strategy.create', 'strategy.update', 'work.task.create', 'work.task.update'] as $capability) {
     }
 
     $objective = e2eCall($server, CreateObjectiveTool::class, [
@@ -299,9 +299,9 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
     ], $report)['result'];
     $marketingStrategyId = $marketingStrategyResponse['id'];
 
-    $workItem = e2eCall($server, CreateWorkItemTool::class, [
+    $workItem = e2eCall($server, CreateTaskTool::class, [
         'enterprise_id' => $enterpriseId,
-        'name' => 'E2E Work Item',
+        'name' => 'E2E Task',
         'description' => 'Work context for the Product Expert.',
         'status' => 'planned',
     ], $report)['result'];
@@ -402,7 +402,7 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
 
     $strategyResponse = e2eCall($server, GetStrategyTool::class, ['id' => $strategyId], $report);
     unset($strategyResponse);
-    e2eCall($server, GetWorkItemTool::class, ['id' => $workItemId], $report);
+    e2eCall($server, GetTaskTool::class, ['id' => $workItemId], $report);
     e2eCall($server, GetAgentDelegationTool::class, ['enterprise_id' => $enterpriseId, 'agent_delegation_id' => $delegationId], $report);
     e2eCall($server, ListAgentDelegationsTool::class, ['enterprise_id' => $enterpriseId, 'status' => 'succeeded'], $report);
     e2eCall($server, GetExecutionTool::class, ['enterprise_id' => $enterpriseId, 'agent_execution_id' => $parentExecutionId], $report);
@@ -543,13 +543,13 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
         'agent_execution_id' => $execution->getKey(),
         'expected_step' => 1,
         'idempotency_key' => 'continuous-interactive-e2e-step-1',
-        'reasoning' => 'Use the Operations Expert to create the first durable work item.',
+        'reasoning' => 'Use the Operations Expert to create the first durable task.',
         'capability_requests' => [[
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'expert_slug' => 'operations',
             'step' => 1,
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
-            'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Interactive E2E work item'],
+            'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Interactive E2E task'],
             'idempotency_key' => 'continuous-interactive-e2e-domain-1',
         ]],
         'delegation_requests' => [],
@@ -558,7 +558,7 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
     ]);
     $stepOne->assertOk()->assertSee('reasoning')->assertSee('mcp_agent_continue');
 
-    expect(App\Models\WorkItem::query()->where('name', 'Interactive E2E work item')->count())->toBe(1)
+    expect(App\Models\Task::query()->where('name', 'Interactive E2E task')->count())->toBe(1)
         ->and($execution->refresh()->current_step)->toBe(1)
         ->and($execution->status)->toBe(AgentExecution::STATUS_REASONING);
 
@@ -574,7 +574,7 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
         'termination_reason' => 'ignored duplicate',
     ])->assertOk();
 
-    expect(App\Models\WorkItem::query()->where('name', 'Interactive E2E work item')->count())->toBe(1)
+    expect(App\Models\Task::query()->where('name', 'Interactive E2E task')->count())->toBe(1)
         ->and($execution->refresh()->status)->toBe(AgentExecution::STATUS_REASONING);
 
     $server->tool(ContinueAgentExecutionTool::class, [
@@ -582,7 +582,7 @@ it('runs a multi-step interactive continuation E2E without invoking a ModelProvi
         'agent_execution_id' => $execution->getKey(),
         'expected_step' => 2,
         'idempotency_key' => 'continuous-interactive-e2e-step-2',
-        'reasoning' => 'The authoritative work item exists, so the workflow can terminate.',
+        'reasoning' => 'The authoritative task exists, so the workflow can terminate.',
         'capability_requests' => [],
         'delegation_requests' => [],
         'termination' => 'completed',

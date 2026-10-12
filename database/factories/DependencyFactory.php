@@ -6,7 +6,6 @@ use App\Enums\DependencyType;
 use App\Models\Dependency;
 use App\Models\Enterprise;
 use App\Models\Task;
-use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Dependency> */
@@ -21,7 +20,7 @@ class DependencyFactory extends Factory
             'project_id' => null,
             'predecessor_type' => Task::class,
             'predecessor_id' => null,
-            'successor_type' => WorkItem::class,
+            'successor_type' => Task::class,
             'successor_id' => null,
             'type' => DependencyType::Blocks,
         ];
@@ -37,7 +36,7 @@ class DependencyFactory extends Factory
             }
 
             if ($dependency->getAttribute('successor_id') === null) {
-                $successor = WorkItem::factory()->create(['enterprise_id' => $dependency->getAttribute('enterprise_id')]);
+                $successor = Task::factory()->create(['enterprise_id' => $dependency->getAttribute('enterprise_id')]);
                 $dependency->successor_type = $successor->getMorphClass();
                 $dependency->successor_id = $successor->getKey();
             }

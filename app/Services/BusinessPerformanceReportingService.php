@@ -13,8 +13,8 @@ use App\Models\MetricDefinition;
 use App\Models\Report;
 use App\Models\ReportMetricValue;
 use App\Models\ReportSnapshot;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -163,11 +163,11 @@ final class BusinessPerformanceReportingService
                 'unit' => 'count',
                 'methodology' => 'Count enterprise objectives created inside the calculation period.',
             ],
-            'work_items_created' => [
-                'name' => 'Work items created',
-                'description' => 'Work items created during the calculation period.',
+            'tasks_created' => [
+                'name' => 'Tasks created',
+                'description' => 'Tasks created during the calculation period.',
                 'unit' => 'count',
-                'methodology' => 'Count enterprise work items created inside the calculation period.',
+                'methodology' => 'Count enterprise tasks created inside the calculation period.',
             ],
             'agent_executions_completed' => [
                 'name' => 'Agent executions completed',
@@ -220,7 +220,7 @@ final class BusinessPerformanceReportingService
             ->orderBy('id')
             ->get(['id', 'name', 'created_at']);
 
-        $workItems = WorkItem::query()
+        $tasks = Task::query()
             ->where('enterprise_id', $enterprise->getKey())
             ->whereBetween('created_at', [$periodStart, $periodEnd])
             ->orderBy('id')
@@ -262,10 +262,10 @@ final class BusinessPerformanceReportingService
                 'name' => $objective->name,
                 'created_at' => Carbon::parse((string) $objective->created_at)->toISOString(),
             ])->all(),
-            'work' => $workItems->map(fn (WorkItem $workItem): array => [
-                'id' => $workItem->getKey(),
-                'status' => $workItem->status,
-                'created_at' => Carbon::parse((string) $workItem->created_at)->toISOString(),
+            'tasks' => $tasks->map(fn (Task $task): array => [
+                'id' => $task->getKey(),
+                'status' => $task->status,
+                'created_at' => Carbon::parse((string) $task->created_at)->toISOString(),
             ])->all(),
             'agent_execution' => $executions->map(fn (AgentExecution $execution): array => [
                 'id' => $execution->getKey(),
@@ -306,7 +306,7 @@ final class BusinessPerformanceReportingService
             'finance_net_movement' => ['value' => $financeNet, 'unit' => 'currency', 'calculation' => 'Copied from the latest FinancialReport.net_movement in the report period.', 'source_records' => $latestFinance === null ? [] : [$latestFinance]],
             'marketing_active_campaigns' => ['value' => (string) count(array_filter($source['marketing'], fn (array $row): bool => $row['status'] === Campaign::STATUS_ACTIVE)), 'unit' => 'count', 'calculation' => 'Count source campaign records with active status.', 'source_records' => $source['marketing']],
             'strategy_objectives_created' => ['value' => (string) count($source['strategy']), 'unit' => 'count', 'calculation' => 'Count source objective records created in the report period.', 'source_records' => $source['strategy']],
-            'work_items_created' => ['value' => (string) count($source['work']), 'unit' => 'count', 'calculation' => 'Count source work-item records created in the report period.', 'source_records' => $source['work']],
+            'tasks_created' => ['value' => (string) count($source['tasks']), 'unit' => 'count', 'calculation' => 'Count source task records created in the report period.', 'source_records' => $source['tasks']],
             'agent_executions_completed' => ['value' => (string) count(array_filter($source['agent_execution'], fn (array $row): bool => $row['status'] === AgentExecution::STATUS_COMPLETED)), 'unit' => 'count', 'calculation' => 'Count source Agent execution records completed in the report period.', 'source_records' => $source['agent_execution']],
             'agent_executions_failed' => ['value' => (string) count(array_filter($source['agent_execution'], fn (array $row): bool => $row['status'] === AgentExecution::STATUS_FAILED)), 'unit' => 'count', 'calculation' => 'Count source Agent execution records failed in the report period.', 'source_records' => $source['agent_execution']],
             'business_health_attention' => ['value' => (string) count(array_filter($source['business_health'], fn (array $row): bool => $row['health_status'] === 'attention')), 'unit' => 'count', 'calculation' => 'Count source BusinessHealthResult records with attention status.', 'source_records' => $source['business_health']],

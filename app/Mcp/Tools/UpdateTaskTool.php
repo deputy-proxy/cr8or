@@ -3,8 +3,8 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -16,18 +16,21 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use LogicException;
 
-#[Name('update-work-item')]
-#[Description('Update an existing work item through the authorized CR8OR work capability.')]
+#[Name('update-task')]
+#[Description('Update an existing task through the authorized CR8OR work capability.')]
 #[IsIdempotent]
-class UpdateWorkItemTool extends GovernedCapabilityTool
+class UpdateTaskTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
-            'work_item_id' => $schema->integer()->min(1)->description('Work item id.')->required(),
-            'name' => $schema->string()->min(1)->max(255)->description('Replacement work item name.'),
-            'description' => $schema->string()->max(10000)->description('Replacement work item description.'),
-            'status' => $schema->string()->max(100)->description('Replacement work item status.'),
+            'task_id' => $schema->integer()->min(1)->description('Task id.')->required(),
+            'name' => $schema->string()->min(1)->max(255)->description('Replacement task name.'),
+            'description' => $schema->string()->max(10000)->description('Replacement task description.'),
+            'status' => $schema->string()->max(100)->description('Replacement task status.'),
+            'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task.'),
+            'priority' => $schema->string()->max(50)->description('Task priority.'),
+            'due_at' => $schema->string()->description('ISO 8601 due timestamp.'),
             'project_id' => $schema->integer()->min(1)->description('Replacement project id in the same enterprise.'),
             'agent_assignment_id' => $schema->integer()->min(1)->description('Required with agent_execution_id for an Agent-backed invocation.'),
             'agent_execution_id' => $schema->integer()->min(1)->description('Required with agent_assignment_id for an Agent-backed invocation.'),
@@ -37,12 +40,15 @@ class UpdateWorkItemTool extends GovernedCapabilityTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.work.item.update', function (string $correlationId) use ($request, $authorization, $registry) {
+        return $this->executeWithErrors($request, 'mcp.work.task.update', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
-                'work_item_id' => ['required', 'integer', 'min:1', 'exists:work_items,id'],
+                'task_id' => ['required', 'integer', 'min:1', 'exists:tasks,id'],
                 'name' => ['sometimes', 'string', 'min:1', 'max:255'],
                 'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
                 'status' => ['sometimes', 'string', 'max:100'],
+                'parent_task_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:tasks,id'],
+                'priority' => ['sometimes', 'string', 'max:50'],
+                'due_at' => ['sometimes', 'nullable', 'date'],
                 'project_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:projects,id'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
@@ -55,9 +61,9 @@ class UpdateWorkItemTool extends GovernedCapabilityTool
                 throw new AuthenticationException;
             }
 
-            /** @var WorkItem $workItem */
-            $workItem = WorkItem::query()->findOrFail($validated['work_item_id']);
-            $enterprise = $workItem->enterprise;
+            /** @var Task $task */
+            $task = Task::query()->findOrFail($validated['task_id']);
+            $enterprise = $task->enterprise;
 
             $authorization->authorizeMutation(
                 $actor,
@@ -66,27 +72,30 @@ class UpdateWorkItemTool extends GovernedCapabilityTool
                 $validated['agent_assignment_id'] ?? null,
                 $validated['agent_execution_id'] ?? null,
                 $validated['approval_request_id'] ?? null,
-                ['work_item_id' => $workItem->getKey()],
-                ['update', $workItem],
+                ['task_id' => $task->getKey()],
+                ['update', $task],
             );
 
-            $attributes = array_intersect_key($validated, array_flip(['name', 'description', 'status', 'project_id']));
+            $attributes = array_intersect_key($validated, array_flip(['name', 'description', 'status', 'project_id', 'parent_task_id', 'priority', 'due_at']));
 
             if ($attributes === []) {
-                throw new LogicException('At least one mutable work item field is required.');
+                throw new LogicException('At least one mutable task field is required.');
             }
 
-            $workItem = $this->executeCapability($registry, $actor, ['work_item' => $workItem, ...$validated, 'attributes' => $attributes, 'target_context' => ['work_item_id' => $workItem->getKey()]]);
+            $task = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, 'task' => $task, ...$validated, 'attributes' => $attributes, 'target_context' => ['task_id' => $task->getKey()]]);
 
             return Response::structured([
                 'success' => true,
                 'result' => [
-                    'id' => $workItem->getKey(),
-                    'enterprise_id' => $workItem->enterprise_id,
-                    'project_id' => $workItem->project_id,
-                    'name' => $workItem->name,
-                    'description' => $workItem->description,
-                    'status' => $workItem->status,
+                    'id' => $task->getKey(),
+                    'enterprise_id' => $task->enterprise_id,
+                    'project_id' => $task->project_id,
+                    'name' => $task->name,
+                    'description' => $task->description,
+                    'status' => $task->status,
+                    'parent_task_id' => $task->parent_task_id,
+                    'priority' => $task->priority,
+                    'due_at' => $task->due_at,
                 ],
             ]);
         });

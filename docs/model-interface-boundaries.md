@@ -6,7 +6,7 @@ CR8OR exposes persistent domain records through Filament and MCP. Those surfaces
 
 Business intent, configuration, knowledge, planning, or maintainable business state. Authorized humans may create/edit/delete where the Resource and policy permit it. Existing model invariants may still make selected fields immutable.
 
-**Models:** Organization, Enterprise, Membership, EnterpriseContext, Customer, Partner, Product, Plan, Goal, KPI, Objective, Strategy, Initiative, Project, Task, WorkItem, Assignment, Dependency, Milestone, KnowledgeContext, KnowledgeDocument, KnowledgeItem, KnowledgeReference, KnowledgeSource, KnowledgeSpecification, Script, Asset, Audience, Channel, FinancialAccount, FinancialPeriod, Budget, Invoice, Revenue, Expense, TransactionCategory, Statement, StatementEntry, Transaction.
+**Models:** Organization, Enterprise, Membership, EnterpriseContext, Customer, Partner, Product, Plan, Goal, KPI, Objective, Strategy, Initiative, Project, Task, Task, Assignment, Dependency, Milestone, KnowledgeContext, KnowledgeDocument, KnowledgeItem, KnowledgeReference, KnowledgeSource, KnowledgeSpecification, Script, Asset, Audience, Channel, FinancialAccount, FinancialPeriod, Budget, Invoice, Revenue, Expense, TransactionCategory, Statement, StatementEntry, Transaction.
 
 **Version records:** KnowledgeVersion is create-only. It preserves a new version rather than providing unrestricted update/delete semantics.
 

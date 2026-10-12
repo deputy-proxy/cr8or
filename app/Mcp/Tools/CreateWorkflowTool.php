@@ -30,7 +30,6 @@ class CreateWorkflowTool extends GovernedCapabilityTool
             'completion_criteria' => $schema->object(),
             'project_id' => $schema->integer()->min(1),
             'task_id' => $schema->integer()->min(1),
-            'work_item_id' => $schema->integer()->min(1),
         ];
     }
 
@@ -71,7 +70,6 @@ class CreateWorkflowTool extends GovernedCapabilityTool
                 'completion_criteria' => ['nullable', 'array'],
                 'project_id' => ['nullable', 'integer', 'min:1'],
                 'task_id' => ['nullable', 'integer', 'min:1'],
-                'work_item_id' => ['nullable', 'integer', 'min:1'],
             ]);
 
             $validated['enterprise_specific'] = (bool) ($validated['enterprise_specific'] ?? true);

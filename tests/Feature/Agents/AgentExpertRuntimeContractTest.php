@@ -268,7 +268,7 @@ it('propagates the canonical correlation and Capability Request through Expert e
         ->and($result->requestedCapabilities[0]->execution->getKey())->toBe($execution->getKey())
         ->and($result->requestedCapabilities[0]->resolvedCorrelationId())->toBe($execution->correlation_id)
         ->and($result->requestedCapabilities[0]->toArray())->toMatchArray([
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $execution->getKey(),
             'expert_slug' => 'runtime-contract-expert',
@@ -342,5 +342,5 @@ it('rejects invalid runtime implementations deterministically', function (): voi
         expectedReasoningOutput: 'Reject malformed Capability requests.',
         targetContext: ['enterprise_id' => $enterprise->getKey()],
         correlationId: $execution->correlation_id,
-    )))->toThrow(AuthorizationException::class, 'not authorized to use capability [work.item.create] through Expert [invalid-contract-expert]');
+    )))->toThrow(AuthorizationException::class, 'not authorized to use capability [work.task.create] through Expert [invalid-contract-expert]');
 });

@@ -15,8 +15,8 @@ use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\AgentExecutionService;
 use App\Services\McpContextAssembler;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -44,7 +44,7 @@ function testExpertRuntimeClass(): string
                 responsibilities: ['analyze'],
                 methodology: 'Evidence-first analysis.',
                 requiredContext: ['enterprise'],
-                capabilities: ['work.item.create'],
+                capabilities: ['work.task.create'],
             );
         }
 
@@ -230,7 +230,7 @@ it('re-authorizes a state-changing capability and requires approval when configu
             'agent_execution_id' => $executionId,
             'actor_id' => $actor->getKey(),
             'approver_id' => $actor->getKey(),
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'status' => ApprovalRequest::STATUS_APPROVED,
             'decided_at' => now(),
@@ -245,10 +245,10 @@ it('re-authorizes a state-changing capability and requires approval when configu
                 'decision_rationale' => '',
                 'capability_requests' => [
                     json_encode([
-                        'capability' => 'work.item.create',
+                        'capability' => 'work.task.create',
                         'expert_slug' => 'analyst',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                        'input_payload' => ['name' => 'Requested work item'],
+                        'input_payload' => ['name' => 'Requested task'],
                         'approval_request_id' => $approval->getKey(),
                     ], JSON_THROW_ON_ERROR),
                 ],
@@ -267,11 +267,11 @@ it('re-authorizes a state-changing capability and requires approval when configu
 
     expect($result->capabilityRequests)->toHaveCount(1)
         ->and($result->capabilityRequests[0])->toBeInstanceOf(CapabilityRequest::class)
-        ->and($result->capabilityRequests[0]->capability)->toBe('work.item.create')
+        ->and($result->capabilityRequests[0]->capability)->toBe('work.task.create')
         ->and($result->capabilityRequests[0]->toArray())->toMatchArray([
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
-            'input_payload' => ['name' => 'Requested work item'],
+            'input_payload' => ['name' => 'Requested task'],
         ])
         ->and($result->succeeded())->toBeTrue();
 });
@@ -294,13 +294,13 @@ it('executes interactive capability requests without invoking a ModelProvider', 
     ))->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
-        prompt: 'Create the requested work item.',
+        prompt: 'Create the requested task.',
         mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
         capabilityRequests: [[
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'expert_slug' => 'analyst',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
-            'input_payload' => ['name' => 'Interactive work item'],
+            'input_payload' => ['name' => 'Interactive task'],
         ]],
         correlationId: 'interactive-agent-test',
     ));
@@ -309,7 +309,7 @@ it('executes interactive capability requests without invoking a ModelProvider', 
         ->and($result->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
         ->and($result->capabilityRequests)->toHaveCount(1)
         ->and($result->execution->last_result['capability_results'][0]['status'])->toBe('executed')
-        ->and(WorkItem::query()->where('name', 'Interactive work item')->exists())->toBeTrue();
+        ->and(Task::query()->where('name', 'Interactive task')->exists())->toBeTrue();
 });
 
 it('keeps an empty interactive Capability plan waiting for input without invoking a ModelProvider', function () {
@@ -356,8 +356,8 @@ it('executes an interactive Capability plan as multiple durable steps', function
         prompt: 'Execute the two-step interactive plan.',
         mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
         capabilityRequests: [
-            ['step' => 1, 'capability' => 'work.item.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step one'], 'idempotency_key' => 'interactive-step-one'],
-            ['step' => 2, 'capability' => 'work.item.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step two'], 'idempotency_key' => 'interactive-step-two'],
+            ['step' => 1, 'capability' => 'work.task.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step one'], 'idempotency_key' => 'interactive-step-one'],
+            ['step' => 2, 'capability' => 'work.task.create', 'expert_slug' => 'analyst', 'target_context' => ['enterprise_id' => $enterprise->getKey()], 'input_payload' => ['name' => 'Interactive step two'], 'idempotency_key' => 'interactive-step-two'],
         ],
         correlationId: 'interactive-multi-step',
     ));
@@ -371,7 +371,7 @@ it('executes an interactive Capability plan as multiple durable steps', function
         ->toBe([AgentExecutionStep::TYPE_CAPABILITY, AgentExecutionStep::TYPE_CAPABILITY])
         ->and($result->execution->steps()->pluck('correlation_id')->all())
         ->toBe(['interactive-multi-step', 'interactive-multi-step'])
-        ->and(WorkItem::query()->whereIn('name', ['Interactive step one', 'Interactive step two'])->count())
+        ->and(Task::query()->whereIn('name', ['Interactive step one', 'Interactive step two'])->count())
         ->toBe(2);
 });
 
@@ -396,7 +396,7 @@ it('rejects an interactive Capability plan with missing required inputs before a
         mode: \App\Enums\AgentExecutionMode::INTERACTIVE,
         capabilityRequests: [[
             'step' => 1,
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'expert_slug' => 'analyst',
             'target_context' => ['enterprise_id' => $enterprise->getKey()],
             'input_payload' => [],
@@ -408,7 +408,7 @@ it('rejects an interactive Capability plan with missing required inputs before a
 
     expect($execution->current_step)->toBe(0)
         ->and($execution->steps()->count())->toBe(0)
-        ->and(WorkItem::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(0);
+        ->and(Task::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(0);
 });
 
 it('does not allow an idempotency key to switch Agent execution mode', function () {
@@ -680,15 +680,15 @@ it('executes a governed capability and feeds its result into the next reasoning 
 
         if ($calls === 1) {
             return new \App\AI\Data\ModelResult(
-                text: 'Create the work item.',
+                text: 'Create the task.',
                 structured: [
-                    'answer' => 'Create the work item.',
+                    'answer' => 'Create the task.',
                     'decision_title' => '',
                     'decision_summary' => '',
                     'decision_rationale' => '',
                     'capability_requests' => [
                         json_encode([
-                            'capability' => 'work.item.create',
+                            'capability' => 'work.task.create',
                             'expert_slug' => 'analyst',
                             'target_context' => ['enterprise_id' => $enterprise->getKey()],
                             'input_payload' => [
@@ -709,7 +709,7 @@ it('executes a governed capability and feeds its result into the next reasoning 
 
         expect($request->context['previous_result']['capability_results'])->toHaveCount(1)
             ->and($request->context['previous_result']['capability_results'][0]['status'])->toBe('executed')
-            ->and($request->context['previous_result']['capability_results'][0]['capability'])->toBe('work.item.create')
+            ->and($request->context['previous_result']['capability_results'][0]['capability'])->toBe('work.task.create')
             ->and($request->context['previous_result']['capability_results'][0]['result']['name'])->toBe('Governed capability result');
 
         return new \App\AI\Data\ModelResult(
@@ -717,7 +717,7 @@ it('executes a governed capability and feeds its result into the next reasoning 
             structured: [
                 'answer' => 'Task completed from the governed operation result.',
                 'decision_title' => 'Work item created',
-                'decision_summary' => 'The governed operation created the requested work item.',
+                'decision_summary' => 'The governed operation created the requested task.',
                 'decision_rationale' => 'The second reasoning step consumed the persisted capability result.',
                 'capability_requests' => [],
                 'termination' => 'completed',
@@ -737,12 +737,12 @@ it('executes a governed capability and feeds its result into the next reasoning 
     ))->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
-        prompt: 'Create and then verify a governed work item.',
+        prompt: 'Create and then verify a governed task.',
         correlationId: 'capability-result-loop',
         options: ['max_steps' => 3],
     ));
 
-    $item = WorkItem::query()->where('enterprise_id', $enterprise->getKey())->first();
+    $item = Task::query()->where('enterprise_id', $enterprise->getKey())->first();
 
     expect($calls)->toBe(2)
         ->and($result->succeeded())->toBeTrue()
@@ -750,7 +750,7 @@ it('executes a governed capability and feeds its result into the next reasoning 
         ->and($item)->not->toBeNull()
         ->and($item->name)->toBe('Governed capability result')
         ->and($result->execution->last_result['capability_results'][0]['provenance']['operation'])
-        ->toBe(\App\Operations\CreateWorkItem::class);
+        ->toBe(\App\Operations\CreateTask::class);
 });
 
 it('delegates from Agent reasoning, links parent and child executions, and feeds the child result back to the parent', function () {
@@ -823,7 +823,7 @@ it('delegates from Agent reasoning, links parent and child executions, and feeds
                     'delegation_requests' => [
                         [
                             'target_agent_slug' => 'target-operator',
-                            'capability' => 'work.item.create',
+                            'capability' => 'work.task.create',
                             'expert_slug' => 'analyst',
                             'objective' => 'Perform the delegated operation.',
                             'context_requirements' => ['enterprise'],
@@ -960,7 +960,7 @@ it('rejects a runtime delegation that requests context outside the target Agent 
                 'capability_requests' => [],
                 'delegation_requests' => [[
                     'target_agent_slug' => 'runtime-target',
-                    'capability' => 'work.item.create',
+                    'capability' => 'work.task.create',
                     'expert_slug' => 'analyst',
                     'objective' => 'Perform the operation.',
                     'context_requirements' => ['financial'],

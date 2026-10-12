@@ -8,19 +8,31 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable(['enterprise_id', 'project_id', 'parent_task_id', 'name', 'description', 'status', 'priority', 'due_at'])]
 /**
  * A Task is a hierarchical planning/work-management record.
  *
- * Tasks may belong to a Project, may have parent/child Task relationships,
- * and carry Task-specific priority and due-date semantics. A Task is not
- * the generic Workflow subject and has no direct relationship to WorkItem.
+ * A Task is the canonical actionable work entity. It owns hierarchy, scheduling,
+ * workflow associations, decisions, assignments, and dependency endpoints.
  */
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return ['due_at' => 'datetime'];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Task $task): void {
+            $task->validateScopeAndHierarchy();
+        });
+    }
 
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
@@ -44,5 +56,80 @@ class Task extends Model
     public function children(): HasMany
     {
         return $this->hasMany(Task::class, 'parent_task_id');
+    }
+
+    /** @return HasMany<Workflow, $this> */
+    public function workflows(): HasMany
+    {
+        return $this->hasMany(Workflow::class);
+    }
+
+    /** @return HasMany<Decision, $this> */
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(Decision::class);
+    }
+
+    /** @return MorphMany<Assignment, $this> */
+    public function assignments(): MorphMany
+    {
+        return $this->morphMany(Assignment::class, 'assignable');
+    }
+
+    /** @return MorphMany<Dependency, $this> */
+    public function predecessorDependencies(): MorphMany
+    {
+        return $this->morphMany(Dependency::class, 'predecessor');
+    }
+
+    /** @return MorphMany<Dependency, $this> */
+    public function successorDependencies(): MorphMany
+    {
+        return $this->morphMany(Dependency::class, 'successor');
+    }
+
+    private function validateScopeAndHierarchy(): void
+    {
+        if ($this->project_id !== null) {
+            $project = Project::query()->find($this->project_id);
+            if ($project === null || (int) $project->enterprise_id !== (int) $this->enterprise_id) {
+                throw new \LogicException('Task Project must belong to the same Enterprise.');
+            }
+        }
+
+        if ($this->exists) {
+            foreach ($this->children()->get(['id', 'enterprise_id', 'project_id']) as $child) {
+                if ((int) $child->enterprise_id !== (int) $this->enterprise_id
+                    || (($child->project_id === null) !== ($this->project_id === null))
+                    || ($child->project_id !== null && (int) $child->project_id !== (int) $this->project_id)) {
+                    throw new \LogicException('A Task cannot change Enterprise or Project scope while its children remain in another scope.');
+                }
+            }
+        }
+
+        if ($this->parent_task_id === null) {
+            return;
+        }
+
+        if ($this->exists && (int) $this->getKey() === (int) $this->parent_task_id) {
+            throw new \LogicException('A Task cannot be its own parent.');
+        }
+
+        $parent = Task::query()->find($this->parent_task_id);
+        if ($parent === null
+            || (int) $parent->enterprise_id !== (int) $this->enterprise_id
+            || (($parent->project_id === null) !== ($this->project_id === null)) || ($parent->project_id !== null && (int) $parent->project_id !== (int) $this->project_id)) {
+            throw new \LogicException('Parent Task must belong to the same Enterprise and Project.');
+        }
+
+        $visited = [];
+        while ($parent !== null) {
+            $parentId = (int) $parent->getKey();
+            if (isset($visited[$parentId]) || ($this->exists && $parentId === (int) $this->getKey())) {
+                throw new \LogicException('Task hierarchy cannot contain cycles.');
+            }
+            $visited[$parentId] = true;
+            $parent = $parent->parent_task_id === null ? null : Task::query()->find($parent->parent_task_id);
+        }
     }
 }

@@ -6,7 +6,6 @@ use App\Models\Enterprise;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\WorkItem;
 use InvalidArgumentException;
 
 function dependencyEnterprise(): Enterprise
@@ -18,7 +17,7 @@ function dependencyEndpoints(Enterprise $enterprise): array
 {
     return [
         Task::factory()->create(['enterprise_id' => $enterprise->id]),
-        WorkItem::factory()->create(['enterprise_id' => $enterprise->id]),
+        Task::factory()->create(['enterprise_id' => $enterprise->id]),
     ];
 }
 
@@ -39,11 +38,11 @@ it('creates valid Work dependencies with canonical blocks semantics', function (
         ->and($dependency->successor->is($successor))->toBeTrue();
 });
 
-it('accepts Project, Task, WorkItem, and Milestone endpoints', function () {
+it('accepts Project, Task, Task, and Milestone endpoints', function () {
     $enterprise = dependencyEnterprise();
     $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
     $task = Task::factory()->forProject($project)->create();
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise->id, 'project_id' => $project->id]);
+    $workItem = Task::factory()->create(['enterprise_id' => $enterprise->id, 'project_id' => $project->id]);
     $milestone = Milestone::factory()->forProject($project)->create();
 
     foreach ([

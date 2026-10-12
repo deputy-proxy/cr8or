@@ -15,7 +15,7 @@ final class RuntimeContractInvalidExpert extends Expert
             responsibilities: ['request'],
             methodology: 'Return invalid output.',
             requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
+            capabilities: ['work.task.create'],
         );
     }
 

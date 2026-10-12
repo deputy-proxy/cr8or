@@ -38,10 +38,10 @@ final class WorkflowScopeService
 
             if (
                 ! $enterpriseSpecific
-                && ($workflow->project_id !== null || $workflow->task_id !== null || $workflow->work_item_id !== null)
+                && ($workflow->project_id !== null || $workflow->task_id !== null)
             ) {
                 throw new LogicException(
-                    'An enterprise-scoped Project, Task, or Work Item must be removed before this Workflow can become generic.',
+                    'An enterprise-scoped Project or Task must be removed before this Workflow can become generic.',
                 );
             }
 

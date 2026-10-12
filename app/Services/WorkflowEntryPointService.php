@@ -43,7 +43,6 @@ final class WorkflowEntryPointService
                 'enterprise_id' => $enterprise?->getKey(),
                 'project_id' => $input['project_id'] ?? null,
                 'task_id' => $input['task_id'] ?? null,
-                'work_item_id' => $input['work_item_id'] ?? null,
                 'name' => $input['name'],
                 'canonical_key' => $input['canonical_key'] ?? null,
                 'purpose' => $input['purpose'] ?? null,
@@ -190,7 +189,6 @@ final class WorkflowEntryPointService
                 'completion_criteria',
                 'project_id',
                 'task_id',
-                'work_item_id',
             ]));
 
             if ($attributes !== []) {

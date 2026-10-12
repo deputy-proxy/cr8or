@@ -33,7 +33,6 @@ class UpdateWorkflowTool extends GovernedCapabilityTool
             'completion_criteria' => $schema->object(),
             'project_id' => $schema->integer()->min(1),
             'task_id' => $schema->integer()->min(1),
-            'work_item_id' => $schema->integer()->min(1),
         ];
     }
 
@@ -69,7 +68,6 @@ class UpdateWorkflowTool extends GovernedCapabilityTool
                 'completion_criteria' => ['sometimes', 'nullable', 'array'],
                 'project_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
                 'task_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
-                'work_item_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             ]);
 
             $actor = $request->user();

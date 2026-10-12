@@ -16,7 +16,6 @@ use App\Models\PublicationResult;
 use App\Models\PublicationSchedule;
 use App\Models\Task;
 use App\Models\WorkflowExecution;
-use App\Models\WorkItem;
 use App\Services\EnterpriseEventRecorder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -31,7 +30,6 @@ final class EnterpriseActivityObserver
         EnterpriseContext::class => ['description', 'industry', 'business_model', 'target_market', 'geography'],
         Project::class => ['name', 'status'],
         Task::class => ['name', 'status', 'priority', 'due_at'],
-        WorkItem::class => ['name', 'status'],
         Milestone::class => ['name', 'status', 'due_at'],
         Campaign::class => ['name', 'status'],
         ContentItem::class => ['title', 'status'],

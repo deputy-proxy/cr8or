@@ -24,7 +24,7 @@ it('assembles bounded decision history with historical identity snapshots', func
 
     $decision = Decision::factory()->by($user)->create([
         'enterprise_id' => $enterprise,
-        'work_item_id' => App\Models\WorkItem::factory()->create(['enterprise_id' => $enterprise])->getKey(),
+        'task_id' => App\Models\Task::factory()->create(['enterprise_id' => $enterprise])->getKey(),
         'actor_name' => 'Historical User',
     ]);
     $enterpriseDecision = EnterpriseDecision::factory()->create([
@@ -44,7 +44,7 @@ it('assembles bounded decision history with historical identity snapshots', func
         $user,
         $enterprise,
         ['enterprise', 'decisions'],
-        ['work_item_id' => $decision->work_item_id],
+        ['task_id' => $decision->task_id],
     );
 
     $data = $context->section('decisions')?->data;
@@ -123,7 +123,7 @@ it('preserves failed executions and related approval outcomes as history', funct
         'actor_id' => $user->getKey(),
         'approver_id' => $user->getKey(),
         'capability' => 'work.update',
-        'target_context' => ['work_item_id' => 1],
+        'target_context' => ['task_id' => 1],
         'organization_name' => $enterprise->organization->name,
         'enterprise_name' => $enterprise->name,
         'agent_slug' => $assignment->agentDescriptor->slug,

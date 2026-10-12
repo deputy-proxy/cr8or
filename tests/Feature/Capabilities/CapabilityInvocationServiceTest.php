@@ -10,8 +10,8 @@ use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\CapabilityInvocationService;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -25,25 +25,25 @@ it('invokes a Capability through the application boundary without MCP', function
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
 
     $result = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         actor: $actor,
         enterprise: $enterprise,
-        inputPayload: ['name' => 'Application boundary work item'],
+        inputPayload: ['name' => 'Application boundary task'],
         correlationId: 'application-boundary-1',
         idempotencyKey: 'application-boundary-1',
     ));
 
     expect($result['status'])->toBe('executed')
-        ->and($result['capability'])->toBe('work.item.create')
+        ->and($result['capability'])->toBe('work.task.create')
         ->and($result['provenance'])->toMatchArray([
-            'capability' => 'work.item.create',
-            'operation' => App\Operations\CreateWorkItem::class,
+            'capability' => 'work.task.create',
+            'operation' => App\Operations\CreateTask::class,
             'enterprise_id' => $enterprise->getKey(),
             'agent_assignment_id' => null,
             'agent_execution_id' => null,
             'correlation_id' => 'application-boundary-1',
         ])
-        ->and(WorkItem::query()->where('enterprise_id', $enterprise->getKey())->where('name', 'Application boundary work item')->exists())->toBeTrue();
+        ->and(Task::query()->where('enterprise_id', $enterprise->getKey())->where('name', 'Application boundary task')->exists())->toBeTrue();
 });
 
 it('rejects an application Capability invocation across enterprise authorization boundaries', function () {
@@ -56,13 +56,13 @@ it('rejects an application Capability invocation across enterprise authorization
     $foreignEnterprise = Enterprise::factory()->create();
 
     expect(fn () => app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         actor: $actor,
         enterprise: $foreignEnterprise,
         inputPayload: ['name' => 'Must not persist'],
     )))->toThrow(AuthorizationException::class);
 
-    expect(WorkItem::query()->where('enterprise_id', $foreignEnterprise->getKey())->where('name', 'Must not persist')->exists())->toBeFalse();
+    expect(Task::query()->where('enterprise_id', $foreignEnterprise->getKey())->where('name', 'Must not persist')->exists())->toBeFalse();
 });
 
 it('preserves the canonical Capability operation mapping for Agent-backed invocation', function () {
@@ -83,19 +83,19 @@ it('preserves the canonical Capability operation mapping for Agent-backed invoca
     ]);
 
     $result = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         actor: $actor,
         enterprise: $enterprise,
         assignment: $assignment,
         execution: $execution,
         expertSlug: 'operations',
-        inputPayload: ['name' => 'Agent boundary work item'],
+        inputPayload: ['name' => 'Agent boundary task'],
         correlationId: 'application-agent-1',
         idempotencyKey: 'application-agent-1',
     ));
 
     expect($result['status'])->toBe('executed')
-        ->and($result['provenance']['operation'])->toBe(App\Operations\CreateWorkItem::class)
+        ->and($result['provenance']['operation'])->toBe(App\Operations\CreateTask::class)
         ->and($result['provenance']['agent_assignment_id'])->toBe($assignment->getKey())
         ->and($result['provenance']['agent_execution_id'])->toBe($execution->getKey());
 });
@@ -128,7 +128,7 @@ it('rejects a non-bootstrap Capability invocation without Enterprise context', f
     $actor = User::factory()->create();
 
     expect(fn () => app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         actor: $actor,
         enterprise: null,
         inputPayload: ['name' => 'Must not persist'],

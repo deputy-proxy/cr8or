@@ -60,7 +60,6 @@ Organization identity, membership, enterprise boundaries, and authorization scop
 | Users | app/Filament/Resources/Users/*Resource.php |
 | Memberships | app/Filament/Resources/Memberships/*Resource.php |
 | Enterprises | app/Filament/Resources/Enterprises/*Resource.php |
-| Assignments | app/Filament/Resources/Assignments/*Resource.php |
 
 ### Enterprise Context
 
@@ -76,12 +75,6 @@ Enterprise goals, strategy, plans, work, decisions, and business context.
 | Strategies | app/Filament/Resources/Strategies/*Resource.php |
 | Plans | app/Filament/Resources/Plans/*Resource.php |
 | Initiatives | app/Filament/Resources/Initiatives/*Resource.php |
-| Projects | app/Filament/Resources/Projects/*Resource.php |
-| Milestones | app/Filament/Resources/Milestones/*Resource.php |
-| Tasks | app/Filament/Resources/Tasks/*Resource.php |
-| WorkItems | app/Filament/Resources/WorkItems/*Resource.php |
-| Decisions | app/Filament/Resources/Decisions/*Resource.php |
-| EnterpriseDecisions | app/Filament/Resources/EnterpriseDecisions/*Resource.php |
 | Competitors | app/Filament/Resources/Competitors/*Resource.php |
 | Products | app/Filament/Resources/Products/*Resource.php |
 
@@ -128,7 +121,7 @@ Agents, Experts, assignments, execution state, delegation, memory, and approvals
 
 Operational work structure and Work-domain relationships. Work Dependencies are directional relationships between supported Work records and are consumed by WorkContextAssembler. They are not Workflow orchestration dependencies.
 
-The authorized Agent `work` context is a bounded read model composed of Enterprise identity, Projects, Tasks, WorkItems, Milestones, assignments, Work Dependencies, and the latest execution state for the Enterprise's selected Workflows. The assembler preserves Enterprise authorization and tenancy at the query boundary. Relationship data is resolved in bulk rather than through per-record queries, and WorkflowExecution context/input/output JSON is not loaded when only execution metadata is required.
+The authorized Agent `work` context is a bounded read model composed of Enterprise identity, Projects, Tasks, Milestones, assignments, Work Dependencies, and the latest execution state for the Enterprise's selected Workflows. The assembler preserves Enterprise authorization and tenancy at the query boundary. Relationship data is resolved in bulk rather than through per-record queries, and WorkflowExecution context/input/output JSON is not loaded when only execution metadata is required.
 
 The context applies deterministic per-collection limits. These limits are safety bounds, not a relevance-ranking mechanism. Task parent records and up to 20 child IDs per selected Task are resolved in bulk. Dependency endpoints are resolved by supported morph type in bounded bulk queries. When no Work references are selected, assignments and dependencies are empty rather than broadening to unrelated Enterprise records.
 
@@ -136,7 +129,14 @@ The context applies deterministic per-collection limits. These limits are safety
 
 | Resource | Filament class location |
 | --- | --- |
+| Initiatives | app/Filament/Resources/Initiatives/*Resource.php |
+| Projects | app/Filament/Resources/Projects/*Resource.php |
+| Milestones | app/Filament/Resources/Milestones/*Resource.php |
+| Tasks | app/Filament/Resources/Tasks/*Resource.php |
 | Dependencies | app/Filament/Resources/Dependencies/*Resource.php |
+| Assignments | app/Filament/Resources/Assignments/*Resource.php |
+| Decisions | app/Filament/Resources/Decisions/*Resource.php |
+| EnterpriseDecisions | app/Filament/Resources/EnterpriseDecisions/*Resource.php |
 
 ### Workflow Flow
 
@@ -147,7 +147,7 @@ Workflow definitions have two explicit scope modes:
 - **Generic**: `enterprise_specific = false` and `enterprise_id = NULL`. The definition is reusable by any Enterprise, while each WorkflowExecution remains bound to the Enterprise in which it runs.
 - **Enterprise-specific**: `enterprise_specific = true` and `enterprise_id = <enterprise>`. The definition may only execute for that Enterprise.
 
-The scope invariant is enforced by the Workflow domain model. Generic Workflows must not reference enterprise-scoped Project, Task, or WorkItem context. Existing enterprise-specific Workflows retain their current scope.
+The scope invariant is enforced by the Workflow domain model. Generic Workflows must not reference enterprise-scoped Project or Task context. Existing enterprise-specific Workflows retain their current scope.
 
 Workflow resolution for an Enterprise includes both generic definitions and definitions specifically scoped to that Enterprise. When both exist for the same canonical key, the enterprise-specific definition takes precedence for that Enterprise. A generic Workflow definition is never duplicated merely because multiple Enterprises execute it.
 
@@ -233,20 +233,23 @@ External resources, integrations, integration execution/results, and command web
 | ExternalResources | app/Filament/Resources/ExternalResources/*Resource.php |
 | CommandWebhookDeliveries | app/Filament/Resources/CommandWebhookDeliveries/*Resource.php |
 
-### Task and WorkItem domain contract
+### Task domain contract
 
-`Task` and `WorkItem` are distinct peer concepts within the Work domain. They are not parent/child variants of one abstraction and there is no direct `Task -> WorkItem` relationship.
+Task is the single canonical entity for actionable work. The former parallel WorkItem entity, model, table, policy, service/operation path, Filament resource, factory, and MCP tools have been retired.
 
-- **Task** is the hierarchical planning/work-management entity. It belongs to an Enterprise, may belong to a Project, supports parent/child Task hierarchy, and owns Task-specific priority and due-date semantics.
-- **WorkItem** is a lightweight operational work subject. It belongs to an Enterprise, may belong to a Project, and can have a direct Workflow association. It intentionally does not carry Task hierarchy, priority, or due-date semantics.
-- A Project may contain Tasks and WorkItems independently. Their shared Enterprise/Project scope does not make one a specialization of the other.
-- A Workflow may carry `task_id`, `work_item_id`, both, or neither. These fields provide contextual references rather than defining an inheritance relationship. Existing execution tests explicitly preserve both contexts together.
-- A WorkflowExecution preserves Workflow context, including optional Task and WorkItem references carried by the Workflow definition. CR8OR does not use a generic Workflow Job -> Execution domain hierarchy.
-- WorkItem-specific governed operations (`work.item.create` and `work.item.update`) operate on WorkItems through the normal Capability boundary. Task remains a separate work-management model with its own policies and administration surface.
+- A Task belongs to an Enterprise and may belong to a Project in that same Enterprise.
+- Task retains name, description, status, priority, due_at, and optional parent_task_id.
+- Parent/child Tasks must share the same Enterprise and Project scope; self-parenting and hierarchy cycles are rejected.
+- Task exposes relationships to Workflows, Decisions, Assignments, and Dependency endpoints. A Workflow remains a separate orchestration definition, and WorkflowExecution remains the authoritative persisted runtime record.
+- A Workflow has at most one canonical task_id. A Decision retains its historical task_id context and immutable decision content. Task and Workflow lifecycles remain independent.
+- Dependency endpoints remain limited to the supported Project, Task, and Milestone types. Enterprise/project scope, duplicate-edge, self-reference, and cycle protections remain enforced.
+- Governed Task creation/update uses work.task.create / work.task.update and the create-task / update-task MCP tools. Read discovery uses get-task and list-tasks; all routes retain the established authorization boundary.
 
-This distinction is based on the verified repository schema, model relationships, workflow/execution persistence, services, policies, Filament resources, MCP capabilities, and tests. No schema migration or model merge is required.
+The forward-only migration 2026_10_12_000000_consolidate_work_items_into_tasks.php creates an explicit WorkItem-ID-to-Task-ID mapping, preserves the former WorkItem's meaningful fields and timestamps, remaps Workflow, Decision, and legacy Execution references, rewrites polymorphic Assignment and Dependency targets, preserves legacy execution name snapshots by moving them into the canonical task-name snapshot (and fails if both historical names conflict), and only then removes the old table and reference columns. It does not assume the two tables share an ID space. Ambiguous dual Workflow/Decision references, cross-Enterprise/project inconsistencies, and dependency collisions fail with an actionable error rather than silently overwriting a reference. Historical WorkflowExecution records remain authoritative and are not rewritten indiscriminately.
 
-The resulting Enterprise Context navigation sequence may therefore present `Task` and `WorkItem` as adjacent peer resources after `Project` and `Milestone`; this ordering reflects their shared work-domain level, not a parent/child relationship.
+Because the migration contracts and drops persisted data structures, it is intentionally forward-only. Production deployment requires a verified pre-migration backup and the normal migration rehearsal/restore plan; automatic rollback is not supported.
+
+The resulting Work Management navigation contains one Tasks resource after Project and Milestone. Work Overview counts and renders one Tasks group, with migrated records included in the canonical Task tree.
 
 ### Resource ordering rules
 
@@ -296,7 +299,7 @@ Authorization, approval, correlation, idempotency and normalized failure semanti
 
 ## Execution proof
 
-The repository includes cross-entry regression coverage proving a representative `work.item.update` Operation can be reached through direct MCP, Agent-backed Capability invocation, deterministic Workflow execution, and command Webhook execution while preserving Enterprise scope and authoritative state. Integration-result reconciliation and lifecycle MCP namespace separation are covered as explicit exceptions.
+The repository includes cross-entry regression coverage proving a representative `work.task.update` Operation can be reached through direct MCP, Agent-backed Capability invocation, deterministic Workflow execution, and command Webhook execution while preserving Enterprise scope and authoritative state. Integration-result reconciliation and lifecycle MCP namespace separation are covered as explicit exceptions.
 
 See `docs/architecture/capability-execution-contract.md` for the detailed request metadata, authorization, approval, idempotency and failure contract.
 

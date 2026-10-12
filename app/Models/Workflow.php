@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_specific', 'enterprise_id', 'project_id', 'task_id', 'work_item_id', 'name', 'canonical_key', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
+#[Fillable(['enterprise_specific', 'enterprise_id', 'project_id', 'task_id', 'name', 'canonical_key', 'purpose', 'version', 'published_version_id', 'execution_policy', 'completion_criteria', 'status'])]
 /** @property bool $enterprise_specific
  * @property int|null $version
  * @property array<string, mixed>|null $completion_criteria
@@ -103,12 +103,6 @@ class Workflow extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
-    }
-
-    /** @return BelongsTo<WorkItem, $this> */
-    public function workItem(): BelongsTo
-    {
-        return $this->belongsTo(WorkItem::class);
     }
 
     /** @return HasMany<WorkflowStage, $this> */
@@ -232,7 +226,7 @@ class Workflow extends Model
             }
         }
 
-        foreach (['project_id' => Project::class, 'task_id' => Task::class, 'work_item_id' => WorkItem::class] as $field => $model) {
+        foreach (['project_id' => Project::class, 'task_id' => Task::class] as $field => $model) {
             $id = $this->{$field};
             if ($id === null) {
                 continue;

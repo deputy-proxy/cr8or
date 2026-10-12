@@ -18,7 +18,7 @@ it('defines a provider-neutral context contract with deterministic section order
     $context = new AgentContext([
         'work' => new AgentContextSection(
             name: 'work',
-            data: ['work_items' => []],
+            data: ['tasks' => []],
             source: 'work.provider',
             scope: ['organization_id' => 1, 'enterprise_id' => 2],
             relevance: 'current work',

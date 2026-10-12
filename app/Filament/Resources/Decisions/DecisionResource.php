@@ -7,12 +7,21 @@ use App\Filament\Resources\Decisions\Pages\CreateDecision;
 use App\Filament\Resources\Decisions\Pages\EditDecision;
 use App\Filament\Resources\Decisions\Pages\ListDecisions;
 use App\Models\Decision;
+use App\Models\Enterprise;
+use App\Models\Initiative;
+use App\Models\Objective;
+use App\Models\Plan;
+use App\Models\Project;
+use App\Models\Strategy;
+use App\Models\Task;
+use App\Models\User;
 use BackedEnum;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -35,21 +44,71 @@ class DecisionResource extends Resource
 
     protected static ?string $navigationLabel = 'Decisions';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('enterprise_id')
+                ->options(fn (): array => Enterprise::query()
+                    ->whereIn('id', static::manageableEnterpriseIds())
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all())
+                ->searchable()
+                ->required()
+                ->live(),
             Select::make('type')->options(['operational' => 'Operational', 'strategic' => 'Strategic'])->required(),
-            Select::make('actor_id')->options(fn () => \App\Models\User::query()->whereHas('memberships', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()))->pluck('name', 'id'))->searchable()->preload()->required(),
-            Select::make('objective_id')->relationship('objective', 'name')->searchable()->preload(),
-            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload(),
-            Select::make('plan_id')->relationship('plan', 'name')->searchable()->preload(),
-            Select::make('initiative_id')->relationship('initiative', 'name')->searchable()->preload(),
-            Select::make('project_id')->relationship('project', 'name')->searchable()->preload(),
-            Select::make('task_id')->relationship('task', 'name')->searchable()->preload(),
-            Select::make('work_item_id')->relationship('workItem', 'name')->searchable()->preload(),
+            Select::make('actor_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? User::query()
+                        ->whereHas('memberships', fn (Builder $query) => $query->whereIn(
+                            'organization_id',
+                            Enterprise::query()->whereKey($get('enterprise_id'))->whereIn('id', static::manageableEnterpriseIds())->select('organization_id'),
+                        ))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all()
+                    : [])
+                ->searchable()
+                ->required(),
+            Select::make('objective_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Objective::query()->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds())->orderBy('name')->pluck('name', 'id')->all()
+                    : [])
+                ->searchable(),
+            Select::make('strategy_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Strategy::query()->whereHas('objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                    : [])
+                ->searchable(),
+            Select::make('plan_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Plan::query()->whereHas('strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                    : [])
+                ->searchable(),
+            Select::make('initiative_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Initiative::query()->whereHas('plan.strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                    : [])
+                ->searchable(),
+            Select::make('project_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Project::query()->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds())->orderBy('name')->pluck('name', 'id')->all()
+                    : [])
+                ->searchable()
+                ->live(),
+            Select::make('task_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Task::query()
+                        ->where('enterprise_id', $get('enterprise_id'))
+                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
+                        ->when($get('project_id'), fn (Builder $query, mixed $projectId) => $query->where('project_id', $projectId))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all()
+                    : [])
+                ->searchable(),
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('summary')->required()->rows(4),
             Textarea::make('rationale')->rows(4),

@@ -7,11 +7,10 @@ use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 
 it('places Work Dependencies under Work Management and exposes the complete endpoint set', function () {
     expect(DependencyResource::getNavigationGroup())->toBe('Work Management')
-        ->and(DependencyResource::getNavigationSort())->toBe(60)
+        ->and(DependencyResource::getNavigationSort())->toBe(50)
         ->and(DependencyResource::getPages())->toHaveKeys(['index', 'create', 'edit']);
 
     $schema = DependencyResource::form(new \Filament\Schemas\Schema);
@@ -45,14 +44,14 @@ it('keeps WorkContextAssembler dependencies inside the authorized Enterprise gra
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
     $otherEnterprise = Enterprise::factory()->create(['organization_id' => $otherOrganization->id]);
     $task = Task::factory()->create(['enterprise_id' => $enterprise->id]);
-    $item = WorkItem::factory()->create(['enterprise_id' => $enterprise->id]);
+    $item = Task::factory()->create(['enterprise_id' => $enterprise->id]);
     $otherTask = Task::factory()->create(['enterprise_id' => $otherEnterprise->id]);
 
     $dependency = Dependency::factory()->create([
         'enterprise_id' => $enterprise->id,
         'predecessor_type' => Task::class,
         'predecessor_id' => $task->id,
-        'successor_type' => WorkItem::class,
+        'successor_type' => Task::class,
         'successor_id' => $item->id,
     ]);
 
@@ -64,8 +63,8 @@ it('keeps WorkContextAssembler dependencies inside the authorized Enterprise gra
         'enterprise_id' => $otherEnterprise->id,
         'predecessor_type' => Task::class,
         'predecessor_id' => $otherTask->id,
-        'successor_type' => WorkItem::class,
-        'successor_id' => WorkItem::factory()->create(['enterprise_id' => $otherEnterprise->id])->id,
+        'successor_type' => Task::class,
+        'successor_id' => Task::factory()->create(['enterprise_id' => $otherEnterprise->id])->id,
     ]);
 
     expect(app(\App\Services\WorkContextAssembler::class)->assemble($user, $enterprise)['dependencies'])

@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\Enterprise;
+use App\Models\Task;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
-use App\Models\WorkItem;
 use LogicException;
 
 it('persists an ordered workflow stage graph with governed contracts', function () {
@@ -39,16 +39,16 @@ it('persists an ordered workflow stage graph with governed contracts', function 
     expect(true)->toBeTrue();
 });
 
-it('associates a workflow with a WorkItem inside the same enterprise', function () {
+it('associates a workflow with a Task inside the same enterprise', function () {
     $enterprise = Enterprise::factory()->create();
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
+    $task = Task::factory()->create(['enterprise_id' => $enterprise]);
     $workflow = Workflow::factory()->create([
         'enterprise_id' => $enterprise,
-        'work_item_id' => $workItem,
+        'task_id' => $task,
     ]);
 
-    expect($workflow->workItem->is($workItem))->toBeTrue()
-        ->and($workItem->workflow->is($workflow))->toBeTrue()
+    expect($workflow->task->is($task))->toBeTrue()
+        ->and($task->workflows->contains($workflow))->toBeTrue()
         ->and($workflow->version)->toBe(1);
 });
 

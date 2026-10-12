@@ -34,7 +34,7 @@
                 <div data-work-overview-empty hidden class="p-8 text-center text-sm text-gray-400">There are no linked work records to visualize yet. Add projects or related records to see the hierarchy.</div>
             </div>
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Hierarchy of persisted records. Tasks follow their current project and parent-task relationships; they are not implicitly attached to Work Items.
+                Hierarchy of persisted records. Tasks follow their current project and parent-task relationships; they are not implicitly attached to Workflow records.
             </p>
         @endif
     </x-filament::section>

@@ -66,8 +66,7 @@ test('positions hierarchy and structural group labels above nodes and record lea
                 type: 'planning',
                 children: [
                     { name: 'group:milestones:1', type: 'group', children: [{ name: 'milestone:1', type: 'planning', children: [] }] },
-                    { name: 'group:work-items:1', type: 'group', children: [{ name: 'work-item:1', type: 'work', children: [] }] },
-                    { name: 'group:tasks:1', type: 'group', children: [{ name: 'task:1', type: 'supporting', children: [] }] },
+                    { name: 'group:tasks:project:1', type: 'group', children: [{ name: 'task:1', type: 'supporting', children: [] }] },
                     { name: 'group:empty:1', type: 'group', children: [] },
                 ],
             }],
@@ -77,7 +76,7 @@ test('positions hierarchy and structural group labels above nodes and record lea
     const [root] = buildWorkOverviewTreeData(tree);
     const enterprise = root.children[0];
     const project = enterprise.children[0];
-    const [milestones, workItems, tasks, emptyGroup] = project.children;
+    const [milestones, tasks, emptyGroup] = project.children;
 
     assert.equal(enterprise.label.position, 'top');
     assert.equal(enterprise.label.align, 'center');
@@ -85,10 +84,8 @@ test('positions hierarchy and structural group labels above nodes and record lea
     assert.equal(project.label.align, 'center');
     assert.equal(milestones.label.position, 'top');
     assert.equal(milestones.label.align, 'center');
-    assert.equal(workItems.label.position, 'top');
     assert.equal(tasks.label.position, 'top');
     assert.equal(emptyGroup.label.position, 'top');
     assert.equal(milestones.children[0].label.position, 'right');
-    assert.equal(workItems.children[0].label.position, 'right');
     assert.equal(tasks.children[0].label.position, 'right');
 });

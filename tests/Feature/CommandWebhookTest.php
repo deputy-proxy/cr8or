@@ -3,8 +3,8 @@
 use App\Models\CommandWebhookDelivery;
 use App\Models\Enterprise;
 use App\Models\Membership;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 
 function commandWebhookHeaders(string $secret, string $body, int $timestamp, string $key = 'test-command'): array
 {
@@ -30,7 +30,7 @@ function commandWebhookActor(Enterprise $enterprise): User
 it('authenticates a command webhook and executes only an allowlisted business Capability', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = commandWebhookActor($enterprise);
-    $item = WorkItem::factory()->create([
+    $item = Task::factory()->create([
         'enterprise_id' => $enterprise,
         'name' => 'Before',
     ]);
@@ -38,7 +38,7 @@ it('authenticates a command webhook and executes only an allowlisted business Ca
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
@@ -46,18 +46,18 @@ it('authenticates a command webhook and executes only an allowlisted business Ca
         'idempotency_key' => 'command-success-1',
         'correlation_id' => 'command-correlation-1',
         'input' => [
-            'work_item_id' => $item->getKey(),
+            'task_id' => $item->getKey(),
             'name' => 'After',
         ],
     ];
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 
     $response = $this->withHeaders(commandWebhookHeaders('command-secret', $body, now()->timestamp))
-        ->postJson('/commands/work.item.update', $payload);
+        ->postJson('/commands/work.task.update', $payload);
 
     $response->assertOk()
         ->assertJsonPath('status', 'executed')
-        ->assertJsonPath('capability', 'work.item.update')
+        ->assertJsonPath('capability', 'work.task.update')
         ->assertJsonPath('provenance.correlation_id', 'command-correlation-1');
 
     expect($item->refresh()->name)->toBe('After')
@@ -68,23 +68,23 @@ it('authenticates a command webhook and executes only an allowlisted business Ca
 it('rejects an invalid command webhook signature before business execution', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = commandWebhookActor($enterprise);
-    $item = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Before']);
+    $item = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Before']);
 
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
         'enterprise_slug' => $enterprise->slug,
         'idempotency_key' => 'command-invalid-signature',
         'correlation_id' => 'command-invalid-signature-correlation',
-        'input' => ['work_item_id' => $item->getKey(), 'name' => 'Should not happen'],
+        'input' => ['task_id' => $item->getKey(), 'name' => 'Should not happen'],
     ];
 
     $response = $this->withHeaders(commandWebhookHeaders('wrong-secret', json_encode($payload, JSON_THROW_ON_ERROR), now()->timestamp))
-        ->postJson('/commands/work.item.update', $payload);
+        ->postJson('/commands/work.task.update', $payload);
 
     $response->assertUnauthorized();
 
@@ -99,7 +99,7 @@ it('rejects a capability that is not allowlisted for the authenticated command c
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
@@ -111,7 +111,7 @@ it('rejects a capability that is not allowlisted for the authenticated command c
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 
     $this->withHeaders(commandWebhookHeaders('command-secret', $body, now()->timestamp))
-        ->postJson('/commands/work.item.create', $payload)
+        ->postJson('/commands/work.task.create', $payload)
         ->assertForbidden();
 
     expect(CommandWebhookDelivery::query()->count())->toBe(0);
@@ -120,28 +120,28 @@ it('rejects a capability that is not allowlisted for the authenticated command c
 it('prevents duplicate command delivery from producing a second business effect', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = commandWebhookActor($enterprise);
-    $item = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Before']);
+    $item = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Before']);
 
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
         'enterprise_slug' => $enterprise->slug,
         'idempotency_key' => 'command-duplicate-1',
         'correlation_id' => 'command-duplicate-correlation',
-        'input' => ['work_item_id' => $item->getKey(), 'name' => 'First'],
+        'input' => ['task_id' => $item->getKey(), 'name' => 'First'],
     ];
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
     $headers = commandWebhookHeaders('command-secret', $body, now()->timestamp);
 
-    $first = $this->withHeaders($headers)->postJson('/commands/work.item.update', $payload);
+    $first = $this->withHeaders($headers)->postJson('/commands/work.task.update', $payload);
     $secondPayload = $payload;
     $secondPayload['input']['name'] = 'Second';
     $second = $this->withHeaders(commandWebhookHeaders('command-secret', json_encode($secondPayload, JSON_THROW_ON_ERROR), now()->timestamp))
-        ->postJson('/commands/work.item.update', $secondPayload);
+        ->postJson('/commands/work.task.update', $secondPayload);
 
     $first->assertOk();
     $second->assertOk()->assertJsonPath('result.id', $item->getKey());
@@ -157,19 +157,19 @@ it('preserves the canonical failure contract for an execution error', function (
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
         'enterprise_slug' => $enterprise->slug,
         'idempotency_key' => 'command-resource-missing',
         'correlation_id' => 'command-resource-missing-correlation',
-        'input' => ['work_item_id' => 999999, 'name' => 'Nope'],
+        'input' => ['task_id' => 999999, 'name' => 'Nope'],
     ];
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 
     $response = $this->withHeaders(commandWebhookHeaders('command-secret', $body, now()->timestamp))
-        ->postJson('/commands/work.item.update', $payload);
+        ->postJson('/commands/work.task.update', $payload);
 
     $response->assertNotFound()
         ->assertJsonPath('error.code', 'resource.not_found')
@@ -211,21 +211,21 @@ it('resolves Enterprise identity through the actor organization boundary', funct
     config()->set('services.command_webhooks.credentials.test-command', [
         'secret' => 'command-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
-    $item = WorkItem::factory()->create(['enterprise_id' => $foreignEnterprise]);
+    $item = Task::factory()->create(['enterprise_id' => $foreignEnterprise]);
 
     $payload = [
         'enterprise_slug' => $foreignEnterprise->slug,
         'idempotency_key' => 'command-cross-enterprise',
         'correlation_id' => 'command-cross-enterprise-correlation',
-        'input' => ['work_item_id' => $item->getKey(), 'name' => 'Nope'],
+        'input' => ['task_id' => $item->getKey(), 'name' => 'Nope'],
     ];
     $body = json_encode($payload, JSON_THROW_ON_ERROR);
 
     $this->withHeaders(commandWebhookHeaders('command-secret', $body, now()->timestamp))
-        ->postJson('/commands/work.item.update', $payload)
+        ->postJson('/commands/work.task.update', $payload)
         ->assertNotFound();
 
     expect($item->refresh()->name)->not->toBe('Nope');

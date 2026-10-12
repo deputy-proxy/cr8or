@@ -24,7 +24,7 @@ final class HistoricalContextAssembler
     {
         Gate::forUser($user)->authorize('view', $enterprise);
 
-        $contextualFields = ['objective_id', 'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id', 'work_item_id'];
+        $contextualFields = ['objective_id', 'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id'];
 
         $decisionQuery = Decision::query()
             ->where('enterprise_id', $enterprise->getKey())
@@ -130,7 +130,7 @@ final class HistoricalContextAssembler
             'actor_id' => $decision->actor_id, 'actor_name' => $decision->actor_name,
             'objective_id' => $decision->objective_id, 'strategy_id' => $decision->strategy_id, 'plan_id' => $decision->plan_id,
             'initiative_id' => $decision->initiative_id, 'project_id' => $decision->project_id, 'task_id' => $decision->task_id,
-            'work_item_id' => $decision->work_item_id, 'title' => $decision->title, 'summary' => $decision->summary,
+            'title' => $decision->title, 'summary' => $decision->summary,
             'rationale' => $decision->rationale, 'decided_at' => $this->timestamp($decision->decided_at),
         ];
     }

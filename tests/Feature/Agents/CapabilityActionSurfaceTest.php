@@ -56,12 +56,12 @@ function capabilityActionMatrix(): array
         ProductAgent::class => [
             'strategy.create' => 'create-strategy',
             'strategy.update' => 'update-strategy',
-            'work.item.create' => 'create-work-item',
-            'work.item.update' => 'update-work-item',
+            'work.task.create' => 'create-task',
+            'work.task.update' => 'update-task',
         ],
         OperationsAgent::class => [
-            'work.item.create' => 'create-work-item',
-            'work.item.update' => 'update-work-item',
+            'work.task.create' => 'create-task',
+            'work.task.update' => 'update-task',
         ],
     ];
 }
@@ -72,7 +72,7 @@ it('maps every current Expert capability to an executable governed expert action
         MarketingExpert::class => 'marketing.plan',
         CopywritingExpert::class => 'marketing.content.create',
         FinanceExpert::class => 'finance.report.generate',
-        OperationsExpert::class => 'work.item.create',
+        OperationsExpert::class => 'work.task.create',
         ProductExpert::class => 'strategy.create',
         SeoExpert::class => 'marketing.content.review',
         StrategyExpert::class => 'strategy.create',

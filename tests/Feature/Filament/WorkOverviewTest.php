@@ -8,7 +8,6 @@ use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 
 it('scopes Work Overview counts to organizations the user can access', function () {
     $organization = Organization::factory()->create();
@@ -29,8 +28,8 @@ it('scopes Work Overview counts to organizations the user can access', function 
     Task::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
     Task::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
 
-    WorkItem::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
-    WorkItem::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
+    Task::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
+    Task::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
 
     $this->actingAs($user);
 
@@ -42,8 +41,7 @@ it('scopes Work Overview counts to organizations the user can access', function 
     $overview = collect($page->overview)->keyBy('label');
 
     expect($overview['Projects']['count'])->toBe(1)
-        ->and($overview['Tasks']['count'])->toBe(1)
-        ->and($overview['Work Items']['count'])->toBe(1);
+        ->and($overview['Tasks']['count'])->toBe(2);
 
     $flatten = function (array $node, array &$nodes, array &$links) use (&$flatten): void {
         foreach ($node['children'] ?? [] as $child) {
@@ -79,7 +77,7 @@ it('denies Work Overview access when the user has no organization membership', f
     expect(WorkOverview::canAccess())->toBeFalse();
 });
 
-it('groups project milestones, work items, and tasks and exposes status and overdue metadata', function () {
+it('groups project milestones, tasks, and tasks and exposes status and overdue metadata', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->create();
 
@@ -95,10 +93,10 @@ it('groups project milestones, work items, and tasks and exposes status and over
         'status' => 'active',
         'due_at' => now()->subDay(),
     ]);
-    $workItem = WorkItem::factory()->create([
+    $workItem = Task::factory()->create([
         'enterprise_id' => $enterprise,
         'project_id' => $project,
-        'name' => 'In progress work item',
+        'name' => 'In progress task',
         'status' => 'in_progress',
     ]);
     $parentTask = Task::factory()->forProject($project)->create([
@@ -132,36 +130,32 @@ it('groups project milestones, work items, and tasks and exposes status and over
     $nodes = collect($flatNodes)->keyBy('name');
     $links = collect($linkPairs);
     $milestonesGroup = 'group:milestones:'.$project->id;
-    $workItemsGroup = 'group:work-items:'.$project->id;
-    $tasksGroup = 'group:tasks:'.$project->id;
+    $tasksGroup = 'group:tasks:project:'.$project->id;
 
     expect($nodes->keys()->all())->toContain(
         $milestonesGroup,
-        $workItemsGroup,
         $tasksGroup,
         'milestone:'.$milestone->id,
-        'work-item:'.$workItem->id,
+        'task:'.$workItem->id,
         'task:'.$parentTask->id,
         'task:'.$childTask->id,
     )
         ->and($nodes['project:'.$project->id]['status'])->toBe('active')
         ->and($nodes['milestone:'.$milestone->id]['overdue'])->toBeTrue()
         ->and($nodes['milestone:'.$milestone->id]['dueAt'])->not->toBeNull()
-        ->and($nodes['work-item:'.$workItem->id]['status'])->toBe('in_progress')
+        ->and($nodes['task:'.$workItem->id]['status'])->toBe('in_progress')
         ->and($nodes['task:'.$parentTask->id]['overdue'])->toBeTrue()
         ->and($nodes['task:'.$childTask->id]['overdue'])->toBeFalse()
         ->and($nodes[$milestonesGroup]['url'])->toBe('#')
-        ->and($nodes[$workItemsGroup]['url'])->toBe('#')
         ->and($nodes[$tasksGroup]['url'])->toBe('#')
         ->and(parse_url($nodes['milestone:'.$milestone->id]['url'], PHP_URL_PATH))->toEndWith('/'.$milestone->id.'/edit')
-        ->and(parse_url($nodes['work-item:'.$workItem->id]['url'], PHP_URL_PATH))->toEndWith('/'.$workItem->id.'/edit')
+        ->and(parse_url($nodes['task:'.$workItem->id]['url'], PHP_URL_PATH))->toEndWith('/'.$workItem->id.'/edit')
         ->and(parse_url($nodes['task:'.$parentTask->id]['url'], PHP_URL_PATH))->toEndWith('/'.$parentTask->id.'/edit')
         ->and($links)->toContain(
             'project:'.$project->id.'>'.$milestonesGroup,
-            'project:'.$project->id.'>'.$workItemsGroup,
             'project:'.$project->id.'>'.$tasksGroup,
             $milestonesGroup.'>milestone:'.$milestone->id,
-            $workItemsGroup.'>work-item:'.$workItem->id,
+            $tasksGroup.'>task:'.$workItem->id,
             $tasksGroup.'>task:'.$parentTask->id,
             'task:'.$parentTask->id.'>task:'.$childTask->id,
         );

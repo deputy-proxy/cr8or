@@ -2,18 +2,18 @@
 
 use App\Experts\OperationsExpert;
 use App\Mcp\Servers\Cr8orServer;
-use App\Mcp\Tools\UpdateWorkItemTool;
+use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\AgentExecution;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
 use App\Models\WorkflowVersion;
-use App\Models\WorkItem;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -75,11 +75,11 @@ it('uses the same Capability boundary and Operation for Workflow and direct MCP 
     ]);
 
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
-    $workflowItem = WorkItem::factory()->create([
+    $workflowItem = Task::factory()->create([
         'enterprise_id' => $enterprise,
         'name' => 'Workflow before',
     ]);
-    $directItem = WorkItem::factory()->create([
+    $directItem = Task::factory()->create([
         'enterprise_id' => $enterprise,
         'name' => 'Direct before',
     ]);
@@ -91,9 +91,9 @@ it('uses the same Capability boundary and Operation for Workflow and direct MCP 
         'sequence' => 1,
         'dependencies' => [],
         'expert_slugs' => ['operations'],
-        'capability_slugs' => ['work.item.update'],
+        'capability_slugs' => ['work.task.update'],
         'input_contract' => [
-            'required' => ['work_item_id', 'name'],
+            'required' => ['task_id', 'name'],
         ],
         'output_contract' => [],
     ]);
@@ -104,7 +104,7 @@ it('uses the same Capability boundary and Operation for Workflow and direct MCP 
         $actor,
         $version,
         [
-            'work_item_id' => $workflowItem->getKey(),
+            'task_id' => $workflowItem->getKey(),
             'name' => 'Workflow after',
         ],
         'workflow-equivalent-'.$workflowItem->getKey(),
@@ -112,8 +112,8 @@ it('uses the same Capability boundary and Operation for Workflow and direct MCP 
     );
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $directItem->getKey(),
+        ->tool(UpdateTaskTool::class, [
+            'task_id' => $directItem->getKey(),
             'name' => 'Direct after',
         ])
         ->assertOk();

@@ -29,8 +29,8 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | create-enterprise | enterprise.create | CreateEnterprise | Create an Enterprise under an organization where the authenticated actor has Enterprise creation authority. |
 | create-enterprise-context | enterprise.context.create | CreateEnterpriseContext | Create business context for an authorized Enterprise; each Enterprise has one context record. |
 | update-enterprise-context | enterprise.context.update | EnterpriseContextUpdate | Update an existing Enterprise Context while preserving Enterprise ownership and policy authorization. |
-| create-work-item | work.item.create | CreateWorkItem | Create a work item under an authorized enterprise. |
-| update-work-item | work.item.update | UpdateWorkItem | Update an existing work item without changing enterprise ownership. |
+| create-task | work.task.create | CreateTask | Create a task under an authorized enterprise. |
+| update-task | work.task.update | UpdateTask | Update an existing task without changing enterprise ownership. |
 | create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
 | update-strategy | strategy.update | UpdateStrategy | Update an existing strategy without changing objective ownership. |
 | create-content-item | marketing.content.create | CreateContentItem | Create draft Content Item state under an authorized enterprise. |
@@ -119,7 +119,7 @@ The foundational read/discovery layer exposes bounded, authorization-aware list/
 | --- | --- |
 | Organization | `list-enterprises`, `get-enterprise` |
 | Strategy | `list-objectives`, `get-objective`, `list-strategies`, `get-strategy` |
-| Work | `list-work-items`, `get-work-item` |
+| Work | `list-tasks`, `get-task` |
 | Intelligence | `list-agents`, `get-agent`, `list-experts`, `get-expert`, `list-capabilities`, `get-capability` |
 | Content | `list-campaigns`, `get-campaign`, `list-content-series`, `get-content-series`, `list-content-items`, `get-content-item`, `list-audiences`, `get-audience`, `list-channels`, `get-channel` |
 | Operations | `list-executions`, `get-execution`, `list-approval-requests`, `get-approval-request` |

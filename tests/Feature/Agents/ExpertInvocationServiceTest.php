@@ -172,7 +172,7 @@ it('returns governed Capability requests when the Expert declares them without d
 
     expect($result->succeeded())->toBeTrue()
         ->and($result->requestedCapabilities)->toHaveCount(1)
-        ->and($result->requestedCapabilities[0]->capability)->toBe('work.item.create')
+        ->and($result->requestedCapabilities[0]->capability)->toBe('work.task.create')
         ->and($result->requestedCapabilities[0]->targetContext)->toBe(['enterprise_id' => $enterprise->getKey()])
-        ->and($result->requestedCapabilities[0]->inputPayload)->toBe(['name' => 'Requested work item']);
+        ->and($result->requestedCapabilities[0]->inputPayload)->toBe(['name' => 'Requested task']);
 });
