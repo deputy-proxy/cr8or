@@ -10,6 +10,8 @@ Workflow → WorkflowVersion → WorkflowExecution → Stage → Expert → Capa
 
 Each published stage declares its Expert, Capability, dependencies and input/output contracts. Publication validates the persisted graph. Published versions are immutable and historical executions remain bound to their exact version.
 
+At runtime, the resolved Capability result is validated against the stage output contract before it is persisted in `WorkflowExecution.outputs` or exposed to downstream mappings. Required fields and declared types are checked for both JSON-schema-style contracts (`required` / `properties`) and legacy capability field maps (`field => type|required`). Empty output contracts remain intentionally opaque for dynamic capabilities. A contract failure fails the execution with stage/field details and does not persist the invalid stage output.
+
 ## Execution and governance
 
 The Workflow runtime resolves the declared Capability through `CapabilityRegistry` and invokes the mapped Operation through the common Capability execution boundary. It does not invoke MCP business Tools, call Operations by arbitrary class name, or grant an Agent direct Capability authority.
@@ -99,6 +101,8 @@ Workflow stages remain deterministic in their orchestration and business executi
 ## Continuation and idempotency
 
 WorkflowExecution persists stage progress, outputs, correlation, idempotency and waiting state. Interactive continuation uses durable continuation tokens. A continuation may supply caller-owned `workflow` and `stages` input, allowing `requested` fields to be resolved without a ModelProvider. A continuation may invoke a ModelProvider only when the published stage contract explicitly requires generated input. Stale tokens fail closed. Retries reuse the durable WorkflowVersion/stage execution boundary.
+
+A stage marked `repeatable` does not loop during a normal execution. When a failed WorkflowExecution is explicitly retried, previously completed repeatable stages may be re-entered once during that retry; non-repeatable completed stages reuse their persisted outputs. Re-entered stages receive a new attempt-specific idempotency key, while a failed stage without a completed output retains its original stage idempotency key.
 
 ## Agent relationship
 
