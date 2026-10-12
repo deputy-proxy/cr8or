@@ -151,7 +151,7 @@ The scope invariant is enforced by the Workflow domain model. Generic Workflows 
 
 Workflow resolution for an Enterprise includes both generic definitions and definitions specifically scoped to that Enterprise. When both exist for the same canonical key, the enterprise-specific definition takes precedence for that Enterprise. A generic Workflow definition is never duplicated merely because multiple Enterprises execute it.
 
-WorkflowVersions follow the Workflow scope: generic WorkflowVersions have no Enterprise, while WorkflowExecutions always retain an explicit Enterprise execution context. This keeps reusable definitions separate from tenant-owned runtime history.
+WorkflowVersions follow the Workflow scope: generic WorkflowVersions have no Enterprise, while WorkflowExecutions always retain an explicit Enterprise execution context. This keeps reusable definitions separate from tenant-owned runtime history. Workflow definition status is derived from the authoritative published-version pointer; execution success/failure belongs to WorkflowExecution (or the relevant AgentExecution runtime record), never to the reusable definition. Legacy stored Workflow status values are retained for compatibility but are not authoritative runtime state.
 
 Workflow scope is selected at creation and is immutable through the Filament edit form. Duplication preserves the source scope.
 

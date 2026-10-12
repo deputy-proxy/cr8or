@@ -476,9 +476,6 @@ final class AgentExecutionService
                     $correlationId,
                 );
             }
-            if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_PENDING) {
-                $execution->workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
-            }
 
             if ($execution->status === AgentExecution::STATUS_REQUESTED) {
                 $execution->start()->save();
@@ -899,9 +896,6 @@ final class AgentExecutionService
                     $execution->complete($termination['reason'])->save();
                     $events->dispatch(AgentExecutionCompleted::class, $execution, data: ['reason' => $termination['reason']]);
                     $this->consolidateMemory($memoryRuntime, $actor, $execution, $modelResult, $decision, $correlation);
-                    if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_RUNNING) {
-                        $execution->workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
-                    }
 
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
@@ -917,9 +911,6 @@ final class AgentExecutionService
                     return new AgentExecutionResult($execution->refresh(), $modelResult, $decision, $authorizedRequests);
                 }
 
-                if ($execution->workflow !== null && $execution->workflow->status === Workflow::STATUS_RUNNING) {
-                    $execution->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
-                }
                 $execution->next_step = $termination['next_step'] ?? 'Continue the current task.';
                 $execution->beginReasoning()->save();
             }

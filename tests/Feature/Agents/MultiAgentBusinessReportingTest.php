@@ -12,6 +12,8 @@ use App\Models\FinancialReport;
 use App\Models\Membership;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Models\WorkflowExecution;
+use App\Models\WorkflowVersion;
 use App\Services\MultiAgentBusinessReportingService;
 use Illuminate\Auth\Access\AuthorizationException;
 
@@ -53,7 +55,23 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
 
     $failedWorkflow = Workflow::factory()->create([
         'enterprise_id' => $enterprise,
+        // Legacy definition status must not be treated as an execution outcome.
         'status' => Workflow::STATUS_FAILED,
+    ]);
+    $failedVersion = WorkflowVersion::factory()->create([
+        'workflow_id' => $failedWorkflow,
+        'enterprise_id' => $enterprise,
+        'status' => WorkflowVersion::STATUS_PUBLISHED,
+    ]);
+    $failedWorkflow->update(['published_version_id' => $failedVersion->getKey()]);
+    $failedWorkflowExecution = WorkflowExecution::factory()->create([
+        'workflow_id' => $failedWorkflow,
+        'workflow_version_id' => $failedVersion,
+        'workflow_version' => $failedVersion->version,
+        'enterprise_id' => $enterprise,
+        'actor_id' => $user,
+        'status' => WorkflowExecution::STATUS_FAILED,
+        'failure_reason' => 'Stage capability failed',
     ]);
 
     $approver = User::factory()->create();
@@ -107,6 +125,9 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
     ])->and($report['workflow_summary'])->toMatchArray([
         'pending' => 0,
         'running' => 0,
+        'waiting_for_input' => 0,
+        'waiting_for_approval' => 0,
+        'paused' => 0,
         'succeeded' => 0,
         'failed' => 1,
         'total' => 1,
@@ -118,8 +139,11 @@ it('builds an Enterprise-scoped multi-Agent report from authoritative records wi
     ])->and($report['failed_operations'])->toHaveCount(1)
         ->and($report['failed_workflows'])->toHaveCount(1)
         ->and($report['failed_workflows'][0])->toMatchArray([
-            'id' => $failedWorkflow->getKey(),
-            'status' => Workflow::STATUS_FAILED,
+            'id' => $failedWorkflowExecution->getKey(),
+            'workflow_id' => $failedWorkflow->getKey(),
+            'status' => WorkflowExecution::STATUS_FAILED,
+            'name' => $failedWorkflow->name,
+            'failure_reason' => 'Stage capability failed',
         ])
         ->and($report['approval_outcomes'][0])->toMatchArray([
             'status' => ApprovalRequest::STATUS_APPROVED,

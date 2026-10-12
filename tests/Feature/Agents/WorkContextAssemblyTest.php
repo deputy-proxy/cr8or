@@ -78,6 +78,7 @@ it('assembles bounded authorized work context with coherent relationships and ex
         'status' => WorkflowVersion::STATUS_PUBLISHED,
         'version' => 1,
     ]);
+    $workflow->update(['published_version_id' => $version->getKey()]);
     $execution = WorkflowExecution::factory()->create([
         'workflow_id' => $workflow->getKey(),
         'workflow_version_id' => $version->getKey(),
@@ -134,7 +135,7 @@ it('assembles bounded authorized work context with coherent relationships and ex
             'workflow' => [
                 'id' => $workflow->getKey(),
                 'name' => $workflow->name,
-                'status' => Workflow::STATUS_RUNNING,
+                'status' => WorkflowVersion::STATUS_PUBLISHED,
                 'project_id' => $project->getKey(),
                 'task_id' => $childTask->getKey(),
             ],

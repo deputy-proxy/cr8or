@@ -106,9 +106,19 @@ it('executes independently configured persisted workflows through the generic en
         ['request' => 'Execute beta.'],
         'execute-beta',
     );
+    $repeatedExecution = app(WorkflowEntryPointService::class)->start(
+        $actor,
+        $first->refresh(),
+        ['request' => 'Execute alpha again.'],
+        'execute-alpha-repeat',
+    );
 
     expect($firstExecution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and($secondExecution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($repeatedExecution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($first->refresh()->status)->toBe(Workflow::STATUS_PENDING)
+        ->and($first->refresh()->definitionStatus())->toBe(\App\Models\WorkflowVersion::STATUS_PUBLISHED)
+        ->and(app(WorkflowEntryPointService::class)->get($actor, $first->refresh())['status'])->toBe(\App\Models\WorkflowVersion::STATUS_PUBLISHED)
         ->and($firstExecution->workflow_version_id)->toBe($firstVersion->getKey())
         ->and($secondExecution->workflow_version_id)->toBe($secondVersion->getKey())
         ->and($firstExecution->outputs)->toHaveKey('alpha-stage')

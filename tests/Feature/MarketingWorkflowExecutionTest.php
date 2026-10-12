@@ -105,7 +105,7 @@ it('auto-selects the full marketing workflow and completes the governed graph wi
     $workflow = Workflow::query()->where('enterprise_id', $enterprise->getKey())->firstOrFail();
 
     expect($result->execution->status)->toBe(AgentExecution::STATUS_COMPLETED)
-        ->and($workflow->status)->toBe(Workflow::STATUS_SUCCEEDED)
+        ->and($workflow->status)->toBe(Workflow::STATUS_PENDING)
         ->and($workflow->stages()->count())->toBe(9)
         ->and(MarketingStrategy::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(1)
         ->and(Campaign::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(1)

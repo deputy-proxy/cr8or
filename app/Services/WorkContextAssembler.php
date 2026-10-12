@@ -378,6 +378,7 @@ class WorkContextAssembler
                 'enterprise_id',
                 'name',
                 'status',
+                'published_version_id',
                 'project_id',
                 'task_id',
             ])
@@ -428,7 +429,7 @@ class WorkContextAssembler
                 'workflow' => [
                     'id' => $workflow->getKey(),
                     'name' => $workflow->name,
-                    'status' => $workflow->status,
+                    'status' => $workflow->definitionStatus(),
                     'project_id' => $workflow->project_id,
                     'task_id' => $workflow->task_id,
                 ],

@@ -356,20 +356,28 @@ it('rejects unknown stages and undeclared stage input fields', function (): void
     expect(WorkflowExecution::query()->where('workflow_version_id', $version->id)->count())->toBe(0);
 });
 
-it('persists a failed execution when a started workflow stage fails', function (): void {
+it('keeps definition status independent across successful and failed executions', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
     governedStage($workflow, 'research', 1, [], ['required_request']);
     $version = publishedWorkflow($workflow, $actor);
-
-    expect(fn () => app(WorkflowExecutionService::class)->start(
+    $successfulExecution = app(WorkflowExecutionService::class)->start(
         $actor,
         $version,
-        [],
-        'durable-failure',
-        'durable-failure-correlation',
-    ))->toThrow(ValidationException::class, 'missing required input [required_request]');
+        ['required_request' => 'A valid request.'],
+        'durable-success',
+        'durable-success-correlation',
+    );
+
+    expect($successfulExecution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and(fn () => app(WorkflowExecutionService::class)->start(
+            $actor,
+            $version,
+            [],
+            'durable-failure',
+            'durable-failure-correlation',
+        ))->toThrow(ValidationException::class, 'missing required input [required_request]');
 
     $execution = WorkflowExecution::query()
         ->where('workflow_version_id', $version->id)
@@ -379,7 +387,9 @@ it('persists a failed execution when a started workflow stage fails', function (
     expect($execution)->not->toBeNull()
         ->and($execution->status)->toBe(WorkflowExecution::STATUS_FAILED)
         ->and($execution->failure_reason)->toContain('missing required input [required_request]')
-        ->and($execution->correlation_id)->toBe('durable-failure-correlation');
+        ->and($execution->correlation_id)->toBe('durable-failure-correlation')
+        ->and($workflow->refresh()->status)->toBe(Workflow::STATUS_PENDING)
+        ->and($workflow->refresh()->definitionStatus())->toBe(WorkflowVersion::STATUS_PUBLISHED);
 });
 
 it('refuses to execute draft workflow definitions', function (): void {

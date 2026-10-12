@@ -92,7 +92,7 @@ class UpdateWorkflowTool extends GovernedCapabilityTool
                     'name' => $workflow->name,
                     'canonical_key' => $workflow->canonical_key,
                     'purpose' => $workflow->purpose,
-                    'status' => $workflow->status,
+                    'status' => $workflow->definitionStatus(),
                     'stage_count' => $workflow->stages()->count(),
                     'published_version_id' => $workflow->published_version_id,
                 ],

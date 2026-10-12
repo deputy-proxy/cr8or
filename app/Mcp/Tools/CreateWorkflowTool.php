@@ -92,7 +92,7 @@ class CreateWorkflowTool extends GovernedCapabilityTool
                     'enterprise_specific' => $workflow->isEnterpriseSpecific(),
                     'enterprise_id' => $workflow->enterprise_id,
                     'name' => $workflow->name,
-                    'status' => $workflow->status,
+                    'status' => $workflow->definitionStatus(),
                     'stage_count' => $workflow->stages()->count(),
                 ],
             ]);
