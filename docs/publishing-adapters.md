@@ -15,7 +15,7 @@ Each publishing.adapters.<network> entry defines:
 - enabled: explicit enablement; unknown, invalid, or disabled entries fail closed;
 - native_scheduling: explicit opt-in to adapter-managed scheduling, honored only when the adapter declares scheduling support.
 
-LinkedIn, Facebook, Instagram, TikTok, Bluesky (bsky), YouTube, Threads, and X are disabled by default until their dedicated adapters are implemented and validated. Test adapters are configured only in the testing environment.
+LinkedIn, Facebook, Instagram, and TikTok have dedicated adapter implementations but remain disabled until their deployment-specific app permissions, user consent/settings and real-account verification are complete. Bluesky (bsky), YouTube, Threads, and X remain unimplemented. All eight network adapters are disabled by default. Test adapters are configured only in the testing environment.
 
 ## Contracts
 
