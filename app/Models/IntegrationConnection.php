@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['organization_id', 'enterprise_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
+#[Fillable(['organization_id', 'enterprise_id', 'social_identity_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
 class IntegrationConnection extends Model
 {
+    private bool $lifecycleTransitionAuthorized = false;
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_DISABLED = 'disabled';
@@ -19,6 +21,10 @@ class IntegrationConnection extends Model
     public const STATUS_DEGRADED = 'degraded';
 
     public const STATUS_REVOKED = 'revoked';
+
+    public const STATUS_EXPIRED = 'expired';
+
+    public const STATUS_RECONNECT_REQUIRED = 'reconnect_required';
 
     protected function casts(): array
     {
@@ -31,11 +37,21 @@ class IntegrationConnection extends Model
     protected static function booted(): void
     {
         static::saving(function (IntegrationConnection $connection): void {
+            if ($connection->exists && $connection->isDirty('status')) {
+                if (! $connection->lifecycleTransitionAuthorized) {
+                    throw new LogicException('Integration connection status can only change through its lifecycle methods.');
+                }
+
+                $connection->lifecycleTransitionAuthorized = false;
+            }
+
             if (! in_array($connection->status, [
                 self::STATUS_ACTIVE,
                 self::STATUS_DISABLED,
                 self::STATUS_DEGRADED,
                 self::STATUS_REVOKED,
+                self::STATUS_EXPIRED,
+                self::STATUS_RECONNECT_REQUIRED,
             ], true)) {
                 throw new LogicException("Invalid integration connection status [{$connection->status}].");
             }
@@ -54,6 +70,27 @@ class IntegrationConnection extends Model
 
             if ($connection->exists && $connection->isDirty('organization_id')) {
                 throw new LogicException('Integration connection organization cannot be changed.');
+            }
+
+            if ($connection->exists && $connection->isDirty('social_identity_id')) {
+                throw new LogicException('An integration connection cannot be reassigned to a different social identity.');
+            }
+
+            if ($connection->social_identity_id !== null) {
+                $identity = SocialIdentity::query()->find($connection->social_identity_id);
+                if ($identity === null
+                    || (int) $identity->organization_id !== (int) $connection->organization_id
+                    || $identity->provider !== $connection->provider
+                    || $identity->external_id !== $connection->external_account_id) {
+                    throw new LogicException('A social integration connection must match its identity network, external identifier, and organization.');
+                }
+
+                if ($connection->enterprise_id !== null && SocialAccount::query()
+                    ->where('social_identity_id', $identity->id)
+                    ->where('enterprise_id', '!=', $connection->enterprise_id)
+                    ->exists()) {
+                    throw new LogicException('An enterprise-scoped social connection cannot authorize destinations in another enterprise.');
+                }
             }
 
             /** @var array<string, mixed>|null $configuration */
@@ -79,6 +116,12 @@ class IntegrationConnection extends Model
         return $this->belongsTo(Enterprise::class);
     }
 
+    /** @return BelongsTo<SocialIdentity, $this> */
+    public function socialIdentity(): BelongsTo
+    {
+        return $this->belongsTo(SocialIdentity::class);
+    }
+
     public function isOperational(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
@@ -92,9 +135,11 @@ class IntegrationConnection extends Model
     public function transitionTo(string $status): static
     {
         $allowed = match ($this->status) {
-            self::STATUS_ACTIVE => [self::STATUS_DISABLED, self::STATUS_DEGRADED, self::STATUS_REVOKED],
-            self::STATUS_DISABLED => [self::STATUS_ACTIVE, self::STATUS_DEGRADED, self::STATUS_REVOKED],
-            self::STATUS_DEGRADED => [self::STATUS_ACTIVE, self::STATUS_DISABLED, self::STATUS_REVOKED],
+            self::STATUS_ACTIVE => [self::STATUS_DISABLED, self::STATUS_DEGRADED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
+            self::STATUS_DISABLED => [self::STATUS_ACTIVE, self::STATUS_DEGRADED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
+            self::STATUS_DEGRADED => [self::STATUS_ACTIVE, self::STATUS_DISABLED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
+            self::STATUS_EXPIRED => [self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
+            self::STATUS_RECONNECT_REQUIRED => [self::STATUS_DISABLED, self::STATUS_REVOKED],
             self::STATUS_REVOKED => [],
             default => throw new LogicException('Integration connection has no valid lifecycle state.'),
         };
@@ -104,11 +149,31 @@ class IntegrationConnection extends Model
             self::STATUS_DISABLED,
             self::STATUS_DEGRADED,
             self::STATUS_REVOKED,
+            self::STATUS_EXPIRED,
+            self::STATUS_RECONNECT_REQUIRED,
         ], true) || ! in_array($status, $allowed, true)) {
             throw new LogicException("Integration connection cannot transition from [{$this->status}] to [{$status}].");
         }
 
         $this->status = $status;
+        $this->lifecycleTransitionAuthorized = true;
+
+        return $this;
+    }
+
+    public function reauthorize(string $credentialReference): static
+    {
+        if (! in_array($this->status, [self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED], true)) {
+            throw new LogicException('Only an expired, revoked, or reconnect-required connection can be reauthorized.');
+        }
+
+        if (trim($credentialReference) === '') {
+            throw new LogicException('Reauthorization requires a new credential reference.');
+        }
+
+        $this->credential_reference = $credentialReference;
+        $this->status = self::STATUS_ACTIVE;
+        $this->lifecycleTransitionAuthorized = true;
 
         return $this;
     }
