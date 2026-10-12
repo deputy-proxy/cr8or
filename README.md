@@ -1296,7 +1296,8 @@ Examples include:
 - publications;
 - publishing jobs;
 - provider results;
-- engagement metrics.
+- engagement metrics;
+- destination-aware network adapter contracts and explicit capability declarations ([details](docs/social-publishing-adapters.md)).
 
 ## Finance
 

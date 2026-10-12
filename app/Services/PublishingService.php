@@ -143,7 +143,7 @@ final class PublishingService
         $job->start()->save();
 
         try {
-            $result = $resolution->adapter->publish(new PublishingAdapterRequest(
+            $request = new PublishingAdapterRequest(
                 network: $resolution->network,
                 destinationExternalId: $destination['destination_external_id'],
                 content: (string) $content->body,
@@ -156,8 +156,9 @@ final class PublishingService
                 integrationConnectionId: $connection === null ? null : (int) $connection->id,
                 credentialReference: $connection?->credential_reference,
                 settings: ['__type' => $publication->channel->type],
-            ));
-            $this->assertValidAdapterResult($result);
+            );
+            $result = $resolution->adapter->publish($request);
+            $this->assertValidAdapterResult($result, $request);
 
             $job->external_id = $result->externalId;
             $job->external_url = $result->externalUrl;
@@ -205,6 +206,11 @@ final class PublishingService
 
     public function reconcile(Publication $publication, PublishingAdapterResult $result): Publication
     {
+        if ($result->correlationId !== (string) $publication->correlation_id
+            || $result->idempotencyKey !== $publication->idempotency_key) {
+            throw new LogicException('A reconciled publishing result must match the publication correlation and idempotency identity.');
+        }
+
         if (in_array($publication->status, [Publication::STATUS_SUCCEEDED, Publication::STATUS_FAILED], true)) {
             return $publication;
         }
@@ -350,6 +356,8 @@ final class PublishingService
                 'path' => $version->path,
                 'external_reference' => $version->external_reference,
                 'metadata' => $version->metadata ?? [],
+                'dimensions' => is_array($asset->dimensions) ? $asset->dimensions : [],
+                'duration_seconds' => $asset->duration_seconds === null ? null : (float) $asset->duration_seconds,
             ];
         }
 
@@ -364,10 +372,47 @@ final class PublishingService
             throw new PublishingAdapterException('Content exceeds the destination text limit.', 'content_too_long');
         }
 
+        if ($capabilities->maxMediaItems !== null && count($media) > $capabilities->maxMediaItems) {
+            throw new PublishingAdapterException('The publication exceeds the destination media-count limit.', 'too_many_media_items');
+        }
+
         foreach ($media as $item) {
             $mimeType = $item['mime_type'] ?? null;
             if (! is_string($mimeType) || ! $capabilities->supportsMediaType($mimeType)) {
                 throw new PublishingAdapterException('The adapter does not support one or more attached media types.', 'unsupported_media');
+            }
+
+            $size = $item['size'] ?? null;
+            if ($capabilities->maxMediaSizeBytes !== null && (! is_numeric($size) || (int) $size > $capabilities->maxMediaSizeBytes)) {
+                throw new PublishingAdapterException('Attached media exceeds the destination file-size limit or lacks size metadata.', 'media_size_exceeded');
+            }
+
+            if (str_starts_with($mimeType, 'video/') && $capabilities->maxVideoDurationSeconds !== null) {
+                $metadata = $item['metadata'] ?? [];
+                $duration = $item['duration_seconds'] ?? (is_array($metadata) ? ($metadata['duration_seconds'] ?? null) : null);
+                if (! is_numeric($duration)) {
+                    throw new PublishingAdapterException('Video duration metadata is required by the destination capability contract.', 'media_duration_missing');
+                }
+                if ((float) $duration > $capabilities->maxVideoDurationSeconds) {
+                    throw new PublishingAdapterException('Video exceeds the destination duration limit.', 'video_too_long');
+                }
+            }
+
+            if ($capabilities->supportedAspectRatios !== []) {
+                $dimensions = $item['dimensions'] ?? [];
+                if ((! is_array($dimensions) || $dimensions === []) && is_array($item['metadata'] ?? null)) {
+                    $dimensions = $item['metadata']['dimensions'] ?? [];
+                }
+                $width = is_array($dimensions) ? ($dimensions['width'] ?? null) : null;
+                $height = is_array($dimensions) ? ($dimensions['height'] ?? null) : null;
+                if (! is_numeric($width) || ! is_numeric($height) || (int) $width < 1 || (int) $height < 1) {
+                    throw new PublishingAdapterException('Media dimensions are required by the destination aspect-ratio contract.', 'media_dimensions_missing');
+                }
+
+                $aspectRatio = $this->normalizedAspectRatio((int) $width, (int) $height);
+                if (! in_array($aspectRatio, $capabilities->supportedAspectRatios, true)) {
+                    throw new PublishingAdapterException('Media aspect ratio is not supported by the destination.', 'unsupported_aspect_ratio');
+                }
             }
         }
 
@@ -376,13 +421,24 @@ final class PublishingService
         }
     }
 
-    private function assertValidAdapterResult(PublishingAdapterResult $result): void
+    private function normalizedAspectRatio(int $width, int $height): string
     {
-        if (! in_array($result->status, ['submitted', 'accepted', 'pending', 'published', 'succeeded'], true)) {
-            throw new PublishingAdapterException('The adapter returned an unsupported outcome.', 'invalid_adapter_response', ambiguous: true);
+        $a = $width;
+        $b = $height;
+        while ($b !== 0) {
+            [$a, $b] = [$b, $a % $b];
         }
-        if (trim($result->externalId) === '') {
-            throw new PublishingAdapterException('The adapter returned no external publication identifier.', 'invalid_adapter_response', ambiguous: true);
+
+        return ((int) ($width / $a)).':'.((int) ($height / $a));
+    }
+
+    private function assertValidAdapterResult(PublishingAdapterResult $result, PublishingAdapterRequest $request): void
+    {
+        if (! in_array($result->status, ['submitted', 'accepted', 'pending', 'published', 'succeeded'], true)
+            || trim($result->externalId) === ''
+            || $result->correlationId !== $request->correlationId
+            || $result->idempotencyKey !== $request->idempotencyKey) {
+            throw new PublishingAdapterException('The adapter returned an invalid or uncorrelated outcome.', 'invalid_adapter_response', ambiguous: true);
         }
     }
 
