@@ -46,7 +46,7 @@ This change standardizes the current public identifiers in place. Repository-own
 
 ## Verified public Tool inventory
 
-The table below records the identifiers exposed by Laravel MCP, not connector-side wrapper names. Governed Tools map to one explicit Capability and Operation. Unregistered read/discovery/resource and lifecycle Tools are explicitly classified; registration does not grant authority. `McpSurfaceInventoryTest` verifies naming, uniqueness, and registry/runtime agreement, while `McpSurfaceContractTest` verifies server registration completeness.
+The table below records the identifiers exposed by Laravel MCP, not connector-side wrapper names. Governed Tools map to one explicit Capability and Operation. Unregistered read/discovery/resource and lifecycle Tools are explicitly classified; registration does not grant authority. `McpSurfaceInventoryTest` compares the inventory section against every concrete public Tool class, requires exact set equality, rejects duplicate/stale/missing identifiers and class mappings, and checks registry/runtime agreement. Other sections may refer to the same Tool when explaining a domain-specific surface; those references are not inventory rows. `McpSurfaceContractTest` verifies server registration completeness.
 
 | Public Tool identifier | Tool class | Capability | Operation |
 | --- | --- | --- | --- |
@@ -406,8 +406,8 @@ Agent Executions are durable runtime resources linked to an Enterprise, Agent As
 | `create-agent-execution` | `CreateAgentExecution` | Resource-level durable execution start |
 | `get-agent-execution` | `GetAgentExecution` | Retrieve durable status, input, result and runtime history |
 | `list-agent-executions` | `ListAgentExecutions` | Bounded Enterprise-scoped execution listing |
-| `resume-execution` | `ResumeAgentExecution` | Resume waiting/paused/delegated execution through the canonical runtime |
-| `cancel-execution` | `CancelAgentExecution` | Cancel an active execution through its lifecycle rules |
+| `resume-agent-execution` | `ResumeAgentExecution` | Resume waiting/paused/delegated execution through the canonical runtime |
+| `cancel-agent-execution` | `CancelAgentExecution` | Cancel an active execution through its lifecycle rules |
 
 Execution starts are idempotent by organization and idempotency key. Starts through the resource surface require the Assignment to be `ready` or `running`; invalid Assignment state is rejected before dispatch. Execution failures remain durable with structured failure code/category, while structured results are persisted without hidden chain-of-thought.
 
