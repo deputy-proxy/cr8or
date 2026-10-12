@@ -9,6 +9,9 @@ it('provides exactly one Filament resource for every model', function () {
         $models[] = $match[1];
     }
 
+    // Internal OAuth identity records must never receive generic Filament CRUD.
+    $models = array_values(array_diff($models, ['SocialIdentity']));
+
     $resources = [];
 
     foreach (glob(app_path('Filament/Resources/**/*Resource.php')) as $file) {
