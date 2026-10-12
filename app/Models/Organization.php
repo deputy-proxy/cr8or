@@ -48,6 +48,12 @@ class Organization extends Model
         return $this->hasMany(IntegrationConnection::class);
     }
 
+    /** @return HasMany<SocialIdentity, $this> */
+    public function socialIdentities(): HasMany
+    {
+        return $this->hasMany(SocialIdentity::class);
+    }
+
     /**
      * @return HasMany<Enterprise, $this>
      */
