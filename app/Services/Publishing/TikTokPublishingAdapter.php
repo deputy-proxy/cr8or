@@ -138,7 +138,7 @@ final class TikTokPublishingAdapter implements PublishingStatusLookupAdapter
         $publishId = is_array($data) ? ($data['publish_id'] ?? null) : null;
         $uploadUrl = is_array($data) ? ($data['upload_url'] ?? null) : null;
         if (! is_string($publishId) || trim($publishId) === '' || mb_strlen($publishId) > 64 || preg_match('/^[A-Za-z0-9_~.-]+$/D', $publishId) !== 1
-            || ! is_string($uploadUrl) || ! $this->isTrustedUploadUrl($uploadUrl)) {
+            || ! is_string($uploadUrl) || mb_strlen($uploadUrl) > 256 || ! $this->isTrustedUploadUrl($uploadUrl)) {
             throw new PublishingAdapterException(
                 'TikTok initialized the post without returning a valid publish identifier and trusted upload URL; reconcile before retrying.',
                 'invalid_adapter_response',
@@ -455,7 +455,15 @@ final class TikTokPublishingAdapter implements PublishingStatusLookupAdapter
             throw new PublishingAdapterException('TikTok rejected the access token; reconnect the creator account.', 'authentication_required');
         }
 
-        if ($response->status() === 403 && ! in_array($errorCode, ['scope_not_authorized', 'unaudited_client_can_only_post_to_private_accounts'], true)) {
+        if ($response->status() === 403 && ! in_array($errorCode, [
+            'scope_not_authorized',
+            'unaudited_client_can_only_post_to_private_accounts',
+            'spam_risk_too_many_posts',
+            'spam_risk_user_banned_from_posting',
+            'reached_active_user_cap',
+            'privacy_level_option_mismatch',
+            'url_ownership_unverified',
+        ], true)) {
             throw new PublishingAdapterException('TikTok rejected the requested publishing capability or app approval.', 'permission_denied');
         }
 
@@ -484,6 +492,7 @@ final class TikTokPublishingAdapter implements PublishingStatusLookupAdapter
                 'frame_rate_check_failed' => 'TikTok rejected the video frame rate.',
                 'picture_size_check_failed' => 'TikTok rejected the video dimensions.',
                 'spam_risk_text' => 'TikTok rejected the caption under its content safety rules.',
+                'url_ownership_unverified' => 'TikTok URL ownership must be verified before URL-based publishing can be used.',
                 default => 'TikTok rejected the publishing request.',
             };
             $failureCode = match ($errorCode) {
@@ -494,6 +503,7 @@ final class TikTokPublishingAdapter implements PublishingStatusLookupAdapter
                 'privacy_level_option_mismatch' => 'creator_settings_invalid',
                 'file_format_check_failed', 'duration_check_failed', 'frame_rate_check_failed', 'picture_size_check_failed' => 'invalid_media',
                 'spam_risk_text' => 'content_rejected',
+                'url_ownership_unverified' => 'configuration_error',
                 default => 'provider_rejected',
             };
             throw new PublishingAdapterException($message, $failureCode);

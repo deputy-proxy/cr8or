@@ -368,6 +368,25 @@ it('classifies TikTok rate limits as retryable and non-ambiguous', function () {
     }
 });
 
+it('classifies TikTok quota errors returned with HTTP 403 as quota exhaustion', function () {
+    [, $connection, $adapter] = tikTokPublishingContext();
+    Http::fake([
+        'https://open.tiktokapis.com/v2/post/publish/creator_info/query/' => Http::response(tikTokCreatorInfoResponse(), 200),
+        'https://open.tiktokapis.com/v2/post/publish/video/init/' => Http::response([
+            'error' => ['code' => 'reached_active_user_cap', 'message' => 'Daily active user cap reached'],
+        ], 403),
+    ]);
+
+    try {
+        $adapter->publish(tikTokPublishingRequest($connection));
+        test()->fail('The app-level active-user cap must block the submission.');
+    } catch (PublishingAdapterException $exception) {
+        expect($exception->failureCode)->toBe('quota_exceeded')
+            ->and($exception->retryable)->toBeFalse()
+            ->and($exception->ambiguous)->toBeFalse();
+    }
+});
+
 it('classifies creator posting restrictions without treating them as transient failures', function () {
     [, $connection, $adapter] = tikTokPublishingContext();
     Http::fake([
