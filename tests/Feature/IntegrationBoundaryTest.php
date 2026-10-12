@@ -58,8 +58,8 @@ it('keeps Postiz out of active publishing registration and runtime configuration
         ->and(config('services.postiz'))->toBeNull()
         ->and(config('services.integrations.webhooks.secrets.postiz'))->toBeNull()
         ->and($adapters)->not->toHaveKey('postiz')
-        ->and(class_exists('App\\Providers\\PostizPublishingProvider'))->toBeFalse()
-        ->and(class_exists('App\\Contracts\\PublishingProvider'))->toBeFalse();
+        ->and(class_exists(\App\Providers\PostizPublishingProvider::class))->toBeFalse()
+        ->and(class_exists(\App\Contracts\PublishingProvider::class))->toBeFalse();
 });
 
 it('builds an enterprise-scoped external execution context through the canonical boundary', function () {

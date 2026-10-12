@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Support\Publishing;
+namespace App\Providers;
 
 use App\Contracts\PublishingAdapter;
 use App\Data\PublishingAdapterRequest;

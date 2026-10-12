@@ -120,6 +120,18 @@ Result on the audit branch, before this document was added: **33 tests passed, 1
 
 The persistent sandbox initially had no `vendor/`, `node_modules/`, `.env`, or SQLite database, so dependencies and a local test database were prepared from the committed lockfiles and repository setup. No tracked dependency files were changed. `npm ci` reported 3 audit findings (1 high, 2 critical); this audit did not run `npm audit fix` or alter dependency versions because that is outside issue scope.
 
+## Post-removal source verification (issue #523)
+
+The post-change search covered application code, configuration, routes, tests, factories, README and `.env.example` using `rg -in postiz app config routes tests database README.md .env.example`.
+
+The remaining matches are intentional and classified as follows:
+
+- `tests/Feature/IntegrationBoundaryTest.php`: negative regression assertions that active registration, runtime configuration and the removed provider classes stay absent.
+- `tests/Feature/PublishingTest.php`: a historical `PublicationResult` fixture proving provider attribution remains readable and is not rewritten.
+- This migration audit and `docs/phase-13-audit.md`: historical baseline descriptions, explicitly marked as historical rather than current runtime inventory.
+
+No active application provider, service binding, publishing registry, `services.php` configuration, webhook-secret configuration, current README/integration/domain documentation, tracked environment template, or tracked deployment workflow references Postiz. The source search does not inspect deployed environment variables, remote secrets, live databases or provider accounts.
+
 ## Unresolved operational checks
 
 - Production/deployed environment variable and secret inventory, including whether Postiz credentials or webhook secrets are still configured.

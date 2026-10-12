@@ -19,12 +19,12 @@ use App\Models\PublicationResult;
 use App\Models\SocialAccount;
 use App\Models\SocialIdentity;
 use App\Models\User;
+use App\Providers\FakePublishingAdapter;
 use App\Services\ApprovalRequestService;
 use App\Services\McpCapabilityAuthorizer;
 use App\Services\PublishingService;
 use Tests\Support\Publishing\FakeInstagramPublishingAdapter;
 use Tests\Support\Publishing\FakeLinkedInPublishingAdapter;
-use Tests\Support\Publishing\FakePublishingAdapter;
 
 function publishingContext(): array
 {

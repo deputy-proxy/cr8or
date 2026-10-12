@@ -58,7 +58,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Passport\Passport;
-use Tests\Support\Publishing\FakePublishingAdapter;
 
 class AppServiceProvider extends ServiceProvider
 {
