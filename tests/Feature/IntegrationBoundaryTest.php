@@ -11,6 +11,7 @@ use App\Services\IntegrationRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Schema;
 use LogicException;
+use Tests\Support\Publishing\FakePublishingAdapter;
 
 function integrationBoundaryContext(): array
 {
@@ -203,6 +204,12 @@ it('keeps credential material out of connection metadata', function () {
 });
 
 it('exposes canonical provider metadata through provider adapters', function () {
+    config(['publishing.adapters.linkedin' => [
+        'key' => 'linkedin',
+        'class' => FakePublishingAdapter::class,
+        'enabled' => true,
+    ]]);
+
     $canva = app(\App\Contracts\CanvaClient::class);
     $publishing = app(\App\Services\PublishingAdapterRegistry::class)->resolve('linkedin')->adapter;
 

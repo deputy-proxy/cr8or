@@ -78,15 +78,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MediaStorage::class, R2MediaStorage::class);
         $this->app->singleton(IntegrationWebhookVerifier::class, HmacIntegrationWebhookVerifier::class);
         $this->app->singleton(CommandWebhookAuthenticator::class, HmacCommandWebhookAuthenticator::class);
-        if ($this->app->environment('testing')) {
-            $this->app->singleton(FakePublishingAdapter::class);
-            config(['publishing.adapters.linkedin' => [
-                'key' => 'linkedin',
-                'class' => FakePublishingAdapter::class,
-                'enabled' => true,
-                'native_scheduling' => true,
-            ]]);
-        }
         $this->app->singleton(PublishingAdapterRegistry::class);
         $this->app->singleton(CredentialResolver::class, function ($app): CredentialResolver {
             return new ProviderCredentialResolver([

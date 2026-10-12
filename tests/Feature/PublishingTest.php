@@ -19,12 +19,22 @@ use App\Models\PublicationResult;
 use App\Models\SocialAccount;
 use App\Models\SocialIdentity;
 use App\Models\User;
-use App\Providers\FakePublishingAdapter;
 use App\Services\ApprovalRequestService;
 use App\Services\McpCapabilityAuthorizer;
 use App\Services\PublishingService;
 use Tests\Support\Publishing\FakeInstagramPublishingAdapter;
 use Tests\Support\Publishing\FakeLinkedInPublishingAdapter;
+use Tests\Support\Publishing\FakePublishingAdapter;
+
+beforeEach(function () {
+    $this->app->singleton(FakePublishingAdapter::class);
+    config(['publishing.adapters.linkedin' => [
+        'key' => 'linkedin',
+        'class' => FakePublishingAdapter::class,
+        'enabled' => true,
+        'native_scheduling' => true,
+    ]]);
+});
 
 function publishingContext(): array
 {
@@ -63,6 +73,25 @@ function publishingContext(): array
     ]);
 
     return [$org, $user, $enterprise, $content, $channel, $account];
+}
+
+/** @param array<string, mixed> $assetAttributes @param array<string, mixed> $versionAttributes */
+function attachPublishingMedia(ContentItem $content, array $assetAttributes = [], array $versionAttributes = []): Asset
+{
+    $asset = Asset::factory()->create(array_merge([
+        'enterprise_id' => $content->enterprise_id,
+        'content_item_id' => $content->id,
+        'status' => Asset::STATUS_ACTIVE,
+    ], $assetAttributes));
+
+    AssetVersion::factory()->create(array_merge([
+        'asset_id' => $asset->id,
+        'mime_type' => 'image/jpeg',
+        'size' => 1024,
+        'metadata' => [],
+    ], $versionAttributes));
+
+    return $asset;
 }
 
 function nativePublishingContext(string $network): array
@@ -146,9 +175,24 @@ it('reconciles a submitted publication and preserves result history', function (
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     $p = app(PublishingService::class)->submit($user, $p);
     $p = app(PublishingService::class)->reconcile($p, new PublishingAdapterResult(
-        $p->external_id, $p->external_url, 'succeeded', ['source' => 'reconciliation'],
+        $p->external_id, $p->external_url, 'succeeded', (string) $p->correlation_id, $p->idempotency_key, ['source' => 'reconciliation'],
     ));
     expect($p->status)->toBe(Publication::STATUS_SUCCEEDED)->and($p->results()->count())->toBe(2);
+});
+
+it('rejects reconciliation results with mismatched correlation or idempotency identity', function () {
+    [, $user, , $content, , $account] = publishingContext();
+    $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
+
+    expect(fn () => app(PublishingService::class)->reconcile($publication, new PublishingAdapterResult(
+        'external-id',
+        'https://linkedin.example/posts/external-id',
+        'accepted',
+        'different-correlation',
+        $publication->idempotency_key,
+    )))->toThrow(LogicException::class, 'match the publication correlation');
+
+    expect($publication->refresh()->status)->toBe(Publication::STATUS_SCHEDULED);
 });
 
 it('records provider timeouts explicitly', function () {
@@ -305,6 +349,8 @@ it('reconciles remote acceptance after a lost response without resubmitting', fu
         'remote-accepted-id',
         'https://linkedin.example/posts/remote-accepted-id',
         'accepted',
+        (string) $publication->correlation_id,
+        $publication->idempotency_key,
         ['source' => 'remote_lookup'],
     ));
 
@@ -328,11 +374,11 @@ it('does not let delayed failure results overwrite a terminal success', function
         ->toThrow(PublishingAdapterException::class);
 
     $publication = app(PublishingService::class)->reconcile($publication, new PublishingAdapterResult(
-        'remote-published-id', null, 'succeeded',
+        'remote-published-id', null, 'succeeded', (string) $publication->correlation_id, $publication->idempotency_key,
     ));
     $resultCount = $publication->results()->count();
     $publication = app(PublishingService::class)->reconcile($publication, new PublishingAdapterResult(
-        'remote-published-id', null, 'failed',
+        'remote-published-id', null, 'failed', (string) $publication->correlation_id, $publication->idempotency_key,
     ));
 
     expect($publication->status)->toBe(Publication::STATUS_SUCCEEDED)
@@ -379,6 +425,8 @@ it('redacts credential-shaped fields from persisted adapter payloads', function 
         $publication->external_id,
         $publication->external_url,
         'succeeded',
+        (string) $publication->correlation_id,
+        $publication->idempotency_key,
         ['safe_value' => 'retained', 'access_token' => 'do-not-persist', 'nested' => ['refreshToken' => 'do-not-persist', 'count' => 1]],
     ));
 
@@ -422,6 +470,53 @@ it('rejects unsupported media before creating a publication', function () {
     expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
         ->toThrow(PublishingAdapterException::class);
 
+    expect(Publication::query()->count())->toBe(0);
+});
+
+it('enforces declared media-count and file-size limits before publication creation', function () {
+    [, $user, , $content, , $account] = publishingContext();
+    for ($index = 0; $index < 5; $index++) {
+        attachPublishingMedia($content, ['dimensions' => ['width' => 1080, 'height' => 1080]]);
+    }
+
+    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
+        ->toThrow(PublishingAdapterException::class, 'media-count limit');
+    expect(Publication::query()->count())->toBe(0);
+
+    $content->assets()->delete();
+    attachPublishingMedia($content, ['dimensions' => ['width' => 1080, 'height' => 1080]], ['size' => 52_428_801]);
+
+    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
+        ->toThrow(PublishingAdapterException::class, 'file-size limit');
+    expect(Publication::query()->count())->toBe(0);
+});
+
+it('enforces declared video-duration and aspect-ratio limits before publication creation', function () {
+    [, $user, , $content, , $account] = publishingContext();
+    attachPublishingMedia(
+        $content,
+        ['dimensions' => ['width' => 1920, 'height' => 1080], 'duration_seconds' => '301.000'],
+        ['mime_type' => 'video/mp4', 'size' => 1024],
+    );
+
+    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
+        ->toThrow(PublishingAdapterException::class, 'duration limit');
+    expect(Publication::query()->count())->toBe(0);
+
+    $content->assets()->delete();
+    attachPublishingMedia($content, ['dimensions' => ['width' => 1500, 'height' => 1000]]);
+
+    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
+        ->toThrow(PublishingAdapterException::class, 'aspect ratio');
+    expect(Publication::query()->count())->toBe(0);
+});
+
+it('fails closed when declared media constraints require missing metadata', function () {
+    [, $user, , $content, , $account] = publishingContext();
+    attachPublishingMedia($content);
+
+    expect(fn () => app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute()))
+        ->toThrow(PublishingAdapterException::class, 'dimensions are required');
     expect(Publication::query()->count())->toBe(0);
 });
 

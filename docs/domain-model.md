@@ -199,6 +199,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Verified Phase 5.4 implementation:** CR8OR-owned scheduling/submission/reconciliation, destination-aware adapter resolution, idempotency, normalized failures and historical publication results are implemented. Individual network adapters are configured independently; historical provider attribution is preserved.
 
+**Verified Phase 12.524 implementation:** Publishing adapters use one-network declarations, validated capability matrices, normalized correlation/idempotency metadata, and separate optional contracts for status lookup, editing, deletion and analytics. The reusable fake conformance suite covers all eight target network keys. This is contract/test infrastructure only; no real network publishing adapter is implemented or enabled by this phase. See [`social-publishing-adapters.md`](social-publishing-adapters.md).
+
 ## Finance
 
 **Purpose:** Represent financial records and derived financial reporting.
