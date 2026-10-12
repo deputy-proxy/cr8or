@@ -14,6 +14,7 @@ use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class AgentCapabilityAuthorizer
 {
@@ -66,6 +67,22 @@ class AgentCapabilityAuthorizer
         }
 
         if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
+            return false;
+        }
+
+        // Re-check current human access at the shared capability boundary. Execution
+        // ownership alone is insufficient because organization membership can be revoked
+        // after an AgentExecution was created.
+        if ($actor !== null && ! Gate::forUser($actor)->allows('view', $assignment)) {
+            return false;
+        }
+
+        if ($execution !== null && (
+            $execution->agent_assignment_id !== $assignment->getKey()
+            || $execution->organization_id !== $assignment->organization_id
+            || $execution->enterprise_id !== $assignment->enterprise_id
+            || ($actor !== null && $execution->actor_id !== $actor->getKey())
+        )) {
             return false;
         }
         if ($organization !== null && $organization->getKey() !== $assignment->organization_id) {

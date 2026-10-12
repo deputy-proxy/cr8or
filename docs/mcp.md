@@ -14,6 +14,8 @@ CR8OR deliberately separates the business authority, executable operation and MC
 
 A Tool does not grant authority. A Capability declaration does not grant permission. Authorization is evaluated server-side before the Operation executes.
 
+The full per-tool authorization and tenancy mapping is maintained in [`mcp-authorization.md`](mcp-authorization.md). It records the shared boundary family, capability/operation mapping where present, and the concrete tenant/policy enforcement path for every public tool.
+
 ## Public Tool rename and compatibility decision
 
 This change standardizes the current public identifiers in place. Repository-owned tests, examples, and runtime references are updated together. No legacy aliases are registered: aliases would keep obsolete identifiers publicly discoverable and create a second name for the same operation. External MCP clients and saved prompts/configuration are not fully observable from this repository, so consumers outside the repository must update to the canonical names below. This is a breaking public-interface change; business behavior, payloads, capability identifiers, and authorization remain unchanged.

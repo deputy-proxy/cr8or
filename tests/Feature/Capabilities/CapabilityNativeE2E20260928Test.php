@@ -459,6 +459,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
             'agent_assignment_id' => $marketingAssignmentId,
             'agent_execution_id' => $parentExecutionId,
             'capability' => 'marketing.content.publication-ready',
+            'expert_slug' => 'marketing',
             'target_context' => ['content_item_id' => $content['id']],
         ],
         $report['capabilities'],

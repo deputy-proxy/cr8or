@@ -139,3 +139,35 @@ it('rejects an Expert that the Agent is not authorized to invoke', function () {
         'finance',
     ))->toThrow(AuthorizationException::class);
 });
+
+it('enforces approval authorization when the Capability Operation is invoked without the MCP Tool', function () {
+    [$enterprise, $actor, $assignment] = approvalAuthorizationContext();
+    $execution = \App\Models\AgentExecution::factory()->forAssignment($assignment)->create([
+        'actor_id' => $actor->getKey(),
+    ]);
+    $input = [
+        'agent_assignment_id' => $assignment->getKey(),
+        'agent_execution_id' => $execution->getKey(),
+        'capability' => 'marketing.content.publication-ready',
+        'expert_slug' => 'marketing',
+        'target_context' => ['content_item_id' => 42],
+    ];
+
+    $approval = app(\App\Operations\ApprovalRequestCreate::class)->execute($actor, $input);
+
+    expect($approval->status)->toBe(\App\Models\ApprovalRequest::STATUS_PENDING)
+        ->and($approval->actor_id)->toBe($actor->getKey())
+        ->and($approval->target_context)->toBe(['content_item_id' => 42]);
+
+    $outsider = User::factory()->create();
+    expect(fn () => app(\App\Operations\ApprovalRequestCreate::class)->execute($outsider, [
+        ...$input,
+        'agent_execution_id' => null,
+    ]))->toThrow(AuthorizationException::class);
+
+    expect(fn () => app(\App\Operations\ApprovalRequestCreate::class)->execute($actor, [
+        ...$input,
+        'capability' => 'marketing.plan',
+        'agent_execution_id' => null,
+    ]))->toThrow(AuthorizationException::class);
+});

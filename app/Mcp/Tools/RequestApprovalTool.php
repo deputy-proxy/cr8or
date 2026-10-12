@@ -3,12 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
-use App\Models\AgentAssignment;
-use App\Models\AgentExecution;
-use App\Models\ApprovalRequest;
 use App\Models\User;
-use App\Services\ApprovalRequestService;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -32,9 +27,9 @@ class RequestApprovalTool extends AuthorizedTool
         ];
     }
 
-    public function handle(Request $request, McpCapabilityAuthorizer $authorization, ApprovalRequestService $approvals, CapabilityRegistry $capabilities): Response|ResponseFactory
+    public function handle(Request $request, CapabilityRegistry $capabilities): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.approval.request', function (string $correlationId) use ($request, $authorization, $capabilities) {
+        return $this->executeWithErrors($request, 'mcp.approval.request', function (string $correlationId) use ($request, $capabilities) {
             $validated = $request->validate([
                 'agent_assignment_id' => ['required', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
@@ -49,28 +44,11 @@ class RequestApprovalTool extends AuthorizedTool
                 throw new AuthenticationException;
             }
 
-            /** @var AgentAssignment $assignment */
-            $assignment = AgentAssignment::query()->with('agentDescriptor')->findOrFail($validated['agent_assignment_id']);
-            /** @var AgentExecution|null $execution */
-            $execution = isset($validated['agent_execution_id'])
-                ? AgentExecution::query()->findOrFail($validated['agent_execution_id'])
-                : null;
-
-            $targetContext = $validated['target_context'] ?? [];
-
-            $authorization->authorizeApprovalRequest(
-                $actor,
-                $assignment,
-                $execution,
-                $validated['capability'],
-                $validated['expert_slug'],
-            );
-
             $capabilities->forTool(static::class);
             $approval = $capabilities->operationForTool(static::class)->execute($actor, [
                 ...$validated,
                 'correlation_id' => $correlationId,
-                'target_context' => $targetContext,
+                'target_context' => $validated['target_context'] ?? [],
             ]);
 
             return Response::structured([
@@ -90,24 +68,5 @@ class RequestApprovalTool extends AuthorizedTool
                 ],
             ]);
         });
-    }
-
-    /** @param array<string, mixed> $validated */
-    public static function executeOperation(User $actor, array $validated): ApprovalRequest
-    {
-        $assignment = AgentAssignment::query()->with('agentDescriptor')->findOrFail((int) $validated['agent_assignment_id']);
-        $execution = isset($validated['agent_execution_id'])
-            ? AgentExecution::query()->findOrFail((int) $validated['agent_execution_id'])
-            : null;
-
-        return app(ApprovalRequestService::class)->request(
-            $actor,
-            (string) $validated['capability'],
-            $assignment,
-            $execution,
-            $validated['target_context'] ?? [],
-            isset($validated['correlation_id']) ? (string) $validated['correlation_id'] : null,
-            isset($validated['expert_slug']) ? (string) $validated['expert_slug'] : null,
-        );
     }
 }

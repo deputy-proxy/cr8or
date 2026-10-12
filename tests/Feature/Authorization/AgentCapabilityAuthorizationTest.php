@@ -139,3 +139,73 @@ it('enforces organization and enterprise scope through the Expert path', functio
             $otherEnterprise,
         ))->toBeFalse();
 });
+
+it('denies Agent capability invocation when the actor no longer has access to the assignment organization', function () {
+    $enterprise = Enterprise::factory()->create();
+    $actor = \App\Models\User::factory()->create();
+    $membership = \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+    $assignment = authorizationAssignment(MarketingAgent::class, $enterprise);
+    $execution = \App\Models\AgentExecution::factory()->forAssignment($assignment)->create([
+        'actor_id' => $actor->getKey(),
+    ]);
+    $authorizer = app(AgentCapabilityAuthorizer::class);
+
+    expect($authorizer->allowsExpertCapability(
+        $assignment,
+        'marketing',
+        new MarketingExpert,
+        'marketing.plan',
+        $enterprise->organization,
+        $enterprise,
+        $actor,
+        null,
+        $execution,
+    ))->toBeTrue();
+
+    $membership->delete();
+
+    expect($authorizer->allowsExpertCapability(
+        $assignment,
+        'marketing',
+        new MarketingExpert,
+        'marketing.plan',
+        $enterprise->organization,
+        $enterprise,
+        $actor,
+        null,
+        $execution,
+    ))->toBeFalse();
+});
+
+it('rejects an execution from another assignment or actor at the shared Agent capability boundary', function () {
+    $enterprise = Enterprise::factory()->create();
+    $actor = \App\Models\User::factory()->create();
+    \App\Models\Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
+    $assignment = authorizationAssignment(MarketingAgent::class, $enterprise);
+    $otherEnterprise = Enterprise::factory()->create(['organization_id' => $enterprise->organization_id]);
+    $otherAssignment = AgentAssignment::factory()
+        ->for($assignment->agentDescriptor, 'agentDescriptor')
+        ->forEnterprise($otherEnterprise)
+        ->create();
+    $execution = \App\Models\AgentExecution::factory()->forAssignment($otherAssignment)->create([
+        'actor_id' => $actor->getKey(),
+    ]);
+
+    expect(app(AgentCapabilityAuthorizer::class)->allowsExpertCapability(
+        $assignment,
+        'marketing',
+        new MarketingExpert,
+        'marketing.plan',
+        $enterprise->organization,
+        $enterprise,
+        $actor,
+        null,
+        $execution,
+    ))->toBeFalse();
+});

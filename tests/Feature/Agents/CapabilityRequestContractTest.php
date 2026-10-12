@@ -8,12 +8,17 @@ use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
+use App\Models\Membership;
 use App\Models\User;
 
 function capabilityRequestContractSetup(): array
 {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
     $agentDescriptor = AgentDescriptor::factory()
         ->forRuntimeClass(OperationsAgent::class)
         ->create(['slug' => 'operations']);
