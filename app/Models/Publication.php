@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 /** @property-read Enterprise $enterprise */
-#[Fillable(['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'approval_request_id', 'status', 'idempotency_key', 'correlation_id', 'external_id', 'external_url', 'scheduled_at', 'submitted_at', 'published_at', 'failure_code', 'failure_reason'])]
+#[Fillable(['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'target_provider', 'target_external_id', 'target_name', 'target_identity_external_id', 'approval_request_id', 'status', 'idempotency_key', 'correlation_id', 'external_id', 'external_url', 'scheduled_at', 'submitted_at', 'published_at', 'failure_code', 'failure_reason'])]
 class Publication extends Model
 {
     private bool $lifecycleTransitionAuthorized = false;
@@ -32,6 +32,16 @@ class Publication extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $publication): void {
+            $account = SocialAccount::query()->with('socialIdentity')->find($publication->social_account_id);
+            if ($account !== null) {
+                $publication->target_provider = $account->provider;
+                $publication->target_external_id = $account->external_id;
+                $publication->target_name = $account->name;
+                $publication->target_identity_external_id = $account->socialIdentity?->external_id;
+            }
+        });
+
         static::saving(function (self $p): void {
             if (! in_array($p->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
                 throw new LogicException("Invalid publication status [{$p->status}].");
@@ -54,7 +64,7 @@ class Publication extends Model
             }
 
             if ($p->exists) {
-                foreach (['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'idempotency_key'] as $f) {
+                foreach (['enterprise_id', 'content_item_id', 'channel_id', 'social_account_id', 'target_provider', 'target_external_id', 'target_name', 'target_identity_external_id', 'idempotency_key'] as $f) {
                     if ($p->isDirty($f)) {
                         throw new LogicException("Publication {$f} is historical and cannot be changed.");
                     }
