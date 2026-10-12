@@ -176,11 +176,12 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
 
             $cacheKey = $url.'|'.json_encode($destinationConfig['query'] ?? []);
             if (! array_key_exists($cacheKey, $responses)) {
-                $responses[$cacheKey] = $this->getJson($destinationConfig, $tokens->accessToken);
+                $responses[$cacheKey] = $this->getJson($destinationConfig, $tokens->accessToken, $identityId);
             }
 
             $body = $responses[$cacheKey];
-            $items = data_get($body, (string) ($destinationConfig['path'] ?? ''));
+            $path = (string) ($destinationConfig['path'] ?? '');
+            $items = $path === '' ? $body : data_get($body, $path);
             if (! is_array($items)) {
                 continue;
             }
@@ -198,12 +199,35 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
                     continue;
                 }
                 $externalId = trim((string) $externalId);
+                $idPrefix = $destinationConfig['id_prefix'] ?? null;
+                if (is_string($idPrefix) && $idPrefix !== '' && ! str_starts_with($externalId, $idPrefix)) {
+                    $externalId = $idPrefix.$externalId;
+                }
                 if ($externalId === '') {
                     continue;
                 }
 
                 $name = data_get($item, (string) ($destinationConfig['name_path'] ?? 'name'));
                 $urlValue = data_get($item, (string) ($destinationConfig['url_path'] ?? 'url'));
+
+                if ((! is_string($name) || trim($name) === '' || trim($name) === $externalId)
+                    && is_array($destinationConfig['metadata'] ?? null)
+                    && preg_match('/^urn:li:organization:([0-9]+)$/D', $externalId, $organizationMatch) === 1) {
+                    $metadataConfig = $destinationConfig['metadata'];
+                    $metadataBody = $this->getJson($metadataConfig, $tokens->accessToken, $identityId, $organizationMatch[1], optionalNotFound: true);
+                    $metadataNamePath = str_replace('{destination_id}', $organizationMatch[1], (string) ($metadataConfig['name_path'] ?? 'localizedName'));
+                    $metadataName = data_get($metadataBody, $metadataNamePath);
+                    if (is_string($metadataName) && trim($metadataName) !== '') {
+                        $name = trim($metadataName);
+                    }
+
+                    $metadataUrlPath = str_replace('{destination_id}', $organizationMatch[1], (string) ($metadataConfig['url_path'] ?? ''));
+                    $metadataUrl = $metadataUrlPath !== '' ? data_get($metadataBody, $metadataUrlPath) : null;
+                    $urlPrefix = $metadataConfig['url_prefix'] ?? null;
+                    if (is_string($metadataUrl) && $metadataUrl !== '' && is_string($urlPrefix) && $urlPrefix !== '') {
+                        $urlValue = $urlPrefix.$metadataUrl;
+                    }
+                }
 
                 $destinations[] = new SocialDiscoveredDestination(
                     $destinationNetwork,
@@ -271,16 +295,39 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
     /** @param array<string, mixed> $endpoint
      * @return array<string, mixed>
      */
-    private function getJson(array $endpoint, string $accessToken): array
+    private function getJson(array $endpoint, string $accessToken, ?string $identityId = null, ?string $destinationId = null, bool $optionalNotFound = false): array
     {
         $url = $endpoint['url'] ?? null;
         if (! is_string($url) || $url === '') {
             throw new SocialAuthorizationException('provider_configuration_invalid', 'The provider discovery endpoint is not configured.');
         }
 
+        $query = is_array($endpoint['query'] ?? null) ? $endpoint['query'] : [];
+        foreach ($query as $key => $value) {
+            if (is_string($value) && str_contains($value, '{identity_id}')) {
+                if ($identityId === null || $identityId === '') {
+                    throw new SocialAuthorizationException('provider_configuration_invalid', 'A discovery query requires the authenticated identity identifier.');
+                }
+
+                $value = str_replace('{identity_id}', $identityId, $value);
+            }
+            if (is_string($value) && str_contains($value, '{destination_id}')) {
+                if ($destinationId === null || $destinationId === '') {
+                    throw new SocialAuthorizationException('provider_configuration_invalid', 'A destination metadata query requires the destination identifier.');
+                }
+
+                $value = str_replace('{destination_id}', $destinationId, $value);
+            }
+            $query[$key] = $value;
+        }
+
         $response = $this->http()->withToken($accessToken)
             ->withHeaders(is_array($endpoint['headers'] ?? null) ? $endpoint['headers'] : [])
-            ->get($url, is_array($endpoint['query'] ?? null) ? $endpoint['query'] : []);
+            ->get($url, $query);
+
+        if ($optionalNotFound && in_array($response->status(), [403, 404], true)) {
+            return [];
+        }
 
         $this->assertSuccessful($response->successful(), $response->status(), 'destination_discovery_failed');
 

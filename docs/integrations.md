@@ -32,7 +32,7 @@ External failures use the canonical CR8OR failure taxonomy. Integration-result d
 
 ## Current providers
 
-Canva, Cloudflare R2, CR8OR Media and GitHub remain specialized external execution/storage boundaries. Social publishing uses CR8OR's destination-aware adapter registry; each network adapter must be implemented and explicitly enabled before use. The adapter contract and capability-verification rules are documented in [`social-publishing-adapters.md`](social-publishing-adapters.md). n8n is an optional MCP-connected automation capability, not CR8OR's primary orchestration layer or authoritative business-state store.
+Canva, Cloudflare R2, CR8OR Media and GitHub remain specialized external execution/storage boundaries. Social publishing uses CR8OR's destination-aware adapter registry. The LinkedIn text-only adapter is implemented but remains disabled; each network adapter must be explicitly enabled only after its API permissions, supported capabilities and deployment configuration are verified. The adapter contract and capability-verification rules are documented in [`social-publishing-adapters.md`](social-publishing-adapters.md). n8n is an optional MCP-connected automation capability, not CR8OR's primary orchestration layer or authoritative business-state store.
 
 ## Integration invariant
 

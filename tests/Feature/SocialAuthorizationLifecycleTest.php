@@ -44,11 +44,27 @@ function configureLinkedInAuthorization(): void
             ],
             'destinations' => [[
                 'network' => 'linkedin',
-                'url' => 'https://api.linkedin.com/rest/organizationalEntityAcls*',
+                'url' => 'https://api.linkedin.com/v2/userinfo',
+                'path' => '',
+                'id_path' => 'sub',
+                'id_prefix' => 'urn:li:person:',
+                'name_path' => 'name',
+                'url_path' => null,
+            ], [
+                'network' => 'linkedin',
+                'url' => 'https://api.linkedin.com/rest/organizationalEntityAcls?q=roleAssignee',
+                'query' => ['roleAssignee' => 'urn:li:person:{identity_id}'],
                 'path' => 'elements',
                 'id_path' => 'organizationalTarget',
                 'name_path' => 'organizationalTarget',
                 'url_path' => null,
+                'metadata' => [
+                    'url' => 'https://api.linkedin.com/rest/organizationsLookup',
+                    'query' => ['ids' => 'List({destination_id})'],
+                    'name_path' => 'results.{destination_id}.localizedName',
+                    'url_path' => 'results.{destination_id}.vanityName',
+                    'url_prefix' => 'https://www.linkedin.com/company/',
+                ],
             ]],
             'token_response' => [
                 'access_token' => 'access_token',
@@ -65,7 +81,7 @@ function configureLinkedInAuthorization(): void
     Gate::before(fn (): bool => true);
 }
 
-function fakeLinkedInAuthorizationResponses(): void
+function fakeLinkedInAuthorizationResponses(bool $metadataAvailable = true): void
 {
     Http::fake([
         'https://www.linkedin.com/oauth/v2/accessToken' => Http::response([
@@ -81,6 +97,9 @@ function fakeLinkedInAuthorizationResponses(): void
         'https://api.linkedin.com/rest/organizationalEntityAcls*' => Http::response([
             'elements' => [['organizationalTarget' => 'urn:li:organization:123']],
         ]),
+        'https://api.linkedin.com/rest/organizationsLookup*' => $metadataAvailable
+            ? Http::response(['results' => ['123' => ['localizedName' => 'Test Organization', 'vanityName' => 'test-organization']]])
+            : Http::response(['message' => 'permission denied'], 403),
     ]);
 }
 
@@ -105,7 +124,29 @@ it('completes a single-use authorization and stores only encrypted credential ma
 
     expect($completed->status)->toBe(SocialAuthorizationAttempt::STATUS_COMPLETED)
         ->and(SocialIdentity::query()->where('organization_id', $organization->id)->where('external_id', 'opaque-member-id')->exists())->toBeTrue()
-        ->and(SocialCredential::query()->where('organization_id', $organization->id)->count())->toBe(1);
+        ->and(SocialCredential::query()->where('organization_id', $organization->id)->count())->toBe(1)
+        ->and($completed->discovered_destinations)->toContain([
+            'provider' => 'linkedin',
+            'external_id' => 'urn:li:person:opaque-member-id',
+            'name' => 'Test Member',
+            'url' => null,
+        ])
+        ->and($completed->discovered_destinations)->toContain([
+            'provider' => 'linkedin',
+            'external_id' => 'urn:li:organization:123',
+            'name' => 'Test Organization',
+            'url' => 'https://www.linkedin.com/company/test-organization',
+        ]);
+
+    Http::assertSent(function ($request): bool {
+        if (! str_starts_with($request->url(), 'https://api.linkedin.com/rest/organizationalEntityAcls')) {
+            return false;
+        }
+
+        parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+        return ($query['roleAssignee'] ?? null) === 'urn:li:person:opaque-member-id';
+    });
 
     $credential = SocialCredential::query()->where('organization_id', $organization->id)->sole();
     expect($credential->tokenSet()->accessToken)->toBe('access-secret-value')
@@ -114,6 +155,27 @@ it('completes a single-use authorization and stores only encrypted credential ma
 
     expect(fn () => $service->complete($actor, 'linkedin', $query['state'], 'authorization-code'))
         ->toThrow(SocialAuthorizationException::class);
+});
+
+it('keeps LinkedIn authorization usable when optional organization display metadata is denied', function (): void {
+    configureLinkedInAuthorization();
+    fakeLinkedInAuthorizationResponses(metadataAvailable: false);
+
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $service = app(SocialAuthorizationService::class);
+    $authorizationUrl = $service->start($actor, (int) $organization->id, 'linkedin');
+    parse_str((string) parse_url($authorizationUrl, PHP_URL_QUERY), $query);
+
+    $completed = $service->complete($actor, 'linkedin', $query['state'], 'authorization-code');
+
+    expect($completed->status)->toBe(SocialAuthorizationAttempt::STATUS_COMPLETED)
+        ->and($completed->discovered_destinations)->toContain([
+            'provider' => 'linkedin',
+            'external_id' => 'urn:li:organization:123',
+            'name' => 'urn:li:organization:123',
+            'url' => null,
+        ]);
 });
 
 it('rejects callbacks from a different actor before exchanging credentials', function (): void {
