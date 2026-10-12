@@ -35,6 +35,17 @@ The adapter remains **disabled** in `config/publishing.php`. Do not enable it un
 
 Official references: [Posts API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api), [Organization Access Control](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/organizations/organization-access-control-by-role), [Organization Lookup API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/organizations/organization-lookup-api), and [OAuth authorization code flow](https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow).
 
+
+## Facebook Pages adapter (issue #526)
+
+`App\Services\Publishing\FacebookPublishingAdapter` supports immediate posts to a selected Facebook Page through the configured Meta Graph API version. Supported formats are text posts, link posts (the first HTTPS URL in the message is also supplied as the Graph `link` field), and one JPEG/PNG image stored in CR8OR's canonical R2 media layer. Text/link posts use `POST /{page-id}/feed`; images use the single-request `POST /{page-id}/photos` URL upload flow. Images are published directly, so there is no separate unpublished-upload phase to leave partially completed.
+
+The destination must be a numeric Facebook Page ID. Personal profiles, Page names, video, multi-image posts, native scheduling, editing, deletion and analytics are unsupported and fail closed. The adapter requires the destination-specific Page token stored in the encrypted `SocialTokenSet.destinationTokens` entry keyed by `facebook:{page-id}`; it never falls back to the parent Meta user token. The shared authorization discovery requests Page `tasks` and only offers Pages with `CREATE_CONTENT` or `MANAGE`. When the granted scope list is unavailable, the adapter checks `/me/permissions` before submission. Missing Page tokens and expired tokens map to authentication failure; insufficient scopes, Page tasks or app access map to authorization failure without automatically disabling the entire Meta connection.
+
+R2 images must exist on the `r2` disk, be JPEG/PNG, and be no larger than 10 MiB. The adapter generates a 15-minute HTTPS R2 URL for Meta to fetch and never stores that signed URL or the Page token in publication metadata. Only the returned Page post ID is accepted as the external publication ID. Network timeouts, server errors, and successful responses without a valid post ID are ambiguous and block blind retries through CR8OR's publication lifecycle. Meta rate-limit responses are retryable but not ambiguous. Known post IDs can be reconciled through Graph object lookup; 404 returns unknown status.
+
+The adapter remains **disabled** in `config/publishing.php`. Production availability requires a Meta app with the appropriate Pages permissions and any required Advanced Access/App Review, plus a Page where the authorizing person has content-creation tasks. Configure `META_GRAPH_API_VERSION` consistently across authorization, discovery and publishing; the current default is `v26.0` (released July 29, 2026). Verify the [Graph API version schedule](https://developers.facebook.com/docs/graph-api/changelog/versions/), [Page Feed API](https://developers.facebook.com/docs/graph-api/reference/page/feed/), [Page Photos API](https://developers.facebook.com/docs/graph-api/reference/page/photos/), [Post API](https://developers.facebook.com/docs/graph-api/reference/post/), and [Permissions reference](https://developers.facebook.com/docs/permissions/).
+
 ## Capability declarations
 
 `PublishingCapabilitySupport` has three values:
@@ -59,12 +70,12 @@ The registry validates optional contracts against capability declarations. If st
 
 ## Target network matrix
 
-This issue introduces the contract and reusable fake conformance harness, not real network API implementations. Therefore no network below is represented as production-ready or as having verified API capabilities by this matrix.
+The shared contract and reusable fake conformance harness remain the baseline for every target network. LinkedIn and Facebook now have native adapter implementations, but both remain disabled until deployment-specific app permissions and real-account verification are complete. The remaining networks are test fixtures only; the matrix records implemented capability boundaries without claiming production readiness.
 
 | Network key | Adapter implementation | Production state | Official API capability verification |
 |---|---|---|---|
-| `linkedin` | `LinkedInPublishingAdapter` (text-only) | Disabled | Posts API text-only creation and known-post status lookup verified; media, scheduling, editing, deletion and analytics are not implemented |
-| `facebook` | Not implemented | Disabled | Pending adapter-specific research |
+| `linkedin` | `LinkedInPublishingAdapter` (text-only) | Disabled | Posts API text-only creation and known-post status lookup implemented; media, scheduling, editing, deletion and analytics unsupported |
+| `facebook` | `FacebookPublishingAdapter` (text/link + single R2 image) | Disabled | Page Feed, Photos and known-post lookup implemented; video, multi-image, scheduling, editing, deletion and analytics unsupported |
 | `instagram` | Not implemented | Disabled | Pending adapter-specific research |
 | `tiktok` | Not implemented | Disabled | Pending adapter-specific research |
 | `bsky` | Not implemented | Disabled | Pending adapter-specific research |
