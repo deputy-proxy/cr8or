@@ -18,9 +18,9 @@ class SocialAccountFactory extends Factory
         return [
             'enterprise_id' => $e,
             'channel_id' => $c,
-            'provider' => 'postiz',
+            'provider' => 'linkedin',
             'name' => fake()->company(),
-            'external_id' => fake()->unique()->bothify('postiz-####'),
+            'external_id' => fake()->unique()->bothify('linkedin-####'),
             'status' => SocialAccount::STATUS_ACTIVE,
         ];
     }

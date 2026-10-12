@@ -18,7 +18,7 @@ class PublicationResultFactory extends Factory
         return [
             'enterprise_id' => $enterprise,
             'publication_id' => $publication,
-            'provider' => 'postiz',
+            'provider' => 'linkedin',
             'provider_status' => 'submitted',
             'external_id' => fake()->uuid(),
             'correlation_id' => fake()->uuid(),

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace Tests\Support\Publishing;
 
 use App\Contracts\PublishingAdapter;
 use App\Data\PublishingAdapterRequest;
@@ -9,7 +9,7 @@ use App\Data\PublishingCapabilities;
 use App\Exceptions\PublishingAdapterException;
 use Illuminate\Support\Str;
 
-final class FakePublishingProvider implements PublishingAdapter
+final class FakePublishingAdapter implements PublishingAdapter
 {
     public bool $shouldTimeout = false;
 

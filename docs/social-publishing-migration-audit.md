@@ -5,6 +5,8 @@
 **Issue:** [#519 Audit social publishing dependencies and define migration boundary](https://github.com/deputy-proxy/cr8or/issues/519)
 **Parent initiative:** [#518 Native multi-network social publishing architecture](https://github.com/deputy-proxy/cr8or/issues/518)
 
+> **Historical baseline snapshot:** This inventory describes the repository at `6cf8dcb7` before issues #520–#523. Issue #522 introduced destination-aware adapter resolution, and issue #523 removed Postiz from active runtime code, configuration, tests and current-state documentation. The historical inventory below is retained to explain the migration decision; it is not a current runtime inventory. Production data, deployed environment variables and external provider state were not accessible to this source audit and still require operational verification before retiring any deployed credentials or data.
+
 This document records the tracked-repository audit for the Postiz removal and native social-publishing migration. It does not claim access to production databases, deployment dashboards, external provider accounts, or untracked environment variables. Those require separate operational verification before a destructive migration or credential retirement.
 
 ## Executive findings
@@ -87,7 +89,7 @@ The listed columns are generic and are not evidence that Postiz data exists in a
 2. **#520:** define canonical network identity, destination, connection, ownership and uniqueness invariants. Reconcile `Channel`, `SocialAccount` and `IntegrationConnection`; do not duplicate the integration boundary.
 3. **#521:** implement authorized OAuth state/callback, account discovery, credential references, refresh, revocation, disconnect and reauthorization. Keep token material out of ordinary records, logs, MCP responses and Agent context.
 4. **#522:** replace the singleton provider path with destination-aware adapter resolution; define content validation, provider identity, result correlation, idempotency and ambiguous-outcome reconciliation.
-5. **#523:** remove Postiz runtime/config/docs/tests/deployment references only after the prior contracts and publishing path have migrated; inventory deployed secrets and existing provider data first.
+5. **#523 (completed in source):** remove Postiz runtime/config/current docs/tests/deployment references after the destination-aware publishing path is in place. Operational verification of deployed secrets and historical provider data remains outstanding.
 6. **#524:** establish the shared adapter contract and reusable conformance suite before network adapters proliferate.
 7. **#525–#532:** implement LinkedIn, Facebook, Instagram, TikTok, Bluesky, YouTube, Threads and X adapters against the shared contract and current official API documentation.
 8. **#533:** expose connection and publishing actions through existing authorized Capability → Operation entry points, MCP, Filament and persisted published WorkflowVersions.

@@ -50,6 +50,18 @@ it('defines a provider-independent integration registry for current external bou
         ->toThrow(LogicException::class);
 });
 
+it('keeps Postiz out of active publishing registration and runtime configuration', function () {
+    $registry = app(IntegrationRegistry::class);
+    $adapters = config('publishing.adapters', []);
+
+    expect($registry->providers())->not->toHaveKey('postiz')
+        ->and(config('services.postiz'))->toBeNull()
+        ->and(config('services.integrations.webhooks.secrets.postiz'))->toBeNull()
+        ->and($adapters)->not->toHaveKey('postiz')
+        ->and(class_exists('App\\Providers\\PostizPublishingProvider'))->toBeFalse()
+        ->and(class_exists('App\\Contracts\\PublishingProvider'))->toBeFalse();
+});
+
 it('builds an enterprise-scoped external execution context through the canonical boundary', function () {
     [, $user, $enterprise, $connection] = integrationBoundaryContext();
 

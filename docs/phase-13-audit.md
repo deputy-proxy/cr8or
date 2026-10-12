@@ -1,5 +1,7 @@
 # Phase 13 Failure Audit
 
+> Historical audit snapshot from 2026-09-29. This is not the current provider inventory. Postiz was subsequently removed from active runtime code and configuration in issue #523; historical records and this baseline audit retain its name only to explain past behavior.
+
 ## Verified runtime inventory
 
 The Phase 13 completion audit was performed against the live repository on 2026-09-29.
@@ -10,7 +12,7 @@ The Phase 13 completion audit was performed against the live repository on 2026-
 | Operations | 71 PHP operation classes |
 | MCP Tools | 109 registered server tools |
 | MCP Resources | 4 registered resources |
-| Current external execution boundaries | Canva, Postiz, Cloudflare R2 |
+| External execution boundaries recorded at the time | Canva, Postiz, Cloudflare R2 |
 | Agent execution modes | interactive, autonomous |
 | Queue execution | durable Agent execution jobs |
 | Integration result boundary | webhook + polling reconciliation |
@@ -62,7 +64,7 @@ The suite includes representative negative-path coverage for:
 - Agent interactive/autonomous execution failures, retry exhaustion and cancellation.
 - Delegated child failure propagation.
 - Canva timeout and idempotent retry behavior.
-- Postiz timeout and idempotent retry behavior.
+- Publishing-adapter timeout and idempotent retry behavior (the original baseline used Postiz).
 - R2 storage failure translation.
 - Integration webhook authentication, deduplication, ambiguity and out-of-order results.
 - Canonical exception translation and unexpected Throwable handling.
