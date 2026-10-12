@@ -10,7 +10,7 @@ use App\Models\BusinessHealthResult;
 use App\Models\Enterprise;
 use App\Models\FinancialReport;
 use App\Models\User;
-use App\Models\Workflow;
+use App\Models\WorkflowExecution;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 
@@ -25,7 +25,11 @@ final class MultiAgentBusinessReportingService
         $decisions = AgentDecision::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $delegations = AgentDelegation::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $approvals = ApprovalRequest::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
-        $workflows = Workflow::query()->availableForEnterprise($enterprise)->orderBy('id')->get();
+        $workflowExecutions = WorkflowExecution::query()
+            ->where('enterprise_id', $enterprise->getKey())
+            ->with('workflow')
+            ->orderBy('id')
+            ->get();
         $financialReports = FinancialReport::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
         $businessHealthResults = BusinessHealthResult::query()->where('enterprise_id', $enterprise->getKey())->orderBy('id')->get();
 
@@ -66,11 +70,14 @@ final class MultiAgentBusinessReportingService
                 AgentDelegation::STATUS_SUCCEEDED,
                 AgentDelegation::STATUS_FAILED,
             ]),
-            'workflow_summary' => $this->statusSummary($workflows->pluck('status')->all(), [
-                Workflow::STATUS_PENDING,
-                Workflow::STATUS_RUNNING,
-                Workflow::STATUS_SUCCEEDED,
-                Workflow::STATUS_FAILED,
+            'workflow_summary' => $this->statusSummary($workflowExecutions->pluck('status')->all(), [
+                WorkflowExecution::STATUS_PENDING,
+                WorkflowExecution::STATUS_RUNNING,
+                WorkflowExecution::STATUS_WAITING_FOR_INPUT,
+                WorkflowExecution::STATUS_WAITING_FOR_APPROVAL,
+                WorkflowExecution::STATUS_PAUSED,
+                'succeeded',
+                WorkflowExecution::STATUS_FAILED,
             ]),
             'approval_summary' => $this->statusSummary($approvals->pluck('status')->all(), [
                 ApprovalRequest::STATUS_PENDING,
@@ -79,7 +86,7 @@ final class MultiAgentBusinessReportingService
             ]),
             'agent_activity' => $this->agentActivity($executions, $delegations),
             'failed_operations' => $this->failedOperations($executions, $delegations),
-            'failed_workflows' => $this->failedWorkflows($workflows),
+            'failed_workflows' => $this->failedWorkflows($workflowExecutions),
             'approval_outcomes' => $this->approvalOutcomes($approvals),
             'business_results' => [
                 'financial_reports' => $financialReportResults,
@@ -100,7 +107,7 @@ final class MultiAgentBusinessReportingService
 
         foreach ($statuses as $status) {
             $status = (string) $status;
-            if (in_array('succeeded', $knownStatuses, true) && $status === AgentExecution::STATUS_COMPLETED) {
+            if (in_array('succeeded', $knownStatuses, true) && in_array($status, [AgentExecution::STATUS_COMPLETED, WorkflowExecution::STATUS_COMPLETED], true)) {
                 $status = 'succeeded';
             }
             if (array_key_exists($status, $summary)) {
@@ -217,25 +224,27 @@ final class MultiAgentBusinessReportingService
     }
 
     /**
-     * @param  iterable<int, Workflow>  $workflows
+     * @param  iterable<int, WorkflowExecution>  $workflowExecutions
      * @return list<array<string, mixed>>
      */
-    private function failedWorkflows(iterable $workflows): array
+    private function failedWorkflows(iterable $workflowExecutions): array
     {
         $failed = [];
 
-        foreach ($workflows as $workflow) {
-            if ($workflow->status !== Workflow::STATUS_FAILED) {
+        foreach ($workflowExecutions as $execution) {
+            if ($execution->status !== WorkflowExecution::STATUS_FAILED) {
                 continue;
             }
 
             $failed[] = [
-                'id' => $workflow->getKey(),
-                'status' => Workflow::STATUS_FAILED,
-                'name' => $workflow->name,
-                'completed_at' => $workflow->updated_at === null
+                'id' => $execution->getKey(),
+                'workflow_id' => $execution->workflow_id,
+                'status' => WorkflowExecution::STATUS_FAILED,
+                'name' => $execution->workflow?->name,
+                'failure_reason' => $execution->failure_reason,
+                'completed_at' => $execution->completed_at === null
                     ? null
-                    : Carbon::parse((string) $workflow->updated_at)->toISOString(),
+                    : Carbon::parse((string) $execution->completed_at)->toISOString(),
             ];
         }
 

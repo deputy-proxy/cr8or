@@ -22,6 +22,7 @@ class Workflow extends Model
     /** @use HasFactory<WorkflowFactory> */
     use HasFactory;
 
+    // Legacy persisted values retained for backward compatibility; execution state belongs to execution records.
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_RUNNING = 'running';
@@ -60,6 +61,17 @@ class Workflow extends Model
                 });
             })
             ->orderByDesc('enterprise_specific');
+    }
+
+    /**
+     * Return the lifecycle state of this definition, independently of any execution outcome.
+     * WorkflowVersion is the authoritative publication record.
+     */
+    public function definitionStatus(): string
+    {
+        return $this->published_version_id === null
+            ? WorkflowVersion::STATUS_DRAFT
+            : $this->publishedVersion->status;
     }
 
     public function isEnterpriseSpecific(): bool
@@ -133,20 +145,6 @@ class Workflow extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(WorkflowVersion::class);
-    }
-
-    public function transitionTo(string $status): static
-    {
-        $allowed = match ($this->status) {
-            self::STATUS_PENDING => [self::STATUS_RUNNING, self::STATUS_FAILED],self::STATUS_RUNNING => [self::STATUS_SUCCEEDED, self::STATUS_FAILED],self::STATUS_SUCCEEDED,self::STATUS_FAILED => [],default => throw new LogicException('Workflow has no valid lifecycle state.')
-        };
-        if (! in_array($status, [self::STATUS_PENDING, self::STATUS_RUNNING, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
-            throw new LogicException("Invalid workflow status [{$status}].");
-        }if (! in_array($status, $allowed, true)) {
-            throw new LogicException(sprintf('Workflow cannot transition from [%s] to [%s].', $this->status, $status));
-        }$this->status = $status;
-
-        return $this;
     }
 
     public function completionSatisfied(AgentExecution|WorkflowExecution $execution): bool

@@ -211,13 +211,6 @@ final class WorkflowExecutionService
                     if ($stage === null) {
                         $locked->complete()->save();
 
-                        if ($locked->workflow->status === Workflow::STATUS_PENDING) {
-                            $locked->workflow->transitionTo(Workflow::STATUS_RUNNING)->save();
-                        }
-                        if ($locked->workflow->status === Workflow::STATUS_RUNNING) {
-                            $locked->workflow->transitionTo(Workflow::STATUS_SUCCEEDED)->save();
-                        }
-
                         return null;
                     }
 
@@ -301,10 +294,6 @@ final class WorkflowExecutionService
                 if ($locked->status !== WorkflowExecution::STATUS_COMPLETED) {
                     $locked->continuation_token = (string) str()->uuid();
                     $locked->fail($exception->getMessage())->save();
-
-                    if ($locked->workflow->status === Workflow::STATUS_RUNNING) {
-                        $locked->workflow->transitionTo(Workflow::STATUS_FAILED)->save();
-                    }
                 }
             });
 

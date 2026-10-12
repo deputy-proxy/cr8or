@@ -89,14 +89,12 @@ class WorkflowResource extends Resource
                                 ->rows(3)
                                 ->maxLength(10000),
 
-                            Select::make('status')
-                                ->options([
-                                    Workflow::STATUS_PENDING => 'Pending',
-                                    Workflow::STATUS_RUNNING => 'Running',
-                                    Workflow::STATUS_SUCCEEDED => 'Succeeded',
-                                    Workflow::STATUS_FAILED => 'Failed',
-                                ])
-                                ->required(),
+                            TextInput::make('definition_status')
+                                ->label('Definition status')
+                                ->formatStateUsing(fn (?Workflow $record): string => $record?->definitionStatus() ?? 'draft')
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->helperText('Derived from the published WorkflowVersion. Execution outcomes are shown in Workflow Executions.'),
 
                             Textarea::make('execution_policy')
                                 ->rows(5)
@@ -353,7 +351,7 @@ class WorkflowResource extends Resource
                     ->state(fn (Workflow $record): string => $record->isEnterpriseSpecific() ? (string) ($record->enterprise?->name ?: 'Enterprise-specific') : 'Generic')
                     ->badge(),
                 TextColumn::make('publishedVersion.version')->label('Published version')->sortable(),
-                TextColumn::make('status')->badge()->sortable(),
+                TextColumn::make('definition_status')->label('Definition status')->state(fn (Workflow $record): string => $record->definitionStatus())->badge(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->recordActions([
