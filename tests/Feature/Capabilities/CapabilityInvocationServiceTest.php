@@ -68,6 +68,10 @@ it('rejects an application Capability invocation across enterprise authorization
 it('preserves the canonical Capability operation mapping for Agent-backed invocation', function () {
     $actor = User::factory()->create();
     $enterprise = Enterprise::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->getKey(),
+        'organization_id' => $enterprise->organization_id,
+    ]);
     $assignment = AgentAssignment::factory()->forEnterprise($enterprise)->create();
 
     $agentDescriptor = AgentDescriptor::factory()

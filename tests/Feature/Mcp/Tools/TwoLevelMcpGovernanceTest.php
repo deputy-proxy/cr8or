@@ -173,3 +173,34 @@ it('rejects an Agent capability that is not registered for the MCP tool', functi
     expect(fn () => $registry->resolve('mcp.domain.mutation'))->toThrow(InvalidArgumentException::class);
     expect($registry->forTool(UpdateCampaignTool::class)->key)->toBe('marketing.campaign.update');
 });
+
+it('denies an Agent-backed mutation when the execution actor has lost target-organization membership', function () {
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $membership = Membership::factory()->owner()->create([
+        'user_id' => $actor->id,
+        'organization_id' => $organization->id,
+    ]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    [$assignment, $execution] = governanceAgentContext($actor, $enterprise);
+    $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->id]);
+    $campaign = Campaign::factory()->create(['marketing_strategy_id' => $strategy->id]);
+
+    $membership->delete();
+    $otherOrganization = Organization::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $actor->id,
+        'organization_id' => $otherOrganization->id,
+    ]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(UpdateCampaignTool::class, [
+            'campaign_id' => $campaign->id,
+            'name' => 'Must remain unchanged after membership revocation',
+            'agent_assignment_id' => $assignment->id,
+            'agent_execution_id' => $execution->id,
+        ])
+        ->assertHasErrors();
+
+    expect($campaign->refresh()->name)->not->toBe('Must remain unchanged after membership revocation');
+});

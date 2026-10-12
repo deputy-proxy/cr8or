@@ -296,7 +296,7 @@ it('preserves parent execution linkage and historical identity', function () {
     $target = delegationAssignment($actor, $enterprise, 'target-agent');
     grantDelegationPermission($source);
 
-    $parent = \App\Models\AgentExecution::factory()->forAssignment($source)->create();
+    $parent = \App\Models\AgentExecution::factory()->forAssignment($source)->create(['actor_id' => $actor->getKey()]);
 
     $delegation = app(AgentDelegationService::class)->delegate(new AgentDelegationRequest(
         actor: $actor,
