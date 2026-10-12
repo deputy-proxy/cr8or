@@ -46,6 +46,18 @@ R2 images must exist on the `r2` disk, be JPEG/PNG, and be no larger than 10 MiB
 
 The adapter remains **disabled** in `config/publishing.php`. Production availability requires a Meta app with the appropriate Pages permissions and any required Advanced Access/App Review, plus a Page where the authorizing person has content-creation tasks. Configure `META_GRAPH_API_VERSION` consistently across authorization, discovery and publishing; the current default is `v26.0` (released July 29, 2026). Verify the [Graph API version schedule](https://developers.facebook.com/docs/graph-api/changelog/versions/), [Page Feed API](https://developers.facebook.com/docs/graph-api/reference/page/feed/), [Page Photos API](https://developers.facebook.com/docs/graph-api/reference/page/photos/), [Post API](https://developers.facebook.com/docs/graph-api/reference/post/), and [Permissions reference](https://developers.facebook.com/docs/permissions/).
 
+## Instagram professional-account adapter (issue #527)
+
+`App\Services\Publishing\InstagramPublishingAdapter` supports immediate single-image posts for eligible Instagram professional accounts discovered through the existing Meta authorization flow. The destination identifier is the Instagram professional-account ID, not the linked Facebook Page ID. The shared Meta connection stores a destination-specific token under `instagram:{instagram-user-id}`; the adapter never falls back to the parent user token or treats the Page identity as the Instagram destination.
+
+The implemented format is deliberately narrow: one JPEG image, 8 MiB maximum, dimensions known in media metadata, each side at least 320 pixels, width no greater than 1440 pixels, and aspect ratio from 4:5 through 1.91:1. Captions are limited to 2,200 characters; an optional image `alt_text` value is passed through when supplied and validated to 1,000 characters. Text-only posts, PNG, video/Reels, carousels, native scheduling, editing, deletion and analytics are unsupported and rejected before remote submission. The adapter creates an Instagram media container, polls its `status_code` with a bounded configurable window, and calls `/{ig-user-id}/media_publish` only after the container reports `FINISHED`. `ERROR`/`EXPIRED` containers and processing timeouts do not proceed to publication.
+
+The adapter requires the Meta `instagram_content_publish` permission for publication and `instagram_basic` for known-media status lookup. Before creating a media container it queries `/{ig-user-id}/content_publishing_limit`, validates the returned usage/limit fields, and blocks submission if the quota is exhausted or cannot be verified. Meta rate-limit responses map to a retryable, non-ambiguous failure. Shared account discovery only exposes Instagram professional accounts linked to Pages where the authorizing user has `CREATE_CONTENT` or `MANAGE` tasks. It uses the configured Meta Graph API version, R2-hosted media via a short-lived HTTPS URL, and the existing active Meta `IntegrationConnection` plus opaque credential reference. A network timeout or server-side ambiguous result during final publication blocks blind retries through CR8OR's publication lifecycle. Once the media ID is known, status reconciliation fetches the media object and verifies its returned ID and media type. A lost final response before the media ID is known remains an unknown outcome requiring operational reconciliation; do not automatically resubmit it.
+
+The adapter remains **disabled** in `config/publishing.php`. Enablement requires a Meta app with the relevant Instagram permissions and required App Review/Advanced Access, a supported professional account linked through the authorized Page flow, and a real-account verification run. Container polling can be tuned with `SOCIAL_INSTAGRAM_CONTAINER_POLL_ATTEMPTS` (default 5) and `SOCIAL_INSTAGRAM_CONTAINER_POLL_INTERVAL_MS` (default 250 ms).
+
+Official references: [Instagram API with Facebook Login: Content Publishing](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/content-publishing/), [Instagram User Media endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/media/), [Instagram Media Publish endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/media_publish/), [Content Publishing Limit endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/content_publishing_limit/), and [Meta Graph API version schedule](https://developers.facebook.com/docs/graph-api/changelog/versions/). Verify current account eligibility, app access, permissions and media restrictions before enabling the adapter in production.
+
 ## Capability declarations
 
 `PublishingCapabilitySupport` has three values:
@@ -70,13 +82,13 @@ The registry validates optional contracts against capability declarations. If st
 
 ## Target network matrix
 
-The shared contract and reusable fake conformance harness remain the baseline for every target network. LinkedIn and Facebook now have native adapter implementations, but both remain disabled until deployment-specific app permissions and real-account verification are complete. The remaining networks are test fixtures only; the matrix records implemented capability boundaries without claiming production readiness.
+The shared contract and reusable fake conformance harness remain the baseline for every target network. LinkedIn, Facebook and Instagram now have native adapter implementations, but all remain disabled until deployment-specific app permissions and real-account verification are complete. The remaining networks are test fixtures only; the matrix records implemented capability boundaries without claiming production readiness.
 
 | Network key | Adapter implementation | Production state | Official API capability verification |
 |---|---|---|---|
 | `linkedin` | `LinkedInPublishingAdapter` (text-only) | Disabled | Posts API text-only creation and known-post status lookup implemented; media, scheduling, editing, deletion and analytics unsupported |
 | `facebook` | `FacebookPublishingAdapter` (text/link + single R2 image) | Disabled | Page Feed, Photos and known-post lookup implemented; video, multi-image, scheduling, editing, deletion and analytics unsupported |
-| `instagram` | Not implemented | Disabled | Pending adapter-specific research |
+| `instagram` | `InstagramPublishingAdapter` (single JPEG image) | Disabled | Professional-account image container, bounded processing poll, publish and known-media lookup implemented; text-only, PNG, video/Reels, carousel, scheduling, editing, deletion and analytics unsupported |
 | `tiktok` | Not implemented | Disabled | Pending adapter-specific research |
 | `bsky` | Not implemented | Disabled | Pending adapter-specific research |
 | `youtube` | Not implemented | Disabled | Pending adapter-specific research |
