@@ -391,3 +391,50 @@ it('discovers only Meta Pages whose tasks permit content creation and preserves 
     expect(config('social_authorization.providers.meta.destinations.0.url'))->toContain('tasks');
     Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/me/accounts'));
 });
+
+it('discovers Instagram professional destinations only through authorized linked Pages', function () {
+    $providerConfig = config('social_authorization.providers.meta');
+    $providerConfig['enabled'] = true;
+    $provider = new ConfiguredOAuth2SocialAuthorizationProvider('meta', $providerConfig);
+
+    Http::fake([
+        'https://graph.facebook.com/v26.0/me/accounts*' => Http::response([
+            'data' => [
+                [
+                    'id' => 'page-123',
+                    'name' => 'Allowed Page',
+                    'access_token' => 'page-token-allowed',
+                    'tasks' => ['CREATE_CONTENT', 'MODERATE'],
+                    'instagram_business_account' => ['id' => '17841400000000000', 'username' => 'allowed_creator'],
+                ],
+                [
+                    'id' => 'page-234',
+                    'name' => 'Moderator Only Page',
+                    'access_token' => 'page-token-moderator',
+                    'tasks' => ['MODERATE'],
+                    'instagram_business_account' => ['id' => '17841400000000001', 'username' => 'moderator_creator'],
+                ],
+                [
+                    'id' => 'page-345',
+                    'name' => 'Unlinked Page',
+                    'access_token' => 'page-token-unlinked',
+                    'tasks' => ['CREATE_CONTENT'],
+                ],
+            ],
+        ]),
+        'https://graph.facebook.com/v26.0/me*' => Http::response(['id' => 'meta-user-123', 'name' => 'Test Meta User']),
+    ]);
+
+    $result = $provider->discover(
+        new SocialTokenSet('parent-user-token', null, null, null, ['pages_show_list', 'instagram_basic', 'instagram_content_publish']),
+        'instagram',
+    );
+
+    expect($result->destinations)->toHaveCount(1)
+        ->and($result->destinations[0]->externalId)->toBe('17841400000000000')
+        ->and($result->destinations[0]->externalId)->not->toBe('page-123')
+        ->and($result->destinations[0]->name)->toBe('allowed_creator')
+        ->and($result->destinations[0]->credentialToken)->toBe('page-token-allowed');
+
+    Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/me/accounts'));
+});
