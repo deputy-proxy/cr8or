@@ -2,14 +2,15 @@
 
 namespace App\Providers;
 
+use App\Contracts\CredentialResolver;
 use App\Models\IntegrationConnection;
 use RuntimeException;
 
-final class GitHubCredentialResolver
+final class GitHubCredentialResolver implements CredentialResolver
 {
-    public function resolveAccessToken(IntegrationConnection $connection): string
+    public function resolveAccessToken(IntegrationConnection $connection, ?string $targetNetwork = null): string
     {
-        if ($connection->provider !== 'github' || ! $connection->isOperational()) {
+        if ($targetNetwork !== null || $connection->provider !== 'github' || ! $connection->isOperational()) {
             throw new RuntimeException('An active GitHub integration connection is required.');
         }
 

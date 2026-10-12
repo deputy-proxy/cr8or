@@ -35,6 +35,9 @@ use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Observers\EnterpriseActivityObserver;
 use App\Policies\CompetitorPolicy;
+use App\Policies\SocialAuthorizationAttemptPolicy;
+use App\Policies\SocialAuthorizationAuditPolicy;
+use App\Policies\SocialCredentialPolicy;
 use App\Policies\WorkflowExecutionPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Services\DeterministicKnowledgeEmbeddingProvider;
@@ -80,7 +83,13 @@ class AppServiceProvider extends ServiceProvider
                 ? new FakePublishingProvider
                 : new PostizPublishingProvider;
         });
-        $this->app->singleton(CredentialResolver::class, CanvaCredentialResolver::class);
+        $this->app->singleton(CredentialResolver::class, function ($app): CredentialResolver {
+            return new ProviderCredentialResolver([
+                'canva' => $app->make(CanvaCredentialResolver::class),
+                'github' => $app->make(GitHubCredentialResolver::class),
+                'social' => $app->make(SocialCredentialResolver::class),
+            ], config('social_authorization.credential_resolvers', []));
+        });
         $this->app->singleton(CanvaClientContract::class, function ($app): CanvaClientContract {
             return $app->environment('testing')
                 ? new FakeCanvaClient
@@ -131,6 +140,9 @@ class AppServiceProvider extends ServiceProvider
             $model::observe(EnterpriseActivityObserver::class);
         }
         Gate::policy(Competitor::class, CompetitorPolicy::class);
+        Gate::policy(\App\Models\SocialAuthorizationAttempt::class, SocialAuthorizationAttemptPolicy::class);
+        Gate::policy(\App\Models\SocialAuthorizationAudit::class, SocialAuthorizationAuditPolicy::class);
+        Gate::policy(\App\Models\SocialCredential::class, SocialCredentialPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
         Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }

@@ -132,8 +132,8 @@ class SocialAccount extends Model
                 $identity = SocialIdentity::query()->find($account->social_identity_id);
                 if ($identity === null
                     || (int) $identity->organization_id !== (int) $enterprise->organization_id
-                    || $identity->provider !== $account->provider) {
-                    throw new LogicException('Social account identity must use the same network and organization as its enterprise.');
+                    || ! in_array($account->provider, config("social_authorization.providers.{$identity->provider}.destination_networks", [$identity->provider]), true)) {
+                    throw new LogicException('Social account identity must belong to the same organization and authorize the destination network.');
                 }
 
                 $connection = $identity->integrationConnection;
@@ -147,6 +147,7 @@ class SocialAccount extends Model
                     ->where(function ($query) use ($account, $channel): void {
                         if ($account->social_identity_id !== null) {
                             $query->where('social_identity_id', $account->social_identity_id)
+                                ->where('provider', $account->provider)
                                 ->where('external_id', $account->external_id);
 
                             return;

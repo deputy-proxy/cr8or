@@ -9,8 +9,13 @@ it('provides exactly one Filament resource for every model', function () {
         $models[] = $match[1];
     }
 
-    // Internal OAuth identity records must never receive generic Filament CRUD.
-    $models = array_values(array_diff($models, ['SocialIdentity']));
+    // Internal OAuth identity, credential and authorization lifecycle records must never receive generic Filament CRUD.
+    $models = array_values(array_diff($models, [
+        'SocialIdentity',
+        'SocialCredential',
+        'SocialAuthorizationAttempt',
+        'SocialAuthorizationAudit',
+    ]));
 
     $resources = [];
 
