@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('get-execution')]
+#[Name('get-agent-execution')]
 #[Description('Get an authorized Agent Execution by id from CR8OR.')]
 class GetExecutionTool extends AgentExecutionResourceTool
 {

@@ -13,7 +13,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('mcp_workflow_execute')]
+#[Name('start-workflow-execution')]
 #[Description('Start a published deterministic Workflow without creating an AgentExecution. Input should use {workflow: {...}, stages: {stage_key: {...}}}; workflow contains execution-level context and each stages entry supplies input only for that persisted Workflow stage.')]
 class StartWorkflowTool extends GovernedCapabilityTool
 {

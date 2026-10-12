@@ -939,8 +939,8 @@ Lifecycle MCP Tools control orchestration state rather than directly exposing bu
 
 They use explicit namespaces:
 
-- `mcp_agent_*`
-- `mcp_workflow_*`
+- canonical action-oriented kebab-case identifiers
+- canonical action-oriented kebab-case identifiers
 
 Examples include operations for:
 

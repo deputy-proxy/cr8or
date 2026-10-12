@@ -44,7 +44,7 @@ it('resolves every governed Capability to one explicit Operation and Tool contra
         expect($definition->key)->toBe($key)
             ->and(is_a($definition->operation, Operation::class, true))->toBeTrue()
             ->and(is_a($definition->toolClass, Laravel\Mcp\Server\Tool::class, true))->toBeTrue()
-            ->and($definition->tool)->toMatch('/^[a-z0-9_]+(?:-[a-z0-9_]+)*$/')
+            ->and($definition->tool)->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')
             ->and($definition->inputContract)->not->toBeEmpty()
             ->and($definition->outputContract)->not->toBeEmpty()
             ->and($definition->authorizationRequirement)->not->toBeEmpty()
@@ -53,12 +53,12 @@ it('resolves every governed Capability to one explicit Operation and Tool contra
     }
 });
 
-it('uses the dedicated mcp_ namespace for lifecycle MCP Tools', function () {
+it('uses canonical kebab-case identifiers for lifecycle MCP Tools', function () {
     $registry = app(CapabilityRegistry::class);
 
     foreach ($registry->all() as $definition) {
         if ($definition->category === 'lifecycle') {
-            expect($definition->tool)->toStartWith('mcp_');
+            expect($definition->tool)->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')->not->toContain('_');
         }
     }
 });
@@ -112,7 +112,7 @@ it('resolves a Tool class using the authoritative registry mapping', function ()
     expect($registry->forTool(CreateContentItemTool::class)->key)->toBe('marketing.content.create')
         ->and($registry->forTool(CreateContentItemTool::class)->operation)->toBe(CreateContentItem::class)
         ->and($registry->resolve('workflow.duplicate')->operation)->toBe(App\Operations\DuplicateWorkflow::class)
-        ->and($registry->resolve('workflow.duplicate')->tool)->toBe('mcp_workflow_duplicate');
+        ->and($registry->resolve('workflow.duplicate')->tool)->toBe('duplicate-workflow');
 });
 
 it('rejects unknown capabilities and tools before authorization can grant them', function () {

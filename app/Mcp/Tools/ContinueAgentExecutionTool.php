@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('mcp_agent_continue')]
+#[Name('continue-agent-execution')]
 #[Description('Submit the current interactive reasoning result and continue a durable Agent Execution.')]
 final class ContinueAgentExecutionTool extends AgentExecutionResourceTool
 {

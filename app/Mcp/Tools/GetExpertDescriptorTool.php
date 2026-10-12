@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('get-expert')]
+#[Name('get-expert-descriptor')]
 #[Description('Get an authorized expert by id from CR8OR.')]
 class GetExpertDescriptorTool extends DiscoveryGetTool
 {

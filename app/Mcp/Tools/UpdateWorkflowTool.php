@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use LogicException;
 
-#[Name('mcp_workflow_update')]
+#[Name('update-workflow')]
 #[Description('Update an existing enterprise-scoped deterministic Workflow definition.')]
 #[IsIdempotent]
 class UpdateWorkflowTool extends GovernedCapabilityTool

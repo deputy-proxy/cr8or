@@ -14,6 +14,168 @@ CR8OR deliberately separates the business authority, executable operation and MC
 
 A Tool does not grant authority. A Capability declaration does not grant permission. Authorization is evaluated server-side before the Operation executes.
 
+## Public Tool rename and compatibility decision
+
+This change standardizes the current public identifiers in place. Repository-owned tests, examples, and runtime references are updated together. No legacy aliases are registered: aliases would keep obsolete identifiers publicly discoverable and create a second name for the same operation. External MCP clients and saved prompts/configuration are not fully observable from this repository, so consumers outside the repository must update to the canonical names below. This is a breaking public-interface change; business behavior, payloads, capability identifiers, and authorization remain unchanged.
+
+| Previous identifier | Canonical identifier | Rationale |
+| --- | --- | --- |
+| `mcp_agent_execution_create` | `create-agent-execution` | Action first; explicit resource |
+| `mcp_agent_continue` | `continue-agent-execution` | Names the execution being continued |
+| `mcp_agent_assignment_create` | `create-agent-assignment` | Action first; explicit resource |
+| `mcp_agent_execution_resume` | `resume-agent-execution` | Action first; explicit resource |
+| `mcp_agent_execution_cancel` | `cancel-agent-execution` | Action first; explicit resource |
+| `mcp_agent_execute` | `execute-agent` | Removes transport prefix; preserves behavior |
+| `mcp_agent_assignment_update` | `update-agent-assignment` | Action first; explicit resource |
+| `mcp_agent_assignment_transition` | `transition-agent-assignment` | Preserves lifecycle-specific action |
+| `mcp_workflow_create` | `create-workflow` | Action first; removes transport prefix |
+| `mcp_workflow_duplicate` | `duplicate-workflow` | Action first; removes transport prefix |
+| `mcp_workflow_update` | `update-workflow` | Action first; removes transport prefix |
+| `mcp_workflow_publish` | `publish-workflow` | Action first; removes transport prefix |
+| `mcp_workflow_execute` | `start-workflow-execution` | Names the execution lifecycle action |
+| `mcp_workflow_inspect` | `get-workflow-execution` | Aligns with the concrete retrieval behavior |
+| `mcp_workflow_get` | `get-workflow` | Canonical single-resource read |
+| `mcp_workflow_resume` | `resume-workflow-execution` | Names the execution lifecycle action |
+| `mcp_agent_approval_request` | `request-approval` | Action first; concise domain verb |
+| `mcp_agent_delegate` | `delegate-agent` | Action first; removes transport prefix |
+| `workflow-get` | `get-workflow` | Consistent single-resource read |
+| `get-execution` | `get-agent-execution` | Removes ambiguity about execution type |
+| `list-executions` | `list-agent-executions` | Makes collection resource explicit |
+| `get-expert` | `get-expert-descriptor` | Matches the actual resource |
+| `list-memory` | `list-memories` | Uses plural collection naming |
+
+## Verified public Tool inventory
+
+The table below records the identifiers exposed by Laravel MCP, not connector-side wrapper names. Governed Tools map to one explicit Capability and Operation. Unregistered read/discovery/resource and lifecycle Tools are explicitly classified; registration does not grant authority. `McpSurfaceInventoryTest` verifies naming, uniqueness, and registry/runtime agreement, while `McpSurfaceContractTest` verifies server registration completeness.
+
+| Public Tool identifier | Tool class | Capability | Operation |
+| --- | --- | --- | --- |
+| `analyze-business-context` | `AnalyzeBusinessContextTool` | `business.analysis` | `AnalyzeBusinessContext` |
+| `archive-audience` | `ArchiveAudienceTool` | `marketing.audience.archive` | `MarketingAudienceArchive` |
+| `archive-channel` | `ArchiveChannelTool` | `marketing.channel.archive` | `MarketingChannelArchive` |
+| `archive-knowledge-unit` | `ArchiveKnowledgeUnitTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` |
+| `archive-marketing-strategy` | `ArchiveMarketingStrategyTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` |
+| `archive-memory` | `ArchiveMemoryTool` | `memory.archive` | `ArchiveMemory` |
+| `cancel-agent-execution` | `CancelAgentExecutionTool` | Lifecycle (outside governed registry) | N/A |
+| `connect-social-account` | `ConnectSocialAccountTool` | `marketing.social-account.connect` | `SocialAccountConnect` |
+| `continue-agent-execution` | `ContinueAgentExecutionTool` | `agent.continue` | `ContinueAgentExecution` |
+| `create-agent-assignment` | `CreateAgentAssignmentTool` | `agent.assignment.create` | `CreateAgentAssignment` |
+| `create-agent-execution` | `CreateAgentExecutionTool` | Lifecycle (outside governed registry) | N/A |
+| `create-asset` | `CreateAssetTool` | `marketing.asset.create` | `CreatePlannedAsset` |
+| `create-audience` | `CreateAudienceTool` | `marketing.audience.create` | `MarketingAudienceCreate` |
+| `create-campaign` | `CreateCampaignTool` | `marketing.campaign.create` | `MarketingCampaignCreate` |
+| `create-channel` | `CreateChannelTool` | `marketing.channel.create` | `MarketingChannelCreate` |
+| `create-connection` | `CreateConnectionTool` | `integration.connection.create` | `IntegrationConnectionCreate` |
+| `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
+| `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
+| `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
+| `create-enterprise-context` | `CreateEnterpriseContextTool` | `enterprise.context.create` | `EnterpriseContextCreate` |
+| `create-knowledge-index` | `CreateKnowledgeIndexTool` | `knowledge.index.create` | `CreateKnowledgeIndex` |
+| `create-knowledge-item` | `CreateKnowledgeItemTool` | `knowledge.item.create` | `CreateKnowledgeItem` |
+| `create-knowledge-unit` | `CreateKnowledgeUnitTool` | `knowledge.unit.create` | `CreateKnowledgeUnit` |
+| `create-marketing-strategy` | `CreateMarketingStrategyTool` | `marketing.strategy.create` | `CreateMarketingStrategy` |
+| `create-memory` | `CreateMemoryTool` | `memory.create` | `CreateMemory` |
+| `create-objective` | `CreateObjectiveTool` | `marketing.objective.create` | `ObjectiveCreate` |
+| `create-project` | `CreateProjectTool` | `marketing.project.create` | `ProjectCreate` |
+| `create-script` | `CreateScriptTool` | `marketing.script.create` | `CreateScript` |
+| `create-strategy` | `CreateStrategyTool` | `strategy.create` | `CreateStrategy` |
+| `create-task` | `CreateTaskTool` | `work.task.create` | `CreateTask` |
+| `create-workflow` | `CreateWorkflowTool` | `workflow.create` | `CreateWorkflow` |
+| `define-marketing-strategy-section` | `DefineMarketingStrategySectionTool` | `marketing.strategy.section.define` | `DefineMarketingStrategySection` |
+| `delegate-agent` | `DelegateAgentTool` | `agent.delegate` | `DelegateAgent` |
+| `disconnect-social-account` | `DisconnectSocialAccountTool` | `marketing.social-account.disconnect` | `SocialAccountDisconnect` |
+| `duplicate-workflow` | `DuplicateWorkflowTool` | `workflow.duplicate` | `DuplicateWorkflow` |
+| `execute-agent` | `ExecuteAgentTool` | `agent.execute` | `ExecuteAgent` |
+| `generate-financial-report` | `GenerateFinancialReportTool` | `finance.report.generate` | `GenerateFinancialReport` |
+| `get-agent` | `GetAgentDescriptorTool` | Unregistered read/discovery/resource | N/A |
+| `get-agent-assignment` | `GetAgentAssignmentTool` | Unregistered read/discovery/resource | N/A |
+| `get-agent-delegation` | `GetAgentDelegationTool` | Unregistered read/discovery/resource | N/A |
+| `get-agent-execution` | `GetExecutionTool` | Unregistered read/discovery/resource | N/A |
+| `get-approval-request` | `GetApprovalRequestTool` | Unregistered read/discovery/resource | N/A |
+| `get-audience` | `GetAudienceTool` | Unregistered read/discovery/resource | N/A |
+| `get-campaign` | `GetCampaignTool` | Unregistered read/discovery/resource | N/A |
+| `get-capability` | `GetCapabilityTool` | Unregistered read/discovery/resource | N/A |
+| `get-channel` | `GetChannelTool` | Unregistered read/discovery/resource | N/A |
+| `get-content-item` | `GetContentItemTool` | Unregistered read/discovery/resource | N/A |
+| `get-content-series` | `GetContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `get-enterprise` | `GetEnterpriseTool` | Unregistered read/discovery/resource | N/A |
+| `get-expert-descriptor` | `GetExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
+| `get-goal` | `GetGoalTool` | Unregistered read/discovery/resource | N/A |
+| `get-initiative` | `GetInitiativeTool` | Unregistered read/discovery/resource | N/A |
+| `get-knowledge-index` | `GetKnowledgeIndexTool` | Unregistered read/discovery/resource | N/A |
+| `get-knowledge-unit` | `GetKnowledgeUnitTool` | Unregistered read/discovery/resource | N/A |
+| `get-kpi` | `GetKpiTool` | Unregistered read/discovery/resource | N/A |
+| `get-marketing-strategy` | `GetMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
+| `get-memory` | `GetMemoryTool` | Unregistered read/discovery/resource | N/A |
+| `get-objective` | `GetObjectiveTool` | Unregistered read/discovery/resource | N/A |
+| `get-plan` | `GetPlanTool` | Unregistered read/discovery/resource | N/A |
+| `get-project` | `GetProjectTool` | Unregistered read/discovery/resource | N/A |
+| `get-social-account` | `GetSocialAccountTool` | Unregistered read/discovery/resource | N/A |
+| `get-strategy` | `GetStrategyTool` | Unregistered read/discovery/resource | N/A |
+| `get-task` | `GetTaskTool` | Unregistered read/discovery/resource | N/A |
+| `get-workflow` | `GetWorkflowTool` | `workflow.get` | `GetWorkflow` |
+| `get-workflow-execution` | `GetWorkflowExecutionTool` | `workflow.inspect` | `InspectWorkflowExecution` |
+| `list-agent-assignments` | `ListAgentAssignmentsTool` | Unregistered read/discovery/resource | N/A |
+| `list-agent-delegations` | `ListAgentDelegationsTool` | Unregistered read/discovery/resource | N/A |
+| `list-agent-executions` | `ListExecutionTool` | Unregistered read/discovery/resource | N/A |
+| `list-agents` | `ListAgentDescriptorTool` | Unregistered read/discovery/resource | N/A |
+| `list-approval-requests` | `ListApprovalRequestTool` | Unregistered read/discovery/resource | N/A |
+| `list-audiences` | `ListAudienceTool` | Unregistered read/discovery/resource | N/A |
+| `list-campaigns` | `ListCampaignTool` | Unregistered read/discovery/resource | N/A |
+| `list-capabilities` | `ListCapabilitiesTool` | Unregistered read/discovery/resource | N/A |
+| `list-channels` | `ListChannelTool` | Unregistered read/discovery/resource | N/A |
+| `list-content-items` | `ListContentItemTool` | Unregistered read/discovery/resource | N/A |
+| `list-content-series` | `ListContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `list-enterprises` | `ListEnterpriseTool` | Unregistered read/discovery/resource | N/A |
+| `list-experts` | `ListExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
+| `list-goals` | `ListGoalTool` | Unregistered read/discovery/resource | N/A |
+| `list-initiatives` | `ListInitiativeTool` | Unregistered read/discovery/resource | N/A |
+| `list-knowledge-indexes` | `ListKnowledgeIndexesTool` | Unregistered read/discovery/resource | N/A |
+| `list-knowledge-units` | `ListKnowledgeUnitsTool` | Unregistered read/discovery/resource | N/A |
+| `list-kpis` | `ListKpiTool` | Unregistered read/discovery/resource | N/A |
+| `list-marketing-strategies` | `ListMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
+| `list-memories` | `ListMemoryTool` | Unregistered read/discovery/resource | N/A |
+| `list-objectives` | `ListObjectiveTool` | Unregistered read/discovery/resource | N/A |
+| `list-plans` | `ListPlanTool` | Unregistered read/discovery/resource | N/A |
+| `list-projects` | `ListProjectTool` | Unregistered read/discovery/resource | N/A |
+| `list-social-accounts` | `ListSocialAccountTool` | Unregistered read/discovery/resource | N/A |
+| `list-strategies` | `ListStrategyTool` | Unregistered read/discovery/resource | N/A |
+| `list-tasks` | `ListTaskTool` | Unregistered read/discovery/resource | N/A |
+| `list-workflows` | `ListWorkflowsTool` | `workflow.discover` | `DiscoverWorkflows` |
+| `mark-content-publication-ready` | `MarkContentPublicationReadyTool` | `marketing.content.publication-ready` | `MarkContentPublicationReady` |
+| `plan-marketing` | `PlanMarketingTool` | `marketing.plan` | `PlanMarketing` |
+| `publish-content` | `PublishContentTool` | `publication.publish` | `PublishContent` |
+| `publish-workflow` | `PublishWorkflowTool` | `workflow.publish` | `PublishWorkflow` |
+| `record-memory` | `RecordMemoryTool` | `memory.record` | `RecordMemory` |
+| `request-approval` | `RequestApprovalTool` | `approval.request` | `ApprovalRequestCreate` |
+| `resume-agent-execution` | `ResumeAgentExecutionTool` | Unregistered read/discovery/resource | N/A |
+| `resume-workflow-execution` | `ResumeWorkflowExecutionTool` | `workflow.resume` | `ResumeWorkflowExecution` |
+| `retrieve-enterprise-context` | `RetrieveEnterpriseContextTool` | `enterprise.context.retrieve` | `EnterpriseContextRetrieve` |
+| `retrieve-knowledge` | `RetrieveKnowledgeTool` | `knowledge.retrieve` | `RetrieveKnowledge` |
+| `retrieve-memory` | `RetrieveMemoryTool` | `memory.retrieve` | `RetrieveMemory` |
+| `start-workflow-execution` | `StartWorkflowTool` | `workflow.execute` | `StartWorkflow` |
+| `submit-content-for-review` | `SubmitContentForReviewTool` | `marketing.content.review` | `SubmitContentForReview` |
+| `transition-agent-assignment` | `TransitionAgentAssignmentTool` | `agent.assignment.transition` | `TransitionAgentAssignment` |
+| `transition-campaign` | `TransitionCampaignTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` |
+| `transition-content-series` | `TransitionContentSeriesTool` | `marketing.content-series.lifecycle` | `ContentSeriesLifecycle` |
+| `update-agent-assignment` | `UpdateAgentAssignmentTool` | `agent.assignment.update` | `UpdateAgentAssignment` |
+| `update-audience` | `UpdateAudienceTool` | `marketing.audience.update` | `MarketingAudienceUpdate` |
+| `update-campaign` | `UpdateCampaignTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` |
+| `update-channel` | `UpdateChannelTool` | `marketing.channel.update` | `MarketingChannelUpdate` |
+| `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
+| `update-content-series` | `UpdateContentSeriesTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` |
+| `update-enterprise-context` | `UpdateEnterpriseContextTool` | `enterprise.context.update` | `EnterpriseContextUpdate` |
+| `update-knowledge-index` | `UpdateKnowledgeIndexTool` | `knowledge.index.update` | `UpdateKnowledgeIndex` |
+| `update-knowledge-unit` | `UpdateKnowledgeUnitTool` | `knowledge.unit.update` | `UpdateKnowledgeUnit` |
+| `update-memory` | `UpdateMemoryTool` | `memory.update` | `UpdateMemory` |
+| `update-objective` | `UpdateObjectiveTool` | `marketing.objective.update` | `ObjectiveUpdate` |
+| `update-project` | `UpdateProjectTool` | `marketing.project.update` | `ProjectUpdate` |
+| `update-social-account` | `UpdateSocialAccountTool` | `marketing.social-account.update` | `SocialAccountUpdate` |
+| `update-strategy` | `UpdateStrategyTool` | `strategy.update` | `UpdateStrategy` |
+| `update-task` | `UpdateTaskTool` | `work.task.update` | `UpdateTask` |
+| `update-workflow` | `UpdateWorkflowTool` | `workflow.update` | `UpdateWorkflow` |
+| `verify-marketing-graph` | `VerifyMarketingGraphTool` | `marketing.graph.verify` | `VerifyMarketingGraph` |
+
 ## Resources vs Tools
 
 Resources provide authorized contextual information to an AI client and should represent useful business context rather than raw database structure.
@@ -120,9 +282,9 @@ The foundational read/discovery layer exposes bounded, authorization-aware list/
 | Organization | `list-enterprises`, `get-enterprise` |
 | Strategy | `list-objectives`, `get-objective`, `list-strategies`, `get-strategy` |
 | Work | `list-tasks`, `get-task` |
-| Intelligence | `list-agents`, `get-agent`, `list-experts`, `get-expert`, `list-capabilities`, `get-capability` |
+| Intelligence | `list-agents`, `get-agent`, `list-experts`, `get-expert-descriptor`, `list-capabilities`, `get-capability` |
 | Content | `list-campaigns`, `get-campaign`, `list-content-series`, `get-content-series`, `list-content-items`, `get-content-item`, `list-audiences`, `get-audience`, `list-channels`, `get-channel` |
-| Operations | `list-executions`, `get-execution`, `list-approval-requests`, `get-approval-request` |
+| Operations | `list-agent-executions`, `get-agent-execution`, `list-approval-requests`, `get-approval-request` |
 
 List tools return `result.items` plus a bounded `pagination` object containing `page`, `per_page`, `total`, and `last_page`. They accept `per_page` (1-50), `page`, and, where applicable, enterprise, status, parent-resource, and name/title/slug search filters. All list queries are scoped to organizations accessible to the authenticated actor before pagination.
 
@@ -206,7 +368,7 @@ Phase 12 exposes the existing durable Agent Memory stores through a single enter
 | --- | --- | --- | --- |
 | Memory | create-memory | CreateMemory | Resource operation; requires explicit source execution provenance |
 | Memory | get-memory | GetMemory | Authorized resource query |
-| Memory | list-memory | ListMemory | Authorized bounded resource query/search |
+| Memory | list-memories | ListMemory | Authorized bounded resource query/search |
 | Memory | update-memory | UpdateMemory | Resource operation; semantic Memory only, with version history |
 | Memory | archive-memory | ArchiveMemory | Resource operation; semantic Memory lifecycle |
 | Memory | retrieve-memory | RetrieveMemory | Governed memory.retrieve capability |
@@ -242,8 +404,8 @@ Agent Executions are durable runtime resources linked to an Enterprise, Agent As
 | --- | --- | --- |
 | `execute-agent` | `agent.execute` / `ExecuteAgent` | Governed start of an Agent Execution |
 | `create-agent-execution` | `CreateAgentExecution` | Resource-level durable execution start |
-| `get-execution` | `GetAgentExecution` | Retrieve durable status, input, result and runtime history |
-| `list-executions` | `ListAgentExecutions` | Bounded Enterprise-scoped execution listing |
+| `get-agent-execution` | `GetAgentExecution` | Retrieve durable status, input, result and runtime history |
+| `list-agent-executions` | `ListAgentExecutions` | Bounded Enterprise-scoped execution listing |
 | `resume-execution` | `ResumeAgentExecution` | Resume waiting/paused/delegated execution through the canonical runtime |
 | `cancel-execution` | `CancelAgentExecution` | Cancel an active execution through its lifecycle rules |
 

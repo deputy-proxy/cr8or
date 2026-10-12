@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('mcp_workflow_get')]
+#[Name('get-workflow')]
 #[Description('Get the persisted Workflow definition, including its stages, data contracts, mappings, and published version snapshot.')]
 class GetWorkflowTool extends GovernedCapabilityTool
 {

@@ -169,7 +169,7 @@ it('keeps lifecycle MCP Tools outside the business Capability registry', functio
 
     foreach ($registry->all() as $definition) {
         if ($definition->category === 'lifecycle') {
-            expect($definition->tool)->toStartWith('mcp_');
+            expect($definition->tool)->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')->not->toContain('_');
         }
     }
 });

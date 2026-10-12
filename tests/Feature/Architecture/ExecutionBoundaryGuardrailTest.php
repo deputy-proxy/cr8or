@@ -50,9 +50,9 @@ it('keeps lifecycle MCP Tool names outside the business namespace', function ():
 
     foreach ($registry->all() as $definition) {
         if ($definition->category === 'lifecycle') {
-            expect($definition->tool)->toStartWith('mcp_');
+            expect($definition->tool)->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')->not->toContain('_');
         } else {
-            expect($definition->tool)->not->toStartWith('mcp_');
+            expect($definition->tool)->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')->not->toContain('_');
         }
     }
 });

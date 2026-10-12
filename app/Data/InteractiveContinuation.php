@@ -65,7 +65,7 @@ final readonly class InteractiveContinuation
                 'termination' => ['continue', 'waiting_for_input', 'waiting_for_approval', 'delegated', 'paused', 'completed'],
                 'termination_reason' => 'string|null',
             ],
-            tool: $terminal ? '' : 'mcp_agent_continue',
+            tool: $terminal ? '' : 'continue-agent-execution',
             correlationId: (string) $execution->correlation_id,
             idempotencyKey: (string) $execution->idempotency_key,
             humanGate: match ($status) {

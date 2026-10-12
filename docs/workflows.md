@@ -106,7 +106,7 @@ An Agent may select a persisted Workflow when work is known and repeatable. The 
 
 ## MCP
 
-MCP is an entry and continuation interface for Workflow lifecycle operations. Lifecycle MCP Tools remain separate from business Capability Tools and use the `mcp_workflow_*` namespace. They control persisted orchestration state rather than becoming an alternative business execution path.
+MCP is an entry and continuation interface for Workflow lifecycle operations. Lifecycle MCP Tools remain separate from business Capability Tools and use the canonical action-oriented kebab-case identifiers. They control persisted orchestration state rather than becoming an alternative business execution path.
 
 ## Enterprise isolation
 

@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('list-memory')]
+#[Name('list-memories')]
 #[Description('List bounded Enterprise-scoped episodic and semantic Memory, with optional search filters.')]
 class ListMemoryTool extends MemoryResourceTool
 {

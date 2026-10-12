@@ -233,7 +233,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::create + enterprise scope',
                 'none',
                 'lifecycle',
-                'mcp_workflow_create',
+                'create-workflow',
             ),
             $this->definition(
                 'workflow.duplicate',
@@ -244,7 +244,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::createForEnterprise + source workflow scope',
                 'none',
                 'lifecycle',
-                'mcp_workflow_duplicate',
+                'duplicate-workflow',
             ),
             $this->definition(
                 'workflow.update',
@@ -255,7 +255,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::update + enterprise scope',
                 'none',
                 'lifecycle',
-                'mcp_workflow_update',
+                'update-workflow',
             ),
             $this->definition(
                 'workflow.publish',
@@ -266,7 +266,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::view + immutable version publication',
                 'none',
                 'lifecycle',
-                'mcp_workflow_publish',
+                'publish-workflow',
             ),
             $this->definition(
                 'workflow.get',
@@ -277,7 +277,7 @@ final class CapabilityRegistry
                 'WorkflowPolicy::view + enterprise scope',
                 'none',
                 'read',
-                'workflow-get',
+                'get-workflow',
             ),
             $this->definition(
                 'workflow.discover',
@@ -298,7 +298,7 @@ final class CapabilityRegistry
                 'Published Workflow view authorization',
                 'none',
                 'lifecycle',
-                'mcp_workflow_execute',
+                'start-workflow-execution',
             ),
             $this->definition(
                 'workflow.inspect',
@@ -309,7 +309,7 @@ final class CapabilityRegistry
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
                 'lifecycle',
-                'mcp_workflow_inspect',
+                'get-workflow-execution',
             ),
             $this->definition(
                 'workflow.resume',
@@ -320,7 +320,7 @@ final class CapabilityRegistry
                 'WorkflowExecution enterprise/workflow authorization',
                 'none',
                 'lifecycle',
-                'mcp_workflow_resume',
+                'resume-workflow-execution',
             ),
             $this->definition(
                 'agent.continue',
@@ -341,7 +341,7 @@ final class CapabilityRegistry
                 'InteractiveContinuationService + governed Capability execution',
                 'none',
                 'lifecycle',
-                'mcp_agent_continue',
+                'continue-agent-execution',
             ),
             $this->definition(
                 'agent.execute',
@@ -370,7 +370,7 @@ final class CapabilityRegistry
                 'McpCapabilityAuthorizer::authorizeCapability + AgentExecutionService',
                 'none',
                 'lifecycle',
-                'mcp_agent_execute',
+                'execute-agent',
             ),
             $this->definition(
                 'agent.delegate',
@@ -392,7 +392,7 @@ final class CapabilityRegistry
                 'delegation-service + capability authorization',
                 'none',
                 'lifecycle',
-                'mcp_agent_delegate',
+                'delegate-agent',
             ),
             $this->definition(
                 'business.analysis',
@@ -565,7 +565,7 @@ final class CapabilityRegistry
                 'assignment authorization',
                 'required',
                 'lifecycle',
-                'mcp_agent_approval_request',
+                'request-approval',
             ),
             $this->definition(
                 'marketing.audience.create',
@@ -891,7 +891,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment createForAgentAssignment authorization',
                 'none',
                 'lifecycle',
-                'mcp_agent_assignment_create',
+                'create-agent-assignment',
             ),
             $this->definition(
                 'agent.assignment.update',
@@ -902,7 +902,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment update authorization',
                 'none',
                 'lifecycle',
-                'mcp_agent_assignment_update',
+                'update-agent-assignment',
             ),
             $this->definition(
                 'agent.assignment.transition',
@@ -913,7 +913,7 @@ final class CapabilityRegistry
                 'Enterprise policy + AgentAssignment lifecycle authorization',
                 'none',
                 'lifecycle',
-                'mcp_agent_assignment_transition',
+                'transition-agent-assignment',
             ),
             $this->definition(
                 'knowledge.item.create',
