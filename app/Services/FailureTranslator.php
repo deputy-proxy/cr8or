@@ -10,7 +10,7 @@ use App\AI\Exceptions\ModelProviderException;
 use App\Exceptions\CanvaClientException;
 use App\Exceptions\IntegrationProviderException;
 use App\Exceptions\MediaStorageException;
-use App\Exceptions\PublishingProviderException;
+use App\Exceptions\PublishingAdapterException;
 use App\Exceptions\WorkflowDefinitionException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -152,7 +152,7 @@ final class FailureTranslator
                 $exception->failureCode,
                 $exception->retryable,
             ),
-            $exception instanceof PublishingProviderException => $this->externalFailure(
+            $exception instanceof PublishingAdapterException => $this->externalFailure(
                 $exception->failureCode,
                 $exception->retryable,
             ),

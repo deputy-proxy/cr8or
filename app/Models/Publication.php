@@ -28,6 +28,8 @@ class Publication extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_UNKNOWN = 'unknown';
+
     protected $casts = ['scheduled_at' => 'datetime', 'submitted_at' => 'datetime', 'published_at' => 'datetime'];
 
     protected static function booted(): void
@@ -43,7 +45,7 @@ class Publication extends Model
         });
 
         static::saving(function (self $p): void {
-            if (! in_array($p->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_SUCCEEDED, self::STATUS_FAILED], true)) {
+            if (! in_array($p->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_SUCCEEDED, self::STATUS_FAILED, self::STATUS_UNKNOWN], true)) {
                 throw new LogicException("Invalid publication status [{$p->status}].");
             }
 
@@ -127,7 +129,7 @@ class Publication extends Model
 
     public function markSubmitted(string $id, ?string $url = null): static
     {
-        if (! in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED], true)) {
+        if (! in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_FAILED, self::STATUS_UNKNOWN], true)) {
             throw new LogicException('Publication cannot be submitted from its current state.');
         }
 
@@ -153,8 +155,26 @@ class Publication extends Model
         return $this;
     }
 
+    public function markUnknown(?string $code, ?string $reason): static
+    {
+        if (! in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_FAILED], true)) {
+            throw new LogicException('Publication cannot become ambiguous from its current state.');
+        }
+
+        $this->lifecycleTransitionAuthorized = true;
+        $this->status = self::STATUS_UNKNOWN;
+        $this->failure_code = $code;
+        $this->failure_reason = $reason;
+
+        return $this;
+    }
+
     public function fail(?string $code, ?string $reason): static
     {
+        if (! in_array($this->status, [self::STATUS_SCHEDULED, self::STATUS_SUBMITTED, self::STATUS_UNKNOWN, self::STATUS_FAILED], true)) {
+            throw new LogicException('Publication cannot fail from its current state.');
+        }
+
         $this->lifecycleTransitionAuthorized = true;
         $this->status = self::STATUS_FAILED;
         $this->failure_code = $code;

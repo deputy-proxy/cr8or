@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'publication_id', 'publishing_job_id', 'provider', 'provider_status', 'external_id', 'external_url', 'correlation_id', 'failure_code', 'failure_reason', 'payload', 'recorded_at'])]
+#[Fillable(['enterprise_id', 'publication_id', 'publishing_job_id', 'provider', 'network', 'destination_external_id', 'provider_status', 'external_id', 'external_url', 'correlation_id', 'failure_code', 'failure_reason', 'payload', 'recorded_at'])]
 class PublicationResult extends Model
 {
     /** @use HasFactory<\Database\Factories\PublicationResultFactory> */
@@ -20,6 +20,14 @@ class PublicationResult extends Model
             $p = Publication::query()->find($r->publication_id);
             if ($p === null || $p->enterprise_id !== (int) $r->enterprise_id) {
                 throw new LogicException('Publication result enterprise mismatch.');
+            }
+
+            if ($r->network !== null && $r->network !== $p->target_provider) {
+                throw new LogicException('Publication result network must match the immutable publication destination.');
+            }
+
+            if ($r->destination_external_id !== null && $r->destination_external_id !== $p->target_external_id) {
+                throw new LogicException('Publication result destination must match the immutable publication target.');
             }
 
             if ($r->exists) {

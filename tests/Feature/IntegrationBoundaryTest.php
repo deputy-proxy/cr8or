@@ -37,7 +37,6 @@ it('defines a provider-independent integration registry for current external bou
     $registry = app(IntegrationRegistry::class);
 
     expect($registry->provider('canva')->integration)->toBe('creative')
-        ->and($registry->provider('postiz')->integration)->toBe('publishing')
         ->and($registry->provider('cloudflare-r2')->integration)->toBe('storage')
         ->and($registry->provider('cr8or-media')->integration)->toBe('media')
         ->and($registry->provider('github')->integration)->toBe('source_control')
@@ -193,13 +192,13 @@ it('keeps credential material out of connection metadata', function () {
 
 it('exposes canonical provider metadata through provider adapters', function () {
     $canva = app(\App\Contracts\CanvaClient::class);
-    $publishing = app(\App\Contracts\PublishingProvider::class);
+    $publishing = app(\App\Services\PublishingAdapterRegistry::class)->resolve('linkedin')->adapter;
 
     expect($canva->integrationKey())->toBe('creative')
         ->and($canva->providerKey())->toBe('canva')
         ->and($canva->supports('design.create'))->toBeTrue()
         ->and($publishing->integrationKey())->toBe('publishing')
-        ->and($publishing->providerKey())->toBe('postiz')
+        ->and($publishing->providerKey())->toBe('linkedin')
         ->and($publishing->supports('publication.publish'))->toBeTrue();
 });
 
