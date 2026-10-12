@@ -2,20 +2,25 @@
 
 namespace App\Services;
 
-use App\Contracts\PublishingProvider;
-use App\Data\PublishingProviderResult;
-use App\Exceptions\PublishingProviderException;
+use App\AI\Contracts\FailureProvenance;
+use App\Data\PublishingAdapterRequest;
+use App\Data\PublishingAdapterResolution;
+use App\Data\PublishingAdapterResult;
+use App\Exceptions\PublishingAdapterException;
 use App\Experts\MarketingExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
+use App\Models\Asset;
 use App\Models\Channel;
 use App\Models\ContentItem;
+use App\Models\IntegrationConnection;
 use App\Models\Publication;
 use App\Models\PublicationResult;
 use App\Models\PublicationSchedule;
 use App\Models\PublishingJob;
 use App\Models\SocialAccount;
+use App\Models\SocialIdentity;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +30,7 @@ use LogicException;
 final class PublishingService
 {
     public function __construct(
-        private readonly PublishingProvider $provider,
+        private readonly PublishingAdapterRegistry $adapters,
         private readonly AgentCapabilityAuthorizer $capabilities,
         private readonly FailureTranslator $failures,
     ) {}
@@ -39,11 +44,11 @@ final class PublishingService
         ?AgentAssignment $assignment = null,
         ?AgentExecution $execution = null,
     ): Publication {
-        $this->validateTarget($content, $account);
+        $this->resolveDestination($content, $account);
         $this->authorizePublication($actor, $content, $approval, $assignment, $execution);
 
         return DB::transaction(function () use ($content, $account, $at, $approval) {
-            $p = Publication::query()->create([
+            $publication = Publication::query()->create([
                 'enterprise_id' => $content->enterprise_id,
                 'content_item_id' => $content->id,
                 'channel_id' => $account->channel_id,
@@ -54,121 +59,336 @@ final class PublishingService
                 'correlation_id' => app(ExecutionCorrelationService::class)->resolve(),
                 'scheduled_at' => $at,
             ]);
+
             PublicationSchedule::query()->create([
                 'enterprise_id' => $content->enterprise_id,
-                'publication_id' => $p->id,
+                'publication_id' => $publication->id,
                 'scheduled_at' => $at,
                 'status' => PublicationSchedule::STATUS_SCHEDULED,
             ]);
 
-            return $p;
+            return $publication;
         });
     }
 
     public function submit(
         User $actor,
-        Publication $p,
+        Publication $publication,
         ?AgentAssignment $assignment = null,
         ?AgentExecution $execution = null,
         ?ApprovalRequest $approval = null,
     ): Publication {
-        $p->loadMissing(['contentItem', 'socialAccount.channel', 'channel', 'approvalRequest']);
+        $publication->loadMissing(['contentItem', 'socialAccount.channel', 'channel', 'approvalRequest']);
 
         /** @var ContentItem $content */
-        $content = $p->contentItem;
+        $content = $publication->contentItem;
         /** @var SocialAccount $account */
-        $account = $p->socialAccount;
+        $account = $publication->socialAccount;
 
-        $this->validateTarget($content, $account);
-        $this->authorizePublication($actor, $content, $approval ?? $p->approvalRequest, $assignment, $execution);
+        $this->resolveDestination($content, $account, $publication);
+        $this->authorizePublication($actor, $content, $approval ?? $publication->approvalRequest, $assignment, $execution);
 
-        if (in_array($p->status, [Publication::STATUS_SUBMITTED, Publication::STATUS_SUCCEEDED], true)) {
-            return $p;
+        if (in_array($publication->status, [Publication::STATUS_SUBMITTED, Publication::STATUS_SUCCEEDED], true)) {
+            return $publication;
+        }
+        if ($publication->status === Publication::STATUS_UNKNOWN) {
+            throw new LogicException('The publication outcome is ambiguous and must be reconciled before retrying.');
+        }
+
+        $destination = $this->resolveDestination($content, $account, $publication, requireConnection: true);
+        $resolution = $destination['resolution'];
+        $connection = $destination['connection'];
+
+        if ($publication->scheduled_at !== null && $publication->scheduled_at->isFuture() && ! $resolution->useNativeScheduling) {
+            throw new LogicException('CR8OR must wait until the scheduled time before submitting to this destination.');
         }
 
         $job = PublishingJob::query()->firstOrCreate(
-            ['idempotency_key' => 'publish-'.$p->idempotency_key],
+            ['idempotency_key' => 'publish-'.$publication->idempotency_key],
             [
-                'enterprise_id' => $p->enterprise_id,
-                'publication_id' => $p->id,
+                'enterprise_id' => $publication->enterprise_id,
+                'publication_id' => $publication->id,
                 'status' => PublishingJob::STATUS_PENDING,
             ],
         );
 
+        if ($job->status === PublishingJob::STATUS_UNKNOWN) {
+            throw new LogicException('The publishing job has an ambiguous remote outcome and must be reconciled before retrying.');
+        }
+
         if ($job->status === PublishingJob::STATUS_FAILED) {
+            if (! $job->retryable) {
+                throw new LogicException('The previous publishing failure is not classified as retryable.');
+            }
+
             $job->status = PublishingJob::STATUS_PENDING;
             $job->failure_code = null;
             $job->failure_reason = null;
             $job->completed_at = null;
         }
 
+        if (($job->adapter_key !== null && $job->adapter_key !== $resolution->adapterKey)
+            || ($job->network !== null && $job->network !== $resolution->network)
+            || ($job->destination_external_id !== null && $job->destination_external_id !== $destination['destination_external_id'])) {
+            throw new LogicException('A retry cannot change the adapter or destination of an existing publishing job.');
+        }
+
+        if (! $resolution->capabilities->supportsIdempotency) {
+            throw new PublishingAdapterException('The adapter does not provide a safe idempotency strategy.', 'idempotency_unsupported');
+        }
+
+        $job->adapter_key = $resolution->adapterKey;
+        $job->network = $resolution->network;
+        $job->destination_external_id = $destination['destination_external_id'];
         $job->start()->save();
 
         try {
-            $r = $this->provider->publish(new \App\Data\PublishingRequest(
-                $account->external_id,
-                (string) $content->body,
-                $p->scheduled_at?->toIso8601String() ?? now()->toIso8601String(),
-                $p->idempotency_key,
-                ['__type' => $p->channel->type],
+            $result = $resolution->adapter->publish(new PublishingAdapterRequest(
+                network: $resolution->network,
+                destinationExternalId: $destination['destination_external_id'],
+                content: (string) $content->body,
+                media: $destination['media'],
+                scheduledAt: $resolution->useNativeScheduling
+                    ? $publication->scheduled_at?->toIso8601String() ?? now()->toIso8601String()
+                    : now()->toIso8601String(),
+                idempotencyKey: $publication->idempotency_key,
+                correlationId: (string) $publication->correlation_id,
+                integrationConnectionId: $connection === null ? null : (int) $connection->id,
+                credentialReference: $connection?->credential_reference,
+                settings: ['__type' => $publication->channel->type],
             ));
-            $job->external_id = $r->externalId;
-            $job->external_url = $r->externalUrl;
-            $job->save();
-            $p->markSubmitted($r->externalId, $r->externalUrl)->save();
-            $job->succeed()->save();
-            $this->record($p, $job, $r);
+            $this->assertValidAdapterResult($result);
 
-            return $p->refresh();
-        } catch (PublishingProviderException $e) {
+            $job->external_id = $result->externalId;
+            $job->external_url = $result->externalUrl;
+            $job->save();
+
+            $publication->markSubmitted($result->externalId, $result->externalUrl)->save();
+            if (in_array($result->status, ['published', 'succeeded'], true)) {
+                $publication->succeed()->save();
+            }
+            $job->succeed()->save();
+            $this->record($publication, $job, $resolution->adapterKey, $resolution->network, $result);
+
+            return $publication->refresh();
+        } catch (PublishingAdapterException $exception) {
+            if ($connection !== null
+                && in_array($exception->failureCode, ['authentication_required', 'invalid_grant', 'token_expired'], true)
+                && $connection->status === IntegrationConnection::STATUS_ACTIVE) {
+                $connection->transitionTo(IntegrationConnection::STATUS_RECONNECT_REQUIRED)->save();
+            }
+
             $failure = $this->failures->translate(
-                $e,
-                correlationId: $p->correlation_id,
-                provenance: new \App\AI\Contracts\FailureProvenance(
+                $exception,
+                correlationId: $publication->correlation_id,
+                provenance: new FailureProvenance(
                     operation: 'publication.publish',
-                    capability: 'integration.publishing.publication.publish'
+                    capability: 'integration.publishing.publication.publish',
                 ),
             );
-            $job->fail($failure->message, $failure->code)->save();
-            $p->fail($failure->code, $failure->message)->save();
-            $this->recordFailure($p, $job, $e);
-            throw $e;
+
+            if ($exception->ambiguous) {
+                $job->markUnknown($failure->code, $failure->message)->save();
+                $publication->markUnknown($failure->code, $failure->message)->save();
+                $this->recordFailure($publication, $job, $resolution, $exception, 'unknown');
+            } else {
+                $job->fail($failure->message, $failure->code);
+                $job->retryable = $exception->retryable;
+                $job->save();
+                $publication->fail($failure->code, $failure->message)->save();
+                $this->recordFailure($publication, $job, $resolution, $exception, 'failed');
+            }
+
+            throw $exception;
         }
     }
 
-    public function reconcile(Publication $p, PublishingProviderResult $r): Publication
+    public function reconcile(Publication $publication, PublishingAdapterResult $result): Publication
     {
-        if ($p->status === Publication::STATUS_SUCCEEDED) {
-            return $p;
+        if (in_array($publication->status, [Publication::STATUS_SUCCEEDED, Publication::STATUS_FAILED], true)) {
+            return $publication;
         }
 
-        if ($r->status === 'succeeded') {
-            $p->succeed()->save();
-        } elseif ($r->status === 'failed') {
-            $p->fail('provider_rejected', 'Provider reported publication failure.')->save();
+        $job = $publication->publishingJobs()->latest('id')->first();
+        if ($job === null) {
+            throw new LogicException('Publication reconciliation requires a correlated publishing job.');
+        }
+
+        if ($result->status === 'failed') {
+            $publication->fail('provider_rejected', 'The network confirmed publication failure.')->save();
+            if ($job->status !== PublishingJob::STATUS_SUCCEEDED) {
+                $job->fail('The network confirmed publication failure.', 'provider_rejected')->save();
+            }
+        } elseif (in_array($result->status, ['submitted', 'accepted', 'pending', 'published', 'succeeded'], true)) {
+            if (trim($result->externalId) === '') {
+                throw new LogicException('A reconciled result must include its external publication identifier.');
+            }
+
+            if (in_array($publication->status, [Publication::STATUS_SCHEDULED, Publication::STATUS_UNKNOWN], true)) {
+                $publication->markSubmitted($result->externalId, $result->externalUrl)->save();
+            }
+            if (in_array($result->status, ['published', 'succeeded'], true)) {
+                $publication->succeed()->save();
+            }
+
+            $job->external_id = $result->externalId;
+            $job->external_url = $result->externalUrl;
+            if ($job->status !== PublishingJob::STATUS_SUCCEEDED) {
+                $job->succeed()->save();
+            } else {
+                $job->save();
+            }
         } else {
             throw new LogicException('Unsupported reconciliation status.');
         }
 
-        $this->record($p, $p->publishingJobs()->latest('id')->first(), $r);
+        $network = $job->network ?? $publication->target_provider;
+        $adapterKey = $job->adapter_key ?? $publication->results()->latest('id')->value('provider') ?? $network;
+        if (! is_string($network) || $network === '' || ! is_string($adapterKey) || $adapterKey === '') {
+            throw new LogicException('Publication history is missing its original network or adapter identity.');
+        }
 
-        return $p->refresh();
+        $this->record($publication, $job, $adapterKey, $network, $result);
+
+        return $publication->refresh();
     }
 
-    private function validateTarget(ContentItem $c, SocialAccount $a): void
-    {
-        if ($c->status !== ContentItem::STATUS_PUBLICATION_READY) {
+    /**
+     * @return array{resolution: PublishingAdapterResolution, connection: IntegrationConnection|null, destination_external_id: string, media: list<array<string, mixed>>}
+     */
+    private function resolveDestination(
+        ContentItem $content,
+        SocialAccount $account,
+        ?Publication $publication = null,
+        bool $requireConnection = false,
+    ): array {
+        if ($content->status !== ContentItem::STATUS_PUBLICATION_READY) {
             throw new LogicException('Only publication-ready content can enter the publishing lifecycle.');
         }
 
-        if ($a->status !== SocialAccount::STATUS_ACTIVE || $a->channel->status !== Channel::STATUS_ACTIVE) {
+        if ($account->status !== SocialAccount::STATUS_ACTIVE || $account->channel->status !== Channel::STATUS_ACTIVE) {
             throw new LogicException('The social account and channel must both be active.');
+        }
+
+        if ((int) $content->enterprise_id !== (int) $account->enterprise_id
+            || (int) $account->channel->enterprise_id !== (int) $account->enterprise_id) {
+            throw new LogicException('Content, account, and channel must belong to the same enterprise.');
+        }
+
+        $network = $publication?->target_provider ?: $account->provider;
+        $destinationExternalId = $publication?->target_external_id ?: $account->external_id;
+        if ($publication !== null
+            && (($publication->target_provider !== null && $publication->target_provider !== $account->provider)
+                || ($publication->target_external_id !== null && $publication->target_external_id !== $account->external_id))) {
+            throw new LogicException('The account no longer matches the immutable publication destination.');
+        }
+
+        $resolution = $this->adapters->resolve($network);
+        $connection = $requireConnection ? $this->resolveConnection($account, $network) : null;
+        $media = $this->publicationMedia($content);
+        $this->validateCapabilities($content, $media, $resolution);
+
+        return [
+            'resolution' => $resolution,
+            'connection' => $connection,
+            'destination_external_id' => $destinationExternalId,
+            'media' => $media,
+        ];
+    }
+
+    private function resolveConnection(SocialAccount $account, string $network): IntegrationConnection
+    {
+        if ($account->social_identity_id === null) {
+            throw new LogicException('A native social destination requires an authorized identity and active connection.');
+        }
+
+        $identity = $account->socialIdentity()->with('integrationConnection')->first();
+        if (! $identity instanceof SocialIdentity || (int) $identity->organization_id !== (int) $account->enterprise->organization_id) {
+            throw new LogicException('The social destination identity is outside the publication organization.');
+        }
+
+        $authorizedNetworks = config("social_authorization.providers.{$identity->provider}.destination_networks", []);
+        if (! is_array($authorizedNetworks) || ! in_array($network, $authorizedNetworks, true)) {
+            throw new LogicException('The social identity grant does not authorize this destination network.');
+        }
+
+        $connection = $identity->integrationConnection;
+        if ($connection === null || ! $connection->isOperational()) {
+            throw new LogicException('The social destination requires an active authorization connection.');
+        }
+
+        if ((int) $connection->organization_id !== (int) $identity->organization_id
+            || ($connection->enterprise_id !== null && (int) $connection->enterprise_id !== (int) $account->enterprise_id)
+            || $connection->provider !== $identity->provider) {
+            throw new LogicException('The social authorization connection does not match the publication tenancy.');
+        }
+
+        return $connection;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function publicationMedia(ContentItem $content): array
+    {
+        $assets = $content->assets()
+            ->where('status', Asset::STATUS_ACTIVE)
+            ->with(['versions' => fn ($query) => $query->orderByDesc('version')])
+            ->get();
+        $media = [];
+
+        foreach ($assets as $asset) {
+            $version = $asset->versions->first();
+            if ($version === null || ! is_string($version->mime_type) || trim($version->mime_type) === '') {
+                throw new LogicException('An active content asset must have a version with a declared MIME type before publication.');
+            }
+
+            $media[] = [
+                'asset_id' => (int) $asset->id,
+                'mime_type' => $version->mime_type,
+                'size' => (int) $version->size,
+                'checksum' => $version->checksum,
+                'disk' => $version->disk,
+                'path' => $version->path,
+                'external_reference' => $version->external_reference,
+                'metadata' => $version->metadata ?? [],
+            ];
+        }
+
+        return $media;
+    }
+
+    /** @param list<array<string, mixed>> $media */
+    private function validateCapabilities(ContentItem $content, array $media, PublishingAdapterResolution $resolution): void
+    {
+        $capabilities = $resolution->capabilities;
+        if ($capabilities->maxTextLength !== null && mb_strlen((string) $content->body) > $capabilities->maxTextLength) {
+            throw new PublishingAdapterException('Content exceeds the destination text limit.', 'content_too_long');
+        }
+
+        foreach ($media as $item) {
+            $mimeType = $item['mime_type'] ?? null;
+            if (! is_string($mimeType) || ! $capabilities->supportsMediaType($mimeType)) {
+                throw new PublishingAdapterException('The adapter does not support one or more attached media types.', 'unsupported_media');
+            }
+        }
+
+        if (! $capabilities->supportsIdempotency) {
+            throw new PublishingAdapterException('The adapter does not provide a safe idempotency strategy.', 'idempotency_unsupported');
+        }
+    }
+
+    private function assertValidAdapterResult(PublishingAdapterResult $result): void
+    {
+        if (! in_array($result->status, ['submitted', 'accepted', 'pending', 'published', 'succeeded'], true)) {
+            throw new PublishingAdapterException('The adapter returned an unsupported outcome.', 'invalid_adapter_response', ambiguous: true);
+        }
+        if (trim($result->externalId) === '') {
+            throw new PublishingAdapterException('The adapter returned no external publication identifier.', 'invalid_adapter_response', ambiguous: true);
         }
     }
 
     private function authorizePublication(
         User $actor,
-        ContentItem $c,
+        ContentItem $content,
         ?ApprovalRequest $approval,
         ?AgentAssignment $assignment,
         ?AgentExecution $execution,
@@ -186,44 +406,78 @@ final class PublishingService
             'marketing',
             new MarketingExpert,
             'publication.publish',
-            $c->enterprise->organization,
-            $c->enterprise,
+            $content->enterprise->organization,
+            $content->enterprise,
             $actor,
             $approval,
             $execution,
-            ['content_item_id' => $c->id],
+            ['content_item_id' => $content->id],
         )) {
             throw new AuthorizationException('The Agent is not authorized to publish this content.');
         }
     }
 
-    private function record(Publication $p, ?PublishingJob $j, PublishingProviderResult $r): PublicationResult
-    {
+    private function record(
+        Publication $publication,
+        PublishingJob $job,
+        string $adapterKey,
+        string $network,
+        PublishingAdapterResult $result,
+    ): PublicationResult {
+        $destinationExternalId = $job->destination_external_id ?? $publication->target_external_id;
+
         return PublicationResult::query()->create([
-            'enterprise_id' => $p->enterprise_id,
-            'publication_id' => $p->id,
-            'publishing_job_id' => $j?->id,
-            'provider' => 'postiz',
-            'provider_status' => $r->status,
-            'external_id' => $r->externalId,
-            'external_url' => $r->externalUrl,
-            'correlation_id' => $p->correlation_id,
-            'payload' => $r->payload,
+            'enterprise_id' => $publication->enterprise_id,
+            'publication_id' => $publication->id,
+            'publishing_job_id' => $job->id,
+            'provider' => $adapterKey,
+            'network' => $network,
+            'destination_external_id' => $destinationExternalId,
+            'provider_status' => $result->status,
+            'external_id' => $result->externalId,
+            'external_url' => $result->externalUrl,
+            'correlation_id' => $publication->correlation_id,
+            'failure_code' => $result->status === 'failed' ? 'provider_rejected' : null,
+            'failure_reason' => $result->status === 'failed' ? 'The network confirmed publication failure.' : null,
+            'payload' => [
+                ...app(PublishingResultPayloadSanitizer::class)->sanitize($result->payload),
+                'network' => $network,
+                'adapter_key' => $adapterKey,
+                'destination_external_id' => $destinationExternalId,
+                'idempotency_key' => $publication->idempotency_key,
+            ],
             'recorded_at' => now(),
         ]);
     }
 
-    private function recordFailure(Publication $p, PublishingJob $j, PublishingProviderException $e): PublicationResult
-    {
+    private function recordFailure(
+        Publication $publication,
+        PublishingJob $job,
+        PublishingAdapterResolution $resolution,
+        PublishingAdapterException $exception,
+        string $providerStatus,
+    ): PublicationResult {
+        $destinationExternalId = $job->destination_external_id ?? $publication->target_external_id;
+
         return PublicationResult::query()->create([
-            'enterprise_id' => $p->enterprise_id,
-            'publication_id' => $p->id,
-            'publishing_job_id' => $j->id,
-            'provider' => 'postiz',
-            'provider_status' => 'failed',
-            'correlation_id' => $p->correlation_id,
-            'failure_code' => $e->failureCode,
-            'failure_reason' => $e->getMessage(),
+            'enterprise_id' => $publication->enterprise_id,
+            'publication_id' => $publication->id,
+            'publishing_job_id' => $job->id,
+            'provider' => $resolution->adapterKey,
+            'network' => $resolution->network,
+            'destination_external_id' => $destinationExternalId,
+            'provider_status' => $providerStatus,
+            'correlation_id' => $publication->correlation_id,
+            'failure_code' => $exception->failureCode,
+            'failure_reason' => $exception->getMessage(),
+            'payload' => [
+                'network' => $resolution->network,
+                'adapter_key' => $resolution->adapterKey,
+                'destination_external_id' => $destinationExternalId,
+                'idempotency_key' => $publication->idempotency_key,
+                'ambiguous' => $exception->ambiguous,
+                'retryable' => $exception->retryable && ! $exception->ambiguous,
+            ],
             'recorded_at' => now(),
         ]);
     }

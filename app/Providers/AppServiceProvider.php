@@ -13,7 +13,6 @@ use App\Contracts\KnowledgeRetrievalProvider;
 use App\Contracts\MediaGenerator;
 use App\Contracts\MediaRenderer;
 use App\Contracts\MediaStorage;
-use App\Contracts\PublishingProvider;
 use App\Events\AgentExecutionEvent;
 use App\Listeners\RecordAgentExecutionEvent;
 use App\Listeners\RecordEnterpriseActivityEvent;
@@ -47,6 +46,7 @@ use App\Services\HmacIntegrationWebhookVerifier;
 use App\Services\KnowledgeHybridRetrievalProvider;
 use App\Services\KnowledgeLexicalRetrievalProvider;
 use App\Services\KnowledgeSemanticRetrievalProvider;
+use App\Services\PublishingAdapterRegistry;
 use App\Services\R2MediaStorage;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Middleware\HandleCors;
@@ -78,11 +78,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MediaStorage::class, R2MediaStorage::class);
         $this->app->singleton(IntegrationWebhookVerifier::class, HmacIntegrationWebhookVerifier::class);
         $this->app->singleton(CommandWebhookAuthenticator::class, HmacCommandWebhookAuthenticator::class);
-        $this->app->singleton(PublishingProvider::class, function ($app): PublishingProvider {
-            return $app->environment('testing')
-                ? new FakePublishingProvider
-                : new PostizPublishingProvider;
-        });
+        if ($this->app->environment('testing')) {
+            $this->app->singleton(FakePublishingProvider::class);
+            config(['publishing.adapters.linkedin' => [
+                'key' => 'linkedin',
+                'class' => FakePublishingProvider::class,
+                'enabled' => true,
+                'native_scheduling' => true,
+            ]]);
+        }
+        $this->app->singleton(PublishingAdapterRegistry::class);
         $this->app->singleton(CredentialResolver::class, function ($app): CredentialResolver {
             return new ProviderCredentialResolver([
                 'canva' => $app->make(CanvaCredentialResolver::class),
