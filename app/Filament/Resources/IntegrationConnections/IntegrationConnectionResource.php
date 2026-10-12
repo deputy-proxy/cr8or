@@ -7,6 +7,7 @@ use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationConnections\Pages\CreateIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\EditIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\ListIntegrationConnections;
+use App\Models\Enterprise;
 use App\Models\IntegrationConnection;
 use App\Services\IntegrationRegistry;
 use BackedEnum;
@@ -45,8 +46,14 @@ class IntegrationConnectionResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('organization_id')->relationship('organization', 'name')->searchable()->preload()->required(),
-            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('organization_id')->relationship('organization', 'name', modifyQueryUsing: fn (EloquentBuilder $query) => $query->whereIn('id', static::authorizedOrganizationIds()))->searchable()->preload()->required()->live(),
+            Select::make('enterprise_id')->options(fn (Get $get): array => Enterprise::query()
+                ->whereIn('organization_id', static::authorizedOrganizationIds())
+                ->when($get('organization_id') !== null, fn (EloquentBuilder $query) => $query->where('organization_id', (int) $get('organization_id')), fn (EloquentBuilder $query) => $query->whereRaw('1 = 0'))
+                ->orderBy('name')
+                ->pluck('name', 'id')
+                ->all())
+                ->searchable()->preload()->nullable()->live(),
             Select::make('provider')
                 ->options(fn (): array => collect(app(IntegrationRegistry::class)->providers())
                     ->mapWithKeys(fn ($provider): array => [$provider->key => $provider->name])
@@ -72,7 +79,9 @@ class IntegrationConnectionResource extends Resource
                 IntegrationConnection::STATUS_DISABLED => 'Disabled',
                 IntegrationConnection::STATUS_DEGRADED => 'Degraded',
                 IntegrationConnection::STATUS_REVOKED => 'Revoked',
-            ])->required(),
+                IntegrationConnection::STATUS_EXPIRED => 'Expired',
+                IntegrationConnection::STATUS_RECONNECT_REQUIRED => 'Reconnect required',
+            ])->required()->disabled(),
         ]);
     }
 
