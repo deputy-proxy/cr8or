@@ -19,7 +19,7 @@ use App\Models\PublicationResult;
 use App\Models\SocialAccount;
 use App\Models\SocialIdentity;
 use App\Models\User;
-use App\Providers\FakePublishingProvider;
+use App\Providers\FakePublishingAdapter;
 use App\Services\ApprovalRequestService;
 use App\Services\McpCapabilityAuthorizer;
 use App\Services\PublishingService;
@@ -153,8 +153,8 @@ it('reconciles a submitted publication and preserves result history', function (
 
 it('records provider timeouts explicitly', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
-    $provider = app(FakePublishingProvider::class);
-    expect($provider)->toBeInstanceOf(FakePublishingProvider::class);
+    $provider = app(FakePublishingAdapter::class);
+    expect($provider)->toBeInstanceOf(FakePublishingAdapter::class);
     $provider->shouldTimeout = true;
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     expect(fn () => app(PublishingService::class)->submit($user, $p))->toThrow(PublishingAdapterException::class);
@@ -163,8 +163,8 @@ it('records provider timeouts explicitly', function () {
 
 it('retries a failed publication idempotently', function () {
     [$org, $user, $enterprise, $content, $channel, $account] = publishingContext();
-    $provider = app(FakePublishingProvider::class);
-    expect($provider)->toBeInstanceOf(FakePublishingProvider::class);
+    $provider = app(FakePublishingAdapter::class);
+    expect($provider)->toBeInstanceOf(FakePublishingAdapter::class);
     $provider->shouldRateLimit = true;
     $p = app(PublishingService::class)->schedule($user, $content, $account, now()->addHour());
     expect(fn () => app(PublishingService::class)->submit($user, $p))->toThrow(PublishingAdapterException::class);
@@ -278,7 +278,7 @@ it('rejects a native destination whose authorization connection is disabled befo
 
 it('blocks retries after an ambiguous timeout until reconciliation', function () {
     [, $user, , $content, , $account] = publishingContext();
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldTimeout = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 
@@ -294,7 +294,7 @@ it('blocks retries after an ambiguous timeout until reconciliation', function ()
 
 it('reconciles remote acceptance after a lost response without resubmitting', function () {
     [, $user, , $content, , $account] = publishingContext();
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldTimeout = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 
@@ -320,7 +320,7 @@ it('reconciles remote acceptance after a lost response without resubmitting', fu
 
 it('does not let delayed failure results overwrite a terminal success', function () {
     [, $user, , $content, , $account] = publishingContext();
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldTimeout = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 
@@ -341,7 +341,7 @@ it('does not let delayed failure results overwrite a terminal success', function
 
 it('allows a rate-limited submission to retry with the same idempotency key', function () {
     [, $user, , $content, , $account] = publishingContext();
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldRateLimit = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 
@@ -427,7 +427,7 @@ it('rejects unsupported media before creating a publication', function () {
 
 it('does not retry a definitive non-retryable rejection', function () {
     [, $user, , $content, , $account] = publishingContext();
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldFail = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 
@@ -446,11 +446,11 @@ it('requires social reauthorization when an adapter reports expired credentials'
     [, $user, , $content, , $account, , $connection] = nativePublishingContext('linkedin');
     config(['publishing.adapters.linkedin' => [
         'key' => 'linkedin',
-        'class' => FakePublishingProvider::class,
+        'class' => FakePublishingAdapter::class,
         'enabled' => true,
         'native_scheduling' => true,
     ]]);
-    $adapter = app(FakePublishingProvider::class);
+    $adapter = app(FakePublishingAdapter::class);
     $adapter->shouldRequireAuthentication = true;
     $publication = app(PublishingService::class)->schedule($user, $content, $account, now()->subMinute());
 

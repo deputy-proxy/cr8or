@@ -26,7 +26,7 @@ function integrationResultContext(string $provider = 'canva'): array
         'credential_reference' => 'default',
         'status' => IntegrationConnection::STATUS_ACTIVE,
     ]);
-    $operation = $provider === 'postiz' ? 'publication.publish' : 'design.create';
+    $operation = 'design.create';
     $job = IntegrationJob::query()->create([
         'integration_connection_id' => $connection->id,
         'organization_id' => $organization->id,

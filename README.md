@@ -443,7 +443,7 @@ A provider performs specialized execution outside CR8OR.
 Examples include:
 
 - Canva;
-- Postiz;
+- CR8OR’s destination-aware social publishing adapter contract;
 - Cloudflare R2;
 - CR8OR Media;
 - GitHub;
@@ -1063,7 +1063,7 @@ External integrations are specialized execution boundaries.
 Examples include:
 
 - Canva for creative work;
-- Postiz for publishing;
+- CR8OR’s destination-aware publishing adapter registry for social networks;
 - Cloudflare R2 for storage;
 - CR8OR Media for media processing;
 - GitHub for repository operations;

@@ -29,7 +29,7 @@ it('classifies platform events without replacing authoritative state', function 
         organizationId: $organization->id,
         enterpriseId: $enterprise->id,
         integration: 'publishing',
-        provider: 'postiz',
+        provider: 'linkedin',
         direction: IntegrationEvent::DIRECTION_OUTBOUND,
         correlationId: 'corr-2',
         causationId: $domain->eventId(),
@@ -40,7 +40,7 @@ it('classifies platform events without replacing authoritative state', function 
 
     $webhook = new IntegrationWebhook(
         integration: 'publishing',
-        provider: 'postiz',
+        provider: 'linkedin',
         eventType: 'publication.completed',
         externalId: 'job-1',
         correlationId: 'corr-2',

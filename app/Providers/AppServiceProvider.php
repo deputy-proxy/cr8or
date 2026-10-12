@@ -79,10 +79,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(IntegrationWebhookVerifier::class, HmacIntegrationWebhookVerifier::class);
         $this->app->singleton(CommandWebhookAuthenticator::class, HmacCommandWebhookAuthenticator::class);
         if ($this->app->environment('testing')) {
-            $this->app->singleton(FakePublishingProvider::class);
+            $this->app->singleton(FakePublishingAdapter::class);
             config(['publishing.adapters.linkedin' => [
                 'key' => 'linkedin',
-                'class' => FakePublishingProvider::class,
+                'class' => FakePublishingAdapter::class,
                 'enabled' => true,
                 'native_scheduling' => true,
             ]]);

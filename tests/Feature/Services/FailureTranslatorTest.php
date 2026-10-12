@@ -7,7 +7,7 @@ use App\AI\Exceptions\ModelProviderFailureType;
 use App\Exceptions\CanvaClientException;
 use App\Exceptions\IntegrationProviderException;
 use App\Exceptions\MediaStorageException;
-use App\Exceptions\PublishingProviderException;
+use App\Exceptions\PublishingAdapterException;
 use App\Services\DiagnosticSanitizer;
 use App\Services\FailureTranslator;
 use GuzzleHttp\Psr7\Response as PsrResponse;
@@ -39,7 +39,7 @@ it('translates expected exception families into canonical failures', function ()
         'provider timeout' => [new ModelProviderException(ModelProviderFailureType::Timeout, 'fake', 'provider timeout'), ExecutionErrorType::Provider, FailureCode::PROVIDER_TIMEOUT, true],
         'provider configuration' => [new ModelProviderException(ModelProviderFailureType::Configuration, 'fake', 'provider configuration'), ExecutionErrorType::Provider, FailureCode::PROVIDER_CONFIGURATION, false],
         'canva timeout' => [new CanvaClientException('timeout', 'timeout', true), ExecutionErrorType::External, FailureCode::EXTERNAL_TIMEOUT, true],
-        'publishing rejection' => [new PublishingProviderException('rejected', 'provider_rejected', false), ExecutionErrorType::External, FailureCode::EXTERNAL_REJECTED, false],
+        'publishing rejection' => [new PublishingAdapterException('rejected', 'provider_rejected', false), ExecutionErrorType::External, FailureCode::EXTERNAL_REJECTED, false],
         'serialization' => [new JsonException('secret json context'), ExecutionErrorType::Serialization, FailureCode::SERIALIZATION_FAILED, false],
         'invalid argument' => [new InvalidArgumentException('private implementation detail'), ExecutionErrorType::Validation, FailureCode::VALIDATION_FAILED, false],
         'business rule' => [new LogicException('private business rule'), ExecutionErrorType::BusinessRule, FailureCode::BUSINESS_RULE_REJECTED, false],

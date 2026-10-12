@@ -169,7 +169,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Content lifecycle transitions are enforced server-side. Content moves through draft → in-review → approved → publication-ready, with archival as a terminal path. Publication readiness requires an explicit matching approval and cannot be set by a raw status update. Approved/publication-ready content cannot be silently rewritten. AI-generated content enters as derived draft state until accepted through the normal review/approval workflow. Agent execution is constrained by organization, enterprise, assignment, capability and approval context.
 
-**Verified Phase 5 implementation:** Content lifecycle/application services, AI-assisted generation/revision through the existing AgentExecutionService and ModelProvider boundary, AgentExecution/AgentDecision provenance, governed MCP content capabilities, server-side publication-readiness approval, and the CR8OR-owned publishing lifecycle are implemented. Postiz and other external services remain execution boundaries.
+**Verified Phase 5 implementation:** Content lifecycle/application services, AI-assisted generation/revision through the existing AgentExecutionService and ModelProvider boundary, AgentExecution/AgentDecision provenance, governed MCP content capabilities, server-side publication-readiness approval, and the CR8OR-owned publishing lifecycle are implemented. Network-specific adapters remain bounded external execution boundaries, while CR8OR owns destination resolution and publication state.
 
 ## Media
 
@@ -197,7 +197,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Publication results are correlated to their originating publication; publication history is immutable; publication readiness and required approval are enforced before execution.
 
-**Verified Phase 5.4 implementation:** CR8OR-owned scheduling/submission/reconciliation, Postiz provider isolation, idempotency, normalized failures and historical publication results are implemented. Postiz remains an execution boundary.
+**Verified Phase 5.4 implementation:** CR8OR-owned scheduling/submission/reconciliation, destination-aware adapter resolution, idempotency, normalized failures and historical publication results are implemented. Individual network adapters are configured independently; historical provider attribution is preserved.
 
 ## Finance
 

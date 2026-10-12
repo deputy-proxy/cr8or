@@ -50,18 +50,11 @@ return [
         ],
     ],
 
-    'postiz' => [
-        'url' => env('POSTIZ_API_URL', 'https://api.postiz.com/public/v1'),
-        'timeout' => (int) env('POSTIZ_TIMEOUT', 15),
-        'key' => env('POSTIZ_API_KEY'),
-    ],
-
     'integrations' => [
         'webhooks' => [
             'default_secret' => env('CR8OR_WEBHOOK_SECRET'),
             'secrets' => [
                 'canva' => env('CANVA_WEBHOOK_SECRET'),
-                'postiz' => env('POSTIZ_WEBHOOK_SECRET'),
                 'cr8or-media' => env('CR8OR_MEDIA_WEBHOOK_SECRET'),
                 'github' => env('GITHUB_WEBHOOK_SECRET'),
             ],

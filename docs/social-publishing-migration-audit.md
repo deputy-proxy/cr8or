@@ -5,6 +5,8 @@
 **Issue:** [#519 Audit social publishing dependencies and define migration boundary](https://github.com/deputy-proxy/cr8or/issues/519)
 **Parent initiative:** [#518 Native multi-network social publishing architecture](https://github.com/deputy-proxy/cr8or/issues/518)
 
+> **Historical baseline snapshot:** This inventory describes the repository at `6cf8dcb7` before issues #520–#523. Issue #522 introduced destination-aware adapter resolution, and issue #523 removed Postiz from active runtime code, configuration, tests and current-state documentation. The historical inventory below is retained to explain the migration decision; it is not a current runtime inventory. Production data, deployed environment variables and external provider state were not accessible to this source audit and still require operational verification before retiring any deployed credentials or data.
+
 This document records the tracked-repository audit for the Postiz removal and native social-publishing migration. It does not claim access to production databases, deployment dashboards, external provider accounts, or untracked environment variables. Those require separate operational verification before a destructive migration or credential retirement.
 
 ## Executive findings
@@ -87,7 +89,7 @@ The listed columns are generic and are not evidence that Postiz data exists in a
 2. **#520:** define canonical network identity, destination, connection, ownership and uniqueness invariants. Reconcile `Channel`, `SocialAccount` and `IntegrationConnection`; do not duplicate the integration boundary.
 3. **#521:** implement authorized OAuth state/callback, account discovery, credential references, refresh, revocation, disconnect and reauthorization. Keep token material out of ordinary records, logs, MCP responses and Agent context.
 4. **#522:** replace the singleton provider path with destination-aware adapter resolution; define content validation, provider identity, result correlation, idempotency and ambiguous-outcome reconciliation.
-5. **#523:** remove Postiz runtime/config/docs/tests/deployment references only after the prior contracts and publishing path have migrated; inventory deployed secrets and existing provider data first.
+5. **#523 (completed in source):** remove Postiz runtime/config/current docs/tests/deployment references after the destination-aware publishing path is in place. Operational verification of deployed secrets and historical provider data remains outstanding.
 6. **#524:** establish the shared adapter contract and reusable conformance suite before network adapters proliferate.
 7. **#525–#532:** implement LinkedIn, Facebook, Instagram, TikTok, Bluesky, YouTube, Threads and X adapters against the shared contract and current official API documentation.
 8. **#533:** expose connection and publishing actions through existing authorized Capability → Operation entry points, MCP, Filament and persisted published WorkflowVersions.
@@ -117,6 +119,18 @@ php artisan test tests/Feature/PublishingTest.php tests/Feature/IntegrationBound
 Result on the audit branch, before this document was added: **33 tests passed, 118 assertions**.
 
 The persistent sandbox initially had no `vendor/`, `node_modules/`, `.env`, or SQLite database, so dependencies and a local test database were prepared from the committed lockfiles and repository setup. No tracked dependency files were changed. `npm ci` reported 3 audit findings (1 high, 2 critical); this audit did not run `npm audit fix` or alter dependency versions because that is outside issue scope.
+
+## Post-removal source verification (issue #523)
+
+The post-change search covered application code, configuration, routes, tests, factories, README and `.env.example` using `rg -in postiz app config routes tests database README.md .env.example`.
+
+The remaining matches are intentional and classified as follows:
+
+- `tests/Feature/IntegrationBoundaryTest.php`: negative regression assertions that active registration, runtime configuration and the removed provider classes stay absent.
+- `tests/Feature/PublishingTest.php`: a historical `PublicationResult` fixture proving provider attribution remains readable and is not rewritten.
+- This migration audit and `docs/phase-13-audit.md`: historical baseline descriptions, explicitly marked as historical rather than current runtime inventory.
+
+No active application provider, service binding, publishing registry, `services.php` configuration, webhook-secret configuration, current README/integration/domain documentation, tracked environment template, or tracked deployment workflow references Postiz. The source search does not inspect deployed environment variables, remote secrets, live databases or provider accounts.
 
 ## Unresolved operational checks
 

@@ -27,7 +27,6 @@ final class IntegrationRegistry
     {
         return [
             'canva' => new ProviderDefinition('canva', 'creative', 'Canva', ['design.create']),
-            'postiz' => new ProviderDefinition('postiz', 'publishing', 'Postiz', ['publication.publish']),
             'cloudflare-r2' => new ProviderDefinition('cloudflare-r2', 'storage', 'Cloudflare R2', ['file.store']),
             'cr8or-media' => new ProviderDefinition('cr8or-media', 'media', 'CR8OR Media', ['media.generate', 'media.render']),
             'github' => new ProviderDefinition('github', 'source_control', 'GitHub', ['repository.execute']),
