@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'channel_id', 'provider', 'name', 'external_id', 'status'])]
+#[Fillable(['enterprise_id', 'channel_id', 'social_identity_id', 'provider', 'name', 'external_id', 'status'])]
 class SocialAccount extends Model
 {
     /** @use HasFactory<\Database\Factories\SocialAccountFactory> */
@@ -84,6 +84,14 @@ class SocialAccount extends Model
     protected static function booted(): void
     {
         static::saving(function (self $account): void {
+            if ($account->exists && ($account->isDirty('provider') || $account->isDirty('external_id'))) {
+                throw new LogicException('A destination network and external identifier are immutable; register a new destination when they change.');
+            }
+
+            if ($account->exists && $account->getOriginal('social_identity_id') !== null && $account->isDirty('social_identity_id')) {
+                throw new LogicException('A linked social destination cannot be reassigned to another authenticated identity.');
+            }
+
             if (! in_array($account->status, [self::STATUS_ACTIVE, self::STATUS_DISABLED], true)) {
                 throw new LogicException("Invalid social account status [{$account->status}].");
             }
@@ -115,16 +123,45 @@ class SocialAccount extends Model
                 throw new LogicException('Social account must use a channel from its enterprise.');
             }
 
-            if (! $account->exists || $account->isDirty('provider') || $account->isDirty('external_id')) {
+            $enterprise = Enterprise::query()->find($channel->enterprise_id);
+            if ($enterprise === null) {
+                throw new LogicException('Social account requires an enterprise-owned channel.');
+            }
+
+            if ($account->social_identity_id !== null) {
+                $identity = SocialIdentity::query()->find($account->social_identity_id);
+                if ($identity === null
+                    || (int) $identity->organization_id !== (int) $enterprise->organization_id
+                    || $identity->provider !== $account->provider) {
+                    throw new LogicException('Social account identity must use the same network and organization as its enterprise.');
+                }
+
+                $connection = $identity->integrationConnection;
+                if ($connection !== null && $connection->enterprise_id !== null && (int) $connection->enterprise_id !== (int) $channel->enterprise_id) {
+                    throw new LogicException('An enterprise-scoped social connection cannot authorize a destination in another enterprise.');
+                }
+            }
+
+            if (! $account->exists || $account->isDirty('provider') || $account->isDirty('external_id') || $account->isDirty('social_identity_id')) {
                 $duplicate = static::query()
-                    ->where('provider', $account->provider)
-                    ->where('external_id', $account->external_id)
+                    ->where(function ($query) use ($account, $channel): void {
+                        if ($account->social_identity_id !== null) {
+                            $query->where('social_identity_id', $account->social_identity_id)
+                                ->where('external_id', $account->external_id);
+
+                            return;
+                        }
+
+                        $query->where('enterprise_id', $channel->enterprise_id)
+                            ->where('provider', $account->provider)
+                            ->where('external_id', $account->external_id);
+                    })
                     ->when($account->exists, fn ($query) => $query->where($account->getKeyName(), '!=', $account->getKey()))
                     ->exists();
 
                 if ($duplicate) {
                     throw ValidationException::withMessages([
-                        'external_id' => 'This provider identifier is already connected for this provider.',
+                        'external_id' => 'This destination identifier is already registered in the applicable enterprise or identity scope.',
                     ]);
                 }
             }
@@ -137,6 +174,12 @@ class SocialAccount extends Model
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<SocialIdentity, $this> */
+    public function socialIdentity(): BelongsTo
+    {
+        return $this->belongsTo(SocialIdentity::class);
     }
 
     /** @return BelongsTo<Channel, $this> */
