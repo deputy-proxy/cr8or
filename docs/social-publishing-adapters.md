@@ -23,6 +23,18 @@ The registry maps the network key to exactly one configured adapter. It fails cl
 
 `PublishingAdapterException` exposes a canonical failure code plus independent `retryable` and `ambiguous` flags. An ambiguous timeout means the remote side may have accepted the request: CR8OR records an unknown outcome and blocks another submission until reconciliation. A retryable rate-limit failure may be retried with the same idempotency key. Authentication failures move the affected connection into the existing reconnect-required lifecycle.
 
+## LinkedIn adapter (issue #525)
+
+`App\Services\Publishing\LinkedInPublishingAdapter` implements immediate text-only organic posts through `POST https://api.linkedin.com/rest/posts`. It resolves the access token through the existing `CredentialResolver` using the persisted, active LinkedIn `IntegrationConnection`; the request's opaque credential reference must match the stored connection. Raw tokens are never copied into request/result metadata or logs.
+
+The adapter accepts only canonical `urn:li:person:{id}` and `urn:li:organization:{id}` destination identifiers. It rejects ambiguous plain IDs and all media before making a network request. It currently declares a 3,000-character commentary limit, immediate publishing only, and no media, native scheduling, editing, deletion or analytics support. Known-post status lookup is supported through the Posts API GET endpoint with `viewContext=AUTHOR`; the returned post ID and author URN must match the requested publication and destination. A 404 returns unknown status rather than a fabricated failure or success. The response `x-restli-id` is persisted as the external publication ID; no public URL is fabricated when LinkedIn does not return one.
+
+Create and status-lookup requests use the Posts API headers `Linkedin-Version` and `X-Restli-Protocol-Version: 2.0.0`. The remote post URN is URL-encoded when used as a path segment. Configure `SOCIAL_LINKEDIN_API_VERSION`; the repository default is `202609`, the latest active version verified for this implementation. Recheck the [LinkedIn version migration table](https://learn.microsoft.com/en-us/linkedin/marketing/integrations/migrations) before upgrading the version. The shared authorization configuration discovers the member profile as a `urn:li:person:` destination and queries organization ACLs for that authenticated member before offering organization destinations. It enriches organization destinations through LinkedIn’s Organization Lookup API when the app has access; if LinkedIn denies or cannot find optional metadata, the stable organization URN remains the fallback label rather than blocking an otherwise valid authorization flow.
+
+The adapter remains **disabled** in `config/publishing.php`. Do not enable it until the deployment's LinkedIn app has the required products/scopes and a dedicated test member can publish successfully. `w_member_social` is required for member posting; `w_organization_social` and an eligible organization role are required for organization posting. LinkedIn's API does not expose a remote idempotency-key contract for post creation. CR8OR therefore relies on its persisted publication/job identity and its fail-closed rule that an ambiguous timeout or server outcome must be reconciled before any resubmission. This prevents blind retries but does not provide remote deduplication if a caller bypasses the CR8OR publishing lifecycle.
+
+Official references: [Posts API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api), [Organization Access Control](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/organizations/organization-access-control-by-role), [Organization Lookup API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/organizations/organization-lookup-api), and [OAuth authorization code flow](https://learn.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow).
+
 ## Capability declarations
 
 `PublishingCapabilitySupport` has three values:
@@ -51,7 +63,7 @@ This issue introduces the contract and reusable fake conformance harness, not re
 
 | Network key | Adapter implementation | Production state | Official API capability verification |
 |---|---|---|---|
-| `linkedin` | Not implemented | Disabled | Pending adapter-specific research |
+| `linkedin` | `LinkedInPublishingAdapter` (text-only) | Disabled | Posts API text-only creation and known-post status lookup verified; media, scheduling, editing, deletion and analytics are not implemented |
 | `facebook` | Not implemented | Disabled | Pending adapter-specific research |
 | `instagram` | Not implemented | Disabled | Pending adapter-specific research |
 | `tiktok` | Not implemented | Disabled | Pending adapter-specific research |
