@@ -448,6 +448,28 @@ it('enforces stage dependencies and input contracts before capability execution'
     expect(AgentExecution::query()->count())->toBe(0);
 });
 
+it('fails the execution when a completed capability result violates the published output contract', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = workflowActor($enterprise);
+    $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
+    $stage = governedStage($workflow, 'research', 1);
+    $stage->update(['output_contract' => ['required' => ['missing_output']]]);
+    $version = publishedWorkflow($workflow, $actor);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        ['request' => 'Validate the output contract.'],
+        'output-contract-invalid',
+        'output-contract-invalid-correlation',
+        true,
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_FAILED)
+        ->and($execution->failure_reason)->toContain('missing_output')
+        ->and($execution->outputs)->not->toHaveKey('research');
+});
+
 it('is idempotent per published WorkflowVersion', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = workflowActor($enterprise);

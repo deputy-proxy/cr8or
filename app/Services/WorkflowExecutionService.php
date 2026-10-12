@@ -23,6 +23,7 @@ final class WorkflowExecutionService
     public function __construct(
         private readonly CapabilityInvocationService $capabilities,
         private readonly WorkflowStageInputResolver $inputResolver,
+        private readonly WorkflowStageOutputValidator $outputValidator,
     ) {}
 
     /** @param array<string, mixed> $input */
@@ -116,7 +117,8 @@ final class WorkflowExecutionService
     /** @param array<string, mixed> $input */
     public function continue(User $actor, WorkflowExecution $execution, ?string $continuationToken = null, bool $returnFailed = false, array $input = []): WorkflowExecution
     {
-        $claimed = DB::transaction(function () use ($actor, $execution, $continuationToken, $input): WorkflowExecution {
+        $repeatableStagesToReenter = [];
+        $claimed = DB::transaction(function () use ($actor, $execution, $continuationToken, $input, &$repeatableStagesToReenter): WorkflowExecution {
             /** @var WorkflowExecution $locked */
             $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
@@ -174,6 +176,21 @@ final class WorkflowExecutionService
             }
 
             if ($locked->status === WorkflowExecution::STATUS_FAILED) {
+                $outputsValue = $locked->getAttribute('outputs');
+                $outputs = is_array($outputsValue) ? $outputsValue : [];
+                $definitionsValue = $locked->workflowVersion->getAttribute('stage_definitions');
+                $definitions = is_array($definitionsValue) ? $definitionsValue : [];
+
+                foreach ($definitions as $definition) {
+                    if (! is_array($definition) || ! is_string($definition['key'] ?? null)) {
+                        continue;
+                    }
+
+                    if (($definition['repeatable'] ?? false) && array_key_exists($definition['key'], $outputs)) {
+                        $repeatableStagesToReenter[] = $definition['key'];
+                    }
+                }
+
                 $locked->retry();
             } else {
                 $locked->start();
@@ -191,14 +208,15 @@ final class WorkflowExecutionService
             return $claimed;
         }
 
-        return $this->runStages($actor, $claimed, $returnFailed);
+        return $this->runStages($actor, $claimed, $returnFailed, $repeatableStagesToReenter);
     }
 
-    private function runStages(User $actor, WorkflowExecution $execution, bool $returnFailed = false): WorkflowExecution
+    /** @param list<string> $repeatableStagesToReenter */
+    private function runStages(User $actor, WorkflowExecution $execution, bool $returnFailed = false, array $repeatableStagesToReenter = []): WorkflowExecution
     {
         try {
             while (true) {
-                $stage = DB::transaction(function () use ($execution): ?WorkflowStage {
+                $stage = DB::transaction(function () use ($execution, $repeatableStagesToReenter): ?WorkflowStage {
                     /** @var WorkflowExecution $locked */
                     $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
@@ -206,12 +224,21 @@ final class WorkflowExecutionService
                         return null;
                     }
 
-                    $stage = $this->nextStage($locked);
+                    $stage = $this->nextStage($locked, $repeatableStagesToReenter);
 
                     if ($stage === null) {
                         $locked->complete()->save();
 
                         return null;
+                    }
+
+                    if (in_array($stage->key, $repeatableStagesToReenter, true)) {
+                        $contextValue = $locked->getAttribute('context');
+                        $context = is_array($contextValue) ? $contextValue : [];
+                        $attempts = is_array($context['stage_attempts'] ?? null) ? $context['stage_attempts'] : [];
+                        $attempts[$stage->key] = max(1, (int) ($attempts[$stage->key] ?? 1)) + 1;
+                        $context['stage_attempts'] = $attempts;
+                        $locked->setAttribute('context', $context);
                     }
 
                     $locked->current_stage_key = $stage->key;
@@ -225,11 +252,21 @@ final class WorkflowExecutionService
                     return $execution->refresh();
                 }
 
+                $repeatableStagesToReenter = array_values(array_diff($repeatableStagesToReenter, [$stage->key]));
+
                 // The capability is deliberately invoked outside any transaction and
                 // therefore outside the WorkflowExecution row lock.
                 $result = $this->executeStage($actor, $execution->refresh(), $stage);
+                $stageOutput = null;
 
-                $state = DB::transaction(function () use ($execution, $stage, $result): array {
+                if (! in_array($result['status'], ['waiting', 'waiting_for_input'], true)) {
+                    $stageOutput = is_array($result['result'] ?? null)
+                        ? $result['result']
+                        : ['value' => $result['result'] ?? null];
+                    $this->outputValidator->validate($stage, $stageOutput);
+                }
+
+                $state = DB::transaction(function () use ($execution, $stage, $result, $stageOutput): array {
                     /** @var WorkflowExecution $locked */
                     $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
 
@@ -257,7 +294,7 @@ final class WorkflowExecutionService
                         return ['waiting' => true];
                     }
 
-                    $stageOutput = is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
+                    $stageOutput ??= is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
                     $stageOutput['termination'] = 'completed';
 
                     if (! $stage->completionSatisfied($stageOutput, [$result])) {
@@ -357,7 +394,7 @@ final class WorkflowExecutionService
             ],
             inputPayload: $inputPayload,
             correlationId: $execution->correlation_id,
-            idempotencyKey: $execution->idempotency_key.':'.$stage->key,
+            idempotencyKey: $this->stageIdempotencyKey($execution, $stage),
             expertSlug: $expertSlug,
             approval: $approval,
             workflowExecution: $execution,
@@ -476,7 +513,19 @@ final class WorkflowExecutionService
         }
     }
 
-    private function nextStage(WorkflowExecution $execution): ?WorkflowStage
+    private function stageIdempotencyKey(WorkflowExecution $execution, WorkflowStage $stage): string
+    {
+        $contextValue = $execution->getAttribute('context');
+        $context = is_array($contextValue) ? $contextValue : [];
+        $attempts = is_array($context['stage_attempts'] ?? null) ? $context['stage_attempts'] : [];
+        $attempt = max(1, (int) ($attempts[$stage->key] ?? 1));
+        $key = $execution->idempotency_key.':'.$stage->key;
+
+        return $attempt > 1 ? $key.':repeat-'.$attempt : $key;
+    }
+
+    /** @param list<string> $repeatableStagesToReenter */
+    private function nextStage(WorkflowExecution $execution, array $repeatableStagesToReenter = []): ?WorkflowStage
     {
         $definitionsRaw = $execution->workflowVersion?->getRawOriginal('stage_definitions');
         if (is_array($definitionsRaw)) {
@@ -499,7 +548,9 @@ final class WorkflowExecutionService
 
             $key = $definition['key'];
 
-            if (in_array($key, $completed, true) && ! ($definition['repeatable'] ?? false)) {
+            if (in_array($key, $completed, true)
+                && (! ($definition['repeatable'] ?? false) || ! in_array($key, $repeatableStagesToReenter, true))
+            ) {
                 continue;
             }
 

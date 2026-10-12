@@ -47,6 +47,7 @@ function continuationWorkflow(Enterprise $enterprise, User $actor, array $stageD
             'capability_slugs' => ['business.analysis'],
             'input_contract' => $stage['input_contract'] ?? [],
             'output_contract' => ['required' => ['analysis']],
+            'repeatable' => (bool) ($stage['repeatable'] ?? false),
         ],
         $stageDefinitions,
     ));
@@ -83,6 +84,117 @@ it('propagates stage outputs through explicit input mappings', function (): void
     expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and($execution->outputs)->toHaveKeys(['research', 'strategy'])
         ->and($execution->context['stages'])->toHaveKey('research');
+});
+
+it('does not automatically rerun a repeatable stage during a normal execution', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = continuationActor($enterprise);
+    $workflow = continuationWorkflow($enterprise, $actor, [[
+        'key' => 'research',
+        'name' => 'Research',
+        'repeatable' => true,
+        'input_contract' => ['required' => ['request']],
+    ]]);
+
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $workflow,
+        ['request' => 'Run this stage once.'],
+        'repeatable-normal-execution',
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($execution->outputs)->toHaveKey('research')
+        ->and($execution->context['stage_attempts'] ?? [])->toBe([]);
+});
+
+it('re-enters only explicitly repeatable completed stages when retrying a failed workflow', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = continuationActor($enterprise);
+    $workflow = continuationWorkflow($enterprise, $actor, [
+        [
+            'key' => 'research',
+            'name' => 'Research',
+            'sequence' => 1,
+            'repeatable' => true,
+            'input_contract' => ['required' => ['request']],
+        ],
+        [
+            'key' => 'strategy',
+            'name' => 'Strategy',
+            'sequence' => 2,
+            'dependencies' => ['research'],
+            'input_contract' => ['required' => ['request']],
+        ],
+    ]);
+
+    $failed = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $workflow,
+        ['stages' => ['research' => ['request' => 'Initial research.']]],
+        'repeatable-retry-execution',
+        null,
+        true,
+    );
+
+    expect($failed->status)->toBe(WorkflowExecution::STATUS_FAILED)
+        ->and($failed->outputs)->toHaveKey('research')
+        ->and($failed->outputs)->not->toHaveKey('strategy');
+
+    $completed = app(WorkflowExecutionService::class)->continue(
+        $actor,
+        $failed,
+        $failed->continuation_token,
+        false,
+        ['stages' => ['strategy' => ['request' => 'Strategy input supplied on retry.']]],
+    );
+
+    expect($completed->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($completed->outputs)->toHaveKeys(['research', 'strategy'])
+        ->and($completed->context['stage_attempts']['research'])->toBe(2);
+});
+
+it('reuses completed non-repeatable stages when retrying a failed workflow', function (): void {
+    $enterprise = Enterprise::factory()->create();
+    $actor = continuationActor($enterprise);
+    $workflow = continuationWorkflow($enterprise, $actor, [
+        [
+            'key' => 'research',
+            'name' => 'Research',
+            'sequence' => 1,
+            'input_contract' => ['required' => ['request']],
+        ],
+        [
+            'key' => 'strategy',
+            'name' => 'Strategy',
+            'sequence' => 2,
+            'dependencies' => ['research'],
+            'input_contract' => ['required' => ['request']],
+        ],
+    ]);
+
+    $failed = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $workflow,
+        ['stages' => ['research' => ['request' => 'Initial research.']]],
+        'non-repeatable-retry-execution',
+        null,
+        true,
+    );
+    $researchOutput = $failed->outputs['research'];
+
+    $completed = app(WorkflowExecutionService::class)->continue(
+        $actor,
+        $failed,
+        $failed->continuation_token,
+        false,
+        ['stages' => ['strategy' => ['request' => 'Strategy input supplied on retry.']]],
+    );
+
+    expect($completed->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($completed->outputs['research'])->toBe($researchOutput)
+        ->and($completed->outputs)->toHaveKey('strategy')
+        ->and($completed->context['stage_attempts'] ?? [])->toBe([]);
 });
 
 it('rejects stale continuation tokens after the execution advances', function (): void {
