@@ -22,8 +22,8 @@ use App\Models\MarketingStrategy;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\Strategy;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\CapabilityInvocationService;
 use Illuminate\Support\Facades\File;
 use Throwable;
@@ -228,9 +228,9 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
     $work = capabilityE2E(
         $actor,
         $enterprise,
-        'work.item.create',
+        'work.task.create',
         [
-            'name' => 'E2E Capability Work Item',
+            'name' => 'E2E Capability Task',
             'description' => 'Work context for the Agent runtime.',
             'status' => 'planned',
         ],
@@ -244,7 +244,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
         [
             'target_context' => [
                 'strategy_id' => $strategy['id'],
-                'work_item_id' => $work['id'],
+                'task_id' => $work['id'],
             ],
         ],
         $report['capabilities'],
@@ -307,7 +307,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
     );
     foreach (['marketing.plan', 'marketing.strategy.create', 'marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.content.publication-ready', 'strategy.create', 'strategy.update'] as $capability) {
     }
-    foreach (['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'] as $capability) {
+    foreach (['strategy.create', 'strategy.update', 'work.task.create', 'work.task.update'] as $capability) {
     }
 
     $provider = new FakeModelProvider(function ($request): ModelResult {
@@ -553,7 +553,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
         'delegations' => AgentDelegation::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
         'strategies' => Strategy::query()->whereHas('objective', fn ($query) => $query->where('enterprise_id', $enterprise->getKey()))->get()->toArray(),
         'marketing_strategies' => MarketingStrategy::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
-        'work_items' => WorkItem::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
+        'tasks' => Task::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
         'content_items' => ContentItem::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
         'approvals' => ApprovalRequest::query()->where('enterprise_id', $enterprise->getKey())->get()->toArray(),
     ];

@@ -15,7 +15,7 @@ final class RuntimeContractTestExpert extends Expert
             responsibilities: ['request'],
             methodology: 'Return one governed Capability request.',
             requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
+            capabilities: ['work.task.create'],
         );
     }
 
@@ -24,9 +24,9 @@ final class RuntimeContractTestExpert extends Expert
         return [
             'answer' => 'Contract request.',
             'capability_requests' => [[
-                'capability' => 'work.item.create',
+                'capability' => 'work.task.create',
                 'target_context' => ['enterprise_id' => $context['enterprise']['enterprise']['id']],
-                'input_payload' => ['name' => 'Contract work item'],
+                'input_payload' => ['name' => 'Contract task'],
             ]],
         ];
     }

@@ -12,7 +12,6 @@ use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +24,6 @@ it('records a decision with explicit enterprise and strategic/work context', fun
     $initiative = Initiative::factory()->create(['plan_id' => $plan]);
     $project = Project::factory()->create(['enterprise_id' => $enterprise]);
     $task = Task::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
     $actor = User::factory()->create(['name' => 'Decision Actor']);
     $decidedAt = Carbon::parse('2026-09-22 18:30:00');
 
@@ -38,7 +36,6 @@ it('records a decision with explicit enterprise and strategic/work context', fun
         'initiative_id' => $initiative,
         'project_id' => $project,
         'task_id' => $task,
-        'work_item_id' => $workItem,
         'decided_at' => $decidedAt,
     ]);
 
@@ -51,7 +48,6 @@ it('records a decision with explicit enterprise and strategic/work context', fun
         ->and($decision->initiative->is($initiative))->toBeTrue()
         ->and($decision->project->is($project))->toBeTrue()
         ->and($decision->task->is($task))->toBeTrue()
-        ->and($decision->workItem->is($workItem))->toBeTrue()
         ->and($decision->actor->is($actor))->toBeTrue()
         ->and($decision->actor_name)->toBe('Decision Actor')
         ->and($decision->type)->toBe('strategic')
@@ -160,7 +156,7 @@ it('keeps decision schema distinct from existing decision records', function () 
     expect(Schema::getColumnListing('decisions'))->toBe([
         'id', 'enterprise_id', 'type', 'actor_id', 'actor_name',
         'objective_id', 'strategy_id', 'plan_id', 'initiative_id',
-        'project_id', 'task_id', 'work_item_id',
+        'project_id', 'task_id',
         'title', 'summary', 'rationale', 'decided_at', 'created_at', 'updated_at',
     ]);
 });

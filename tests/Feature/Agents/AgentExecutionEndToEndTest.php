@@ -101,7 +101,7 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
                 structured: [
                     'answer' => 'Create the item.',
                     'capability_requests' => [[
-                        'capability' => 'work.item.create',
+                        'capability' => 'work.task.create',
                         'expert_slug' => 'operations',
                         'target_context' => ['enterprise_id' => $enterprise->getKey()],
                         'input_payload' => ['name' => 'Agent Execution E2E item'],
@@ -130,7 +130,7 @@ it('runs assignment, Knowledge and Memory context, multi-step reasoning, governe
     });
 
     $result = agentExecutionE2EService($provider)->execute(new AgentExecutionRequest(
-        actor: $actor, assignment: $assignment, prompt: 'Create and verify the work item.',
+        actor: $actor, assignment: $assignment, prompt: 'Create and verify the task.',
         correlationId: 'e2e-agent-execution', options: ['max_steps' => 3],
     ));
 

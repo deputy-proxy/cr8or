@@ -31,7 +31,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | ApprovalRequests | ApprovalRequest | Approval Requests | Approval Request | Approval Requests | Agentic Flow | 140 | capability, agent_slug, organization_name, enterprise_name, actor_name, status, requested_at, expires_at, approve, reject |
 | AssetVersions | AssetVersion | Asset Versions | Asset Version | Asset Versions | Marketing | 100 | asset.name, version, disk, path, mime_type, size, checksum, external_reference |
 | Assets | Asset | Assets | Asset | Assets | Marketing | 90 | enterprise_id, content_item_id, name, type, status, enterprise.name, contentItem.title, name, type, status |
-| Assignments | Assignment | Assignments | Assignment | Assignments | Organization & Enterprise Scope | 50 | assignable.name, assignable_type, enterprise.name, user.name, agentAssignment.agentDescriptor.slug |
+| Assignments | Assignment | Assignments | Assignment | Assignments | Work Management | 60 | assignable.name, assignable_type, enterprise.name, user.name, agentAssignment.agentDescriptor.slug |
 | Audiences | Audience | Audiences | Audience | Audiences | Marketing | 40 | enterprise_id, name |
 | Budgets | Budget | Budgets | Budget | Budgets | Finance | 90 | enterprise_id, financial_period_id, financial_account_id, transaction_category_id, name, planned_amount, currency, description, enterprise_id, financial_period_id, financial_account_id, transaction_category_id, name, planned_amount, currency, description |
 | BusinessHealthResults | BusinessHealthResult | Business Health Results | Business Health Result | Business Health Results | Finance | 140 | enterprise_id, financial_report_id, health_status, metrics, source_snapshot, evaluated_at, enterprise_id, financial_report_id, health_status, evaluated_at |
@@ -42,12 +42,12 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | ContentItems | ContentItem | Content Items | Content Item | Content Items | Marketing | 70 | enterprise_id, campaign_id, content_series_id, channel_id, audience_id, title, body, title, enterprise.name, campaign.name, contentSeries.name, status, submit_for_review, approve |
 | ContentSeries | ContentSeries | Content Series | Content Series | Content Series | Marketing | 30 | campaign_id, name, description, status, name, campaign.name, status, transition, status |
 | Customers | Customer | Customers | Customer | Customers | Finance | 40 | enterprise_id, name |
-| Decisions | Decision | Decisions | Decision | Decisions | Enterprise Context | 150 | enterprise_id, type, actor_id, objective_id, strategy_id, plan_id, initiative_id, project_id, task_id, work_item_id, title, summary, rationale, decided_at, title, type, enterprise.name, actor_name, decided_at |
-| Dependencies | Dependency | Dependencies | Dependency | Dependencies | Work | 50 | predecessor.name, successor.name, type, project.name, enterprise.name |
+| Decisions | Decision | Decisions | Decision | Decisions | Work Management | 70 | enterprise_id, type, actor_id, objective_id, strategy_id, plan_id, initiative_id, project_id, task_id, title, summary, rationale, decided_at, title, type, enterprise.name, actor_name, decided_at |
+| Dependencies | Dependency | Dependencies | Dependency | Dependencies | Work Management | 50 | predecessor.name, successor.name, type, project.name, enterprise.name |
 | EnterpriseContexts | EnterpriseContext | Enterprise Contexts | Enterprise Context | Enterprise Contexts | Enterprise Context | 10 | enterprise_id, enterprise.name |
-| EnterpriseDecisions | EnterpriseDecision | Enterprise Decisions | Enterprise Decision | Enterprise Decisions | Enterprise Context | 160 | enterprise_id, title |
+| EnterpriseDecisions | EnterpriseDecision | Enterprise Decisions | Enterprise Decision | Enterprise Decisions | Work Management | 80 | enterprise_id, title |
 | Enterprises | Enterprise | Enterprises | Enterprise | Enterprises | Organization & Enterprise Scope | 40 | organization_id, name |
-| Executions | Execution | Executions | Execution | Executions | Workflow Flow | 60 | job.name, job.workflow.name, enterprise_name, project_name, task_name, work_item_name, status, started_at, completed_at, failure_reason |
+| Executions | Execution | Executions | Execution | Executions | Workflow Flow | 60 | job.name, job.workflow.name, enterprise_name, project_name, task_name, status, started_at, completed_at, failure_reason |
 | Expenses | Expense | Expenses | Expense | Expenses | Finance | 70 | enterprise_id, financial_account_id, transaction_id, transaction_category_id, financial_period_id, amount, currency, expense_date, source, reference, description, enterprise_id, financial_account_id, transaction_id, transaction_category_id, financial_period_id, amount, currency, expense_date, source, reference, description |
 | ExpertDescriptors | ExpertDescriptor | Experts | Expert | Experts | Agentic Flow | 20 | slug, runtime_class, enabled, runtime_name, runtime_description, runtime_responsibilities, runtime_capabilities, runtime_required_context, runtime_methodology, slug, runtime_class, enabled |
 | ExternalResources | ExternalResource | External Resources | External Resource | External Resources | Integrations & External Systems | 20 | organization.name, enterprise.name, contentItem.title, asset.name, agentExecution.id, provider, resource_type, external_id |
@@ -78,13 +78,13 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | MediaMetadata | MediaMetadata | Media Metadata | Media Metadata | Media Metadata | Marketing | 110 | assetVersion.version, width, height, duration_seconds, codec, frame_rate |
 | Memberships | Membership | Memberships | Membership | Memberships | Organization & Enterprise Scope | 30 | user_id, user.name |
 | MetricDefinitions | MetricDefinition | Metric Definitions | Metric Definition | Metric Definitions | Enterprise Context | 70 | key, name, unit, status, description |
-| Milestones | Milestone | Milestones | Milestone | Milestones | Enterprise Context | 120 | enterprise_id, project_id, name, status, name |
+| Milestones | Milestone | Milestones | Milestone | Milestones | Work Management | 30 | enterprise_id, project_id, name, status, name |
 | Objectives | Objective | Objectives | Objective | Objectives | Enterprise Context | 30 | enterprise_id, goal_id, kpi_id, name, description, name, enterprise.name, goal.name, kpi.name |
 | Organizations | Organization | Organizations | Organization | Organizations | Organization & Enterprise Scope | 10 | name, name |
 | Partners | Partner | Partners | Partner | Partners | Finance | 50 | enterprise_id, name |
 | Plans | Plan | Plans | Plan | Plans | Enterprise Context | 60 | strategy_id, name, description, name, strategy.name |
 | Products | Product | Products | Product | Products | Enterprise Context | 80 | enterprise_id, name |
-| Projects | Project | Projects | Project | Projects | Enterprise Context | 110 | enterprise_id, strategy_id, plan_id, initiative_id, name, description, status, name, enterprise.name, status |
+| Projects | Project | Projects | Project | Projects | Work Management | 20 | enterprise_id, strategy_id, plan_id, initiative_id, name, description, status, name, enterprise.name, status |
 | PublicationResults | PublicationResult | Publication Results | Publication Result | Publication Results | Marketing | 210 | enterprise.name, publication.id, publishingJob.id, provider, provider_status, external_id, external_url, correlation_id |
 | PublicationSchedules | PublicationSchedule | Publication Schedules | Publication Schedule | Publication Schedules | Marketing | 190 | enterprise.name, publication.id, scheduled_at, status |
 | Publications | Publication | Publications | Publication | Publications | Marketing | 180 | enterprise.name, contentItem.title, channel.name, socialAccount.name, approvalRequest.id, status, external_id, external_url |
@@ -101,12 +101,11 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | StatementEntries | StatementEntry | Statement Entries | Statement Entry | Statement Entries | Finance | 110 | organization_id, enterprise_id, statement_id, financial_account_id, transaction_id, source, source_reference, amount, entry_date, description, reference, metadata, organization_id, enterprise_id, statement_id, financial_account_id, transaction_id, source, source_reference, amount, entry_date, description, reference |
 | Statements | Statement | Statements | Statement | Statements | Finance | 100 | organization_id, enterprise_id, financial_account_id, source, source_reference, statement_date, period_start, period_end, metadata, organization_id, enterprise_id, financial_account_id, source, source_reference, statement_date, period_start, period_end, metadata |
 | Strategies | Strategy | Strategies | Strategie | Strategies | Enterprise Context | 50 | objective_id, name, description, name, objective.name |
-| Tasks | Task | Tasks | Task | Tasks | Enterprise Context | 130 | enterprise_id, project_id, name, description, status, priority, name, project.name, status, priority |
+| Tasks | Task | Tasks | Task | Tasks | Work Management | 40 | enterprise_id, project_id, parent_task_id, name, description, status, priority, due_at, name, enterprise.name, project.name, parent.name, status, priority, due_at |
 | TransactionCategories | TransactionCategory | Transaction Categories | Transaction Category | Transaction Categories | Finance | 30 | enterprise_id, name, enterprise_id, name |
 | Transactions | Transaction | Transactions | Transaction | Transactions | Finance | 80 | enterprise_id, financial_account_id, transaction_category_id, financial_period_id, amount, transaction_date, description, reference, enterprise_id, financial_account_id, transaction_category_id, financial_period_id, amount, transaction_date, description, reference |
 | Transformations | Transformation | Transformations | Transformation | Transformations | Marketing | 170 | asset.name, sourceVersion.version, outputVersion.version, type |
 | Users | User | Users | User | Users | Organization & Enterprise Scope | 20 | name, email, email_verified_at, two_factor_confirmed_at |
-| WorkItems | WorkItem | Work Items | Work Item | Work Items | Enterprise Context | 140 | enterprise_id, project_id, name, description, status, name |
 | WorkflowExecutions | WorkflowExecution | Workflow Executions | Workflow Execution | Workflow Executions | Workflow Flow | 50 | workflow_id, workflow_version_id, status, current_stage_key, started_at, completed_at, failure_reason |
 | WorkflowStages | WorkflowStage | Workflow Stages | Workflow Stage | Workflow Stages | Workflow Flow | 30 | workflow_id, key, name, sequence, repeatable |
 | WorkflowVersions | WorkflowVersion | Workflow Versions | Workflow Version | Workflow Versions | Workflow Flow | 20 | workflow_id, enterprise_id, version, name, status, published_at, retired_at |

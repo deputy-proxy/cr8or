@@ -7,17 +7,15 @@ use App\Models\Dependency;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
 final class DependencyService
 {
-    /** @var array<int, class-string<Project|Task|WorkItem|Milestone>> */
+    /** @var array<int, class-string<Project|Task|Milestone>> */
     public const ENDPOINT_TYPES = [
         Project::class,
         Task::class,
-        WorkItem::class,
         Milestone::class,
     ];
 
@@ -74,7 +72,7 @@ final class DependencyService
         }
     }
 
-    private static function resolveEndpoint(?string $type, mixed $id, string $role): Project|Task|WorkItem|Milestone
+    private static function resolveEndpoint(?string $type, mixed $id, string $role): Project|Task|Milestone
     {
         $class = self::endpointClass($type);
 
@@ -91,7 +89,7 @@ final class DependencyService
         return $endpoint;
     }
 
-    /** @return class-string<Project|Task|WorkItem|Milestone> */
+    /** @return class-string<Project|Task|Milestone> */
     public static function endpointClass(?string $type): string
     {
         foreach (self::ENDPOINT_TYPES as $class) {

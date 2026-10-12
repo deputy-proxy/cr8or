@@ -13,8 +13,8 @@ use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Strategy;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Tests\Support\Mcp\AuthenticatedTestServer;
 
 function mcpMember(User $user, Organization $organization): void
@@ -60,7 +60,7 @@ it('returns authorized strategy, knowledge and work context', function () {
         'enterprise_id' => $enterprise->getKey(),
         'knowledge_context_id' => $knowledgeContext->getKey(),
     ]);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $workItem = Task::factory()->create(['enterprise_id' => $enterprise->getKey()]);
 
     $server = AuthenticatedTestServer::actingAs($user, 'api');
 

@@ -111,7 +111,6 @@ class EnterprisePortfolioDashboard extends Page
             ->withCount([
                 'projects',
                 'tasks',
-                'workItems',
                 'milestones',
                 'contentItems',
                 'events',
@@ -209,7 +208,6 @@ class EnterprisePortfolioDashboard extends Page
             $selectedEnterprise->loadCount([
                 'projects',
                 'tasks',
-                'workItems',
                 'milestones',
                 'contentItems',
                 'issues as issues_count' => fn (Builder $builder) => $builder->whereColumn('issues.repository', 'enterprises.github_repository'),
@@ -251,7 +249,6 @@ class EnterprisePortfolioDashboard extends Page
             'github_repository' => (string) ($enterprise->github_repository ?? ''),
             'projects_count' => (int) ($enterprise->projects_count ?? 0),
             'tasks_count' => (int) ($enterprise->tasks_count ?? 0),
-            'work_items_count' => (int) ($enterprise->work_items_count ?? 0),
             'content_items_count' => (int) ($enterprise->content_items_count ?? 0),
         ])->values();
 

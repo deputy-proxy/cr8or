@@ -25,7 +25,6 @@ class DecisionFactory extends Factory
             'initiative_id' => null,
             'project_id' => null,
             'task_id' => null,
-            'work_item_id' => null,
             'title' => fake()->sentence(6),
             'summary' => fake()->paragraph(),
             'rationale' => fake()->optional()->paragraph(),

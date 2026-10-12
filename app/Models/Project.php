@@ -45,12 +45,6 @@ class Project extends Model
         return $this->hasMany(Task::class);
     }
 
-    /** @return HasMany<WorkItem, $this> */
-    public function workItems(): HasMany
-    {
-        return $this->hasMany(WorkItem::class);
-    }
-
     /** @return HasMany<Milestone, $this> */
     public function milestones(): HasMany
     {

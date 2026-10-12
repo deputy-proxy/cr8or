@@ -75,7 +75,7 @@ abstract class GovernedCapabilityTool extends AuthorizedTool implements Capabili
             return Enterprise::query()->findOrFail((int) $input['enterprise_id']);
         }
 
-        foreach (['source_assignment', 'assignment', 'execution', 'approval', 'work_item', 'content_item', 'objective', 'strategy', 'campaign', 'channel', 'audience', 'project', 'social_account'] as $key) {
+        foreach (['source_assignment', 'assignment', 'execution', 'approval', 'task', 'content_item', 'objective', 'strategy', 'campaign', 'channel', 'audience', 'project', 'social_account'] as $key) {
             $value = $input[$key] ?? null;
 
             if ($value instanceof Enterprise) {

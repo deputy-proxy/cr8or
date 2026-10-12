@@ -1162,7 +1162,7 @@
           },
 
           get filterableFields() {
-            const excluded = ['project_id', 'stream_id', 'name', 'description', 'enterprise_id', 'website_domain', 'github_repository', 'projects_count', 'tasks_count', 'work_items_count', 'content_items_count', 'target'];
+            const excluded = ['project_id', 'stream_id', 'name', 'description', 'enterprise_id', 'website_domain', 'github_repository', 'projects_count', 'tasks_count', 'content_items_count', 'target'];
             if (!this.projects.length) return [];
             return Object.keys(this.projects[0]).filter((k) => !excluded.includes(k));
           },

@@ -50,8 +50,8 @@ Workflow definition publication rejects a Capability that does not support `work
 | publication.publish | ✓ | ✓ | |
 | strategy.create | ✓ | ✓ | ✓ |
 | strategy.update | ✓ | ✓ | ✓ |
-| work.item.create | ✓ | ✓ | ✓ |
-| work.item.update | ✓ | ✓ | ✓ |
+| work.task.create | ✓ | ✓ | ✓ |
+| work.task.update | ✓ | ✓ | ✓ |
 | enterprise.create | ✓ | ✓ | |
 | approval.request | ✓ | ✓ | |
 | marketing.audience.create | ✓ | ✓ | ✓ |

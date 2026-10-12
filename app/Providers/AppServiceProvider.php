@@ -33,7 +33,6 @@ use App\Models\PublicationSchedule;
 use App\Models\Task;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
-use App\Models\WorkItem;
 use App\Observers\EnterpriseActivityObserver;
 use App\Policies\CompetitorPolicy;
 use App\Policies\WorkflowExecutionPolicy;
@@ -128,7 +127,7 @@ class AppServiceProvider extends ServiceProvider
             Event::listen($eventClass, [RecordEnterpriseActivityEvent::class, 'handleAgent']);
         }
         Event::listen(\App\Events\StrategicContextVersionPublished::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
-        foreach ([Enterprise::class, EnterpriseContext::class, Project::class, Task::class, WorkItem::class, Milestone::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
+        foreach ([Enterprise::class, EnterpriseContext::class, Project::class, Task::class, Milestone::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
             $model::observe(EnterpriseActivityObserver::class);
         }
         Gate::policy(Competitor::class, CompetitorPolicy::class);

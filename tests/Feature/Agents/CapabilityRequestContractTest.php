@@ -37,12 +37,12 @@ it('defines the canonical Capability Request fields and serialization', function
     [$actor, $assignment, $execution, $enterprise] = capabilityRequestContractSetup();
 
     $request = new CapabilityRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
         targetContext: ['enterprise_id' => $enterprise->getKey(), 'resource' => 'work'],
-        inputPayload: ['name' => 'Contract test work item'],
+        inputPayload: ['name' => 'Contract test task'],
         expertSlug: 'operations',
         correlationId: 'capability-contract-123',
         idempotencyKey: 'capability-request-123',
@@ -50,9 +50,9 @@ it('defines the canonical Capability Request fields and serialization', function
 
     expect($request->resolvedCorrelationId())->toBe('capability-contract-123')
         ->and($request->toArray())->toMatchArray([
-            'capability' => 'work.item.create',
+            'capability' => 'work.task.create',
             'target_context' => ['enterprise_id' => $enterprise->getKey(), 'resource' => 'work'],
-            'input_payload' => ['name' => 'Contract test work item'],
+            'input_payload' => ['name' => 'Contract test task'],
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $execution->getKey(),
             'expert_slug' => 'operations',
@@ -68,7 +68,7 @@ it('rejects a Capability Request that is not scoped to its Agent execution', fun
     $otherAssignment = AgentAssignment::factory()->forEnterprise(Enterprise::factory()->create())->for($assignment->agentDescriptor, 'agentDescriptor')->create();
 
     expect(fn () => new CapabilityRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         assignment: $otherAssignment,
         execution: $execution,
         actor: $actor,
@@ -82,7 +82,7 @@ it('rejects a Capability Request with a correlation identifier from another exec
     [$actor, $assignment, $execution] = capabilityRequestContractSetup();
 
     expect(fn () => new CapabilityRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
@@ -97,7 +97,7 @@ it('keeps Capability authorization separate from Agent assignment metadata', fun
     [$actor, $assignment, $execution] = capabilityRequestContractSetup();
 
     $request = new CapabilityRequest(
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         assignment: $assignment,
         execution: $execution,
         actor: $actor,

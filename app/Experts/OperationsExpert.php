@@ -12,7 +12,7 @@ final class OperationsExpert extends Expert
             responsibilities: ['analyze operational constraints', 'identify delivery dependencies', 'support operational planning'],
             methodology: 'Constraint-first operational analysis grounded in current authorized work.',
             requiredContext: ['enterprise', 'work', 'strategy'],
-            capabilities: ['work.item.create', 'work.item.update'],
+            capabilities: ['work.task.create', 'work.task.update'],
         );
     }
 

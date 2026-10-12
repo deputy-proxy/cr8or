@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $initiative_id
  * @property int|null $project_id
  * @property int|null $task_id
- * @property int|null $work_item_id
  * @property string $title
  * @property string $summary
  * @property string|null $rationale
@@ -29,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'enterprise_id', 'type', 'actor_id', 'actor_name', 'objective_id',
     'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id',
-    'work_item_id', 'title', 'summary', 'rationale', 'decided_at',
+    'title', 'summary', 'rationale', 'decided_at',
 ])]
 class Decision extends Model
 {
@@ -40,7 +39,7 @@ class Decision extends Model
     private const HISTORICAL_FIELDS = [
         'enterprise_id', 'type', 'actor_id', 'actor_name', 'objective_id',
         'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id',
-        'work_item_id', 'decided_at',
+        'decided_at',
     ];
 
     protected static function booted(): void
@@ -110,12 +109,6 @@ class Decision extends Model
         return $this->belongsTo(Task::class);
     }
 
-    /** @return BelongsTo<WorkItem, $this> */
-    public function workItem(): BelongsTo
-    {
-        return $this->belongsTo(WorkItem::class);
-    }
-
     /** @return array<string, string> */
     protected function casts(): array
     {
@@ -137,7 +130,6 @@ class Decision extends Model
             [$this->initiative_id, fn (int $id): mixed => $this->enterpriseIdThroughInitiative($id)],
             [$this->project_id, fn (int $id): mixed => Project::query()->whereKey($id)->value('enterprise_id')],
             [$this->task_id, fn (int $id): mixed => Task::query()->whereKey($id)->value('enterprise_id')],
-            [$this->work_item_id, fn (int $id): mixed => WorkItem::query()->whereKey($id)->value('enterprise_id')],
         ];
 
         foreach ($contexts as [$contextId, $enterpriseIdResolver]) {

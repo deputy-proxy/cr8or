@@ -71,7 +71,7 @@ it('denies a Capability that the Expert does not own', function () {
         $assignment,
         'marketing',
         new MarketingExpert,
-        'work.item.create',
+        'work.task.create',
         $enterprise->organization,
         $enterprise,
     ))->toBeFalse();
@@ -85,7 +85,7 @@ it('denies an Expert runtime substitution even when the Agent is authorized for 
         $assignment,
         'operations',
         new OperationsExpert,
-        'work.item.create',
+        'work.task.create',
         $enterprise->organization,
         $enterprise,
     ))->toBeFalse();
@@ -102,7 +102,7 @@ it('supports shared Capabilities through the specific authorized Expert', functi
         $operations,
         'operations',
         new OperationsExpert,
-        'work.item.create',
+        'work.task.create',
         $enterprise->organization,
         $enterprise,
     ))->toBeTrue()
@@ -110,7 +110,7 @@ it('supports shared Capabilities through the specific authorized Expert', functi
             $product,
             'product',
             new ProductExpert,
-            'work.item.create',
+            'work.task.create',
             $enterprise->organization,
             $enterprise,
         ))->toBeTrue();

@@ -11,7 +11,6 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
-use App\Models\WorkItem;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -61,20 +60,6 @@ class WorkContextAssembler
             ->limit(self::CONTEXT_LIMIT)
             ->get();
 
-        $workItems = $enterprise->workItems()
-            ->select([
-                'id',
-                'enterprise_id',
-                'project_id',
-                'name',
-                'description',
-                'status',
-            ])
-            ->orderByDesc('updated_at')
-            ->orderBy('id')
-            ->limit(self::CONTEXT_LIMIT)
-            ->get();
-
         $milestones = $enterprise->milestones()
             ->select([
                 'id',
@@ -92,7 +77,7 @@ class WorkContextAssembler
             ->get();
 
         $taskRelations = $this->taskRelations($enterprise, $tasks);
-        $workReferences = $this->workReferences($projects, $tasks, $workItems, $milestones);
+        $workReferences = $this->workReferences($projects, $tasks, $milestones);
 
         return [
             'enterprise' => $this->enterpriseIdentity($enterprise),
@@ -116,13 +101,6 @@ class WorkContextAssembler
                 'due_at' => $this->timestamp($task->due_at),
                 'children' => $taskRelations['children'][$task->getKey()] ?? [],
                 'parent' => $taskRelations['parents'][$task->getKey()] ?? null,
-            ])->all(),
-            'work_items' => $workItems->map(fn (WorkItem $item) => [
-                'id' => $item->getKey(),
-                'project_id' => $item->project_id,
-                'name' => $item->name,
-                'description' => $item->description,
-                'status' => $item->status,
             ])->all(),
             'milestones' => $milestones->map(fn (Milestone $milestone) => [
                 'id' => $milestone->getKey(),
@@ -206,20 +184,17 @@ class WorkContextAssembler
     /**
      * @param  Collection<int, Project>  $projects
      * @param  Collection<int, Task>  $tasks
-     * @param  Collection<int, WorkItem>  $workItems
      * @param  Collection<int, Milestone>  $milestones
      * @return array<string, array<int, int>>
      */
     private function workReferences(
         Collection $projects,
         Collection $tasks,
-        Collection $workItems,
         Collection $milestones,
     ): array {
         return [
             Project::class => $projects->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             Task::class => $tasks->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
-            WorkItem::class => $workItems->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
             Milestone::class => $milestones->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
         ];
     }
@@ -405,7 +380,6 @@ class WorkContextAssembler
                 'status',
                 'project_id',
                 'task_id',
-                'work_item_id',
             ])
             ->orderByDesc('updated_at')
             ->orderBy('id')
@@ -457,7 +431,6 @@ class WorkContextAssembler
                     'status' => $workflow->status,
                     'project_id' => $workflow->project_id,
                     'task_id' => $workflow->task_id,
-                    'work_item_id' => $workflow->work_item_id,
                 ],
                 'execution' => $execution === null ? null : [
                     'id' => $execution->getKey(),
@@ -480,7 +453,6 @@ class WorkContextAssembler
         return match ($model) {
             Project::class => (new Project)->getMorphClass(),
             Task::class => (new Task)->getMorphClass(),
-            WorkItem::class => (new WorkItem)->getMorphClass(),
             Milestone::class => (new Milestone)->getMorphClass(),
             default => throw new \InvalidArgumentException("Unsupported work context model [{$model}]."),
         };

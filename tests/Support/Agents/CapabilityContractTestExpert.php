@@ -15,7 +15,7 @@ final class CapabilityContractTestExpert extends Expert
             responsibilities: ['request'],
             methodology: 'Evidence-first capability request.',
             requiredContext: ['enterprise'],
-            capabilities: ['work.item.create'],
+            capabilities: ['work.task.create'],
         );
     }
 
@@ -25,9 +25,9 @@ final class CapabilityContractTestExpert extends Expert
             'answer' => 'Requesting governed work.',
             'capability_requests' => [
                 [
-                    'capability' => 'work.item.create',
+                    'capability' => 'work.task.create',
                     'target_context' => ['enterprise_id' => $context['enterprise']['enterprise']['id']],
-                    'input_payload' => ['name' => 'Requested work item'],
+                    'input_payload' => ['name' => 'Requested task'],
                 ],
             ],
         ];

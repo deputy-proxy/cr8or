@@ -3,14 +3,12 @@
 use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Filament\Resources\Tasks\TaskResource;
-use App\Filament\Resources\WorkItems\WorkItemResource;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 
 it('scopes work administration to the authenticated users organizations', function () {
     $organization = Organization::factory()->create();
@@ -24,14 +22,14 @@ it('scopes work administration to the authenticated users organizations', functi
     $hiddenProject = Project::factory()->create(['enterprise_id' => $hiddenEnterprise]);
     $visibleTask = Task::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
     $hiddenTask = Task::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
-    $visibleWorkItem = WorkItem::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
-    $hiddenWorkItem = WorkItem::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
+    $visibleTask = Task::factory()->create(['enterprise_id' => $visibleEnterprise, 'project_id' => $visibleProject]);
+    $hiddenTask = Task::factory()->create(['enterprise_id' => $hiddenEnterprise, 'project_id' => $hiddenProject]);
 
     $this->actingAs($user);
 
     expect(ProjectResource::getEloquentQuery()->pluck('id')->all())->toContain($visibleProject->id)->not->toContain($hiddenProject->id)
         ->and(TaskResource::getEloquentQuery()->pluck('id')->all())->toContain($visibleTask->id)->not->toContain($hiddenTask->id)
-        ->and(WorkItemResource::getEloquentQuery()->pluck('id')->all())->toContain($visibleWorkItem->id)->not->toContain($hiddenWorkItem->id)
+        ->and(TaskResource::getEloquentQuery()->pluck('id')->all())->toContain($visibleTask->id)->not->toContain($hiddenTask->id)
         ->and(MilestoneResource::getEloquentQuery()->count())->toBe(0);
 });
 
@@ -47,13 +45,13 @@ it('allows only enterprise managers to create work records in Filament', functio
     $this->actingAs($owner);
     expect(ProjectResource::canCreate())->toBeTrue()
         ->and(TaskResource::canCreate())->toBeTrue()
-        ->and(WorkItemResource::canCreate())->toBeTrue()
+        ->and(TaskResource::canCreate())->toBeTrue()
         ->and(MilestoneResource::canCreate())->toBeTrue();
 
     $this->actingAs($member);
     expect(ProjectResource::canCreate())->toBeFalse()
         ->and(TaskResource::canCreate())->toBeFalse()
-        ->and(WorkItemResource::canCreate())->toBeFalse()
+        ->and(TaskResource::canCreate())->toBeFalse()
         ->and(MilestoneResource::canCreate())->toBeFalse();
 
     expect($enterprise->organization_id)->toBe($organization->id);

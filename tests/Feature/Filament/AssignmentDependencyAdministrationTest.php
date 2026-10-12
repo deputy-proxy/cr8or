@@ -14,7 +14,6 @@ use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Filament\Actions\CreateAction;
 use Illuminate\Support\Facades\Gate;
 
@@ -36,7 +35,7 @@ it('scopes assignment and dependency administration to the authenticated organiz
         'enterprise_id' => $visibleEnterprise,
         'project_id' => $visibleProject,
     ]);
-    $visibleWorkItem = WorkItem::factory()->create([
+    $visibleSuccessorTask = Task::factory()->create([
         'enterprise_id' => $visibleEnterprise,
         'project_id' => $visibleProject,
     ]);
@@ -45,7 +44,7 @@ it('scopes assignment and dependency administration to the authenticated organiz
         'enterprise_id' => $hiddenEnterprise,
         'project_id' => $hiddenProject,
     ]);
-    $hiddenWorkItem = WorkItem::factory()->create([
+    $hiddenSuccessorTask = Task::factory()->create([
         'enterprise_id' => $hiddenEnterprise,
         'project_id' => $hiddenProject,
     ]);
@@ -66,16 +65,16 @@ it('scopes assignment and dependency administration to the authenticated organiz
         'project_id' => $visibleProject->id,
         'predecessor_type' => Task::class,
         'predecessor_id' => $visibleTask->id,
-        'successor_type' => WorkItem::class,
-        'successor_id' => $visibleWorkItem->id,
+        'successor_type' => Task::class,
+        'successor_id' => $visibleSuccessorTask->id,
     ]);
     $hiddenDependency = Dependency::factory()->create([
         'enterprise_id' => $hiddenEnterprise,
         'project_id' => $hiddenProject->id,
         'predecessor_type' => Task::class,
         'predecessor_id' => $hiddenTask->id,
-        'successor_type' => WorkItem::class,
-        'successor_id' => $hiddenWorkItem->id,
+        'successor_type' => Task::class,
+        'successor_id' => $hiddenSuccessorTask->id,
     ]);
 
     $this->actingAs($user);

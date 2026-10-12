@@ -4,8 +4,8 @@ namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
 use App\Models\Enterprise;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -15,17 +15,20 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('create-work-item')]
-#[Description('Create a work item in an enterprise through the authorized CR8OR work capability.')]
-class CreateWorkItemTool extends GovernedCapabilityTool
+#[Name('create-task')]
+#[Description('Create a task in an enterprise through the authorized CR8OR work capability.')]
+class CreateTaskTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
     {
         return [
             'enterprise_id' => $schema->integer()->min(1)->description('Target enterprise id.')->required(),
-            'name' => $schema->string()->min(1)->max(255)->description('Work item name.')->required(),
-            'description' => $schema->string()->max(10000)->description('Optional work item description.'),
-            'status' => $schema->string()->max(100)->description('Optional work item status.'),
+            'name' => $schema->string()->min(1)->max(255)->description('Task name.')->required(),
+            'description' => $schema->string()->max(10000)->description('Optional task description.'),
+            'status' => $schema->string()->max(100)->description('Optional task status.'),
+            'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task in the same Project and Enterprise.'),
+            'priority' => $schema->string()->max(50)->description('Optional task priority.'),
+            'due_at' => $schema->string()->description('Optional ISO 8601 due timestamp.'),
             'project_id' => $schema->integer()->min(1)->description('Optional project id in the same enterprise.'),
             'agent_assignment_id' => $schema->integer()->min(1)->description('Required with agent_execution_id for an Agent-backed invocation.'),
             'agent_execution_id' => $schema->integer()->min(1)->description('Required with agent_assignment_id for an Agent-backed invocation.'),
@@ -35,12 +38,15 @@ class CreateWorkItemTool extends GovernedCapabilityTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.work.item.create', function (string $correlationId) use ($request, $authorization, $registry) {
+        return $this->executeWithErrors($request, 'mcp.work.task.create', function (string $correlationId) use ($request, $authorization, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
                 'description' => ['nullable', 'string', 'max:10000'],
                 'status' => ['nullable', 'string', 'max:100'],
+                'parent_task_id' => ['nullable', 'integer', 'min:1', 'exists:tasks,id'],
+                'priority' => ['nullable', 'string', 'max:50'],
+                'due_at' => ['nullable', 'date'],
                 'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
@@ -67,20 +73,23 @@ class CreateWorkItemTool extends GovernedCapabilityTool
                     'enterprise_id' => $enterprise->getKey(),
                     'project_id' => $validated['project_id'] ?? null,
                 ],
-                ['createForEnterprise', [WorkItem::class, $enterprise]],
+                ['createForEnterprise', [Task::class, $enterprise]],
             );
 
-            $workItem = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
+            $task = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
 
             return Response::structured([
                 'success' => true,
                 'result' => [
-                    'id' => $workItem->getKey(),
-                    'enterprise_id' => $workItem->enterprise_id,
-                    'project_id' => $workItem->project_id,
-                    'name' => $workItem->name,
-                    'description' => $workItem->description,
-                    'status' => $workItem->status,
+                    'id' => $task->getKey(),
+                    'enterprise_id' => $task->enterprise_id,
+                    'project_id' => $task->project_id,
+                    'name' => $task->name,
+                    'description' => $task->description,
+                    'status' => $task->status,
+                    'parent_task_id' => $task->parent_task_id,
+                    'priority' => $task->priority,
+                    'due_at' => $task->due_at,
                 ],
             ]);
         });

@@ -10,8 +10,8 @@ use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\CreateWorkflowTool;
-use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
@@ -33,8 +33,8 @@ use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateStrategyTool;
+use App\Mcp\Tools\UpdateTaskTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
-use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
 use App\Operations\CampaignLifecycle;
@@ -47,8 +47,8 @@ use App\Operations\CreateKnowledgeItem;
 use App\Operations\CreateKnowledgeUnit;
 use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
+use App\Operations\CreateTask;
 use App\Operations\CreateWorkflow;
-use App\Operations\CreateWorkItem;
 use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
 use App\Operations\DiscoverWorkflows;
@@ -94,8 +94,8 @@ use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
 use App\Operations\UpdateStrategy;
+use App\Operations\UpdateTask;
 use App\Operations\UpdateWorkflow;
-use App\Operations\UpdateWorkItem;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -530,21 +530,21 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
-                'work.item.create',
-                CreateWorkItem::class,
-                CreateWorkItemTool::class,
-                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
-                ['success' => 'boolean', 'result' => 'work-item'],
-                'McpCapabilityAuthorizer::authorizeMutation + WorkItem policy',
+                'work.task.create',
+                CreateTask::class,
+                CreateTaskTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'task'],
+                'McpCapabilityAuthorizer::authorizeMutation + Task policy',
                 'none',
             ),
             $this->definition(
-                'work.item.update',
-                UpdateWorkItem::class,
-                UpdateWorkItemTool::class,
-                ['work_item_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
-                ['success' => 'boolean', 'result' => 'work-item'],
-                'McpCapabilityAuthorizer::authorizeMutation + WorkItem policy',
+                'work.task.update',
+                UpdateTask::class,
+                UpdateTaskTool::class,
+                ['task_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'task'],
+                'McpCapabilityAuthorizer::authorizeMutation + Task policy',
                 'none',
             ),
             $this->definition(

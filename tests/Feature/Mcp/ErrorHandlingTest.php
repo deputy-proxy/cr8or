@@ -43,10 +43,10 @@ it('returns a normalized MCP error for a business-rule failure', function () {
         'organization_id' => $organization->getKey(),
     ]);
     $enterprise = \App\Models\Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
-    $workItem = \App\Models\WorkItem::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $workItem = \App\Models\Task::factory()->create(['enterprise_id' => $enterprise->getKey()]);
 
     \App\Mcp\Servers\Cr8orServer::actingAs($actor, 'api')
-        ->tool(\App\Mcp\Tools\UpdateWorkItemTool::class, ['work_item_id' => $workItem->getKey()])
+        ->tool(\App\Mcp\Tools\UpdateTaskTool::class, ['task_id' => $workItem->getKey()])
         ->assertHasErrors()
         ->assertSee('business_rule.rejected')
         ->assertSee('correlation_id');

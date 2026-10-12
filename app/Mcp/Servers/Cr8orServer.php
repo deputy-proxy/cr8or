@@ -35,8 +35,8 @@ use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
+use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\CreateWorkflowTool;
-use App\Mcp\Tools\CreateWorkItemTool;
 use App\Mcp\Tools\DefineMarketingStrategySectionTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisconnectSocialAccountTool;
@@ -68,9 +68,9 @@ use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
+use App\Mcp\Tools\GetTaskTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
-use App\Mcp\Tools\GetWorkItemTool;
 use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDelegationsTool;
 use App\Mcp\Tools\ListAgentDescriptorTool;
@@ -96,8 +96,8 @@ use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProjectTool;
 use App\Mcp\Tools\ListSocialAccountTool;
 use App\Mcp\Tools\ListStrategyTool;
+use App\Mcp\Tools\ListTaskTool;
 use App\Mcp\Tools\ListWorkflowsTool;
-use App\Mcp\Tools\ListWorkItemTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
@@ -128,8 +128,8 @@ use App\Mcp\Tools\UpdateObjectiveTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
+use App\Mcp\Tools\UpdateTaskTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
-use App\Mcp\Tools\UpdateWorkItemTool;
 use App\Mcp\Tools\VerifyMarketingGraphTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -175,8 +175,8 @@ class Cr8orServer extends Server
         GetSocialAccountTool::class,
         ListProjectTool::class,
         GetProjectTool::class,
-        ListWorkItemTool::class,
-        GetWorkItemTool::class,
+        ListTaskTool::class,
+        GetTaskTool::class,
         ListAgentAssignmentsTool::class,
         ListAgentDelegationsTool::class,
         ListAgentDescriptorTool::class,
@@ -250,7 +250,7 @@ class Cr8orServer extends Server
         CreateProjectTool::class,
         UpdateProjectTool::class,
 
-        CreateWorkItemTool::class,
+        CreateTaskTool::class,
         CreateWorkflowTool::class,
         DuplicateWorkflowTool::class,
         UpdateWorkflowTool::class,
@@ -260,7 +260,7 @@ class Cr8orServer extends Server
         GetWorkflowExecutionTool::class,
         GetWorkflowTool::class,
         ResumeWorkflowExecutionTool::class,
-        UpdateWorkItemTool::class,
+        UpdateTaskTool::class,
         CreateContentItemTool::class,
         CreateScriptTool::class,
         UpdateContentItemTool::class,

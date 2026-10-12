@@ -15,7 +15,7 @@ final class ContractTestExpert extends Expert
             responsibilities: ['analyze'],
             methodology: 'Evidence-first analysis.',
             requiredContext: ['enterprise', 'strategy'],
-            capabilities: ['work.item.create'],
+            capabilities: ['work.task.create'],
         );
     }
 

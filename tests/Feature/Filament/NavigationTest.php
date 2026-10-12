@@ -20,7 +20,7 @@ use App\Filament\Resources\Issues\IssueResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Organizations\OrganizationResource;
 use App\Filament\Resources\Strategies\StrategyResource;
-use App\Filament\Resources\WorkItems\WorkItemResource;
+use App\Filament\Resources\Tasks\TaskResource;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +29,7 @@ function expectedNavigation(): array
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships', 'Enterprises', 'EnterpriseGroups', 'EnterpriseCategories'],
         'Strategy & Planning' => ['EnterpriseContexts', 'Goals', 'Objectives', 'Kpis', 'Strategies', 'Plans', 'Competitors', 'Products'],
-        'Work Management' => ['Initiatives', 'Projects', 'Milestones', 'Tasks', 'WorkItems', 'Dependencies', 'Assignments', 'Decisions', 'EnterpriseDecisions'],
+        'Work Management' => ['Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'EnterpriseDecisions'],
         'Knowledge' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Agent Configuration' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments'],
         'Agent Operations & Governance' => ['AgentExecutions', 'AgentDelegations', 'AgentDecisions', 'ApprovalRequests', 'ApprovalPolicies', 'ApprovalDecisions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions'],
@@ -59,7 +59,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(97);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {
@@ -115,7 +115,7 @@ it('preserves agreed labels for primary navigation resources', function () {
         ->and(ObjectiveResource::getNavigationLabel())->toBe('Objectives')
         ->and(StrategyResource::getNavigationLabel())->toBe('Strategies')
         ->and(InitiativeResource::getNavigationLabel())->toBe('Initiatives')
-        ->and(WorkItemResource::getNavigationLabel())->toBe('Work Items')
+        ->and(TaskResource::getNavigationLabel())->toBe('Tasks')
         ->and(AgentDescriptorResource::getNavigationLabel())->toBe('Agents')
         ->and(ExpertDescriptorResource::getNavigationLabel())->toBe('Experts')
         ->and(CampaignResource::getNavigationLabel())->toBe('Campaigns')

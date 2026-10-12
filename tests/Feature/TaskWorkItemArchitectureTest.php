@@ -1,73 +1,76 @@
 <?php
 
+use App\Models\Decision;
 use App\Models\Enterprise;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\User;
 use App\Models\Workflow;
-use App\Models\WorkflowExecution;
-use App\Models\WorkflowVersion;
-use App\Models\WorkItem;
 use Illuminate\Support\Facades\Schema;
 
-it('keeps Task and WorkItem as distinct peer work concepts', function () {
-    expect(method_exists(Task::class, 'workItem'))->toBeFalse()
-        ->and(method_exists(WorkItem::class, 'task'))->toBeFalse();
-
-    $taskColumns = Schema::getColumnListing((new Task)->getTable());
-    $workItemColumns = Schema::getColumnListing((new WorkItem)->getTable());
-
-    expect($taskColumns)
-        ->toContain('parent_task_id', 'priority', 'due_at')
-        ->and($workItemColumns)
-        ->not->toContain('parent_task_id', 'priority', 'due_at');
+it('uses Task as the only canonical actionable work model', function () {
+    expect(class_exists(\App\Models\WorkItem::class, false))->toBeFalse()
+        ->and(Schema::hasTable('tasks'))->toBeTrue()
+        ->and(Schema::hasTable('work_items'))->toBeFalse()
+        ->and(Schema::getColumnListing('tasks'))->toContain('parent_task_id', 'priority', 'due_at')
+        ->and(Schema::hasColumn('workflows', 'task_id'))->toBeTrue()
+        ->and(Schema::hasColumn('workflows', 'work_item_id'))->toBeFalse()
+        ->and(Schema::hasColumn('decisions', 'task_id'))->toBeTrue()
+        ->and(Schema::hasColumn('decisions', 'work_item_id'))->toBeFalse();
 });
 
-it('allows Project to contain both Tasks and WorkItems independently', function () {
-    $enterprise = Enterprise::factory()->create();
-    $project = Project::factory()->create(['enterprise_id' => $enterprise]);
-    $task = Task::factory()->forProject($project)->create();
-    $workItem = WorkItem::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
-    ]);
+it('exposes canonical Task relationships for workflows, decisions, assignments, and dependencies', function () {
+    $task = new Task;
 
-    expect($project->tasks->contains($task))->toBeTrue()
-        ->and($project->workItems->contains($workItem))->toBeTrue()
-        ->and($task->project->is($project))->toBeTrue()
-        ->and($workItem->project->is($project))->toBeTrue();
+    expect(method_exists($task, 'workflows'))->toBeTrue()
+        ->and(method_exists($task, 'decisions'))->toBeTrue()
+        ->and(method_exists($task, 'assignments'))->toBeTrue()
+        ->and(method_exists($task, 'predecessorDependencies'))->toBeTrue()
+        ->and(method_exists($task, 'successorDependencies'))->toBeTrue()
+        ->and(method_exists($task, 'workItem'))->toBeFalse();
 });
 
-it('allows a Workflow and Execution to preserve both Task and WorkItem context', function () {
+it('keeps Task hierarchy inside the same Enterprise and Project and rejects cycles', function () {
     $enterprise = Enterprise::factory()->create();
-    $project = Project::factory()->create(['enterprise_id' => $enterprise]);
-    $task = Task::factory()->forProject($project)->create();
-    $workItem = WorkItem::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
-    ]);
+    $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
+    $parent = Task::factory()->forProject($project)->create();
+    $child = Task::factory()->forProject($project)->create(['parent_task_id' => $parent->id]);
 
+    expect($child->parent->is($parent))->toBeTrue()
+        ->and($parent->children->contains($child))->toBeTrue();
+
+    $otherEnterprise = Enterprise::factory()->create();
+    $otherProject = Project::factory()->create(['enterprise_id' => $otherEnterprise->id]);
+
+    expect(fn () => Task::factory()->forProject($otherProject)->create(['parent_task_id' => $parent->id]))
+        ->toThrow(LogicException::class);
+    expect(fn () => $parent->update(['parent_task_id' => $child->id]))
+        ->toThrow(LogicException::class);
+});
+
+it('allows a Task to have workflow and decision context without merging their lifecycles', function () {
+    $enterprise = Enterprise::factory()->create();
+    $task = Task::factory()->create(['enterprise_id' => $enterprise->id]);
     $workflow = Workflow::factory()->create([
-        'enterprise_id' => $enterprise,
-        'project_id' => $project,
-        'task_id' => $task,
-        'work_item_id' => $workItem,
+        'enterprise_id' => $enterprise->id,
+        'task_id' => $task->id,
     ]);
-    $version = WorkflowVersion::factory()->create([
-        'workflow_id' => $workflow,
-        'enterprise_id' => $enterprise,
-        'status' => WorkflowVersion::STATUS_PUBLISHED,
-    ]);
-    $execution = WorkflowExecution::factory()->create([
-        'workflow_id' => $workflow,
-        'workflow_version_id' => $version,
-        'workflow_version' => $version->version,
-        'enterprise_id' => $enterprise,
-        'actor_id' => User::factory(),
+    $decision = Decision::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'task_id' => $task->id,
     ]);
 
-    expect($workflow->task->is($task))->toBeTrue()
-        ->and($workflow->workItem->is($workItem))->toBeTrue()
-        ->and($execution->workflow->task->is($task))->toBeTrue()
-        ->and($execution->workflow->workItem->is($workItem))->toBeTrue();
+    expect($task->workflows->contains($workflow))->toBeTrue()
+        ->and($task->decisions->contains($decision))->toBeTrue()
+        ->and($workflow->status)->not->toBe($task->status);
+});
+
+it('prevents changing a parent Task scope while children would become inconsistent', function () {
+    $enterprise = Enterprise::factory()->create();
+    $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
+    $otherProject = Project::factory()->create(['enterprise_id' => $enterprise->id]);
+    $parent = Task::factory()->forProject($project)->create();
+    Task::factory()->forProject($project)->create(['parent_task_id' => $parent->id]);
+
+    expect(fn () => $parent->update(['project_id' => $otherProject->id]))
+        ->toThrow(LogicException::class, 'while its children remain in another scope');
 });

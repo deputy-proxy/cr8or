@@ -9,14 +9,14 @@ use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
-use App\Mcp\Tools\CreateWorkItemTool;
+use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateStrategyTool;
-use App\Mcp\Tools\UpdateWorkItemTool;
+use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
@@ -28,8 +28,8 @@ use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Strategy;
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use App\Services\CapabilityExecutionService;
 
 function mcpCapabilityOwner(User $user, Organization $organization): void
@@ -63,13 +63,13 @@ it('registers the initial governed capability catalogue for an organization memb
     Cr8orServer::actingAs($user, 'api')->tools()->assertRegistered([
         CreateContentItemTool::class,
         CreateStrategyTool::class,
-        CreateWorkItemTool::class,
+        CreateTaskTool::class,
         MarkContentPublicationReadyTool::class,
         RequestApprovalTool::class,
         SubmitContentForReviewTool::class,
         UpdateContentItemTool::class,
         UpdateStrategyTool::class,
-        UpdateWorkItemTool::class,
+        UpdateTaskTool::class,
     ]);
 });
 
@@ -97,24 +97,24 @@ it('uses the Agent to Expert and Expert to Capability boundaries for Expert MCP 
         ->assertOk();
 });
 
-it('uses the same Capability boundary and Operation for direct and Agent-requested work-item updates', function () {
+it('uses the same Capability boundary and Operation for direct and Agent-requested task updates', function () {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
     mcpCapabilityOwner($actor, $organization);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
 
-    $directItem = WorkItem::factory()->create([
+    $directItem = Task::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'name' => 'Direct before',
     ]);
-    $agentItem = WorkItem::factory()->create([
+    $agentItem = Task::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'name' => 'Agent before',
     ]);
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $directItem->getKey(),
+        ->tool(UpdateTaskTool::class, [
+            'task_id' => $directItem->getKey(),
             'name' => 'Direct after',
         ])
         ->assertOk();
@@ -122,11 +122,11 @@ it('uses the same Capability boundary and Operation for direct and Agent-request
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
 
     $result = app(CapabilityExecutionService::class)->execute(new CapabilityRequest(
-        capability: 'work.item.update',
+        capability: 'work.task.update',
         assignment: $assignment,
         execution: $execution,
         actor: $actor,
-        targetContext: ['work_item_id' => $agentItem->getKey()],
+        targetContext: ['task_id' => $agentItem->getKey()],
         inputPayload: ['name' => 'Agent after'],
         expertSlug: 'operations',
         correlationId: $execution->correlation_id,
@@ -136,45 +136,48 @@ it('uses the same Capability boundary and Operation for direct and Agent-request
     expect($result['status'])->toBe('executed')
         ->and($directItem->refresh()->name)->toBe('Direct after')
         ->and($agentItem->refresh()->name)->toBe('Agent after')
-        ->and($result['capability'])->toBe('work.item.update');
+        ->and($result['capability'])->toBe('work.task.update');
 });
 
-it('allows an authorized human to create and update a work item', function () {
+it('allows an authorized human to create and update a task', function () {
     $actor = User::factory()->create();
     $organization = Organization::factory()->create();
     mcpCapabilityOwner($actor, $organization);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     $project = Project::factory()->create(['enterprise_id' => $enterprise]);
+    $parentTask = Task::factory()->forProject($project)->create(['name' => 'Parent task']);
 
     $server = Cr8orServer::actingAs($actor, 'api');
 
-    $created = $server->tool(CreateWorkItemTool::class, [
+    $created = $server->tool(CreateTaskTool::class, [
         'enterprise_id' => $enterprise->getKey(),
         'project_id' => $project->getKey(),
         'name' => 'Initial work',
         'description' => 'Created through MCP.',
-        'status' => 'planned',
+        'status' => 'todo',
+        'parent_task_id' => $parentTask->id,
+        'priority' => 'high',
+        'due_at' => '2026-11-01T12:00:00Z',
     ]);
 
-    $created->assertOk()->assertSee(['Initial work', 'Created through MCP.', 'planned']);
+    $created->assertOk()->assertSee(['Initial work', 'Created through MCP.', 'todo', 'high']);
 
-    $workItem = WorkItem::query()->where('name', 'Initial work')->firstOrFail();
+    $workItem = Task::query()->where('name', 'Initial work')->firstOrFail();
 
-    $server->tool(UpdateWorkItemTool::class, [
-        'work_item_id' => $workItem->getKey(),
+    $server->tool(UpdateTaskTool::class, [
+        'task_id' => $workItem->getKey(),
         'name' => 'Updated work',
-        'status' => 'active',
-    ])->assertOk();
-
-    $server->tool(UpdateWorkItemTool::class, [
-        'work_item_id' => $workItem->getKey(),
-        'name' => 'Updated work',
-        'status' => 'active',
+        'status' => 'in_progress',
+        'priority' => 'low',
+        'due_at' => '2026-12-01T12:00:00Z',
     ])->assertOk();
 
     expect($workItem->refresh()->name)->toBe('Updated work')
-        ->and($workItem->status)->toBe('active')
-        ->and(WorkItem::query()->where('id', $workItem->getKey())->count())->toBe(1);
+        ->and($workItem->status)->toBe('in_progress')
+        ->and($workItem->parent_task_id)->toBe($parentTask->id)
+        ->and($workItem->priority)->toBe('low')
+        ->and($workItem->due_at->toDateString())->toBe('2026-12-01')
+        ->and(Task::query()->where('id', $workItem->getKey())->count())->toBe(1);
 });
 
 it('allows an authorized human to create a marketing strategy', function () {
@@ -234,13 +237,13 @@ it('denies cross-organization human mutations', function () {
     $foreignEnterprise = Enterprise::factory()->create(['organization_id' => $foreignOrganization]);
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(CreateWorkItemTool::class, [
+        ->tool(CreateTaskTool::class, [
             'enterprise_id' => $foreignEnterprise->getKey(),
             'name' => 'Should not exist',
         ])
         ->assertHasErrors();
 
-    expect(WorkItem::query()->where('name', 'Should not exist')->exists())->toBeFalse();
+    expect(Task::query()->where('name', 'Should not exist')->exists())->toBeFalse();
 });
 
 it('rejects invalid input before mutating state', function () {
@@ -250,13 +253,13 @@ it('rejects invalid input before mutating state', function () {
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(CreateWorkItemTool::class, [
+        ->tool(CreateTaskTool::class, [
             'enterprise_id' => $enterprise->getKey(),
             'name' => '',
         ])
         ->assertHasErrors();
 
-    expect(WorkItem::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(0);
+    expect(Task::query()->where('enterprise_id', $enterprise->getKey())->count())->toBe(0);
 });
 
 it('denies an Agent-backed mutation without the required capability', function () {
@@ -269,11 +272,11 @@ it('denies an Agent-backed mutation without the required capability', function (
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
+    $workItem = Task::factory()->create(['enterprise_id' => $enterprise]);
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $workItem->getKey(),
+        ->tool(UpdateTaskTool::class, [
+            'task_id' => $workItem->getKey(),
             'name' => 'Unauthorized',
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $execution->getKey(),
@@ -294,11 +297,11 @@ it('denies a disabled Agent assignment even when the capability exists', functio
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     [$assignment, $execution] = mcpAgentContext($actor, $enterprise);
     $assignment->update(['enabled' => false]);
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise]);
+    $workItem = Task::factory()->create(['enterprise_id' => $enterprise]);
 
     Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $workItem->getKey(),
+        ->tool(UpdateTaskTool::class, [
+            'task_id' => $workItem->getKey(),
             'name' => 'Should remain unchanged',
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $execution->getKey(),
@@ -363,7 +366,7 @@ it('registers the foundational discovery tool surface', function () {
         \App\Mcp\Tools\ListEnterpriseTool::class, \App\Mcp\Tools\GetEnterpriseTool::class,
         \App\Mcp\Tools\ListObjectiveTool::class, \App\Mcp\Tools\GetObjectiveTool::class,
         \App\Mcp\Tools\ListStrategyTool::class, \App\Mcp\Tools\GetStrategyTool::class,
-        \App\Mcp\Tools\ListWorkItemTool::class, \App\Mcp\Tools\GetWorkItemTool::class,
+        \App\Mcp\Tools\ListTaskTool::class, \App\Mcp\Tools\GetTaskTool::class,
         \App\Mcp\Tools\ListAgentDescriptorTool::class, \App\Mcp\Tools\GetAgentDescriptorTool::class,
         \App\Mcp\Tools\ListExpertDescriptorTool::class, \App\Mcp\Tools\GetExpertDescriptorTool::class,
         \App\Mcp\Tools\ListCapabilitiesTool::class, \App\Mcp\Tools\GetCapabilityTool::class,
@@ -442,10 +445,10 @@ it('discovers runtime capabilities through enabled descriptors', function () {
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
         ->tool(\App\Mcp\Tools\ListCapabilitiesTool::class, ['search' => 'work.'])
         ->assertOk()
-        ->assertSee(['work.item.create', 'work.item.update', 'CreateWorkItem', 'create-work-item']);
+        ->assertSee(['work.task.create', 'work.task.update', 'CreateTask', 'create-task']);
 
     \App\Mcp\Servers\Cr8orServer::actingAs($user, 'api')
-        ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.item.create'])
+        ->tool(\App\Mcp\Tools\GetCapabilityTool::class, ['id' => 'work.task.create'])
         ->assertOk()
-        ->assertSee(['work.item.create', 'CreateWorkItem', 'create-work-item']);
+        ->assertSee(['work.task.create', 'CreateTask', 'create-task']);
 });

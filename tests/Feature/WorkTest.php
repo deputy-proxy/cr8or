@@ -9,7 +9,6 @@ use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Illuminate\Support\Facades\Gate;
 
 it('persists projects and work hierarchy with planning relationships', function () {
@@ -27,14 +26,14 @@ it('persists projects and work hierarchy with planning relationships', function 
         'initiative_id' => $initiative,
     ]);
     $task = Task::factory()->forProject($project)->create();
-    $workItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
+    $workItem = Task::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
 
     expect($project->enterprise->is($enterprise))->toBeTrue()
         ->and($project->strategy->is($strategy))->toBeTrue()
         ->and($project->plan->is($plan))->toBeTrue()
         ->and($project->initiative->is($initiative))->toBeTrue()
         ->and($project->tasks->contains($task))->toBeTrue()
-        ->and($project->workItems->contains($workItem))->toBeTrue()
+        ->and($project->tasks->contains($workItem))->toBeTrue()
         ->and($task->project->is($project))->toBeTrue();
 });
 

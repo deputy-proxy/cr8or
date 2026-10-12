@@ -39,7 +39,7 @@ it('generates a cross-domain report without mutating authoritative source record
         'enterprise_id' => $enterprise->id,
         'created_at' => Carbon::parse('2026-09-11T10:00:00Z'),
     ]);
-    App\Models\WorkItem::factory()->create([
+    App\Models\Task::factory()->create([
         'enterprise_id' => $enterprise->id,
         'created_at' => Carbon::parse('2026-09-12T10:00:00Z'),
     ]);
@@ -72,7 +72,7 @@ it('generates a cross-domain report without mutating authoritative source record
         ->and($result->metrics['finance_net_movement']['value'])->toBe('1250.0000')
         ->and($result->metrics['marketing_active_campaigns']['value'])->toBe('1.0000')
         ->and($result->metrics['strategy_objectives_created']['value'])->toBe('1.0000')
-        ->and($result->metrics['work_items_created']['value'])->toBe('1.0000')
+        ->and($result->metrics['tasks_created']['value'])->toBe('1.0000')
         ->and($result->metrics['agent_executions_completed']['value'])->toBe('1.0000')
         ->and($result->metrics['agent_executions_failed']['value'])->toBe('1.0000')
         ->and($result->metrics['business_health_attention']['value'])->toBe('1.0000')

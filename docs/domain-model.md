@@ -118,7 +118,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Core entities:** Objective, Strategy, Plan, Initiative, KPI, Metric, Strategic Decision.
 
-**Verified Phase 3.5 implementation:** Decision records persist operational or strategic decisions independently of AgentDecision and EnterpriseDecision. Each decision belongs to an Enterprise, may reference explicit Objective/Strategy/Plan/Initiative and Project/Task/Work Item context, and snapshots actor identity and decision-time context. Historical actor, context, type and decision timestamp cannot be rewritten after creation. Server-side authorization follows the Enterprise organization boundary.
+**Verified Phase 3.5 implementation:** Decision records persist operational or strategic decisions independently of AgentDecision and EnterpriseDecision. Each decision belongs to an Enterprise, may reference explicit Objective/Strategy/Plan/Initiative and Project/Task/Task context, and snapshots actor identity and decision-time context. Historical actor, context, type and decision timestamp cannot be rewritten after creation. Server-side authorization follows the Enterprise organization boundary.
 
 **Deferred:** Generalized policy engines, broader decision automation and polymorphic decision context.
 
@@ -134,21 +134,28 @@ This document defines the initial bounded domains and known conceptual entities.
 
 ## Work
 
-**Purpose:** Represent operational activity.
+**Purpose:** Represent operational activity through one canonical actionable-work entity while keeping planning and workflow orchestration distinct.
 
-**Core entities:** Project, Task, Work Item, Assignment, Milestone, Dependency, Workflow, WorkflowVersion, WorkflowStage, WorkflowExecution.
+**Core entities:** Project, Task, Assignment, Milestone, Dependency, Workflow, WorkflowVersion, WorkflowStage, WorkflowExecution.
 
-**Verified Phase 3.3 implementation:** Projects belong to an Enterprise and may reference Strategy, Plan and Initiative records from that same Enterprise. Tasks and Work Items belong to an Enterprise and may belong to a Project within that Enterprise. Tasks may form a parent/child hierarchy. Milestones belong to a Project and Enterprise. Dependencies belong to an Enterprise and represent directional `blocks` relationships between Project, Task, WorkItem, or Milestone records through explicit polymorphic references. Endpoint Enterprise ownership is mandatory; an explicit Project scope requires both endpoints to belong to that Project. Duplicate relationships and cycles are rejected. Assignments belong to an Enterprise and identify either a User or an existing Agent Assignment as the assignee.
+**Canonical Task contract:** Task belongs to an Enterprise and may belong to a Project within that Enterprise. It carries name, description, status, priority, due date, and optional parent Task. Parent/child Tasks must share Enterprise and Project scope, and hierarchy cycles are rejected. Task can be referenced by Workflows, Decisions, Assignments, and Dependencies.
 
-**Authorization:** Work records inherit the Enterprise organization boundary. Server-side policies prevent cross-organization access and management. Assignments represent an assignee only and do not grant authority beyond the assignee's existing permissions.
+**Relationships:** Projects may reference Strategy, Plan, and Initiative records from the same Enterprise. Milestones belong to a Project and Enterprise. Dependencies are directional relationships between Project, Task, or Milestone endpoints; Enterprise ownership is mandatory, explicit Project scope requires both endpoints to belong to that Project, and duplicate edges, self-links, and cycles are rejected. Assignments belong to an Enterprise and identify a User or existing Agent Assignment; an assignment does not grant authority.
+
+**Workflow separation:** Workflow definitions and immutable published WorkflowVersions define orchestration. WorkflowExecution is the authoritative persisted runtime record. Task state is not Workflow execution state, and a Workflow does not become a Task.
+
+**Data migration:** The forward-only WorkItem consolidation migration maps each former WorkItem ID to a newly created Task ID, remaps Workflow/Decision/legacy Execution references and polymorphic Assignment/Dependency endpoints, preserves legacy execution name snapshots, validates scope and ambiguous references, then drops the legacy table and columns. Existing Task IDs are never overwritten or assumed to share an ID space. Historical decision content and timestamps are preserved. The migration cannot be automatically rolled back; a verified backup is required before production execution.
+
+**Authorization:** Work records inherit the Enterprise organization boundary. Server-side policies and scoped selectors prevent cross-organization access and cross-Enterprise/project relationships.
 
 **Ownership:** CR8OR for CR8OR-owned work.
 
-**Known invariants:** Parent ownership is preserved when unrelated work fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
+**Known invariants:** Parent ownership is preserved when unrelated Task fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
 
-**Current implementation:** Workflows persist deterministic definitions through immutable published WorkflowVersions. WorkflowExecutions are the authoritative persisted runtime records and retain Workflow, Enterprise, actor, version, correlation, idempotency, stage, output, waiting, failure, and continuation state. AgentExecutions are the authoritative Agent runtime records. Laravel Queue jobs remain infrastructure, while GenerationJob, RenderJob, PublishingJob, IntegrationJob, and related specialized job models represent bounded-context records rather than a generic Workflow Job -> Execution hierarchy.
+**Current implementation:** WorkflowExecution preserves Workflow, Enterprise, actor, version, correlation, idempotency, stage, output, waiting, failure, and continuation state. AgentExecution is the authoritative Agent runtime record. Laravel Queue jobs remain infrastructure, while GenerationJob, RenderJob, PublishingJob, IntegrationJob, and related specialized job models represent bounded-context records rather than a generic Workflow Job -> Execution hierarchy.
 
-**Deferred:** Full workflow-engine semantics, concrete provider execution and external task-management integration.
+**Deferred:** Future provider execution and external task-management integration.
+
 
 ## Marketing
 

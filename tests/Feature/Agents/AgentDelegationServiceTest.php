@@ -43,7 +43,7 @@ function delegationTargetExpertRuntimeClass(): string
     {
         public function definition(): \App\Experts\ExpertDefinition
         {
-            return new \App\Experts\ExpertDefinition(name: 'Delegation Target', description: 'Test delegated work expert.', responsibilities: ['execute delegated work'], methodology: 'Execute only within enterprise context.', requiredContext: ['enterprise'], capabilities: ['work.item.create']);
+            return new \App\Experts\ExpertDefinition(name: 'Delegation Target', description: 'Test delegated work expert.', responsibilities: ['execute delegated work'], methodology: 'Execute only within enterprise context.', requiredContext: ['enterprise'], capabilities: ['work.task.create']);
         }
 
         public function analyze(array $context): array
@@ -72,7 +72,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
 
     $approval = app(\App\Services\ApprovalRequestService::class)->request(
         $actor,
-        'work.item.create',
+        'work.task.create',
         $target,
         null,
         ['job' => 'job-7'],
@@ -84,7 +84,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
         'source_agent_assignment_id' => $source->id,
         'target_agent_assignment_id' => $target->id,
         'actor_id' => $actor->id,
-        'capability' => 'work.item.create',
+        'capability' => 'work.task.create',
         'target_context' => ['job' => 'job-7'],
     ]);
 
@@ -94,7 +94,7 @@ it('binds an approval to one delegation and rejects rebinding it', function () {
         'source_agent_assignment_id' => $source->id,
         'target_agent_assignment_id' => $target->id,
         'actor_id' => $actor->id,
-        'capability' => 'work.item.create',
+        'capability' => 'work.task.create',
         'target_context' => ['job' => 'job-7'],
     ]);
 
@@ -135,7 +135,7 @@ function delegationRequest(
     User $actor,
     AgentAssignment $source,
     string $targetSlug,
-    string $capability = 'work.item.create',
+    string $capability = 'work.task.create',
     array $targetContext = [],
 ): AgentDelegationRequest {
     return new AgentDelegationRequest(
@@ -302,7 +302,7 @@ it('preserves parent execution linkage and historical identity', function () {
         actor: $actor,
         sourceAssignment: $source,
         targetAgentSlug: 'target-agent',
-        capability: 'work.item.create',
+        capability: 'work.task.create',
         prompt: 'Perform the delegated work.',
         expertSlugs: ['delegation-target'],
         parentExecution: $parent,

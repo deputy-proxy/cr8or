@@ -12,7 +12,7 @@ final class ProductExpert extends Expert
             responsibilities: ['analyze product priorities', 'identify delivery trade-offs', 'support product planning'],
             methodology: 'Outcome-first product planning grounded in strategy and delivery evidence.',
             requiredContext: ['enterprise', 'strategy', 'knowledge', 'work'],
-            capabilities: ['strategy.create', 'strategy.update', 'work.item.create', 'work.item.update'],
+            capabilities: ['strategy.create', 'strategy.update', 'work.task.create', 'work.task.update'],
         );
     }
 

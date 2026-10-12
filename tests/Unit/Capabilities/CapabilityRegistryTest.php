@@ -10,7 +10,7 @@ use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\GetEnterpriseTool;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateStrategy;
-use App\Operations\CreateWorkItem;
+use App\Operations\CreateTask;
 use App\Operations\UpdateStrategy;
 use InvalidArgumentException;
 
@@ -179,7 +179,7 @@ it('maps all previously unmapped mutating resource Tools to explicit business Ca
 it('keeps Expert ownership in the Agent-to-Expert execution context', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->resolve('work.item.create')->operation)->toBe(CreateWorkItem::class)
+    expect($registry->resolve('work.task.create')->operation)->toBe(CreateTask::class)
         ->and($registry->resolve('marketing.plan')->operation)->toBe(App\Operations\PlanMarketing::class);
 });
 it('rejects a Capability definition without an explicit failure contract', function () {

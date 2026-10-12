@@ -134,10 +134,10 @@ it('emits governed capability and operation events without exposing model output
         structured: [
             'answer' => 'Safe answer.',
             'capability_requests' => [[
-                'capability' => 'work.item.create',
+                'capability' => 'work.task.create',
                 'expert_slug' => 'operations',
                 'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                'input_payload' => ['name' => 'Event work item'],
+                'input_payload' => ['name' => 'Event task'],
             ]],
             'delegation_requests' => [],
             'termination' => 'completed',
@@ -179,7 +179,7 @@ it('sanitizes dangerous event fields and keeps events versioned and immutable', 
         actorId: 40,
         correlationId: 'event-contract',
         provenance: [
-            'operation' => 'work.item.create',
+            'operation' => 'work.task.create',
             'reasoning' => 'must not leak',
         ],
         data: [
@@ -194,7 +194,7 @@ it('sanitizes dangerous event fields and keeps events versioned and immutable', 
     expect($event::VERSION)->toBe(1)
         ->and($event::VISIBILITY)->toBe('internal')
         ->and($payload['execution_id'])->toBe(10)
-        ->and($payload['provenance'])->toBe(['operation' => 'work.item.create'])
+        ->and($payload['provenance'])->toBe(['operation' => 'work.task.create'])
         ->and($payload['data'])->toBe(['safe' => 'value', 'nested' => ['count' => 2]])
         ->and(json_encode($payload))->not->toContain('must not leak');
 });

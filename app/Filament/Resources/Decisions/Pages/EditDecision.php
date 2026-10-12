@@ -28,7 +28,6 @@ class EditDecision extends EditRecord
         $data['initiative_id'] = $record->initiative_id;
         $data['project_id'] = $record->project_id;
         $data['task_id'] = $record->task_id;
-        $data['work_item_id'] = $record->work_item_id;
         $data['decided_at'] = $record->decided_at;
 
         return $data;

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Assignment;
 use App\Models\Enterprise;
+use App\Models\Task;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<Assignment> */
@@ -13,6 +14,6 @@ class AssignmentFactory extends Factory
 
     public function definition(): array
     {
-        return ['enterprise_id' => Enterprise::factory(), 'assignable_type' => 'task', 'assignable_id' => 1, 'user_id' => null, 'agent_assignment_id' => null];
+        return ['enterprise_id' => Enterprise::factory(), 'assignable_type' => Task::class, 'assignable_id' => 1, 'user_id' => null, 'agent_assignment_id' => null];
     }
 }

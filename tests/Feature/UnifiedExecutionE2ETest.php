@@ -6,7 +6,7 @@ use App\Data\CapabilityInvocationRequest;
 use App\Data\Integrations\IntegrationResultEnvelope;
 use App\Experts\OperationsExpert;
 use App\Mcp\Servers\Cr8orServer;
-use App\Mcp\Tools\UpdateWorkItemTool;
+use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
@@ -17,10 +17,10 @@ use App\Models\IntegrationConnection;
 use App\Models\IntegrationJob;
 use App\Models\IntegrationResult;
 use App\Models\Membership;
+use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowStage;
-use App\Models\WorkItem;
 use App\Services\CapabilityInvocationService;
 use App\Services\IntegrationResultService;
 use App\Services\WorkflowExecutionService;
@@ -54,18 +54,18 @@ function e2eActor(Enterprise $enterprise): User
     return $actor;
 }
 
-it('proves the representative work item Operation is shared by MCP, Agent, Workflow and Command Webhook entry points', function (): void {
+it('proves the representative task Operation is shared by MCP, Agent, Workflow and Command Webhook entry points', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = e2eActor($enterprise);
 
-    $mcpItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'mcp-before']);
-    $agentItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'agent-before']);
-    $workflowItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'workflow-before']);
-    $commandItem = WorkItem::factory()->create(['enterprise_id' => $enterprise, 'name' => 'command-before']);
+    $mcpItem = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'mcp-before']);
+    $agentItem = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'agent-before']);
+    $workflowItem = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'workflow-before']);
+    $commandItem = Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'command-before']);
 
     $direct = Cr8orServer::actingAs($actor, 'api')
-        ->tool(UpdateWorkItemTool::class, [
-            'work_item_id' => $mcpItem->getKey(),
+        ->tool(UpdateTaskTool::class, [
+            'task_id' => $mcpItem->getKey(),
             'name' => 'mcp-after',
         ]);
 
@@ -74,12 +74,12 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
     [$assignment, $execution] = agentExecutionContext($actor, $enterprise);
 
     $agentResult = app(CapabilityInvocationService::class)->invoke(new CapabilityInvocationRequest(
-        capability: 'work.item.update',
+        capability: 'work.task.update',
         actor: $actor,
         enterprise: $enterprise,
         assignment: $assignment,
         execution: $execution,
-        targetContext: ['work_item_id' => $agentItem->getKey()],
+        targetContext: ['task_id' => $agentItem->getKey()],
         inputPayload: ['name' => 'agent-after'],
         expertSlug: 'operations',
         correlationId: $execution->correlation_id,
@@ -87,14 +87,14 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
     ));
 
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
-    WorkflowStage::factory()->create(['workflow_id' => $workflow->getKey(), 'key' => 'update-work', 'name' => 'Update work', 'sequence' => 1, 'dependencies' => [], 'expert_slugs' => ['operations'], 'capability_slugs' => ['work.item.update'], 'input_contract' => ['required' => ['work_item_id', 'name']], 'output_contract' => []]);
+    WorkflowStage::factory()->create(['workflow_id' => $workflow->getKey(), 'key' => 'update-work', 'name' => 'Update work', 'sequence' => 1, 'dependencies' => [], 'expert_slugs' => ['operations'], 'capability_slugs' => ['work.task.update'], 'input_contract' => ['required' => ['task_id', 'name']], 'output_contract' => []]);
     $version = app(WorkflowVersionService::class)->publish($workflow, $actor, 'e2e-publish-'.$workflow->getKey());
-    $workflowResult = app(WorkflowExecutionService::class)->start($actor, $version, ['work_item_id' => $workflowItem->getKey(), 'name' => 'workflow-after'], 'e2e-workflow-1', 'e2e-workflow');
+    $workflowResult = app(WorkflowExecutionService::class)->start($actor, $version, ['task_id' => $workflowItem->getKey(), 'name' => 'workflow-after'], 'e2e-workflow-1', 'e2e-workflow');
 
     config()->set('services.command_webhooks.credentials.e2e', [
         'secret' => 'e2e-secret',
         'actor_id' => $actor->getKey(),
-        'capabilities' => ['work.item.update'],
+        'capabilities' => ['work.task.update'],
     ]);
 
     $payload = [
@@ -102,7 +102,7 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
         'idempotency_key' => 'e2e-command-1',
         'correlation_id' => 'e2e-command',
         'input' => [
-            'work_item_id' => $commandItem->getKey(),
+            'task_id' => $commandItem->getKey(),
             'name' => 'command-after',
         ],
     ];
@@ -113,7 +113,7 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
         $body,
         now()->timestamp,
         'e2e',
-    ))->postJson('/commands/work.item.update', $payload);
+    ))->postJson('/commands/work.task.update', $payload);
 
     $command->assertOk();
 
@@ -121,7 +121,7 @@ it('proves the representative work item Operation is shared by MCP, Agent, Workf
         ->and($agentItem->refresh()->name)->toBe('agent-after')
         ->and($workflowItem->refresh()->name)->toBe('workflow-after')
         ->and($commandItem->refresh()->name)->toBe('command-after')
-        ->and($agentResult['capability'])->toBe('work.item.update')
+        ->and($agentResult['capability'])->toBe('work.task.update')
         ->and($workflowResult->status)->toBe('completed')
         ->and(CommandWebhookDelivery::query()->count())->toBe(1);
 });

@@ -62,8 +62,8 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | publication.publish | PublishContent | publish-content | PublishContentTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + ContentItem policy | required | no | no | standard |
 | strategy.create | CreateStrategy | create-strategy | CreateStrategyTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Strategy policy | none | no | no | standard |
 | strategy.update | UpdateStrategy | update-strategy | UpdateStrategyTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Strategy policy | none | no | no | standard |
-| work.item.create | CreateWorkItem | create-work-item | CreateWorkItemTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + WorkItem policy | none | no | no | standard |
-| work.item.update | UpdateWorkItem | update-work-item | UpdateWorkItemTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + WorkItem policy | none | no | no | standard |
+| work.task.create | CreateTask | create-task | CreateTaskTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Task policy | none | no | no | standard |
+| work.task.update | UpdateTask | update-task | UpdateTaskTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Task policy | none | no | no | standard |
 | enterprise.create | EnterpriseCreate | create-enterprise | CreateEnterpriseTool | business | yes | yes | Operation direct | none | none | no | no | standard |
 | approval.request | ApprovalRequestCreate | mcp_agent_approval_request | RequestApprovalTool | business | yes | yes | Operation direct | assignment authorization | required | no | no | standard |
 | marketing.audience.create | MarketingAudienceCreate | create-audience | CreateAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
@@ -134,7 +134,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateProjectTool | DomainMutationTool | governed business | marketing.project.create | Operation direct |
 | CreateScriptTool | DomainMutationTool | governed business | marketing.script.create | Operation direct |
 | CreateStrategyTool | GovernedCapabilityTool | governed business | strategy.create | CapabilityInvocationService |
-| CreateWorkItemTool | GovernedCapabilityTool | governed business | work.item.create | CapabilityInvocationService |
+| CreateTaskTool | GovernedCapabilityTool | governed business | work.task.create | CapabilityInvocationService |
 | CreateWorkflowTool | GovernedCapabilityTool | lifecycle | workflow.create | CapabilityInvocationService |
 | UpdateWorkflowTool | GovernedCapabilityTool | lifecycle | workflow.update | CapabilityInvocationService |
 | DefineMarketingStrategySectionTool | GovernedCapabilityTool | governed business | marketing.strategy.section.define | CapabilityInvocationService |
@@ -169,7 +169,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | GetProjectTool | DiscoveryGetTool | read/query | - | n/a |
 | GetSocialAccountTool | DiscoveryGetTool | read/query | - | n/a |
 | GetStrategyTool | DiscoveryGetTool | read/query | - | n/a |
-| GetWorkItemTool | DiscoveryGetTool | read/query | - | n/a |
+| GetTaskTool | DiscoveryGetTool | read/query | - | n/a |
 | GetWorkflowExecutionTool | GovernedCapabilityTool | lifecycle | workflow.inspect | CapabilityInvocationService |
 | ListAgentAssignmentsTool | AgentAssignmentResourceTool | read/query | - | Operation direct |
 | ListAgentDelegationsTool | AgentAssignmentResourceTool | read/query | - | Operation direct |
@@ -196,7 +196,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | ListProjectTool | DiscoveryListTool | read/query | - | n/a |
 | ListSocialAccountTool | DiscoveryListTool | read/query | - | n/a |
 | ListStrategyTool | DiscoveryListTool | read/query | - | n/a |
-| ListWorkItemTool | DiscoveryListTool | read/query | - | n/a |
+| ListTaskTool | DiscoveryListTool | read/query | - | n/a |
 | ListWorkflowsTool | GovernedCapabilityTool | read/query | workflow.discover | CapabilityInvocationService |
 | MarkContentPublicationReadyTool | GovernedCapabilityTool | governed business | marketing.content.publication-ready | CapabilityInvocationService |
 | PlanMarketingTool | GovernedCapabilityTool | governed business | marketing.plan | CapabilityInvocationService |
@@ -227,7 +227,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | UpdateProjectTool | DomainMutationTool | governed business | marketing.project.update | Operation direct |
 | UpdateSocialAccountTool | DomainMutationTool | governed business | marketing.social-account.update | Operation direct |
 | UpdateStrategyTool | GovernedCapabilityTool | governed business | strategy.update | CapabilityInvocationService |
-| UpdateWorkItemTool | GovernedCapabilityTool | governed business | work.item.update | CapabilityInvocationService |
+| UpdateTaskTool | GovernedCapabilityTool | governed business | work.task.update | CapabilityInvocationService |
 | VerifyMarketingGraphTool | GovernedCapabilityTool | governed business | marketing.graph.verify | CapabilityInvocationService |
 
 
@@ -278,7 +278,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreatePlannedAsset | marketing.asset.create | create-asset | governed |
 | CreateScript | marketing.script.create | create-script | governed |
 | CreateStrategy | strategy.create | create-strategy | governed |
-| CreateWorkItem | work.item.create | create-work-item | governed |
+| CreateTask | work.task.create | create-task | governed |
 | CreateWorkflow | workflow.create | mcp_workflow_create | lifecycle |
 | UpdateWorkflow | workflow.update | mcp_workflow_update | lifecycle |
 | DefineMarketingStrategySection | marketing.strategy.section.define | define-marketing-strategy-section | governed |
@@ -344,7 +344,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | UpdateKnowledgeUnit | - | - | resource/lifecycle or follow-up candidate |
 | UpdateMemory | - | - | resource/lifecycle or follow-up candidate |
 | UpdateStrategy | strategy.update | update-strategy | governed |
-| UpdateWorkItem | work.item.update | update-work-item | governed |
+| UpdateTask | work.task.update | update-task | governed |
 | VerifyMarketingGraph | marketing.graph.verify | verify-marketing-graph | governed |
 
 

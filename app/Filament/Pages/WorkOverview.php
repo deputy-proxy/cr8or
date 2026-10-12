@@ -12,7 +12,6 @@ use App\Filament\Resources\Initiatives\InitiativeResource;
 use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Filament\Resources\Tasks\TaskResource;
-use App\Filament\Resources\WorkItems\WorkItemResource;
 use App\Models\Assignment;
 use App\Models\Decision;
 use App\Models\Dependency;
@@ -23,7 +22,6 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Filament\Resources\Resource;
@@ -74,7 +72,6 @@ class WorkOverview extends Page
             ['label' => 'Projects', 'count' => $this->countForAuthorizedEnterprises(Project::class), 'url' => ProjectResource::getUrl()],
             ['label' => 'Milestones', 'count' => $this->countForAuthorizedEnterprises(Milestone::class), 'url' => MilestoneResource::getUrl()],
             ['label' => 'Tasks', 'count' => $this->countForAuthorizedEnterprises(Task::class), 'url' => TaskResource::getUrl()],
-            ['label' => 'Work Items', 'count' => $this->countForAuthorizedEnterprises(WorkItem::class), 'url' => WorkItemResource::getUrl()],
             ['label' => 'Dependencies', 'count' => $this->countForAuthorizedEnterprises(Dependency::class), 'url' => DependencyResource::getUrl()],
             ['label' => 'Assignments', 'count' => $this->countForAuthorizedEnterprises(Assignment::class), 'url' => AssignmentResource::getUrl()],
             ['label' => 'Decisions', 'count' => $this->countForAuthorizedEnterprises(Decision::class), 'url' => DecisionResource::getUrl()],
@@ -90,7 +87,7 @@ class WorkOverview extends Page
     }
 
     /**
-     * @param  class-string<Assignment|Decision|Dependency|EnterpriseDecision|Milestone|Project|Task|WorkItem>  $model
+     * @param  class-string<Assignment|Decision|Dependency|EnterpriseDecision|Milestone|Project|Task>  $model
      */
     private function countForAuthorizedEnterprises(string $model): int
     {
@@ -129,8 +126,8 @@ class WorkOverview extends Page
 
     /**
      * Build a nested tree from records inside the user's authorized organizations.
-     * Tasks retain their persisted parent-child hierarchy and are not implicitly linked to Work Items.
-     * Assignments, dependencies, and decisions follow their persisted relationships to Work Items.
+     * Tasks retain their persisted parent-child hierarchy and are not implicitly linked to Workflow records.
+     * Assignments, dependencies, and decisions follow their persisted relationships to Tasks.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -141,7 +138,7 @@ class WorkOverview extends Page
             ->orderBy('name')
             ->get(['id', 'name', 'organization_id']);
 
-        $ids = $enterprises->modelKeys();
+        $enterpriseIds = $enterprises->modelKeys();
         $nodes = [];
         $links = [];
         $known = [];
@@ -150,7 +147,6 @@ class WorkOverview extends Page
             if (isset($known[$id])) {
                 return;
             }
-
             $known[$id] = true;
             $nodes[] = array_merge(['name' => $id, 'displayLabel' => $label, 'type' => $type, 'url' => $url], $metadata);
             if ($parent !== null && isset($known[$parent])) {
@@ -159,147 +155,124 @@ class WorkOverview extends Page
         };
 
         foreach ($enterprises as $enterprise) {
-            $addNode('enterprise:'.$enterprise->id, 'Enterprise: '.$enterprise->name, 'organization', $this->recordEditUrl(EnterpriseResource::class, $enterprise));
+            $enterpriseNode = 'enterprise:'.$enterprise->id;
+            $addNode($enterpriseNode, 'Enterprise: '.$enterprise->name, 'organization', $this->recordEditUrl(EnterpriseResource::class, $enterprise));
+            $addNode('group:tasks:enterprise:'.$enterprise->id, 'Tasks without a Project', 'group', '#', $enterpriseNode, [
+                'groupType' => 'tasks',
+                'enterpriseId' => $enterprise->id,
+            ]);
         }
 
         $initiatives = Initiative::query()
-            ->whereHas('plan.strategy.objective', fn (Builder $query) => $query->whereIn('enterprise_id', $ids))
+            ->whereHas('plan.strategy.objective', fn (Builder $query) => $query->whereIn('enterprise_id', $enterpriseIds))
             ->with('plan.strategy.objective')
             ->orderBy('name')
             ->get();
 
-        $initiativeEnterprise = [];
         foreach ($initiatives as $initiative) {
             $enterpriseId = $initiative->plan?->strategy?->objective?->enterprise_id;
-            if (! $enterpriseId || ! in_array((int) $enterpriseId, $ids, true)) {
+            if (! $enterpriseId || ! in_array((int) $enterpriseId, $enterpriseIds, true)) {
                 continue;
             }
-            $id = 'initiative:'.$initiative->id;
-            $initiativeEnterprise[$initiative->id] = (int) $enterpriseId;
-            $addNode($id, 'Initiative: '.$initiative->name, 'planning', $this->recordEditUrl(InitiativeResource::class, $initiative), 'enterprise:'.$enterpriseId);
+            $addNode('initiative:'.$initiative->id, 'Initiative: '.$initiative->name, 'planning', $this->recordEditUrl(InitiativeResource::class, $initiative), 'enterprise:'.$enterpriseId);
         }
 
-        $projects = Project::query()->whereIn('enterprise_id', $ids)->orderBy('name')->get();
+        $projects = Project::query()->whereIn('enterprise_id', $enterpriseIds)->orderBy('name')->get();
         $projectIds = $projects->modelKeys();
         foreach ($projects as $project) {
-            $addNode('project:'.$project->id, 'Project: '.$project->name, 'planning', $this->recordEditUrl(ProjectResource::class, $project), 'enterprise:'.$project->enterprise_id, $this->statusMetadata($project->status));
+            $projectNode = 'project:'.$project->id;
+            $addNode($projectNode, 'Project: '.$project->name, 'planning', $this->recordEditUrl(ProjectResource::class, $project), 'enterprise:'.$project->enterprise_id, $this->statusMetadata($project->status));
+            $addNode('group:milestones:'.$project->id, 'Milestones', 'group', '#', $projectNode, ['groupType' => 'milestones', 'projectId' => $project->id]);
+            $addNode('group:tasks:project:'.$project->id, 'Tasks', 'group', '#', $projectNode, ['groupType' => 'tasks', 'projectId' => $project->id]);
         }
 
-        $workItems = WorkItem::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
-        $workItemIds = $workItems->modelKeys();
-        $milestones = Milestone::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
-        $tasks = Task::query()->whereIn('enterprise_id', $ids)->whereIn('project_id', $projectIds)->orderBy('name')->get();
-        $taskProjectIds = $tasks->pluck('project_id', 'id');
-        $projectGroups = [];
-
-        foreach ($projects as $project) {
-            $projectNodeId = 'project:'.$project->id;
-            $projectGroups[$project->id] = [
-                'milestones' => 'group:milestones:'.$project->id,
-                'work-items' => 'group:work-items:'.$project->id,
-                'tasks' => 'group:tasks:'.$project->id,
-            ];
-
-            $addNode($projectGroups[$project->id]['milestones'], 'Milestones ('.$milestones->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'milestones', 'projectId' => $project->id]);
-            $addNode($projectGroups[$project->id]['work-items'], 'Work Items ('.$workItems->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'work-items', 'projectId' => $project->id]);
-            $addNode($projectGroups[$project->id]['tasks'], 'Tasks ('.$tasks->where('project_id', $project->id)->count().')', 'group', '#', $projectNodeId, ['groupType' => 'tasks', 'projectId' => $project->id]);
-        }
-
-        foreach ($workItems as $workItem) {
-            if ($workItem->project_id === null || ! isset($projectGroups[$workItem->project_id])) {
-                continue;
-            }
-
-            $groupId = $projectGroups[$workItem->project_id]['work-items'];
-            $addNode('work-item:'.$workItem->id, 'Work Item: '.$workItem->name, 'work', $this->recordEditUrl(WorkItemResource::class, $workItem), $groupId, array_merge(
-                $this->statusMetadata($workItem->status),
-                ['groupId' => $groupId],
-            ));
-        }
-
+        $milestones = Milestone::query()
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->whereIn('project_id', $projectIds)
+            ->orderBy('name')
+            ->get();
         foreach ($milestones as $milestone) {
-            if (! isset($projectGroups[$milestone->project_id])) {
-                continue;
-            }
-
-            $groupId = $projectGroups[$milestone->project_id]['milestones'];
-            $addNode('milestone:'.$milestone->id, 'Milestone: '.$milestone->name, 'planning', $this->recordEditUrl(MilestoneResource::class, $milestone), $groupId, array_merge(
+            $addNode(
+                'milestone:'.$milestone->id,
+                'Milestone: '.$milestone->name,
+                'planning',
+                $this->recordEditUrl(MilestoneResource::class, $milestone),
+                'group:milestones:'.$milestone->project_id,
                 $this->statusMetadata($milestone->status, $milestone->due_at),
-                ['groupId' => $groupId],
-            ));
+            );
         }
 
-        // Tasks keep their persisted parent-child hierarchy inside the project Tasks group.
+        $tasks = Task::query()->whereIn('enterprise_id', $enterpriseIds)->orderBy('name')->get();
+        $taskIds = $tasks->modelKeys();
+        $tasksById = $tasks->keyBy('id');
+
         foreach ($tasks as $task) {
-            if ($task->project_id === null || ! isset($projectGroups[$task->project_id])) {
-                continue;
-            }
-
-            $groupId = $projectGroups[$task->project_id]['tasks'];
-            $addNode('task:'.$task->id, 'Task: '.$task->name, 'supporting', $this->recordEditUrl(TaskResource::class, $task), null, array_merge(
-                $this->statusMetadata($task->status, $task->due_at),
-                ['groupId' => $groupId],
-            ));
+            $group = $task->project_id === null
+                ? 'group:tasks:enterprise:'.$task->enterprise_id
+                : 'group:tasks:project:'.$task->project_id;
+            $addNode(
+                'task:'.$task->id,
+                'Task: '.$task->name,
+                'supporting',
+                $this->recordEditUrl(TaskResource::class, $task),
+                $group,
+                array_merge($this->statusMetadata($task->status, $task->due_at), ['groupId' => $group]),
+            );
         }
+
+        // Preserve Task parent-child hierarchy. Group membership is the fallback for roots.
         foreach ($tasks as $task) {
-            if ($task->project_id === null || ! isset($projectGroups[$task->project_id])) {
-                continue;
-            }
-
-            $taskNodeId = 'task:'.$task->id;
-            if ($task->parent_task_id
-                && isset($taskProjectIds[$task->parent_task_id])
-                && (int) $taskProjectIds[$task->parent_task_id] === (int) $task->project_id) {
-                $links[] = ['source' => 'task:'.$task->parent_task_id, 'target' => $taskNodeId, 'value' => 1];
-            } else {
-                $links[] = ['source' => $projectGroups[$task->project_id]['tasks'], 'target' => $taskNodeId, 'value' => 1];
+            $taskNode = 'task:'.$task->id;
+            $parent = $task->parent_task_id === null ? null : $tasksById->get($task->parent_task_id);
+            if ($parent instanceof Task
+                && (int) $parent->enterprise_id === (int) $task->enterprise_id
+                && $parent->project_id === $task->project_id) {
+                $links[] = ['source' => 'task:'.$parent->id, 'target' => $taskNode, 'value' => 1];
             }
         }
 
-        $workItemClass = (new WorkItem)->getMorphClass();
+        $taskMorph = (new Task)->getMorphClass();
         $assignments = Assignment::query()
-            ->whereIn('enterprise_id', $ids)
-            ->where('assignable_type', $workItemClass)
-            ->whereIn('assignable_id', $workItemIds)
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->where('assignable_type', $taskMorph)
+            ->whereIn('assignable_id', $taskIds)
             ->with('user')
             ->orderBy('id')
             ->get();
         foreach ($assignments as $assignment) {
-            $person = $assignment->user_id ? $assignment->user->name : ($assignment->agent_assignment_id ? 'Agent assignment #'.$assignment->agent_assignment_id : 'Unassigned');
-            $addNode('assignment:'.$assignment->id, 'Assignment: '.$person, 'supporting', $this->recordEditUrl(AssignmentResource::class, $assignment), 'work-item:'.$assignment->assignable_id);
+            $person = $assignment->user_id
+                ? ($assignment->user->name)
+                : ($assignment->agent_assignment_id ? 'Agent assignment #'.$assignment->agent_assignment_id : 'Unassigned');
+            $addNode('assignment:'.$assignment->id, 'Assignment: '.$person, 'supporting', $this->recordEditUrl(AssignmentResource::class, $assignment), 'task:'.$assignment->assignable_id);
         }
 
         $decisions = Decision::query()
-            ->whereIn('enterprise_id', $ids)
-            ->whereIn('work_item_id', $workItemIds)
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->whereIn('task_id', $taskIds)
             ->orderBy('id')
             ->get();
         foreach ($decisions as $decision) {
-            $addNode('decision:'.$decision->id, 'Decision: '.$decision->title, 'supporting', $this->recordEditUrl(DecisionResource::class, $decision), 'work-item:'.$decision->work_item_id);
+            $addNode('decision:'.$decision->id, 'Decision: '.$decision->title, 'supporting', $this->recordEditUrl(DecisionResource::class, $decision), 'task:'.$decision->task_id);
         }
 
         $dependencies = Dependency::query()
-            ->whereIn('enterprise_id', $ids)
-            ->where(function (Builder $query) use ($workItemClass, $workItemIds): void {
-                $query->where(function (Builder $q) use ($workItemClass, $workItemIds): void {
-                    $q->where('predecessor_type', $workItemClass)->whereIn('predecessor_id', $workItemIds);
-                })->orWhere(function (Builder $q) use ($workItemClass, $workItemIds): void {
-                    $q->where('successor_type', $workItemClass)->whereIn('successor_id', $workItemIds);
-                });
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->where(function (Builder $query) use ($taskMorph, $taskIds): void {
+                $query->where(fn (Builder $q) => $q->where('predecessor_type', $taskMorph)->whereIn('predecessor_id', $taskIds))
+                    ->orWhere(fn (Builder $q) => $q->where('successor_type', $taskMorph)->whereIn('successor_id', $taskIds));
             })
             ->orderBy('id')
             ->get();
         foreach ($dependencies as $dependency) {
-            $parentWorkItemId = $dependency->predecessor_type === $workItemClass && in_array($dependency->predecessor_id, $workItemIds)
+            $taskId = $dependency->predecessor_type === $taskMorph && in_array((int) $dependency->predecessor_id, $taskIds, true)
                 ? (int) $dependency->predecessor_id
                 : (int) $dependency->successor_id;
-            if (! isset($known['work-item:'.$parentWorkItemId])) {
-                continue;
+            if (isset($known['task:'.$taskId])) {
+                $addNode('dependency:'.$dependency->id, 'Dependency: '.$dependency->type, 'supporting', $this->recordEditUrl(DependencyResource::class, $dependency), 'task:'.$taskId);
             }
-            $addNode('dependency:'.$dependency->id, 'Dependency: '.$dependency->type, 'supporting', $this->recordEditUrl(DependencyResource::class, $dependency), 'work-item:'.$parentWorkItemId);
         }
 
-        $enterpriseDecisions = EnterpriseDecision::query()->whereIn('enterprise_id', $ids)->orderBy('id')->get();
+        $enterpriseDecisions = EnterpriseDecision::query()->whereIn('enterprise_id', $enterpriseIds)->orderBy('id')->get();
         foreach ($enterpriseDecisions as $decision) {
             $addNode('enterprise-decision:'.$decision->id, 'Enterprise Decision: '.$decision->title, 'governance', $this->recordEditUrl(EnterpriseDecisionResource::class, $decision), 'enterprise:'.$decision->enterprise_id);
         }
@@ -320,12 +293,10 @@ class WorkOverview extends Page
             if (isset($ancestors[$id]) || ! isset($nodesById[$id])) {
                 return null;
             }
-
             $node = $nodesById[$id];
             $node['children'] = [];
             $nextAncestors = $ancestors;
             $nextAncestors[$id] = true;
-
             foreach ($childrenByParent[$id] ?? [] as $childId) {
                 $child = $buildNode($childId, $nextAncestors);
                 if ($child !== null) {
@@ -336,30 +307,22 @@ class WorkOverview extends Page
             return $node;
         };
 
-        $enterpriseRoots = [];
+        $roots = [];
         foreach ($nodes as $node) {
             if ($node['type'] !== 'organization' || isset($childIds[$node['name']])) {
                 continue;
             }
-
             $root = $buildNode($node['name']);
             if ($root !== null) {
-                $enterpriseRoots[] = $root;
+                $roots[] = $root;
             }
         }
 
-        if ($enterpriseRoots === []) {
-            return [];
-        }
-
-        // ECharts tree renders one root per series; this is a presentation-only container,
-        // not a CR8OR domain entity or relationship.
-        return [[
+        return $roots === [] ? [] : [[
             'name' => 'root:work-overview',
             'label' => 'Authorized Enterprises',
             'type' => 'root',
-            'url' => '#',
-            'children' => $enterpriseRoots,
+            'children' => $roots,
         ]];
     }
 }

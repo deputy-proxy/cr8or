@@ -2,20 +2,20 @@
 
 namespace App\Mcp\Tools;
 
+use App\Models\Task;
 use App\Models\User;
-use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('get-work-item')]
-#[Description('Get an authorized work item by id from CR8OR.')]
-class GetWorkItemTool extends DiscoveryGetTool
+#[Name('get-task')]
+#[Description('Get an authorized task by id from CR8OR.')]
+class GetTaskTool extends DiscoveryGetTool
 {
     protected static function modelClass(): string
     {
-        return WorkItem::class;
+        return Task::class;
     }
 
     protected static function fields(): array
@@ -27,6 +27,9 @@ class GetWorkItemTool extends DiscoveryGetTool
             'name' => 'name',
             'description' => 'description',
             'status' => 'status',
+            'parent_task_id' => 'parent_task_id',
+            'priority' => 'priority',
+            'due_at' => 'due_at',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',
         ];
