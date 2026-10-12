@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use LogicException;
 
 #[Fillable(['asset_id', 'version', 'disk', 'path', 'mime_type', 'size', 'checksum', 'metadata', 'external_reference'])]
@@ -35,5 +36,11 @@ class AssetVersion extends Model
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    /** @return HasOne<MediaMetadata, $this> */
+    public function mediaMetadata(): HasOne
+    {
+        return $this->hasOne(MediaMetadata::class);
     }
 }

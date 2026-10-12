@@ -337,7 +337,7 @@ final class PublishingService
     {
         $assets = $content->assets()
             ->where('status', Asset::STATUS_ACTIVE)
-            ->with(['versions' => fn ($query) => $query->orderByDesc('version')])
+            ->with(['versions' => fn ($query) => $query->with('mediaMetadata')->orderByDesc('version')])
             ->get();
         $media = [];
 
@@ -347,6 +347,22 @@ final class PublishingService
                 throw new LogicException('An active content asset must have a version with a declared MIME type before publication.');
             }
 
+            $videoWidth = data_get($version, 'mediaMetadata.width');
+            $videoHeight = data_get($version, 'mediaMetadata.height');
+            $videoDuration = data_get($version, 'mediaMetadata.duration_seconds');
+            $videoCodec = data_get($version, 'mediaMetadata.codec');
+            $videoFrameRate = data_get($version, 'mediaMetadata.frame_rate');
+            $versionMetadataValue = $version->getAttribute('metadata');
+            $versionMetadata = is_array($versionMetadataValue) ? $versionMetadataValue : [];
+            /** @var array<string, mixed> $versionMetadata */
+            $metadata = array_merge($versionMetadata, array_filter([
+                'width' => $videoWidth,
+                'height' => $videoHeight,
+                'duration_seconds' => $videoDuration,
+                'codec' => $videoCodec,
+                'frame_rate' => $videoFrameRate,
+            ], static fn (mixed $value): bool => $value !== null));
+
             $media[] = [
                 'asset_id' => (int) $asset->id,
                 'mime_type' => $version->mime_type,
@@ -355,9 +371,15 @@ final class PublishingService
                 'disk' => $version->disk,
                 'path' => $version->path,
                 'external_reference' => $version->external_reference,
-                'metadata' => $version->metadata ?? [],
-                'dimensions' => is_array($asset->dimensions) ? $asset->dimensions : [],
-                'duration_seconds' => $asset->duration_seconds === null ? null : (float) $asset->duration_seconds,
+                'metadata' => $metadata,
+                'dimensions' => is_numeric($videoWidth) && is_numeric($videoHeight)
+                    ? ['width' => (int) $videoWidth, 'height' => (int) $videoHeight]
+                    : (is_array($asset->dimensions) ? $asset->dimensions : []),
+                'duration_seconds' => is_numeric($videoDuration)
+                    ? (float) $videoDuration
+                    : ($asset->duration_seconds === null ? null : (float) $asset->duration_seconds),
+                'codec' => is_string($videoCodec) ? $videoCodec : ($versionMetadata['codec'] ?? null),
+                'frame_rate' => is_numeric($videoFrameRate) ? (float) $videoFrameRate : ($versionMetadata['frame_rate'] ?? null),
             ];
         }
 
