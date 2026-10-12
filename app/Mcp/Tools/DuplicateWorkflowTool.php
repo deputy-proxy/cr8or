@@ -14,7 +14,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('mcp_workflow_duplicate')]
+#[Name('duplicate-workflow')]
 #[Description('Duplicate a generic or enterprise-specific Workflow definition without copying published versions or execution history.')]
 class DuplicateWorkflowTool extends GovernedCapabilityTool
 {

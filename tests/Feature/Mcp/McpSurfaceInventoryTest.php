@@ -5,9 +5,7 @@ use Illuminate\Support\Facades\File;
 use Laravel\Mcp\Server\Tool;
 use ReflectionClass;
 
-it('keeps the committed MCP audit inventory synchronized with the concrete tool surface', function (): void {
-    $audit = File::get(base_path('docs/architecture/operation-capability-mcp-audit.md'));
-
+it('keeps every public MCP tool identifier canonical and unique', function (): void {
     $classes = collect(File::files(app_path('Mcp/Tools')))
         ->filter(fn ($file): bool => str_ends_with($file->getFilename(), 'Tool.php'))
         ->map(fn ($file): string => 'App\\Mcp\\Tools\\'.$file->getFilenameWithoutExtension())
@@ -19,19 +17,24 @@ it('keeps the committed MCP audit inventory synchronized with the concrete tool 
         })
         ->values();
 
-    foreach ($classes as $class) {
-        expect($audit)->toContain(class_basename($class));
-    }
+    $catalogue = File::get(base_path('docs/mcp.md'));
 
-    $registry = app(CapabilityRegistry::class);
+    $names = $classes->mapWithKeys(function (string $class) use ($catalogue): array {
+        $name = app($class)->name();
 
-    foreach ($registry->all() as $definition) {
-        expect($audit)->toContain(class_basename($definition->operation))
-            ->and($audit)->toContain($definition->tool)
-            ->and($audit)->toContain(class_basename($definition->toolClass));
-    }
+        expect($name)
+            ->toMatch('/^[a-z]+(?:-[a-z0-9]+)*$/')
+            ->not->toContain('_')
+            ->not->toContain('.');
 
-    foreach (File::files(app_path('Operations')) as $file) {
-        expect($audit)->toContain($file->getFilenameWithoutExtension());
+        expect($catalogue)->toContain("| `{$name}` | `".class_basename($class).'` |');
+
+        return [$class => $name];
+    });
+
+    expect($names->unique()->count())->toBe($names->count());
+
+    foreach (app(CapabilityRegistry::class)->all() as $definition) {
+        expect($names->get($definition->toolClass))->toBe($definition->tool);
     }
 });

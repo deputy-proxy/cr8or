@@ -37,8 +37,8 @@ Filament intentionally remains the native administrative interface and is not ro
 
 Agent/workflow lifecycle MCP Tools are orchestration controls rather than business Capability Tools. They use the explicit namespaces:
 
-- `mcp_agent_*`
-- `mcp_workflow_*`
+- canonical action-oriented kebab-case identifiers
+- canonical action-oriented kebab-case identifiers
 
 They are not required to have a business Capability mapping.
 

@@ -119,7 +119,7 @@ Business mutating Tools are required to have exactly one Capability and exactly 
 - MCP Tool identifier;
 - Tool class mapping.
 
-Lifecycle MCP Tools remain explicitly classified and use the `mcp_agent_*` / `mcp_workflow_*` namespace.
+Lifecycle MCP Tools remain explicitly classified and use the canonical action-oriented kebab-case identifiers.
 
 Query/read/admin resources remain outside the business mutation invariant unless explicitly mapped as governed business Capabilities.
 

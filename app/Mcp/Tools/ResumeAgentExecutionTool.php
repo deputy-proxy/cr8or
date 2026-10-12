@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
-#[Name('mcp_agent_execution_resume')] #[Description('Resume a paused or waiting Agent Execution through the canonical runtime.') ] class ResumeAgentExecutionTool extends AgentExecutionResourceTool
+#[Name('resume-agent-execution')] #[Description('Resume a paused or waiting Agent Execution through the canonical runtime.') ] class ResumeAgentExecutionTool extends AgentExecutionResourceTool
 {
     protected function operationClass(): string
     {
