@@ -448,6 +448,7 @@ final class DomainResourceService
     public function connectSocialAccount(User $actor, Enterprise $enterprise, array $attributes): SocialAccount
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [SocialAccount::class, $enterprise]);
+        $attributes = SocialAccount::normalizeInput($attributes);
 
         $channel = Channel::query()->findOrFail((int) $attributes['channel_id']);
         if ((int) $channel->enterprise_id !== (int) $enterprise->getKey()) {
@@ -469,15 +470,16 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('update', $account);
 
-        $account->update(array_intersect_key($attributes, array_flip(['name', 'channel_id'])));
+        $attributes = array_intersect_key($attributes, array_flip(['name', 'channel_id']));
         if (isset($attributes['channel_id'])) {
             $channel = Channel::query()->findOrFail((int) $attributes['channel_id']);
             if ((int) $channel->enterprise_id !== (int) $account->enterprise_id) {
                 throw new LogicException('The channel must belong to the social account enterprise.');
             }
-            $account->channel_id = $channel->getKey();
-            $account->save();
         }
+
+        $attributes = SocialAccount::normalizeInput($attributes);
+        $account->update($attributes);
 
         return $account->refresh();
     }

@@ -42,9 +42,9 @@ class SocialAccountResource extends Resource
         return $schema->components([
             Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
             Select::make('channel_id')->relationship('channel', 'name')->searchable()->preload()->required(),
-            TextInput::make('provider')->maxLength(255),
-            TextInput::make('name')->maxLength(255),
-            TextInput::make('external_id')->maxLength(255),
+            TextInput::make('provider')->maxLength(100)->required(),
+            TextInput::make('name')->maxLength(255)->required(),
+            TextInput::make('external_id')->maxLength(255)->required(),
             Select::make('status')->options(['active' => 'Active', 'disabled' => 'Disabled'])->required(),
         ]);
     }
