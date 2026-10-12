@@ -6,5 +6,5 @@ use App\Models\IntegrationConnection;
 
 interface CredentialResolver
 {
-    public function resolveAccessToken(IntegrationConnection $connection): string;
+    public function resolveAccessToken(IntegrationConnection $connection, ?string $targetNetwork = null): string;
 }

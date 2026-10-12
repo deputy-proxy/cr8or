@@ -14,6 +14,8 @@ class IntegrationConnection extends Model
 {
     private bool $lifecycleTransitionAuthorized = false;
 
+    private bool $credentialReferenceMutationAuthorized = false;
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_DISABLED = 'disabled';
@@ -43,6 +45,13 @@ class IntegrationConnection extends Model
                 }
 
                 $connection->lifecycleTransitionAuthorized = false;
+            }
+            if ($connection->exists && $connection->social_identity_id !== null && $connection->isDirty('credential_reference')) {
+                if (! $connection->credentialReferenceMutationAuthorized) {
+                    throw new LogicException('Social credential references can only change through the authorization lifecycle.');
+                }
+
+                $connection->credentialReferenceMutationAuthorized = false;
             }
 
             if (! in_array($connection->status, [
@@ -138,7 +147,7 @@ class IntegrationConnection extends Model
             self::STATUS_ACTIVE => [self::STATUS_DISABLED, self::STATUS_DEGRADED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
             self::STATUS_DISABLED => [self::STATUS_ACTIVE, self::STATUS_DEGRADED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
             self::STATUS_DEGRADED => [self::STATUS_ACTIVE, self::STATUS_DISABLED, self::STATUS_EXPIRED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
-            self::STATUS_EXPIRED => [self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
+            self::STATUS_EXPIRED => [self::STATUS_DISABLED, self::STATUS_RECONNECT_REQUIRED, self::STATUS_REVOKED],
             self::STATUS_RECONNECT_REQUIRED => [self::STATUS_DISABLED, self::STATUS_REVOKED],
             self::STATUS_REVOKED => [],
             default => throw new LogicException('Integration connection has no valid lifecycle state.'),
@@ -174,6 +183,19 @@ class IntegrationConnection extends Model
         $this->credential_reference = $credentialReference;
         $this->status = self::STATUS_ACTIVE;
         $this->lifecycleTransitionAuthorized = true;
+        $this->credentialReferenceMutationAuthorized = true;
+
+        return $this;
+    }
+
+    public function rotateCredentialReference(string $credentialReference): static
+    {
+        if ($this->social_identity_id === null || trim($credentialReference) === '') {
+            throw new LogicException('Credential rotation requires a linked social identity and a new reference.');
+        }
+
+        $this->credential_reference = $credentialReference;
+        $this->credentialReferenceMutationAuthorized = true;
 
         return $this;
     }

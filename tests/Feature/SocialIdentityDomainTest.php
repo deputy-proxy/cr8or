@@ -33,7 +33,7 @@ function socialIdentityDestination(Enterprise $enterprise, Channel $channel, Soc
         'enterprise_id' => $enterprise->id,
         'channel_id' => $channel->id,
         'social_identity_id' => $identity->id,
-        'provider' => $identity->provider,
+        'provider' => $channel->type,
         'external_id' => $externalId,
         'name' => $name,
     ]);
@@ -251,4 +251,23 @@ it('models expiration and reconnect-required as non-operational grant states', f
 
     $connection->reauthorize('vault/social/linkedin/member-opaque-01/rotated')->save();
     expect($connection->refresh()->isOperational())->toBeTrue();
+});
+
+it('allows one Meta authorization identity to expose destinations on multiple networks', function (): void {
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $facebookChannel = Channel::factory()->create(['enterprise_id' => $enterprise->id, 'type' => 'facebook']);
+    $instagramChannel = Channel::factory()->create(['enterprise_id' => $enterprise->id, 'type' => 'instagram']);
+    $identity = SocialIdentity::factory()->create([
+        'organization_id' => $organization->id,
+        'provider' => 'meta',
+        'external_id' => 'meta-user-opaque-1',
+    ]);
+
+    $facebook = socialIdentityDestination($enterprise, $facebookChannel, $identity, 'shared-external-id', 'Facebook Page');
+    $instagram = socialIdentityDestination($enterprise, $instagramChannel, $identity, 'shared-external-id', 'Instagram Account');
+
+    expect($facebook->provider)->toBe('facebook')
+        ->and($instagram->provider)->toBe('instagram')
+        ->and($identity->destinations()->count())->toBe(2);
 });

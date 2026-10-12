@@ -8,9 +8,9 @@ use App\Models\IntegrationConnection;
 
 final class CanvaCredentialResolver implements CredentialResolver
 {
-    public function resolveAccessToken(IntegrationConnection $connection): string
+    public function resolveAccessToken(IntegrationConnection $connection, ?string $targetNetwork = null): string
     {
-        if ($connection->provider !== 'canva') {
+        if ($targetNetwork !== null || $connection->provider !== 'canva') {
             throw new CanvaClientException('Unsupported credential provider.', 'invalid_connection');
         }
 
