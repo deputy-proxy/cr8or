@@ -87,12 +87,13 @@ return [
         ],
         'meta' => [
             'driver' => 'oauth2',
+            'graph_api_version' => env('META_GRAPH_API_VERSION', 'v26.0'),
             'enabled' => (bool) env('META_APP_ID') && (bool) env('META_APP_SECRET'),
             'client_id' => env('META_APP_ID'),
             'client_secret' => env('META_APP_SECRET'),
             'redirect_uri' => env('META_SOCIAL_REDIRECT_URI', $applicationUrl.'/social/authorization/callback/meta'),
-            'authorization_url' => 'https://www.facebook.com/v24.0/dialog/oauth',
-            'token_url' => 'https://graph.facebook.com/v24.0/oauth/access_token',
+            'authorization_url' => 'https://www.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/dialog/oauth',
+            'token_url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/oauth/access_token',
             'client_auth_method' => 'body',
             'pkce' => false,
             'authorization_parameters' => [],
@@ -100,14 +101,16 @@ return [
             'destination_networks' => ['facebook', 'instagram'],
             'destination_token_required' => ['facebook', 'instagram'],
             'identity' => [
-                'url' => 'https://graph.facebook.com/v24.0/me?fields=id,name',
+                'url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/me?fields=id,name',
                 'id_path' => 'id',
                 'name_path' => 'name',
             ],
             'destinations' => [
                 [
                     'network' => 'facebook',
-                    'url' => 'https://graph.facebook.com/v24.0/me/accounts?fields=id,name,link,instagram_business_account{id,username}',
+                    'url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/me/accounts?fields=id,name,link,access_token,tasks,instagram_business_account{id,username}',
+                    'required_any_values' => ['tasks' => ['CREATE_CONTENT', 'MANAGE']],
+                    'require_credential_token' => true,
                     'path' => 'data',
                     'id_path' => 'id',
                     'name_path' => 'name',
@@ -116,7 +119,7 @@ return [
                 ],
                 [
                     'network' => 'instagram',
-                    'url' => 'https://graph.facebook.com/v24.0/me/accounts?fields=id,name,link,instagram_business_account{id,username}',
+                    'url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/me/accounts?fields=id,name,link,access_token,tasks,instagram_business_account{id,username}',
                     'path' => 'data',
                     'id_path' => 'instagram_business_account.id',
                     'name_path' => 'instagram_business_account.username',
@@ -127,11 +130,11 @@ return [
             'token_response' => ['access_token' => 'access_token', 'refresh_token' => null, 'expires_in' => 'expires_in', 'refresh_expires_in' => null, 'scope' => 'scope'],
             'refresh' => [
                 'strategy' => 'meta_exchange',
-                'url' => 'https://graph.facebook.com/v24.0/oauth/access_token',
+                'url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/oauth/access_token',
                 'input_parameter' => 'fb_exchange_token',
                 'grant_type' => 'fb_exchange_token',
             ],
-            'revoke' => ['url' => 'https://graph.facebook.com/v24.0/me/permissions', 'method' => 'DELETE', 'parameter' => 'access_token'],
+            'revoke' => ['url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/me/permissions', 'method' => 'DELETE', 'parameter' => 'access_token'],
         ],
         'tiktok' => [
             'driver' => 'oauth2',

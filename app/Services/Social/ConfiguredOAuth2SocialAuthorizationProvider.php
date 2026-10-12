@@ -194,6 +194,18 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
                     continue;
                 }
 
+                $matchesRequiredValues = true;
+                foreach (($destinationConfig['required_any_values'] ?? []) as $path => $allowedValues) {
+                    $actualValues = data_get($item, (string) $path);
+                    if (! is_array($actualValues) || ! is_array($allowedValues) || array_intersect($actualValues, $allowedValues) === []) {
+                        $matchesRequiredValues = false;
+                        break;
+                    }
+                }
+                if (! $matchesRequiredValues) {
+                    continue;
+                }
+
                 $externalId = data_get($item, (string) ($destinationConfig['id_path'] ?? 'id'));
                 if (! is_string($externalId) && ! is_int($externalId)) {
                     continue;
@@ -229,13 +241,20 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
                     }
                 }
 
+                $credentialToken = data_get($item, (string) ($destinationConfig['credential_token_path'] ?? '__none__'));
+                if (($destinationConfig['require_credential_token'] ?? false) === true
+                    && (! is_string($credentialToken) || trim($credentialToken) === '')) {
+                    continue;
+                }
+
+                $credentialExpiresIn = data_get($item, (string) ($destinationConfig['credential_expires_in_path'] ?? '__none__'));
                 $destinations[] = new SocialDiscoveredDestination(
                     $destinationNetwork,
                     $externalId,
                     is_string($name) && trim($name) !== '' ? trim($name) : $externalId,
                     is_string($urlValue) && str_starts_with($urlValue, 'https://') ? $urlValue : null,
-                    is_string(data_get($item, (string) ($destinationConfig['credential_token_path'] ?? '__none__'))) ? data_get($item, (string) $destinationConfig['credential_token_path']) : null,
-                    is_numeric(data_get($item, (string) ($destinationConfig['credential_expires_in_path'] ?? '__none__'))) ? CarbonImmutable::now()->addSeconds((int) data_get($item, (string) $destinationConfig['credential_expires_in_path']))->toIso8601String() : null,
+                    is_string($credentialToken) ? $credentialToken : null,
+                    is_numeric($credentialExpiresIn) ? CarbonImmutable::now()->addSeconds((int) $credentialExpiresIn)->toIso8601String() : null,
                 );
             }
         }

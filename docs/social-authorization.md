@@ -25,7 +25,7 @@ Register an application with the network provider, enable the required API produ
 | Network / auth provider | Environment variables | Callback URI default | Current implementation notes |
 |---|---|---|---|
 | LinkedIn | `SOCIAL_LINKEDIN_CLIENT_ID`, `SOCIAL_LINKEDIN_CLIENT_SECRET`, optional `SOCIAL_LINKEDIN_REDIRECT_URI`, optional `SOCIAL_LINKEDIN_API_VERSION` | `/social/authorization/callback/linkedin` | OAuth 2.0; discovers the member profile and organizations for which the member has an ACL. Publishing requires approved app access and eligible scopes/roles. |
-| Facebook / Instagram | `META_APP_ID`, `META_APP_SECRET`, optional `META_SOCIAL_REDIRECT_URI` | `/social/authorization/callback/meta` | Shared Meta authorization grant; configured Facebook Page and linked Instagram destination discovery. Page/Instagram permissions and account eligibility depend on Meta app configuration and review. |
+| Facebook / Instagram | `META_APP_ID`, `META_APP_SECRET`, optional `META_SOCIAL_REDIRECT_URI`, optional `META_GRAPH_API_VERSION` | `/social/authorization/callback/meta` | Shared Meta authorization grant; discovers Facebook Pages with `CREATE_CONTENT` or `MANAGE` tasks and linked Instagram professional destinations. Page access tokens are stored encrypted per destination. Publishing requires `pages_show_list`, `pages_read_engagement` and `pages_manage_posts`; app review/Advanced Access and Page tasks apply. |
 | TikTok | `SOCIAL_TIKTOK_CLIENT_KEY`, `SOCIAL_TIKTOK_CLIENT_SECRET`, optional `SOCIAL_TIKTOK_REDIRECT_URI` | `/social/authorization/callback/tiktok` | OAuth 2.0 with PKCE and TikTok's `client_key` parameter convention. Product approval and scopes depend on the TikTok developer application. |
 | YouTube | `SOCIAL_YOUTUBE_CLIENT_ID`, `SOCIAL_YOUTUBE_CLIENT_SECRET`, optional `SOCIAL_YOUTUBE_REDIRECT_URI` | `/social/authorization/callback/youtube` | Google OAuth 2.0 with PKCE, offline access and refresh support. API quota and project verification rules apply. |
 | Threads | `SOCIAL_THREADS_CLIENT_ID`, `SOCIAL_THREADS_CLIENT_SECRET`, optional `SOCIAL_THREADS_REDIRECT_URI` | `/social/authorization/callback/threads` | Threads OAuth 2.0 and configured long-lived token refresh. API permissions depend on the Meta developer application. |
@@ -42,6 +42,7 @@ Default callback base URL is `APP_URL`. Configure explicit `*_REDIRECT_URI` valu
 - `SOCIAL_AUTH_REFRESH_LOCK_WAIT_SECONDS`: maximum wait to acquire the refresh lock.
 - `SOCIAL_AUTH_REFRESH_LEEWAY_SECONDS`: refresh access tokens this many seconds before expiry.
 - `SOCIAL_LINKEDIN_API_VERSION`: versioned LinkedIn Marketing API header; default `202609`, which must be reviewed against LinkedIn's current version migration schedule.
+- `META_GRAPH_API_VERSION`: shared Meta Graph API version for OAuth, Page discovery and publishing endpoints; default `v26.0`. Upgrade only after reviewing Meta's version changelog and rerunning the Meta adapter tests.
 
 Use a shared cache backend with atomic lock support in multi-instance deployments. Configure the database and cache before enabling social authorization. All app instances must use the same encryption key and compatible credential storage.
 

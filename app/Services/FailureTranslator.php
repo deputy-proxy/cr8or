@@ -294,9 +294,10 @@ final class FailureTranslator
         $code = match ($failureCode) {
             'timeout' => FailureCode::EXTERNAL_TIMEOUT,
             'rate_limited' => FailureCode::EXTERNAL_RATE_LIMITED,
-            'provider_unavailable' => FailureCode::EXTERNAL_UNAVAILABLE,
-            'invalid_provider_response' => FailureCode::EXTERNAL_INVALID_RESPONSE,
+            'provider_unavailable', 'media_unavailable' => FailureCode::EXTERNAL_UNAVAILABLE,
+            'invalid_provider_response', 'invalid_adapter_response' => FailureCode::EXTERNAL_INVALID_RESPONSE,
             'credentials_unavailable', 'invalid_connection' => FailureCode::EXTERNAL_AUTHENTICATION,
+            'permission_denied' => FailureCode::EXTERNAL_AUTHORIZATION,
             default => FailureCode::EXTERNAL_REJECTED,
         };
 

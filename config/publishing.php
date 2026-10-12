@@ -6,7 +6,7 @@ return [
     ],
     'adapters' => [
         'linkedin' => ['key' => 'linkedin', 'class' => \App\Services\Publishing\LinkedInPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
-        'facebook' => ['key' => 'facebook', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
+        'facebook' => ['key' => 'facebook', 'class' => \App\Services\Publishing\FacebookPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'instagram' => ['key' => 'instagram', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
         'tiktok' => ['key' => 'tiktok', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
         'bsky' => ['key' => 'bsky', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
