@@ -336,3 +336,38 @@ it('keeps a connection locally disabled when remote revocation cannot be confirm
     expect(json_encode($audit->metadata))->not->toContain('access-token-secret')
         ->and(json_encode($audit->metadata))->not->toContain('refresh-token-secret');
 });
+
+it('requests only Facebook Page scopes when authorizing a Facebook destination', function (): void {
+    config([
+        'social_authorization.network_to_provider.facebook' => 'meta',
+        'social_authorization.attempt_ttl_minutes' => 10,
+        'social_authorization.providers.meta' => [
+            'driver' => 'oauth2',
+            'enabled' => true,
+            'client_id' => 'meta-client-id',
+            'client_secret' => 'meta-client-secret',
+            'redirect_uri' => 'https://cr8or.test/social/authorization/callback/meta',
+            'authorization_url' => 'https://www.facebook.com/v26.0/dialog/oauth',
+            'token_url' => 'https://graph.facebook.com/v26.0/oauth/access_token',
+            'client_auth_method' => 'body',
+            'pkce' => false,
+            'authorization_parameters' => [],
+            'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'],
+            'scopes_by_network' => [
+                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'],
+                'instagram' => ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
+            ],
+            'destination_networks' => ['facebook', 'instagram'],
+        ],
+    ]);
+    Gate::before(fn (): bool => true);
+
+    $actor = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $authorizationUrl = app(SocialAuthorizationService::class)->start($actor, (int) $organization->id, 'facebook');
+    parse_str((string) parse_url($authorizationUrl, PHP_URL_QUERY), $query);
+
+    expect(preg_split('/\\s+/', (string) ($query['scope'] ?? ''), -1, PREG_SPLIT_NO_EMPTY))->toBe(['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'])
+        ->and($query['scope'] ?? '')->not->toContain('instagram_basic')
+        ->and($query['scope'] ?? '')->not->toContain('instagram_content_publish');
+});

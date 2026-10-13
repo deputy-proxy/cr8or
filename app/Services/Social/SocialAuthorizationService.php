@@ -68,7 +68,8 @@ final class SocialAuthorizationService
             Gate::forUser($actor)->authorize('update', $enterprise);
         }
 
-        $allowedScopes = $providerConfiguration['scopes'] ?? [];
+        $networkScopes = $providerConfiguration['scopes_by_network'][$destinationNetwork] ?? null;
+        $allowedScopes = is_array($networkScopes) ? $networkScopes : ($providerConfiguration['scopes'] ?? []);
         $scopes = $requestedScopes === [] ? $allowedScopes : array_values(array_unique($requestedScopes));
         if (! is_array($allowedScopes) || $scopes === [] || array_diff($scopes, $allowedScopes) !== []) {
             throw new SocialAuthorizationException('scope_not_allowed', 'The requested authorization scopes are not allowed for this provider.');
