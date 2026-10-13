@@ -202,3 +202,27 @@ it('rejects cross-enterprise channel changes before persistence and preserves hi
     expect($legacy->refresh()->name)->toBe('Updated Display Name')
         ->and($legacy->external_id)->toBe('legacy-id-with-padding ');
 });
+
+it('allows enterprise owners to delete unused social destinations through the domain service', function (): void {
+    [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
+    $account = createNormalizationAccount($enterprise, $channel);
+
+    app(DomainResourceService::class)->deleteSocialAccount($actor, $account);
+
+    expect(SocialAccount::query()->whereKey($account->getKey())->exists())->toBeFalse();
+});
+
+it('denies social destination deletion outside the owning enterprise', function (): void {
+    [, $enterprise, $channel] = socialAccountNormalizationContext();
+    $account = createNormalizationAccount($enterprise, $channel);
+    $otherOrganization = Organization::factory()->create();
+    $otherActor = User::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $otherActor->getKey(),
+        'organization_id' => $otherOrganization->getKey(),
+    ]);
+
+    expect(fn () => app(DomainResourceService::class)->deleteSocialAccount($otherActor, $account))
+        ->toThrow(AuthorizationException::class)
+        ->and(SocialAccount::query()->whereKey($account->getKey())->exists())->toBeTrue();
+});

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\DomainResourceService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -64,6 +65,18 @@ class SocialAccountResource extends Resource
             TextColumn::make('status')->badge()->searchable()->sortable(),
         ])->recordActions([
             EditAction::make(),
+            DeleteAction::make()
+                ->label('Delete')
+                ->visible(fn (SocialAccount $record): bool => Gate::allows('delete', $record))
+                ->using(function (SocialAccount $record, DomainResourceService $domain): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        throw new AuthorizationException;
+                    }
+
+                    $domain->deleteSocialAccount($actor, $record);
+                    Notification::make()->success()->title('Social account deleted')->send();
+                }),
             Action::make('disable')
                 ->requiresConfirmation()
                 ->visible(fn (SocialAccount $record): bool => $record->status === SocialAccount::STATUS_ACTIVE && Gate::allows('disable', $record))
