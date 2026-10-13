@@ -245,3 +245,24 @@ it('resolves custom handles through their well-known DID declaration when the Bl
 
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://alice.custom.example/.well-known/atproto-did');
 });
+
+it('rejects a callback URI on a different origin than the client metadata document', function () {
+    config(['social_authorization.providers.bluesky.redirect_uri' => 'https://attacker.example.test/social/authorization/callback/bluesky']);
+
+    $provider = new AtProtocolOAuthProvider([
+        'client_id' => 'https://cr8or.example.test/oauth-client-metadata.json',
+        'client_name' => 'CR8OR',
+        'client_uri' => 'https://cr8or.example.test',
+        'redirect_uri' => 'https://attacker.example.test/social/authorization/callback/bluesky',
+    ]);
+
+    expect(fn () => $provider->initiate(
+        'random-state',
+        'https://attacker.example.test/social/authorization/callback/bluesky',
+        ['atproto', 'repo:app.bsky.feed.post?action=create', 'blob:*/*'],
+        'pkce-verifier',
+        'alice.bsky.social',
+    ))->toThrow(SocialAuthorizationException::class, 'same HTTPS origin');
+
+    Http::assertNothingSent();
+});

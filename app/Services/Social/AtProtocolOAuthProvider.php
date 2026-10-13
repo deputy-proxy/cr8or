@@ -57,6 +57,7 @@ final class AtProtocolOAuthProvider implements StatefulSocialAuthorizationProvid
         if ($redirectUri !== $this->requiredHttpsUrl('redirect_uri')) {
             throw new SocialAuthorizationException('redirect_uri_mismatch', 'The configured Bluesky callback URI does not match the authorization request.');
         }
+        $this->assertRedirectUri($clientId, $redirectUri);
         if (! in_array('atproto', $scopes, true) || ! in_array('repo:app.bsky.feed.post?action=create', $scopes, true) || ! in_array('blob:*/*', $scopes, true)) {
             throw new SocialAuthorizationException('scope_not_allowed', 'Bluesky publishing requires identity, create-only feed-post and blob-upload permissions.');
         }
@@ -550,6 +551,20 @@ final class AtProtocolOAuthProvider implements StatefulSocialAuthorizationProvid
             if (is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 throw new SocialAuthorizationException('provider_host_unsafe', 'Private or reserved IP addresses cannot be used as AT Protocol endpoints.');
             }
+        }
+    }
+
+    private function assertRedirectUri(string $clientId, string $redirectUri): void
+    {
+        $clientIdParts = parse_url($clientId);
+        $redirectParts = parse_url($redirectUri);
+        if (! is_array($clientIdParts) || ! is_string($clientIdParts['host'] ?? null)
+            || ! is_array($redirectParts) || ! is_string($redirectParts['host'] ?? null)
+            || ($redirectParts['scheme'] ?? null) !== 'https'
+            || isset($redirectParts['port']) || isset($redirectParts['query']) || isset($redirectParts['fragment'])
+            || isset($redirectParts['user']) || isset($redirectParts['pass'])
+            || strtolower($clientIdParts['host']) !== strtolower($redirectParts['host'])) {
+            throw new SocialAuthorizationException('redirect_uri_invalid', 'The AT Protocol callback URI must use the same HTTPS origin as the client metadata URL.');
         }
     }
 

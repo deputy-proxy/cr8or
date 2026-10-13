@@ -41,7 +41,14 @@ final class SocialAuthorizationController
                 && is_string($clientUriParts['host'] ?? null)
                 && strtolower($clientParts['host']) === strtolower($clientUriParts['host'])
                 && is_array($redirectParts)
-                && ($redirectParts['scheme'] ?? null) === 'https',
+                && ($redirectParts['scheme'] ?? null) === 'https'
+                && ! isset($redirectParts['port'])
+                && ! isset($redirectParts['query'])
+                && ! isset($redirectParts['fragment'])
+                && ! isset($redirectParts['user'])
+                && ! isset($redirectParts['pass'])
+                && is_string($redirectParts['host'] ?? null)
+                && strtolower($clientParts['host']) === strtolower($redirectParts['host']),
             503,
         );
 
