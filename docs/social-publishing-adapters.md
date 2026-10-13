@@ -1,5 +1,7 @@
 # Social Publishing Adapter Contracts
 
+Native adapter enablement is controlled by the `SOCIAL_PUBLISHING_<NETWORK>_ENABLED` flags (for example, `SOCIAL_PUBLISHING_LINKEDIN_ENABLED`). Every flag defaults to `false`. Follow [the production-readiness and release gates](social-publishing-readiness.md) and run `php artisan social:publishing-readiness` before enabling any network; configuration preflight does not replace provider app approval or a live-account test.
+
 ## Purpose and boundaries
 
 CR8OR owns publication authorization, destination validation, scheduling, idempotency, lifecycle state, reconciliation and history. A publishing adapter performs one network's external publishing operation; it does not own business authorization, tenancy, publication state or workflow orchestration.
