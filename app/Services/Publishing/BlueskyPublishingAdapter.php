@@ -183,7 +183,7 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
     }
 
     /**
-     * @param  list<array<string, mixed>>  $media
+     * @param  list<mixed>  $media
      * @return list<array<string, mixed>>
      */
     private function validatedMedia(array $media): array
@@ -192,7 +192,11 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
             throw new PublishingAdapterException('Bluesky supports at most four images per post.', 'too_many_media_items');
         }
 
+        $validated = [];
         foreach ($media as $item) {
+            if (! is_array($item)) {
+                throw new PublishingAdapterException('Each Bluesky media item must be a structured R2 image reference.', 'invalid_media_metadata');
+            }
             $mimeType = $item['mime_type'] ?? null;
             if (! is_string($mimeType) || ! in_array($mimeType, ['image/jpeg', 'image/png'], true)) {
                 throw new PublishingAdapterException('Bluesky publishing supports JPEG and PNG images only.', 'unsupported_media');
@@ -209,7 +213,10 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
                 throw new PublishingAdapterException('The Bluesky image storage path is invalid.', 'media_unavailable');
             }
             $metadata = $item['metadata'] ?? [];
-            $altText = is_array($metadata) ? ($metadata['alt_text'] ?? '') : '';
+            if (! is_array($metadata)) {
+                throw new PublishingAdapterException('Bluesky image metadata must be an object.', 'invalid_media_metadata');
+            }
+            $altText = $metadata['alt_text'] ?? '';
             if (! is_string($altText) || mb_strlen($altText) > self::MAX_IMAGE_ALT_TEXT) {
                 throw new PublishingAdapterException('Bluesky image alt text must be a string of at most 1,000 characters.', 'invalid_media_metadata');
             }
@@ -217,9 +224,10 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
             if ($dimensions !== [] && (! is_array($dimensions) || ! is_numeric($dimensions['width'] ?? null) || ! is_numeric($dimensions['height'] ?? null) || (int) $dimensions['width'] < 1 || (int) $dimensions['height'] < 1)) {
                 throw new PublishingAdapterException('Bluesky image dimensions must contain positive width and height values.', 'invalid_media_dimensions');
             }
+            $validated[] = $item;
         }
 
-        return $media;
+        return $validated;
     }
 
     /**
@@ -248,7 +256,7 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
                 throw new PublishingAdapterException('Bluesky returned invalid metadata for an uploaded image blob.', 'invalid_adapter_response');
             }
             $metadata = $item['metadata'] ?? [];
-            $image = ['alt' => is_array($metadata) ? (string) ($metadata['alt_text'] ?? '') : '', 'image' => $blob];
+            $image = ['alt' => (string) ($metadata['alt_text'] ?? ''), 'image' => $blob];
             $dimensions = $item['dimensions'] ?? ($metadata['dimensions'] ?? []);
             if (is_array($dimensions) && is_numeric($dimensions['width'] ?? null) && is_numeric($dimensions['height'] ?? null)) {
                 $image['aspectRatio'] = ['width' => (int) $dimensions['width'], 'height' => (int) $dimensions['height']];
@@ -318,6 +326,9 @@ final class BlueskyPublishingAdapter implements PublishingStatusLookupAdapter
                 return $result;
             }
             if (in_array($marker, [0xD8, 0xD9, 0x01, ...range(0xD0, 0xD7)], true)) {
+                if ($marker === 0xD9 && (! $hasFrame || $offset !== $length)) {
+                    throw new PublishingAdapterException('The Bluesky JPEG is missing a valid image frame or has trailing data.', 'invalid_media');
+                }
                 $result .= substr($bytes, $markerStart, $offset - $markerStart);
                 if ($marker === 0xD9) {
                     return $result;
