@@ -3,27 +3,33 @@
 namespace App\Filament\Resources\IntegrationConnections;
 
 use App\Data\Integrations\ConfigurationFieldDefinition;
+use App\Enums\SocialRevocationResult;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationConnections\Pages\CreateIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\EditIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\ListIntegrationConnections;
 use App\Models\Enterprise;
 use App\Models\IntegrationConnection;
+use App\Models\User;
 use App\Services\IntegrationRegistry;
+use App\Services\Social\SocialAuthorizationService;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Support\Facades\Gate;
 
 class IntegrationConnectionResource extends Resource
 {
@@ -92,10 +98,25 @@ class IntegrationConnectionResource extends Resource
             TextColumn::make('enterprise.name')->searchable()->sortable(),
             TextColumn::make('provider')->badge()->searchable()->sortable(),
             TextColumn::make('external_account_id')->searchable()->sortable(),
-            TextColumn::make('credential_reference')->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
         ])->recordActions([
-            EditAction::make(), DeleteAction::make(),
+            EditAction::make()->visible(fn (IntegrationConnection $record): bool => $record->social_identity_id === null),
+            Action::make('disconnect')
+                ->requiresConfirmation()
+                ->visible(fn (IntegrationConnection $record): bool => $record->social_identity_id !== null && $record->status !== IntegrationConnection::STATUS_REVOKED && Gate::allows('update', $record))
+                ->action(function (IntegrationConnection $record, SocialAuthorizationService $authorization): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        throw new AuthorizationException;
+                    }
+
+                    $result = $authorization->disconnect($actor, $record);
+                    match ($result) {
+                        SocialRevocationResult::Revoked => Notification::make()->success()->title('Social connection disconnected')->body('Remote revocation was confirmed.')->send(),
+                        SocialRevocationResult::Unsupported => Notification::make()->warning()->title('Social connection disabled')->body('The provider does not support remote revocation.')->send(),
+                        SocialRevocationResult::Failed => Notification::make()->warning()->title('Social connection disabled')->body('Remote revocation could not be confirmed.')->send(),
+                    };
+                }),
         ]);
     }
 

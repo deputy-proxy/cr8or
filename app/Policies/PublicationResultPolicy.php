@@ -10,6 +10,11 @@ class PublicationResultPolicy
 {
     use HasExplicitCrudContract;
 
+    public function view(User $user, PublicationResult $record): bool
+    {
+        return (new EnterprisePolicy)->view($user, $record->enterprise()->firstOrFail());
+    }
+
     /**
      * This record is created through its domain operation, not generic Filament CRUD.
      */

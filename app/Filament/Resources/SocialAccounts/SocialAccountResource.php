@@ -3,21 +3,25 @@
 namespace App\Filament\Resources\SocialAccounts;
 
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
-use App\Filament\Resources\SocialAccounts\Pages\CreateSocialAccount;
 use App\Filament\Resources\SocialAccounts\Pages\EditSocialAccount;
 use App\Filament\Resources\SocialAccounts\Pages\ListSocialAccounts;
 use App\Models\SocialAccount;
+use App\Models\User;
+use App\Services\DomainResourceService;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
 
 class SocialAccountResource extends Resource
 {
@@ -40,12 +44,12 @@ class SocialAccountResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
+            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required()->disabled()->dehydrated(false),
             Select::make('channel_id')->relationship('channel', 'name')->searchable()->preload()->required(),
-            TextInput::make('provider')->maxLength(100)->required(),
+            TextInput::make('provider')->maxLength(100)->required()->disabled()->dehydrated(false),
             TextInput::make('name')->maxLength(255)->required(),
-            TextInput::make('external_id')->maxLength(255)->required(),
-            Select::make('status')->options(['active' => 'Active', 'disabled' => 'Disabled'])->required(),
+            TextInput::make('external_id')->maxLength(255)->required()->disabled()->dehydrated(false),
+            Select::make('status')->options(['active' => 'Active', 'disabled' => 'Disabled'])->required()->disabled()->dehydrated(false),
         ]);
     }
 
@@ -59,7 +63,19 @@ class SocialAccountResource extends Resource
             TextColumn::make('external_id')->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
         ])->recordActions([
-            EditAction::make(), DeleteAction::make(),
+            EditAction::make(),
+            Action::make('disable')
+                ->requiresConfirmation()
+                ->visible(fn (SocialAccount $record): bool => $record->status === SocialAccount::STATUS_ACTIVE && Gate::allows('disable', $record))
+                ->action(function (SocialAccount $record, DomainResourceService $domain): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        throw new AuthorizationException;
+                    }
+
+                    $domain->disableSocialAccount($actor, $record);
+                    Notification::make()->success()->title('Social destination disabled')->send();
+                }),
         ]);
     }
 
@@ -86,6 +102,6 @@ class SocialAccountResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListSocialAccounts::route('/'), 'create' => CreateSocialAccount::route('/create'), 'edit' => EditSocialAccount::route('/{record}/edit')];
+        return ['index' => ListSocialAccounts::route('/'), 'edit' => EditSocialAccount::route('/{record}/edit')];
     }
 }

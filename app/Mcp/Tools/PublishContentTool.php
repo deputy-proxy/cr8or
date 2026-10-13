@@ -9,7 +9,6 @@ use App\Models\ApprovalRequest;
 use App\Models\ContentItem;
 use App\Models\SocialAccount;
 use App\Models\User;
-use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -34,9 +33,9 @@ final class PublishContentTool extends GovernedCapabilityTool
         ];
     }
 
-    public function handle(Request $r, McpCapabilityAuthorizer $a, CapabilityRegistry $registry): Response|ResponseFactory
+    public function handle(Request $r, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($r, 'mcp.publication.publish', function () use ($r, $a, $registry) {
+        return $this->executeWithErrors($r, 'publication.publish', function () use ($r, $registry) {
             $v = $r->validate([
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'social_account_id' => ['required', 'integer', 'min:1', 'exists:social_accounts,id'],
@@ -70,25 +69,20 @@ final class PublishContentTool extends GovernedCapabilityTool
                 ? ApprovalRequest::query()->findOrFail($v['approval_request_id'])
                 : null;
 
-            $a->authorizeMutation(
-                $u,
-                $this->capability($registry),
-                $c->enterprise,
-                $as?->id,
-                $ex?->id,
-                $ap?->id,
-                ['content_item_id' => $c->id],
-                ['update', $c],
-            );
-
-            $pub = $this->executeCapability($registry, $u, [
+            $input = [
                 'content_item' => $c,
                 'social_account' => $sa,
+                'enterprise' => $c->enterprise,
+                'target_context' => ['enterprise_id' => (int) $c->enterprise_id, 'content_item_id' => (int) $c->id, 'social_account_id' => (int) $sa->id],
                 'assignment' => $as,
                 'execution' => $ex,
                 'approval' => $ap,
                 ...$v,
-            ]);
+            ];
+            if (isset($v['agent_assignment_id'], $v['agent_execution_id'])) {
+                $input['expert_slug'] = 'marketing';
+            }
+            $pub = $this->executeCapability($registry, $u, $input);
 
             return Response::structured([
                 'success' => true,
@@ -99,5 +93,15 @@ final class PublishContentTool extends GovernedCapabilityTool
                 ],
             ]);
         });
+    }
+
+    /** @param array<string, mixed> $input
+     * @return array{0: string, 1: mixed}|null
+     */
+    protected function humanAbility(User $actor, array $input): ?array
+    {
+        $content = $input['content_item'] ?? null;
+
+        return $content instanceof ContentItem ? ['update', $content] : null;
     }
 }

@@ -17,6 +17,11 @@ class PublicationPolicy
         return (new EnterprisePolicy)->view($u, $p->enterprise()->firstOrFail());
     }
 
+    public function reconcileStatus(User $user, Publication $publication): bool
+    {
+        return (new EnterprisePolicy)->update($user, $publication->enterprise()->firstOrFail());
+    }
+
     public function create(User $user): bool
     {
         return false;

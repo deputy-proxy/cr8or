@@ -8,6 +8,12 @@ OAuth authorization and connected-account discovery remain in the existing `Soci
 
 No MCP-specific adapter layer is introduced. MCP tools continue to delegate to the existing capability/operation boundary and must not contain provider logic.
 
+## Current governed public surface
+
+The authenticated web lifecycle owns OAuth initiation, callback validation, provider identity/credential creation, destination discovery and attachment, refresh, and provider revocation. These actions are not exposed as generic MCP connection/account CRUD. Social destinations are read through enterprise-scoped list/get tools; metadata updates and local destination disablement use the governed `SocialAccountUpdate` and `SocialAccountDisable` Operations. Local disablement is explicitly distinct from provider revocation.
+
+Publishing is exposed through `publication.publish` / `PublishContent`; status reconciliation is exposed through `publication.status.reconcile` / `ReconcilePublicationStatus`. Publication and result discovery returns only scoped, safe fields and omits raw provider payloads, access tokens and credential references. Both Capabilities can be configured in persisted, published `WorkflowVersion` stages with normal stage-contract validation. Deterministic and interactive publishing does not require a model provider.
+
 ## Required contract
 
 Every enabled adapter implements `PublishingAdapter` and declares:

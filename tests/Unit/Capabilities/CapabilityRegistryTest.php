@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(70);
+    expect($registry->all())->toHaveCount(69);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
@@ -66,7 +66,7 @@ it('uses canonical kebab-case identifiers for lifecycle MCP Tools', function () 
 it('enforces the Capability boundary for every business MCP Tool', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->business())->toHaveCount(50);
+    expect($registry->business())->toHaveCount(49);
 
     $registry->assertBusinessToolSurface();
 
@@ -212,4 +212,13 @@ it('does not advertise planned asset creation as a human capability', function (
     expect($definition->supportsExecutionMode(App\Enums\CapabilityExecutionMode::HUMAN))->toBeFalse()
         ->and($definition->supportsExecutionMode(App\Enums\CapabilityExecutionMode::AGENT))->toBeTrue()
         ->and($definition->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue();
+});
+it('exposes publication and reconciliation to published workflows while keeping account administration out of workflows', function () {
+    $registry = app(CapabilityRegistry::class);
+
+    expect($registry->resolve('publication.publish')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($registry->resolve('publication.status.reconcile')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($registry->resolve('marketing.social-account.update')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeFalse()
+        ->and($registry->resolve('marketing.social-account.disable')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeFalse()
+        ->and($registry->resolve('publication.status.reconcile')->approvalRequirement)->toBe('none');
 });

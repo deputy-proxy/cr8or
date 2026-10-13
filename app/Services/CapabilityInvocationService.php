@@ -36,9 +36,9 @@ final class CapabilityInvocationService
         $this->dispatchRequested($request, $definition);
         $this->authorize($request);
 
-        $requiresApproval = $request->expertSlug !== null
-            ? $definition->approvalRequirement === 'required'
-            : false;
+        $requiresApproval = $request->isAgentBacked()
+            && $request->expertSlug !== null
+            && $definition->approvalRequirement === 'required';
 
         if ($requiresApproval && $request->approval === null) {
             $approval = $this->approvals->request(

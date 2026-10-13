@@ -8,6 +8,7 @@ use App\Exceptions\PublishingAdapterException;
 use App\Exceptions\SocialAuthorizationException;
 use App\Models\IntegrationConnection;
 use App\Models\Organization;
+use App\Models\SocialIdentity;
 use App\Services\Publishing\LinkedInPublishingAdapter;
 use App\Services\PublishingAdapterRegistry;
 use Illuminate\Support\Facades\Http;
@@ -16,7 +17,14 @@ use Illuminate\Support\Facades\Http;
 function linkedInPublishingAdapterContext(): array
 {
     $organization = Organization::factory()->create();
+    $identity = SocialIdentity::query()->create([
+        'organization_id' => $organization->id,
+        'provider' => 'linkedin',
+        'external_id' => 'member-123',
+        'name' => 'Test LinkedIn Member',
+    ]);
     $connection = IntegrationConnection::query()->create([
+        'social_identity_id' => $identity->id,
         'organization_id' => $organization->id,
         'provider' => 'linkedin',
         'external_account_id' => 'member-123',
@@ -219,8 +227,15 @@ it('rejects ambiguous destination identifiers and media before making a remote r
 
 it('normalizes credential lifecycle failures into a publishing authentication error', function () {
     $organization = Organization::factory()->create();
+    $identity = SocialIdentity::query()->create([
+        'organization_id' => $organization->id,
+        'provider' => 'linkedin',
+        'external_id' => 'member-123',
+        'name' => 'Test LinkedIn Member',
+    ]);
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $organization->id,
+        'social_identity_id' => $identity->id,
         'provider' => 'linkedin',
         'external_account_id' => 'member-123',
         'credential_reference' => 'vault/linkedin/member-123',

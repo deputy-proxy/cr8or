@@ -85,6 +85,11 @@ class IntegrationConnection extends Model
                 throw new LogicException('An integration connection cannot be reassigned to a different social identity.');
             }
 
+            $socialProviders = config('social_authorization.providers', []);
+            if ($connection->social_identity_id === null && is_array($socialProviders) && array_key_exists((string) $connection->provider, $socialProviders)) {
+                throw new LogicException('Social authorization connections must be created through the OAuth lifecycle.');
+            }
+
             if ($connection->social_identity_id !== null) {
                 $identity = SocialIdentity::query()->find($connection->social_identity_id);
                 if ($identity === null

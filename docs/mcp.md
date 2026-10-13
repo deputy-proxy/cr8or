@@ -59,7 +59,6 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `archive-marketing-strategy` | `ArchiveMarketingStrategyTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` |
 | `archive-memory` | `ArchiveMemoryTool` | `memory.archive` | `ArchiveMemory` |
 | `cancel-agent-execution` | `CancelAgentExecutionTool` | Lifecycle (outside governed registry) | N/A |
-| `connect-social-account` | `ConnectSocialAccountTool` | `marketing.social-account.connect` | `SocialAccountConnect` |
 | `continue-agent-execution` | `ContinueAgentExecutionTool` | `agent.continue` | `ContinueAgentExecution` |
 | `create-agent-assignment` | `CreateAgentAssignmentTool` | `agent.assignment.create` | `CreateAgentAssignment` |
 | `create-agent-execution` | `CreateAgentExecutionTool` | Lifecycle (outside governed registry) | N/A |
@@ -67,7 +66,6 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-audience` | `CreateAudienceTool` | `marketing.audience.create` | `MarketingAudienceCreate` |
 | `create-campaign` | `CreateCampaignTool` | `marketing.campaign.create` | `MarketingCampaignCreate` |
 | `create-channel` | `CreateChannelTool` | `marketing.channel.create` | `MarketingChannelCreate` |
-| `create-connection` | `CreateConnectionTool` | `integration.connection.create` | `IntegrationConnectionCreate` |
 | `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
 | `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
@@ -85,7 +83,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-workflow` | `CreateWorkflowTool` | `workflow.create` | `CreateWorkflow` |
 | `define-marketing-strategy-section` | `DefineMarketingStrategySectionTool` | `marketing.strategy.section.define` | `DefineMarketingStrategySection` |
 | `delegate-agent` | `DelegateAgentTool` | `agent.delegate` | `DelegateAgent` |
-| `disconnect-social-account` | `DisconnectSocialAccountTool` | `marketing.social-account.disconnect` | `SocialAccountDisconnect` |
+| `disable-social-account` | `DisableSocialAccountTool` | `marketing.social-account.disable` | `SocialAccountDisable` |
 | `duplicate-workflow` | `DuplicateWorkflowTool` | `workflow.duplicate` | `DuplicateWorkflow` |
 | `execute-agent` | `ExecuteAgentTool` | `agent.execute` | `ExecuteAgent` |
 | `generate-financial-report` | `GenerateFinancialReportTool` | `finance.report.generate` | `GenerateFinancialReport` |
@@ -112,6 +110,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-objective` | `GetObjectiveTool` | Unregistered read/discovery/resource | N/A |
 | `get-plan` | `GetPlanTool` | Unregistered read/discovery/resource | N/A |
 | `get-project` | `GetProjectTool` | Unregistered read/discovery/resource | N/A |
+| `get-publication` | `GetPublicationTool` | Unregistered read/discovery/resource | N/A |
 | `get-social-account` | `GetSocialAccountTool` | Unregistered read/discovery/resource | N/A |
 | `get-strategy` | `GetStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `get-task` | `GetTaskTool` | Unregistered read/discovery/resource | N/A |
@@ -140,6 +139,8 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-objectives` | `ListObjectiveTool` | Unregistered read/discovery/resource | N/A |
 | `list-plans` | `ListPlanTool` | Unregistered read/discovery/resource | N/A |
 | `list-projects` | `ListProjectTool` | Unregistered read/discovery/resource | N/A |
+| `list-publication-results` | `ListPublicationResultsTool` | Unregistered read/discovery/resource | N/A |
+| `list-publications` | `ListPublicationTool` | Unregistered read/discovery/resource | N/A |
 | `list-social-accounts` | `ListSocialAccountTool` | Unregistered read/discovery/resource | N/A |
 | `list-strategies` | `ListStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `list-tasks` | `ListTaskTool` | Unregistered read/discovery/resource | N/A |
@@ -148,6 +149,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `plan-marketing` | `PlanMarketingTool` | `marketing.plan` | `PlanMarketing` |
 | `publish-content` | `PublishContentTool` | `publication.publish` | `PublishContent` |
 | `publish-workflow` | `PublishWorkflowTool` | `workflow.publish` | `PublishWorkflow` |
+| `reconcile-publication-status` | `ReconcilePublicationStatusTool` | `publication.status.reconcile` | `ReconcilePublicationStatus` |
 | `record-memory` | `RecordMemoryTool` | `memory.record` | `RecordMemory` |
 | `request-approval` | `RequestApprovalTool` | `approval.request` | `ApprovalRequestCreate` |
 | `resume-agent-execution` | `ResumeAgentExecutionTool` | Unregistered read/discovery/resource | N/A |
@@ -177,6 +179,11 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-task` | `UpdateTaskTool` | `work.task.update` | `UpdateTask` |
 | `update-workflow` | `UpdateWorkflowTool` | `workflow.update` | `UpdateWorkflow` |
 | `verify-marketing-graph` | `VerifyMarketingGraphTool` | `marketing.graph.verify` | `VerifyMarketingGraph` |
+
+Social-account creation and provider authorization are intentionally not generic MCP CRUD. OAuth initiation, callback validation, destination discovery/attachment, and provider revocation remain in the authenticated web lifecycle backed by `SocialAuthorizationService`. `disable-social-account` only disables a destination inside CR8OR; it does not claim to revoke the provider grant. Generic integration-connection creation is not exposed to Agents.
+
+`publication.publish` and `publication.status.reconcile` are governed Capabilities available to persisted, published WorkflowVersion stages with the same stage input-contract validation used by other workflow Capabilities. Deterministic/interactive publishing does not require a model provider. Reconciliation returns only safe publication/result fields; provider payloads and credential references are excluded.
+
 
 ## Resources vs Tools
 
@@ -321,15 +328,16 @@ The governed mutation surface now covers the core planning, content, work, and i
 | Content series | `create-content-series`, `update-content-series`, `transition-content-series` |
 | Audiences | `create-audience`, `update-audience`, `archive-audience` |
 | Channels | `create-channel`, `update-channel`, `archive-channel` |
-| Social accounts | `list-social-accounts`, `get-social-account`, `connect-social-account`, `update-social-account`, `disconnect-social-account` |
+| Social accounts | `list-social-accounts`, `get-social-account`, `update-social-account`, `disable-social-account` |
 | Projects | `list-projects`, `get-project`, `create-project`, `update-project` |
-| Existing content lifecycle | `create-content-item`, `update-content-item`, `submit-content-for-review`, `mark-content-publication-ready`, `publish-content`, `request-approval` |
+| Publishing | `publish-content`, `get-publication`, `list-publications`, `list-publication-results`, `reconcile-publication-status` |
+| Existing content lifecycle | `create-content-item`, `update-content-item`, `submit-content-for-review`, `mark-content-publication-ready`, `request-approval` |
 
 Campaign creation is intentionally bound to the existing `MarketingStrategy` relationship in the current domain model. Marketing strategies are therefore discoverable through `list-marketing-strategies` and `get-marketing-strategy`; the MCP layer does not invent a second strategy persistence model.
 
 Project and objective relationships remain discoverable through `list/get` Tools for goals, KPIs, plans, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
 
-Social-account Tools expose provider metadata and external identifiers only. They never accept, return, log, or mutate raw OAuth tokens or credentials. `connect-social-account` registers an already-authorized account context; provider-specific OAuth/token exchange remains an integration concern. On writes, provider labels and display names have surrounding whitespace trimmed but are not case-folded. External IDs are opaque: they are never lowercased or trimmed, and values with surrounding whitespace or only whitespace are rejected rather than silently rewritten. The existing `(provider, external_id)` uniqueness constraint remains authoritative. Existing records are not rewritten by this change. If cleanup is needed, first produce a read-only provider-specific inventory, reconcile each proposed identifier against the source provider, dry-run uniqueness/collision checks, retain a before-image export, and apply any approved correction through a separately reviewed, auditable, reversible data-repair operation.
+Social-account discovery returns provider metadata and external identifiers only. Generic account creation and generic connection CRUD are not exposed through MCP. OAuth initiation, callback validation, destination discovery/attachment, token refresh, and provider revocation remain in the authenticated web lifecycle backed by `SocialAuthorizationService`. `update-social-account` changes only display metadata/channel assignment; `disable-social-account` deactivates the destination inside CR8OR and does not claim to revoke the provider grant. Raw OAuth tokens, credential references, and provider payloads are excluded from ordinary MCP responses. External IDs remain opaque and the `(provider, external_id)` uniqueness constraint remains authoritative.
 
 Lifecycle Operations use the domain model transition methods where those transitions exist. They do not permit arbitrary status writes to bypass the model's transition rules. Human approval remains a separate governed step; MCP mutation authority does not imply approval authority.
 
