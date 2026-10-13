@@ -373,6 +373,7 @@ it('discovers only Meta Pages whose tasks permit content creation and preserves 
         'https://graph.facebook.com/v26.0/me/accounts*' => Http::response([
             'data' => [
                 ['id' => '123456', 'name' => 'Allowed Page', 'link' => 'https://www.facebook.com/allowed', 'access_token' => 'page-token-allowed', 'tasks' => ['CREATE_CONTENT', 'MODERATE']],
+                ['id' => '567890', 'name' => 'Business Portfolio Page', 'link' => 'https://www.facebook.com/business-page', 'access_token' => 'page-token-business', 'tasks' => ['PROFILE_PLUS_CREATE_CONTENT', 'PROFILE_PLUS_MODERATE']],
                 ['id' => '234567', 'name' => 'Moderator Only Page', 'link' => 'https://www.facebook.com/moderator', 'access_token' => 'page-token-moderator', 'tasks' => ['MODERATE']],
                 ['id' => '345678', 'name' => 'No Tasks Page', 'link' => 'https://www.facebook.com/no-tasks', 'access_token' => 'page-token-none'],
                 ['id' => '456789', 'name' => 'Missing Token Page', 'link' => 'https://www.facebook.com/missing-token', 'tasks' => ['CREATE_CONTENT']],
@@ -383,10 +384,13 @@ it('discovers only Meta Pages whose tasks permit content creation and preserves 
 
     $result = $provider->discover(new SocialTokenSet('parent-user-token', null, null, null, ['pages_show_list']), 'facebook');
 
-    expect($result->destinations)->toHaveCount(1)
+    expect($result->destinations)->toHaveCount(2)
         ->and($result->destinations[0]->externalId)->toBe('123456')
         ->and($result->destinations[0]->name)->toBe('Allowed Page')
-        ->and($result->destinations[0]->credentialToken)->toBe('page-token-allowed');
+        ->and($result->destinations[0]->credentialToken)->toBe('page-token-allowed')
+        ->and($result->destinations[1]->externalId)->toBe('567890')
+        ->and($result->destinations[1]->name)->toBe('Business Portfolio Page')
+        ->and($result->destinations[1]->credentialToken)->toBe('page-token-business');
 
     expect(config('social_authorization.providers.meta.destinations.0.url'))->toContain('tasks');
     Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/me/accounts'));
