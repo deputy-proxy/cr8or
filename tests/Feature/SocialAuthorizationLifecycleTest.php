@@ -354,7 +354,7 @@ it('requests only Facebook Page scopes when authorizing a Facebook destination',
             'authorization_parameters' => [],
             'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'],
             'scopes_by_network' => [
-                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'],
+                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
                 'instagram' => ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
             ],
             'destination_networks' => ['facebook', 'instagram'],
@@ -367,7 +367,8 @@ it('requests only Facebook Page scopes when authorizing a Facebook destination',
     $authorizationUrl = app(SocialAuthorizationService::class)->start($actor, (int) $organization->id, 'facebook');
     parse_str((string) parse_url($authorizationUrl, PHP_URL_QUERY), $query);
 
-    expect(preg_split('/\\s+/', (string) ($query['scope'] ?? ''), -1, PREG_SPLIT_NO_EMPTY))->toBe(['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'])
+    expect(preg_split('/\\s+/', (string) ($query['scope'] ?? ''), -1, PREG_SPLIT_NO_EMPTY))->toBe(['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'])
+        ->and($query['scope'] ?? '')->toContain('business_management')
         ->and($query['scope'] ?? '')->not->toContain('instagram_basic')
         ->and($query['scope'] ?? '')->not->toContain('instagram_content_publish');
 });
