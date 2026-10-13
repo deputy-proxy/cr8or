@@ -24,6 +24,7 @@ class UpdateContentItemTool extends GovernedCapabilityTool
             'content_item_id' => $schema->integer()->min(1)->required(),
             'title' => $schema->string()->min(1)->max(255),
             'body' => $schema->string()->max(100000),
+            'metadata' => $schema->object(),
             'agent_assignment_id' => $schema->integer()->min(1),
             'agent_execution_id' => $schema->integer()->min(1),
             'approval_request_id' => $schema->integer()->min(1),
@@ -37,6 +38,18 @@ class UpdateContentItemTool extends GovernedCapabilityTool
                 'content_item_id' => ['required', 'integer', 'min:1', 'exists:content_items,id'],
                 'title' => ['sometimes', 'string', 'min:1', 'max:255'],
                 'body' => ['sometimes', 'nullable', 'string', 'max:100000'],
+                'metadata' => ['sometimes', 'nullable', 'array'],
+                'metadata.youtube' => ['sometimes', 'nullable', 'array'],
+                'metadata.youtube.title' => ['nullable', 'string', 'max:100'],
+                'metadata.youtube.description' => ['nullable', 'string', 'max:5000'],
+                'metadata.youtube.tags' => ['nullable', 'array', 'max:50'],
+                'metadata.youtube.tags.*' => ['string', 'max:30'],
+                'metadata.youtube.category_id' => ['nullable', 'string', 'regex:/^[1-9][0-9]{0,4}$/D'],
+                'metadata.youtube.privacy_status' => ['nullable', 'in:private,unlisted,public'],
+                'metadata.youtube.made_for_kids' => ['nullable', 'boolean'],
+                'metadata.youtube.license' => ['nullable', 'in:youtube,creativeCommon'],
+                'metadata.youtube.notify_subscribers' => ['nullable', 'boolean'],
+                'metadata.youtube.contains_synthetic_media' => ['nullable', 'boolean'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
                 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
@@ -60,7 +73,7 @@ class UpdateContentItemTool extends GovernedCapabilityTool
                 ['update', $item],
             );
 
-            $attributes = array_intersect_key($validated, array_flip(['title', 'body']));
+            $attributes = array_intersect_key($validated, array_flip(['title', 'body', 'metadata']));
             if ($attributes === []) {
                 throw new \LogicException('At least one mutable content field is required.');
             }
@@ -74,6 +87,7 @@ class UpdateContentItemTool extends GovernedCapabilityTool
                     'enterprise_id' => $item->enterprise_id,
                     'title' => $item->title,
                     'body' => $item->body,
+                    'metadata' => $item->metadata,
                     'status' => $item->status,
                 ],
             ]);

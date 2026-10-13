@@ -14,9 +14,12 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -51,6 +54,33 @@ class ContentItemResource extends Resource
             Select::make('audience_id')->relationship('audience', 'name')->searchable()->preload(),
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('body')->rows(10),
+            Section::make('YouTube metadata')
+                ->description('Optional video-specific metadata. CR8OR defaults privacy to private when no override is supplied; made-for-kids is never inferred.')
+                ->collapsible()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('metadata.youtube.title')->label('YouTube title override')->maxLength(100),
+                    TextInput::make('metadata.youtube.category_id')->label('YouTube category ID')->numeric()->minValue(1)->maxValue(99999)->maxLength(5),
+                    Textarea::make('metadata.youtube.description')->label('YouTube description override')->rows(4)->maxLength(5000)->columnSpanFull(),
+                    TagsInput::make('metadata.youtube.tags')->label('YouTube tags')->columnSpanFull(),
+                    Select::make('metadata.youtube.privacy_status')
+                        ->label('Privacy')
+                        ->options(['private' => 'Private', 'unlisted' => 'Unlisted', 'public' => 'Public'])
+                        ->placeholder('Use the configured private default'),
+                    Select::make('metadata.youtube.license')
+                        ->label('License')
+                        ->options(['youtube' => 'Standard YouTube License', 'creativeCommon' => 'Creative Commons'])
+                        ->placeholder('Use YouTube default'),
+                    Select::make('metadata.youtube.made_for_kids')
+                        ->label('Made for kids')
+                        ->options(['true' => 'Yes', 'false' => 'No'])
+                        ->placeholder('Leave unset for YouTube to determine'),
+                    Select::make('metadata.youtube.contains_synthetic_media')
+                        ->label('Contains synthetic media')
+                        ->options(['true' => 'Yes', 'false' => 'No'])
+                        ->placeholder('Leave unset when not applicable'),
+                    Toggle::make('metadata.youtube.notify_subscribers')->label('Notify subscribers')->default(false),
+                ]),
         ]);
     }
 
