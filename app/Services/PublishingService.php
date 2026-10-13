@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\AI\Contracts\FailureProvenance;
+use App\Contracts\PublishingStatusLookupAdapter;
 use App\Data\PublishingAdapterRequest;
 use App\Data\PublishingAdapterResolution;
 use App\Data\PublishingAdapterResult;
+use App\Data\PublishingRemotePublication;
 use App\Exceptions\PublishingAdapterException;
 use App\Experts\MarketingExpert;
+use App\Jobs\ReconcilePublicationStatusJob;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
@@ -155,7 +158,8 @@ final class PublishingService
                 correlationId: (string) $publication->correlation_id,
                 integrationConnectionId: $connection === null ? null : (int) $connection->id,
                 credentialReference: $connection?->credential_reference,
-                settings: ['__type' => $publication->channel->type],
+                settings: ['__type' => $publication->channel->type, 'title' => (string) $content->title, 'metadata' => $content->getAttribute('metadata') ?? []],
+                publishingJobId: (int) $job->id,
             );
             $result = $resolution->adapter->publish($request);
             $this->assertValidAdapterResult($result, $request);
@@ -170,6 +174,11 @@ final class PublishingService
             }
             $job->succeed()->save();
             $this->record($publication, $job, $resolution->adapterKey, $resolution->network, $result);
+            if ($result->status === 'pending' && $resolution->adapter instanceof PublishingStatusLookupAdapter) {
+                ReconcilePublicationStatusJob::dispatch((int) $publication->id)
+                    ->onConnection((string) config('publishing.status_reconciliation.queue_connection', 'database'))
+                    ->delay(now()->addSeconds(max(1, (int) config('publishing.status_reconciliation.initial_delay_seconds', 60))));
+            }
 
             return $publication->refresh();
         } catch (PublishingAdapterException $exception) {
@@ -202,6 +211,68 @@ final class PublishingService
 
             throw $exception;
         }
+    }
+
+    public function reconcileStatus(Publication $publication): ?string
+    {
+        if ($publication->status === Publication::STATUS_SUCCEEDED) {
+            return 'published';
+        }
+        if ($publication->status === Publication::STATUS_FAILED) {
+            return 'failed';
+        }
+
+        $publication->loadMissing(['contentItem', 'socialAccount.channel', 'socialAccount.socialIdentity', 'channel']);
+        $job = $publication->publishingJobs()->latest('id')->first();
+        if ($job === null || ! is_string($job->external_id) || trim($job->external_id) === '') {
+            return null;
+        }
+
+        $content = $publication->contentItem;
+        $account = $publication->socialAccount;
+        $network = $job->network ?? $publication->target_provider ?? $account->provider;
+        $destinationExternalId = $job->destination_external_id ?? $publication->target_external_id ?? $account->external_id;
+        if ((int) $content->enterprise_id !== (int) $publication->enterprise_id
+            || (int) $account->enterprise_id !== (int) $publication->enterprise_id
+            || $account->provider !== $network
+            || ! hash_equals((string) $account->external_id, (string) $destinationExternalId)
+            || ($publication->target_provider !== null && $publication->target_provider !== $network)
+            || ($publication->target_external_id !== null && ! hash_equals((string) $publication->target_external_id, (string) $destinationExternalId))) {
+            throw new LogicException('Publication status reconciliation does not match the immutable publication destination and tenancy.');
+        }
+
+        $resolution = $this->adapters->resolve($network);
+        if (! $resolution->adapter instanceof PublishingStatusLookupAdapter) {
+            return null;
+        }
+        $connection = $this->resolveConnection($account, $network);
+        $state = $job->adapterState();
+        $metadata = [];
+        if (in_array($state['requested_privacy_status'] ?? null, ['private', 'unlisted', 'public'], true)) {
+            $metadata['requested_privacy_status'] = $state['requested_privacy_status'];
+        }
+
+        $result = $resolution->adapter->lookupStatus(new PublishingRemotePublication(
+            network: $network,
+            destinationExternalId: $destinationExternalId,
+            externalPublicationId: $job->external_id,
+            idempotencyKey: $publication->idempotency_key,
+            correlationId: (string) $publication->correlation_id,
+            integrationConnectionId: (int) $connection->id,
+            credentialReference: $connection->credential_reference,
+            metadata: $metadata,
+        ));
+
+        if ($result === null) {
+            return null;
+        }
+        if ($result->status === 'pending') {
+            return 'pending';
+        }
+
+        $this->reconcile($publication, $result);
+
+        return $result->status;
     }
 
     public function reconcile(Publication $publication, PublishingAdapterResult $result): Publication

@@ -15,6 +15,8 @@ final readonly class PublishingRemotePublication
         public string $correlationId,
         public ?int $integrationConnectionId = null,
         public ?string $credentialReference = null,
+        /** @var array<string, mixed> */
+        public array $metadata = [],
     ) {
         if (preg_match('/^[a-z][a-z0-9_-]*$/D', $network) !== 1) {
             throw new InvalidArgumentException('Remote publication network must be a canonical lowercase identifier.');

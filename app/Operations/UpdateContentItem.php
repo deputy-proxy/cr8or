@@ -19,7 +19,7 @@ final class UpdateContentItem implements Operation
 
         $attributes = $input['attributes'] ?? array_intersect_key(
             $input,
-            array_flip(['title', 'body', 'agent_execution_id', 'agent_decision_id']),
+            array_flip(['title', 'body', 'metadata', 'agent_execution_id', 'agent_decision_id']),
         );
 
         return $this->content->update($actor, $item, $attributes);

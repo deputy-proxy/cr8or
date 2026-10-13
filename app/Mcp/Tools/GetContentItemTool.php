@@ -28,6 +28,7 @@ class GetContentItemTool extends DiscoveryGetTool
             'channel_id' => 'channel_id',
             'audience_id' => 'audience_id',
             'title' => 'title',
+            'metadata' => 'metadata',
             'status' => 'status',
             'created_at' => 'created_at',
             'updated_at' => 'updated_at',

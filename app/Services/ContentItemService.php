@@ -46,6 +46,7 @@ final class ContentItemService
             'audience_id' => $attributes['audience_id'] ?? null,
             'title' => $attributes['title'],
             'body' => $attributes['body'] ?? null,
+            'metadata' => $attributes['metadata'] ?? null,
             'status' => ContentItem::STATUS_DRAFT,
             'agent_execution_id' => $attributes['agent_execution_id'] ?? null,
             'agent_decision_id' => $attributes['agent_decision_id'] ?? null,

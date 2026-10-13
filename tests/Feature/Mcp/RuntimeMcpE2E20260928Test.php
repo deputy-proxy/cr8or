@@ -430,9 +430,11 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
         'campaign_id' => $campaign['id'],
         'title' => 'E2E-TEST-20260928 Content',
         'body' => $contentBody,
+        'metadata' => ['youtube' => ['privacy_status' => 'private', 'category_id' => '22', 'tags' => ['e2e-test']]],
     ], $report)['result'];
 
-    expect($content['status'])->toBe('draft');
+    expect($content['status'])->toBe('draft')
+        ->and($content['metadata']['youtube']['privacy_status'])->toBe('private');
     $review = e2eCall($server, SubmitContentForReviewTool::class, ['content_item_id' => $content['id']], $report)['result'];
     expect($review['status'])->toBe('in_review');
 
@@ -459,7 +461,8 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
     e2eCall($server, ListExecutionTool::class, ['enterprise_id' => $enterpriseId, 'limit' => 50], $report);
     e2eCall($server, GetCampaignTool::class, ['id' => $campaign['id']], $report);
     e2eCall($server, GetMarketingStrategyTool::class, ['id' => $marketingStrategyId], $report);
-    e2eCall($server, GetContentItemTool::class, ['id' => $content['id']], $report);
+    $readContent = e2eCall($server, GetContentItemTool::class, ['id' => $content['id']], $report)['result'];
+    expect($readContent['metadata']['youtube']['category_id'])->toBe('22');
     e2eCall($server, GetAgentDescriptorTool::class, ['id' => $marketingAgent->getKey()], $report);
     $productExpert = ExpertDescriptor::query()->where('slug', 'product')->firstOrFail();
     e2eCall($server, GetExpertDescriptorTool::class, ['id' => $productExpert->getKey()], $report);

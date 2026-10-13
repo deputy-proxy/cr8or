@@ -194,7 +194,7 @@ return [
                 [
                     'network' => 'youtube',
                     'url' => 'https://www.googleapis.com/youtube/v3/channels?part=id,snippet&mine=true',
-                    'path' => 'items',
+                    'path' => 'items.0',
                     'id_path' => 'id',
                     'name_path' => 'snippet.title',
                     'url_path' => null,

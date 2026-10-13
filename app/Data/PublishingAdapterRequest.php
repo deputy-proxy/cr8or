@@ -27,6 +27,7 @@ final readonly class PublishingAdapterRequest
         public ?int $integrationConnectionId = null,
         public ?string $credentialReference = null,
         public array $settings = [],
+        public ?int $publishingJobId = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_-]*$/D', $network) !== 1) {
             throw new InvalidArgumentException('Publishing request network must be a canonical lowercase identifier.');
@@ -43,6 +44,10 @@ final readonly class PublishingAdapterRequest
         }
 
         self::assertMediaList($media);
+
+        if ($publishingJobId !== null && $publishingJobId < 1) {
+            throw new InvalidArgumentException('Publishing job IDs must be positive when supplied.');
+        }
 
         if ($credentialReference !== null && trim($credentialReference) === '') {
             throw new InvalidArgumentException('Publishing credential references cannot be empty when supplied.');

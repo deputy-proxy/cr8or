@@ -10,11 +10,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'status'])]
+#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'metadata', 'status'])]
 class ContentItem extends Model
 {
     /** @use HasFactory<ContentItemFactory> */
     use HasFactory;
+
+    protected function casts(): array
+    {
+        return ['metadata' => 'array'];
+    }
 
     public const STATUS_DRAFT = 'draft';
 
@@ -70,8 +75,16 @@ class ContentItem extends Model
                 throw new LogicException('Content item enterprise ownership cannot be changed.');
             }
 
+            $rawMetadata = $item->getAttributes()['metadata'] ?? null;
+            if (is_string($rawMetadata)) {
+                $decodedMetadata = json_decode($rawMetadata);
+                if (! is_object($decodedMetadata) && $decodedMetadata !== []) {
+                    throw new LogicException('Content item metadata must be a JSON object.');
+                }
+            }
+
             if ($item->exists && in_array($item->getOriginal('status'), [self::STATUS_APPROVED, self::STATUS_PUBLICATION_READY], true)) {
-                foreach (['campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'title', 'body'] as $field) {
+                foreach (['campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'title', 'body', 'metadata'] as $field) {
                     if ($item->isDirty($field)) {
                         throw new LogicException("Approved content item {$field} cannot be silently changed.");
                     }
