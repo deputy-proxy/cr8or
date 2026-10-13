@@ -2,6 +2,7 @@
 
 namespace App\Services\Social;
 
+use App\Contracts\StatefulSocialAuthorizationProvider;
 use App\Data\Social\SocialTokenSet;
 use App\Enums\SocialRevocationResult;
 use App\Exceptions\SocialAuthorizationException;
@@ -39,6 +40,7 @@ final class SocialAuthorizationService
         ?int $enterpriseId = null,
         ?int $channelId = null,
         array $requestedScopes = [],
+        ?string $accountIdentifier = null,
     ): string {
         $organization = Organization::query()->findOrFail($organizationId);
         Gate::forUser($actor)->authorize('update', $organization);
@@ -97,12 +99,18 @@ final class SocialAuthorizationService
         ]);
 
         try {
-            $url = $provider->authorizationUrl(
-                $state,
-                $redirectUri,
-                $scopes,
-                ($providerConfiguration['pkce'] ?? false) === true ? $challenge : null,
-            );
+            if ($provider instanceof StatefulSocialAuthorizationProvider) {
+                $initiation = $provider->initiate($state, $redirectUri, $scopes, $verifier, $accountIdentifier);
+                $attempt->setProviderContext(Crypt::encryptString(json_encode($initiation->context, JSON_THROW_ON_ERROR)));
+                $url = $initiation->url;
+            } else {
+                $url = $provider->authorizationUrl(
+                    $state,
+                    $redirectUri,
+                    $scopes,
+                    ($providerConfiguration['pkce'] ?? false) === true ? $challenge : null,
+                );
+            }
         } catch (Throwable $exception) {
             $attempt->transitionTo(SocialAuthorizationAttempt::STATUS_FAILED);
             $attempt->failure_code = $exception instanceof SocialAuthorizationException ? $exception->errorCode : 'provider_configuration_error';
@@ -121,12 +129,14 @@ final class SocialAuthorizationService
         return $url;
     }
 
+    /** @param array<string, mixed> $callbackParameters */
     public function complete(
         User $actor,
         string $callbackProvider,
         string $state,
         ?string $code,
         ?string $providerError = null,
+        array $callbackParameters = [],
     ): SocialAuthorizationAttempt {
         if ($state === '' || strlen($state) > 256) {
             throw new SocialAuthorizationException('state_invalid', 'The social authorization state is invalid or expired.');
@@ -198,7 +208,18 @@ final class SocialAuthorizationService
         try {
             $provider = $this->providers->forProvider($attempt->provider);
             $verifier = Crypt::decryptString($attempt->code_verifier_encrypted);
-            $tokens = $provider->exchangeAuthorizationCode($code, $attempt->redirect_uri, $verifier);
+            if ($provider instanceof StatefulSocialAuthorizationProvider) {
+                if (! is_string($attempt->provider_context_encrypted) || $attempt->provider_context_encrypted === '') {
+                    throw new SocialAuthorizationException('authorization_context_missing', 'The provider authorization context is missing or expired.');
+                }
+                $context = json_decode(Crypt::decryptString($attempt->provider_context_encrypted), true, flags: JSON_THROW_ON_ERROR);
+                if (! is_array($context)) {
+                    throw new SocialAuthorizationException('authorization_context_invalid', 'The provider authorization context is invalid or expired.');
+                }
+                $tokens = $provider->exchangeWithContext($code, $attempt->redirect_uri, $verifier, $context, $callbackParameters);
+            } else {
+                $tokens = $provider->exchangeAuthorizationCode($code, $attempt->redirect_uri, $verifier);
+            }
             $discovery = $provider->discover($tokens, $attempt->destination_network);
             $destinationCredentialTokens = [];
             foreach ($discovery->destinations as $destination) {

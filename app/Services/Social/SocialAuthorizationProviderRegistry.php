@@ -46,12 +46,16 @@ final class SocialAuthorizationProviderRegistry
             throw new SocialAuthorizationException('provider_protocol_unsupported', is_string($reason) ? $reason : 'A dedicated authorization protocol driver is required.');
         }
 
-        if ($driver !== 'oauth2') {
-            throw new SocialAuthorizationException('provider_unsupported', 'This social authorization provider has no supported driver.');
-        }
-
         if (($configuration['enabled'] ?? false) !== true) {
             throw new SocialAuthorizationException('provider_not_configured', 'The social authorization provider is not configured for this deployment.');
+        }
+
+        if ($driver === 'atproto_oauth') {
+            return new AtProtocolOAuthProvider($configuration);
+        }
+
+        if ($driver !== 'oauth2') {
+            throw new SocialAuthorizationException('provider_unsupported', 'This social authorization provider has no supported driver.');
         }
 
         return new ConfiguredOAuth2SocialAuthorizationProvider($provider, $configuration);

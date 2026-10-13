@@ -17,6 +17,7 @@ use LogicException;
  * @property string $destination_network
  * @property string $state_hash
  * @property string $code_verifier_encrypted
+ * @property string|null $provider_context_encrypted
  * @property string $redirect_uri
  * @property list<string> $requested_scopes
  * @property string $status
@@ -40,6 +41,7 @@ use LogicException;
     'destination_network',
     'state_hash',
     'code_verifier_encrypted',
+    'provider_context_encrypted',
     'redirect_uri',
     'requested_scopes',
     'status',
@@ -70,7 +72,7 @@ class SocialAuthorizationAttempt extends Model
 
     public const STATUS_EXPIRED = 'expired';
 
-    protected $hidden = ['state_hash', 'code_verifier_encrypted'];
+    protected $hidden = ['state_hash', 'code_verifier_encrypted', 'provider_context_encrypted'];
 
     protected function casts(): array
     {
@@ -120,6 +122,11 @@ class SocialAuthorizationAttempt extends Model
                 }
             }
 
+            if ($attempt->isDirty('provider_context_encrypted')
+                && ($attempt->getOriginal('provider_context_encrypted') !== null || $attempt->status !== self::STATUS_PENDING)) {
+                throw new LogicException('Provider authorization context can be stored only once before the callback is consumed.');
+            }
+
             if ($attempt->isDirty('channel_id') && ($attempt->getOriginal('channel_id') !== null || $attempt->status !== self::STATUS_COMPLETED || $attempt->getOriginal('destinations_attached_at') !== null)) {
                 throw new LogicException('A social authorization attempt can select its destination channel only once after completion.');
             }
@@ -139,6 +146,17 @@ class SocialAuthorizationAttempt extends Model
                 throw new LogicException('Invalid social authorization attempt status.');
             }
         });
+    }
+
+    public function setProviderContext(string $encryptedContext): static
+    {
+        if (! $this->exists || $this->status !== self::STATUS_PENDING || $this->provider_context_encrypted !== null || trim($encryptedContext) === '') {
+            throw new LogicException('Provider context can be stored only once while an authorization attempt is pending.');
+        }
+        $this->provider_context_encrypted = $encryptedContext;
+        $this->save();
+
+        return $this;
     }
 
     public function transitionTo(string $status): static

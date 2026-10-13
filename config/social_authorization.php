@@ -269,11 +269,14 @@ return [
             'revoke' => ['url' => 'https://api.x.com/2/oauth2/revoke', 'method' => 'POST', 'parameter' => 'token'],
         ],
         'bluesky' => [
-            'driver' => 'unsupported',
-            'enabled' => false,
-            'reason' => 'Bluesky uses AT Protocol OAuth with client metadata and DPoP; a dedicated protocol driver is required.',
+            'driver' => 'atproto_oauth',
+            'enabled' => (bool) env('SOCIAL_BSKY_OAUTH_ENABLED', false),
+            'client_id' => env('SOCIAL_BSKY_CLIENT_ID', $applicationUrl.'/oauth-client-metadata.json'),
+            'client_name' => env('SOCIAL_BSKY_CLIENT_NAME', env('APP_NAME', 'CR8OR')),
+            'client_uri' => env('SOCIAL_BSKY_CLIENT_URI', $applicationUrl),
+            'redirect_uri' => env('SOCIAL_BSKY_REDIRECT_URI', $applicationUrl.'/social/authorization/callback/bluesky'),
+            'scopes' => ['atproto', 'repo:app.bsky.feed.post?action=create', 'blob:*/*'],
             'destination_networks' => ['bsky'],
-            'scopes' => [],
         ],
     ],
 ];

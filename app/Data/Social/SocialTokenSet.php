@@ -10,6 +10,7 @@ final readonly class SocialTokenSet
     /**
      * @param  list<string>  $scopes
      * @param  array<string, array{access_token: string, expires_at: ?string}>  $destinationTokens
+     * @param  array<string, mixed>  $providerContext
      */
     public function __construct(
         public string $accessToken,
@@ -19,6 +20,7 @@ final readonly class SocialTokenSet
         public array $scopes = [],
         public string $tokenType = 'Bearer',
         public array $destinationTokens = [],
+        public array $providerContext = [],
     ) {
         if (trim($accessToken) === '') {
             throw new InvalidArgumentException('An access token is required.');
@@ -36,6 +38,7 @@ final readonly class SocialTokenSet
             $this->scopes,
             $this->tokenType,
             $incomingWins ? array_merge($this->destinationTokens, $destinationTokens) : array_merge($destinationTokens, $this->destinationTokens),
+            $this->providerContext,
         );
     }
 
@@ -50,6 +53,7 @@ final readonly class SocialTokenSet
             'scopes' => $this->scopes,
             'token_type' => $this->tokenType,
             'destination_tokens' => $this->destinationTokens,
+            'provider_context' => $this->providerContext,
         ];
     }
 
@@ -95,6 +99,7 @@ final readonly class SocialTokenSet
             is_array($scopes) ? array_values(array_filter($scopes, 'is_string')) : [],
             is_string($payload['token_type'] ?? null) ? $payload['token_type'] : 'Bearer',
             $validatedDestinationTokens,
+            is_array($payload['provider_context'] ?? null) ? $payload['provider_context'] : [],
         );
     }
 }
