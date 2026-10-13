@@ -98,6 +98,10 @@ return [
             'pkce' => false,
             'authorization_parameters' => [],
             'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'],
+            'scopes_by_network' => [
+                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'],
+                'instagram' => ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
+            ],
             'destination_networks' => ['facebook', 'instagram'],
             'destination_token_required' => ['facebook', 'instagram'],
             'identity' => [
