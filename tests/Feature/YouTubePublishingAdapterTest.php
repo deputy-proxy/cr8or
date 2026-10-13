@@ -6,6 +6,7 @@ use App\Data\PublishingRemotePublication;
 use App\Data\Social\SocialTokenSet;
 use App\Enums\PublishingCapabilitySupport;
 use App\Exceptions\PublishingAdapterException;
+use App\Exceptions\SocialAuthorizationException;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
@@ -49,7 +50,7 @@ function youtubeChannelList(string $channel = YT_CHANNEL, string $longUploads = 
 }
 
 /** @return array{Organization, Enterprise, Channel, ContentItem, SocialAccount, IntegrationConnection, Publication, PublishingJob, YouTubePublishingAdapter, PublishingAdapterRequest} */
-function youtubePublishingContext(array $youtubeMetadata = [], ?string $channelId = null): array
+function youtubePublishingContext(array $youtubeMetadata = [], ?string $channelId = null, bool $expiredAccessToken = false, bool $tokenResolutionFails = false): array
 {
     static $contextNumber = 0;
     $contextNumber++;
@@ -83,7 +84,7 @@ function youtubePublishingContext(array $youtubeMetadata = [], ?string $channelI
     $identity = SocialIdentity::query()->create(['organization_id' => $organization->id, 'provider' => 'youtube', 'external_id' => $channelId, 'name' => 'Authorized YouTube channel']);
     $reference = app(SocialCredentialStore::class)->store($organization, 'youtube', new SocialTokenSet(
         accessToken: 'youtube-user-access-token', refreshToken: 'youtube-refresh-token',
-        accessTokenExpiresAt: CarbonImmutable::now()->addHour(), refreshTokenExpiresAt: null,
+        accessTokenExpiresAt: $expiredAccessToken ? CarbonImmutable::now()->subMinute() : CarbonImmutable::now()->addHour(), refreshTokenExpiresAt: null,
         scopes: ['https://www.googleapis.com/auth/youtube.upload', 'https://www.googleapis.com/auth/youtube.readonly'],
     ));
     $connection = IntegrationConnection::query()->create([
@@ -111,7 +112,12 @@ function youtubePublishingContext(array $youtubeMetadata = [], ?string $channelI
     ]);
     $job->start()->save();
     $resolver = Mockery::mock(CredentialResolver::class);
-    $resolver->shouldReceive('resolveAccessToken')->with(Mockery::on(fn ($c): bool => $c instanceof IntegrationConnection && $c->is($connection)), 'youtube')->andReturn('youtube-user-access-token');
+    $resolution = $resolver->shouldReceive('resolveAccessToken')->with(Mockery::on(fn ($c): bool => $c instanceof IntegrationConnection && $c->is($connection)), 'youtube');
+    if ($tokenResolutionFails) {
+        $resolution->andThrow(new SocialAuthorizationException('invalid_grant', 'The Google refresh grant is no longer valid.'));
+    } else {
+        $resolution->andReturn('youtube-user-access-token');
+    }
     app()->instance(CredentialResolver::class, $resolver);
     $bytes = youtubeVideoBytes();
     Storage::disk('r2')->put('videos/test.mp4', $bytes);
@@ -349,6 +355,40 @@ it('reconciles the persisted publication after YouTube confirms processing succe
     expect(app(PublishingService::class)->reconcileStatus($publication->refresh()))->toBe('published')
         ->and($publication->refresh()->status)->toBe(Publication::STATUS_SUCCEEDED)
         ->and($job->refresh()->status)->toBe(PublishingJob::STATUS_SUCCEEDED);
+});
+
+it('maps an expired Google grant with an invalid refresh grant to authentication failure', function () {
+    [, , , , , , , , $adapter, $request] = youtubePublishingContext(expiredAccessToken: true, tokenResolutionFails: true);
+    Http::preventStrayRequests();
+
+    expect(fn () => $adapter->publish($request))
+        ->toThrow(PublishingAdapterException::class, 'authorization must be renewed before publishing');
+});
+
+it('reports definitive YouTube processing failures instead of leaving them pending', function () {
+    [, , , , , $connection, , , $adapter] = youtubePublishingContext();
+    $remote = new PublishingRemotePublication(
+        network: 'youtube', destinationExternalId: YT_CHANNEL, externalPublicationId: YT_VIDEO,
+        idempotencyKey: YT_KEY, correlationId: YT_CORRELATION,
+        integrationConnectionId: (int) $connection->id, credentialReference: $connection->credential_reference,
+        metadata: ['requested_privacy_status' => 'private'],
+    );
+    $video = youtubeVideoResource(YT_CHANNEL, YT_VIDEO, 'failed', 'failed', 'private');
+    $video['processingDetails']['processingFailureReason'] = 'processingFailure';
+    Http::fake(function (Request $request) use ($video) {
+        if (str_starts_with($request->url(), 'https://www.googleapis.com/youtube/v3/channels')) {
+            return Http::response(youtubeChannelList());
+        }
+        if (str_starts_with($request->url(), 'https://www.googleapis.com/youtube/v3/videos?')) {
+            return Http::response(['items' => [$video]]);
+        }
+
+        return Http::response([], 404);
+    });
+
+    $result = $adapter->lookupStatus($remote);
+    expect($result?->status)->toBe('failed')
+        ->and($result?->payload['failure_code'])->toBe('processing_failed');
 });
 
 it('fails closed when the stored Google grant lacks the required read-only scope', function () {
