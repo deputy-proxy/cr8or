@@ -12,10 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         $this->withSqliteForeignKeysDisabled(function (): void {
-            Schema::table('social_accounts', function (Blueprint $table): void {
-                $table->dropUnique('social_accounts_identity_destination_unique');
-                $table->unique(['social_identity_id', 'provider', 'external_id'], 'social_accounts_identity_provider_destination_unique');
-            });
+            // Create the replacement first: the old index also supports the
+            // social_identity_id foreign key on MySQL/InnoDB.
+            if (! Schema::hasIndex('social_accounts', 'social_accounts_identity_provider_destination_unique')) {
+                Schema::table('social_accounts', function (Blueprint $table): void {
+                    $table->unique(['social_identity_id', 'provider', 'external_id'], 'social_accounts_identity_provider_destination_unique');
+                });
+            }
+
+            if (Schema::hasIndex('social_accounts', 'social_accounts_identity_destination_unique')) {
+                Schema::table('social_accounts', function (Blueprint $table): void {
+                    $table->dropUnique('social_accounts_identity_destination_unique');
+                });
+            }
         });
     }
 
@@ -33,10 +42,19 @@ return new class extends Migration
         }
 
         $this->withSqliteForeignKeysDisabled(function (): void {
-            Schema::table('social_accounts', function (Blueprint $table): void {
-                $table->dropUnique('social_accounts_identity_provider_destination_unique');
-                $table->unique(['social_identity_id', 'external_id'], 'social_accounts_identity_destination_unique');
-            });
+            // The rollback follows the same safe ordering: keep a suitable
+            // foreign-key index present before removing the current one.
+            if (! Schema::hasIndex('social_accounts', 'social_accounts_identity_destination_unique')) {
+                Schema::table('social_accounts', function (Blueprint $table): void {
+                    $table->unique(['social_identity_id', 'external_id'], 'social_accounts_identity_destination_unique');
+                });
+            }
+
+            if (Schema::hasIndex('social_accounts', 'social_accounts_identity_provider_destination_unique')) {
+                Schema::table('social_accounts', function (Blueprint $table): void {
+                    $table->dropUnique('social_accounts_identity_provider_destination_unique');
+                });
+            }
         });
     }
 
