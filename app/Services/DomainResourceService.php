@@ -29,6 +29,7 @@ use App\Models\Strategy;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 final class DomainResourceService
@@ -475,6 +476,19 @@ final class DomainResourceService
         $account->save();
 
         return $account->refresh();
+    }
+
+    public function deleteSocialAccount(User $actor, SocialAccount $account): void
+    {
+        Gate::forUser($actor)->authorize('delete', $account);
+
+        if ($account->publications()->exists()) {
+            throw ValidationException::withMessages([
+                'social_account' => 'This social account has publication history and cannot be deleted. Disable it to prevent further use while preserving the publication records.',
+            ]);
+        }
+
+        $account->delete();
     }
 
     /** @param array<string, mixed> $attributes */

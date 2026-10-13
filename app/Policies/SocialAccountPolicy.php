@@ -38,6 +38,6 @@ class SocialAccountPolicy
 
     public function delete(User $user, SocialAccount $account): bool
     {
-        return false;
+        return (new EnterprisePolicy)->delete($user, $account->enterprise);
     }
 }
