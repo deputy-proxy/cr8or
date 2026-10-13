@@ -17,6 +17,7 @@ final readonly class PublishingRemotePublication
         public ?string $credentialReference = null,
         /** @var array<string, mixed> */
         public array $metadata = [],
+        public ?int $publishingJobId = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_-]*$/D', $network) !== 1) {
             throw new InvalidArgumentException('Remote publication network must be a canonical lowercase identifier.');
@@ -35,6 +36,10 @@ final readonly class PublishingRemotePublication
 
         if ($credentialReference !== null && trim($credentialReference) === '') {
             throw new InvalidArgumentException('Publishing credential references cannot be empty when supplied.');
+        }
+
+        if ($publishingJobId !== null && $publishingJobId < 1) {
+            throw new InvalidArgumentException('Publishing job IDs must be positive when supplied.');
         }
     }
 }

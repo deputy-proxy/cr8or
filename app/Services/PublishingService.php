@@ -224,7 +224,16 @@ final class PublishingService
 
         $publication->loadMissing(['contentItem', 'socialAccount.channel', 'socialAccount.socialIdentity', 'channel']);
         $job = $publication->publishingJobs()->latest('id')->first();
-        if ($job === null || ! is_string($job->external_id) || trim($job->external_id) === '') {
+        if ($job === null) {
+            return null;
+        }
+        $state = $job->adapterState();
+        $network = $job->network ?? $publication->target_provider ?? $publication->socialAccount->provider;
+        $externalPublicationId = $job->external_id;
+        if (! is_string($externalPublicationId) || trim($externalPublicationId) === '') {
+            $externalPublicationId = $network === 'threads' && is_string($state['container_id'] ?? null) ? $state['container_id'] : null;
+        }
+        if ($externalPublicationId === null || trim($externalPublicationId) === '') {
             return null;
         }
 
@@ -246,22 +255,40 @@ final class PublishingService
             return null;
         }
         $connection = $this->resolveConnection($account, $network);
-        $state = $job->adapterState();
         $metadata = [];
         if (in_array($state['requested_privacy_status'] ?? null, ['private', 'unlisted', 'public'], true)) {
             $metadata['requested_privacy_status'] = $state['requested_privacy_status'];
         }
+        if ($network === 'threads') {
+            $metadata['adapter_state'] = array_intersect_key($state, array_flip(['container_id', 'phase', 'media_type', 'post_id', 'destination_external_id', 'request_fingerprint']));
+        }
 
-        $result = $resolution->adapter->lookupStatus(new PublishingRemotePublication(
-            network: $network,
-            destinationExternalId: $destinationExternalId,
-            externalPublicationId: $job->external_id,
-            idempotencyKey: $publication->idempotency_key,
-            correlationId: (string) $publication->correlation_id,
-            integrationConnectionId: (int) $connection->id,
-            credentialReference: $connection->credential_reference,
-            metadata: $metadata,
-        ));
+        try {
+            $result = $resolution->adapter->lookupStatus(new PublishingRemotePublication(
+                network: $network,
+                destinationExternalId: $destinationExternalId,
+                externalPublicationId: $externalPublicationId,
+                idempotencyKey: $publication->idempotency_key,
+                correlationId: (string) $publication->correlation_id,
+                integrationConnectionId: (int) $connection->id,
+                credentialReference: $connection->credential_reference,
+                metadata: $metadata,
+                publishingJobId: (int) $job->id,
+            ));
+        } catch (PublishingAdapterException $exception) {
+            if (! $exception->ambiguous) {
+                throw $exception;
+            }
+
+            DB::transaction(function () use ($publication, $job, $resolution, $exception): void {
+                if ($publication->status !== Publication::STATUS_UNKNOWN) {
+                    $publication->markUnknown($exception->failureCode, $exception->getMessage())->save();
+                }
+                $this->recordFailure($publication, $job, $resolution, $exception, 'unknown');
+            });
+
+            return 'unknown';
+        }
 
         if ($result === null) {
             return null;
@@ -292,9 +319,18 @@ final class PublishingService
         }
 
         if ($result->status === 'failed') {
-            $publication->fail('provider_rejected', 'The network confirmed publication failure.')->save();
+            $failureCode = $result->payload['failure_code'] ?? null;
+            if (! is_string($failureCode) || preg_match('/^[a-z][a-z0-9_]{0,63}$/D', $failureCode) !== 1) {
+                $failureCode = 'provider_rejected';
+            }
+            $failureReason = $result->payload['failure_reason'] ?? null;
+            if (! is_string($failureReason) || trim($failureReason) === '') {
+                $failureReason = 'The network confirmed publication failure.';
+            }
+            $failureReason = mb_substr($failureReason, 0, 1000);
+            $publication->fail($failureCode, $failureReason)->save();
             if ($job->status !== PublishingJob::STATUS_SUCCEEDED) {
-                $job->fail('The network confirmed publication failure.', 'provider_rejected')->save();
+                $job->fail($failureReason, $failureCode)->save();
             }
         } elseif (in_array($result->status, ['submitted', 'accepted', 'pending', 'published', 'succeeded'], true)) {
             if (trim($result->externalId) === '') {

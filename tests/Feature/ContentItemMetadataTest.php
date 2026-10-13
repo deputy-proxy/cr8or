@@ -10,6 +10,10 @@ it('persists provider-specific content metadata as a JSON object', function () {
             'tags' => ['product launch', 'cr8or'],
             'made_for_kids' => false,
         ],
+        'threads' => [
+            'topic_tag' => 'architecture',
+            'reply_control' => 'everyone',
+        ],
     ];
 
     $item = ContentItem::factory()->create(['metadata' => $metadata])->refresh();
