@@ -99,7 +99,7 @@ return [
             'authorization_parameters' => [],
             'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'],
             'scopes_by_network' => [
-                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'],
+                'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
                 'instagram' => ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
             ],
             'destination_networks' => ['facebook', 'instagram'],
@@ -113,7 +113,7 @@ return [
                 [
                     'network' => 'facebook',
                     'url' => 'https://graph.facebook.com/'.env('META_GRAPH_API_VERSION', 'v26.0').'/me/accounts?fields=id,name,link,access_token,tasks,instagram_business_account{id,username}',
-                    'required_any_values' => ['tasks' => ['CREATE_CONTENT', 'MANAGE']],
+                    'required_any_values' => ['tasks' => ['CREATE_CONTENT', 'MANAGE', 'PROFILE_PLUS_CREATE_CONTENT', 'PROFILE_PLUS_MANAGE', 'PROFILE_PLUS_FULL_CONTROL']],
                     'require_credential_token' => true,
                     'path' => 'data',
                     'id_path' => 'id',
