@@ -54,6 +54,17 @@ class ContentItemResource extends Resource
             Select::make('audience_id')->relationship('audience', 'name')->searchable()->preload(),
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('body')->rows(10),
+            Section::make('Threads metadata')
+                ->description('Optional Threads topic and reply controls. Carousel posts and long-form text attachments are not enabled by this adapter.')
+                ->collapsible()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('metadata.threads.topic_tag')->label('Topic tag')->maxLength(50)->helperText('Do not include a leading #.'),
+                    Select::make('metadata.threads.reply_control')
+                        ->label('Who can reply')
+                        ->options(['everyone' => 'Everyone', 'accounts_you_follow' => 'Accounts you follow', 'mentioned_only' => 'Mentioned only'])
+                        ->placeholder('Use Threads default'),
+                ]),
             Section::make('YouTube metadata')
                 ->description('Optional video-specific metadata. CR8OR defaults privacy to private when no override is supplied; made-for-kids is never inferred.')
                 ->collapsible()

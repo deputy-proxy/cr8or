@@ -18,6 +18,10 @@ return [
         'default_category_id' => env('SOCIAL_YOUTUBE_DEFAULT_CATEGORY_ID') ?: null,
         'notify_subscribers' => env('SOCIAL_YOUTUBE_NOTIFY_SUBSCRIBERS', false),
     ],
+    'threads' => [
+        'api_version' => env('SOCIAL_THREADS_API_VERSION', 'v1.0'),
+        'media_url_expiry_minutes' => (int) env('SOCIAL_THREADS_MEDIA_URL_EXPIRY_MINUTES', 60),
+    ],
     'instagram' => [
         'container_poll_attempts' => (int) env('SOCIAL_INSTAGRAM_CONTAINER_POLL_ATTEMPTS', 5),
         'container_poll_interval_ms' => (int) env('SOCIAL_INSTAGRAM_CONTAINER_POLL_INTERVAL_MS', 250),
@@ -32,7 +36,7 @@ return [
         'tiktok' => ['key' => 'tiktok', 'class' => \App\Services\Publishing\TikTokPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'bsky' => ['key' => 'bsky', 'class' => \App\Services\Publishing\BlueskyPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'youtube' => ['key' => 'youtube', 'class' => \App\Services\Publishing\YouTubePublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
-        'threads' => ['key' => 'threads', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
+        'threads' => ['key' => 'threads', 'class' => \App\Services\Publishing\ThreadsPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'x' => ['key' => 'x', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
     ],
 ];
