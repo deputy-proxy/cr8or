@@ -31,7 +31,6 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | archive-marketing-strategy | `ArchiveMarketingStrategyTool` | `DomainMutationTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` | human target policy + DomainResourceService policy |
 | archive-memory | `ArchiveMemoryTool` | `MemoryResourceTool` | `memory.archive` | `ArchiveMemory` | Operation/domain service; governed when registry-mapped |
 | cancel-agent-execution | `CancelAgentExecutionTool` | `AgentExecutionResourceTool` | — | `CancelAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
-| connect-social-account | `ConnectSocialAccountTool` | `DomainMutationTool` | `marketing.social-account.connect` | `SocialAccountConnect` | human target policy + DomainResourceService policy |
 | continue-agent-execution | `ContinueAgentExecutionTool` | `AgentExecutionResourceTool` | `agent.continue` | `ContinueAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
 | create-agent-assignment | `CreateAgentAssignmentTool` | `AgentAssignmentResourceTool` | `agent.assignment.create` | `CreateAgentAssignment` | AgentAssignmentService scope + policy |
 | create-agent-execution | `CreateAgentExecutionTool` | `AgentExecutionResourceTool` | — | `CreateAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
@@ -39,7 +38,6 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-audience | `CreateAudienceTool` | `DomainMutationTool` | `marketing.audience.create` | `MarketingAudienceCreate` | human target policy + DomainResourceService policy |
 | create-campaign | `CreateCampaignTool` | `DomainMutationTool` | `marketing.campaign.create` | `MarketingCampaignCreate` | human target policy + DomainResourceService policy |
 | create-channel | `CreateChannelTool` | `DomainMutationTool` | `marketing.channel.create` | `MarketingChannelCreate` | human target policy + DomainResourceService policy |
-| create-connection | `CreateConnectionTool` | `DomainMutationTool` | `integration.connection.create` | `IntegrationConnectionCreate` | human target policy + DomainResourceService policy |
 | create-content-item | `CreateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.create` | `CreateContentItem` | CapabilityInvocationService + operation/domain policy |
 | create-content-series | `CreateContentSeriesTool` | `DomainMutationTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` | human target policy + DomainResourceService policy |
 | create-enterprise | `CreateEnterpriseTool` | `Explicit direct-tool boundary` | `enterprise.create` | `EnterpriseCreate` | organization scope + EnterprisePolicy::createForOrganization |
@@ -57,7 +55,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-workflow | `CreateWorkflowTool` | `GovernedCapabilityTool` | `workflow.create` | `CreateWorkflow` | CapabilityInvocationService + operation/domain policy |
 | define-marketing-strategy-section | `DefineMarketingStrategySectionTool` | `GovernedCapabilityTool` | `marketing.strategy.section.define` | `DefineMarketingStrategySection` | CapabilityInvocationService + operation/domain policy |
 | delegate-agent | `DelegateAgentTool` | `GovernedCapabilityTool` | `agent.delegate` | `DelegateAgent` | CapabilityInvocationService + operation/domain policy |
-| disconnect-social-account | `DisconnectSocialAccountTool` | `DomainMutationTool` | `marketing.social-account.disconnect` | `SocialAccountDisconnect` | human target policy + DomainResourceService policy |
+| disable-social-account | `DisableSocialAccountTool` | `GovernedCapabilityTool` | `marketing.social-account.disable` | `SocialAccountDisable` | CapabilityInvocationService + `SocialAccountPolicy::disable` + DomainResourceService; approval required for Agent execution |
 | duplicate-workflow | `DuplicateWorkflowTool` | `GovernedCapabilityTool` | `workflow.duplicate` | `DuplicateWorkflow` | CapabilityInvocationService + operation/domain policy |
 | execute-agent | `ExecuteAgentTool` | `GovernedCapabilityTool` | `agent.execute` | `ExecuteAgent` | CapabilityInvocationService + operation/domain policy |
 | generate-financial-report | `GenerateFinancialReportTool` | `GovernedCapabilityTool` | `finance.report.generate` | `GenerateFinancialReport` | CapabilityInvocationService + operation/domain policy |
@@ -84,6 +82,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | get-objective | `GetObjectiveTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Objective` | organization-scoped lookup + `Gate::view` |
 | get-plan | `GetPlanTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Plan` | organization-scoped lookup + `Gate::view` |
 | get-project | `GetProjectTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Project` | organization-scoped lookup + `Gate::view` |
+| get-publication | `GetPublicationTool` | `DiscoveryGetTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::view`; latest provider result excludes payload |
 | get-social-account | `GetSocialAccountTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\SocialAccount` | organization-scoped lookup + `Gate::view` |
 | get-strategy | `GetStrategyTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Strategy` | organization-scoped lookup + `Gate::view` |
 | get-task | `GetTaskTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Task` | organization-scoped lookup + `Gate::view` |
@@ -112,6 +111,8 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-objectives | `ListObjectiveTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Objective` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-plans | `ListPlanTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Plan` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-projects | `ListProjectTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Project` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-publication-results | `ListPublicationResultsTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\PublicationResult` | enterprise membership query + `Gate::viewAny`; provider payload excluded |
+| list-publications | `ListPublicationTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::viewAny` |
 | list-social-accounts | `ListSocialAccountTool` | `DiscoveryListTool` | — | scoped query: `App\Models\SocialAccount` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-strategies | `ListStrategyTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Strategy` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-tasks | `ListTaskTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Task` | concrete `scopeQuery` + optional enterprise/filter scope |
@@ -120,6 +121,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | plan-marketing | `PlanMarketingTool` | `GovernedCapabilityTool` | `marketing.plan` | `PlanMarketing` | CapabilityInvocationService + operation/domain policy |
 | publish-content | `PublishContentTool` | `GovernedCapabilityTool` | `publication.publish` | `PublishContent` | CapabilityInvocationService + operation/domain policy |
 | publish-workflow | `PublishWorkflowTool` | `GovernedCapabilityTool` | `workflow.publish` | `PublishWorkflow` | CapabilityInvocationService + operation/domain policy |
+| reconcile-publication-status | `ReconcilePublicationStatusTool` | `GovernedCapabilityTool` | `publication.status.reconcile` | `ReconcilePublicationStatus` | CapabilityInvocationService + `PublicationPolicy::reconcileStatus` + PublishingService; no provider write and no approval required |
 | record-memory | `RecordMemoryTool` | `GovernedCapabilityTool` | `memory.record` | `RecordMemory` | CapabilityInvocationService + operation/domain policy |
 | request-approval | `RequestApprovalTool` | `Explicit direct-tool boundary` | `approval.request` | `ApprovalRequestCreate` | McpCapabilityAuthorizer + ApprovalRequestService + ApprovalPolicyService |
 | resume-agent-execution | `ResumeAgentExecutionTool` | `AgentExecutionResourceTool` | — | `ResumeAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
@@ -144,11 +146,13 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-memory | `UpdateMemoryTool` | `MemoryResourceTool` | `memory.update` | `UpdateMemory` | Operation/domain service; governed when registry-mapped |
 | update-objective | `UpdateObjectiveTool` | `DomainMutationTool` | `marketing.objective.update` | `ObjectiveUpdate` | human target policy + DomainResourceService policy |
 | update-project | `UpdateProjectTool` | `DomainMutationTool` | `marketing.project.update` | `ProjectUpdate` | human target policy + DomainResourceService policy |
-| update-social-account | `UpdateSocialAccountTool` | `DomainMutationTool` | `marketing.social-account.update` | `SocialAccountUpdate` | human target policy + DomainResourceService policy |
+| update-social-account | `UpdateSocialAccountTool` | `GovernedCapabilityTool` | `marketing.social-account.update` | `SocialAccountUpdate` | CapabilityInvocationService + `SocialAccountPolicy::update` + DomainResourceService; approval required for Agent execution |
 | update-strategy | `UpdateStrategyTool` | `GovernedCapabilityTool` | `strategy.update` | `UpdateStrategy` | CapabilityInvocationService + operation/domain policy |
 | update-task | `UpdateTaskTool` | `GovernedCapabilityTool` | `work.task.update` | `UpdateTask` | CapabilityInvocationService + operation/domain policy |
 | update-workflow | `UpdateWorkflowTool` | `GovernedCapabilityTool` | `workflow.update` | `UpdateWorkflow` | CapabilityInvocationService + operation/domain policy |
 | verify-marketing-graph | `VerifyMarketingGraphTool` | `GovernedCapabilityTool` | `marketing.graph.verify` | `VerifyMarketingGraph` | CapabilityInvocationService + operation/domain policy |
+
+Social authorization is intentionally a user-consented web lifecycle: OAuth initiation, callback validation, provider account discovery/attachment, refresh and revocation are handled by `SocialAuthorizationService`, not by generic MCP connection/account CRUD. The MCP `disable-social-account` action disables only the CR8OR destination. Publication list/get/result tools are enterprise-scoped and omit provider payloads and credential references.
 
 ## Cross-cutting invariants
 

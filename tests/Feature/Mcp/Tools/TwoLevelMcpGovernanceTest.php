@@ -5,7 +5,6 @@ use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
-use App\Mcp\Tools\ConnectSocialAccountTool;
 use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
@@ -16,8 +15,9 @@ use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
-use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\DisableSocialAccountTool;
 use App\Mcp\Tools\DomainMutationTool;
+use App\Mcp\Tools\ReconcilePublicationStatusTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
@@ -70,9 +70,9 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         UpdateChannelTool::class,
         ArchiveChannelTool::class,
         ArchiveMarketingStrategyTool::class,
-        ConnectSocialAccountTool::class,
         UpdateSocialAccountTool::class,
-        DisconnectSocialAccountTool::class,
+        DisableSocialAccountTool::class,
+        ReconcilePublicationStatusTool::class,
         CreateProjectTool::class,
         UpdateProjectTool::class,
         CreateScriptTool::class,

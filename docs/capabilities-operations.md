@@ -114,8 +114,17 @@ Neither mode creates a second authorization or Operation execution path. Interac
 
 ### Integration connections
 
-| Capability | Operation | MCP adapter | Purpose |
-|---|---|---|---|
-| `integration.connection.create` | `IntegrationConnectionCreate` | `create-connection` | Create an enterprise-scoped external integration connection using a credential reference without exposing credential material through MCP. |
+Integration connections are durable configuration resources, but generic connection creation is not exposed as an Agent-facing MCP capability. Social connections are created only by the authenticated OAuth lifecycle after callback validation; provider credentials and credential references are not returned by public MCP tools. Generic integration configuration remains an administrative/domain concern and must use the provider-specific configuration contract.
 
-Integration connections are durable configuration resources used by external-system Operations. The connection separates external account identity, a credential reference, provider-specific non-secret operational configuration, metadata, status, and tenancy. The MCP creation boundary accepts structured configuration but never accepts credential material; credentials themselves remain outside the MCP payload. Provider configuration is validated below the MCP boundary against the provider definition. Connection creation is enterprise-scoped and requires organization owner/admin authority.
+### Social publishing and lifecycle
+
+| Capability | Operation | MCP adapter | Execution modes | Approval |
+|---|---|---|---|---|
+| `marketing.social-account.update` | `SocialAccountUpdate` | `update-social-account` | Human, Agent | Required for Agent execution |
+| `marketing.social-account.disable` | `SocialAccountDisable` | `disable-social-account` | Human, Agent | Required for Agent execution |
+| `publication.publish` | `PublishContent` | `publish-content` | Human, Agent, Workflow | Required for Agent/Workflow execution |
+| `publication.status.reconcile` | `ReconcilePublicationStatus` | `reconcile-publication-status` | Human, Agent, Workflow | None; idempotent provider status reconciliation |
+
+Social account creation, OAuth initiation/callback, destination discovery/attachment, token refresh, and provider revocation remain in `SocialAuthorizationService` and its authenticated web lifecycle. The MCP disable action deactivates one CR8OR destination; it is not a provider revocation operation.
+
+Publishing and status reconciliation may be configured in persisted, published `WorkflowVersion` stages. The workflow engine validates the stored stage input/output contracts and uses the canonical Capability invocation boundary. No workflow definition or stage mapping is hardcoded in PHP, and deterministic/interactive publishing does not require a ModelProvider. Publication/result discovery is enterprise-scoped and excludes provider payloads, access tokens, and credential references.

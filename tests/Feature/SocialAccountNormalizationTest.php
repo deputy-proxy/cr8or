@@ -1,14 +1,16 @@
 <?php
 
-use App\Mcp\Servers\Cr8orServer;
-use App\Mcp\Tools\ConnectSocialAccountTool;
+use App\Filament\Resources\SocialAccounts\SocialAccountResource;
 use App\Models\Channel;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Operations\SocialAccountDisable;
+use App\Operations\SocialAccountUpdate;
 use App\Services\DomainResourceService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -26,40 +28,49 @@ function socialAccountNormalizationContext(): array
     return [$actor, $enterprise, $channel];
 }
 
-it('trims provider and display name without rewriting provider identifier casing', function (): void {
-    [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
-
-    $account = app(DomainResourceService::class)->connectSocialAccount($actor, $enterprise, [
+function createNormalizationAccount(Enterprise $enterprise, Channel $channel, array $attributes = []): SocialAccount
+{
+    return SocialAccount::query()->create(array_merge([
+        'enterprise_id' => $enterprise->getKey(),
         'channel_id' => $channel->getKey(),
-        'provider' => '  Instagram  ',
+        'provider' => 'legacy-provider',
+        'name' => 'Brand Account',
+        'external_id' => 'Account-AbC-42',
+        'status' => SocialAccount::STATUS_DISABLED,
+    ], $attributes));
+}
+
+it('normalizes provider and display name without rewriting external identifier casing', function (): void {
+    [, $enterprise, $channel] = socialAccountNormalizationContext();
+
+    $account = createNormalizationAccount($enterprise, $channel, [
+        'provider' => '  LegacyProvider  ',
         'name' => '  Brand Account  ',
         'external_id' => 'Account-AbC-42',
     ]);
 
-    expect($account->provider)->toBe('Instagram')
+    expect($account->provider)->toBe('LegacyProvider')
         ->and($account->name)->toBe('Brand Account')
         ->and($account->external_id)->toBe('Account-AbC-42');
 });
 
 it('rejects whitespace-only fields and padded external identifiers with field errors', function (): void {
-    [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
-    $service = app(DomainResourceService::class);
+    [, $enterprise, $channel] = socialAccountNormalizationContext();
 
     foreach ([
         ['provider' => '   ', 'name' => 'Account', 'external_id' => 'id-1', 'field' => 'provider'],
-        ['provider' => 'Instagram', 'name' => " \t ", 'external_id' => 'id-2', 'field' => 'name'],
-        ['provider' => 'Instagram', 'name' => 'Account', 'external_id' => " \t ", 'field' => 'external_id'],
-        ['provider' => 'Instagram', 'name' => 'Account', 'external_id' => ' id-3 ', 'field' => 'external_id'],
+        ['provider' => 'LegacyProvider', 'name' => " \t ", 'external_id' => 'id-2', 'field' => 'name'],
+        ['provider' => 'LegacyProvider', 'name' => 'Account', 'external_id' => " \t ", 'field' => 'external_id'],
+        ['provider' => 'LegacyProvider', 'name' => 'Account', 'external_id' => ' id-3 ', 'field' => 'external_id'],
     ] as $case) {
         try {
-            $service->connectSocialAccount($actor, $enterprise, [
-                'channel_id' => $channel->getKey(),
+            createNormalizationAccount($enterprise, $channel, [
                 'provider' => $case['provider'],
                 'name' => $case['name'],
                 'external_id' => $case['external_id'],
             ]);
 
-            test()->fail("Expected validation error for [{$case['field']}].");
+            throw new LogicException("Expected validation error for [{$case['field']}].");
         } catch (ValidationException $exception) {
             expect($exception->errors())->toHaveKey($case['field']);
         }
@@ -70,9 +81,7 @@ it('rejects whitespace-only fields and padded external identifiers with field er
 
 it('normalizes display names on update without rewriting the external identity', function (): void {
     [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
-    $account = app(DomainResourceService::class)->connectSocialAccount($actor, $enterprise, [
-        'channel_id' => $channel->getKey(),
-        'provider' => 'Instagram',
+    $account = createNormalizationAccount($enterprise, $channel, [
         'name' => 'Original Name',
         'external_id' => 'Immutable-Case-ID',
     ]);
@@ -83,19 +92,16 @@ it('normalizes display names on update without rewriting the external identity',
 
     expect($updated->name)->toBe('Updated Name')
         ->and($updated->external_id)->toBe('Immutable-Case-ID')
-        ->and($updated->provider)->toBe('Instagram');
+        ->and($updated->provider)->toBe('legacy-provider');
 });
 
-it('applies the same normalization contract to direct model writes and rejects duplicate provider identities', function (): void {
-    [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
+it('applies normalization to direct model writes and rejects duplicate provider identities', function (): void {
+    [, $enterprise, $channel] = socialAccountNormalizationContext();
 
-    $account = SocialAccount::query()->create([
-        'enterprise_id' => $enterprise->getKey(),
-        'channel_id' => $channel->getKey(),
+    $account = createNormalizationAccount($enterprise, $channel, [
         'provider' => '  FaceBook ',
         'name' => '  Primary Account ',
         'external_id' => 'CaseSensitive-42',
-        'status' => SocialAccount::STATUS_ACTIVE,
     ]);
 
     expect($account->provider)->toBe('FaceBook')
@@ -103,58 +109,65 @@ it('applies the same normalization contract to direct model writes and rejects d
         ->and($account->external_id)->toBe('CaseSensitive-42');
 
     try {
-        SocialAccount::query()->create([
-            'enterprise_id' => $enterprise->getKey(),
-            'channel_id' => $channel->getKey(),
+        createNormalizationAccount($enterprise, $channel, [
             'provider' => 'FaceBook',
             'name' => 'Duplicate Account',
             'external_id' => 'CaseSensitive-42',
-            'status' => SocialAccount::STATUS_ACTIVE,
         ]);
 
-        test()->fail('Expected duplicate provider identity validation to fail.');
+        throw new LogicException('Expected duplicate provider identity validation to fail.');
     } catch (ValidationException $exception) {
         expect($exception->errors())->toHaveKey('external_id');
     }
 });
 
-it('normalizes social account creation through the MCP tool', function (): void {
+it('routes social destination update and disable through explicit Operations', function (): void {
     [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
+    $account = createNormalizationAccount($enterprise, $channel, [
+        'name' => 'Original Name',
+        'status' => SocialAccount::STATUS_ACTIVE,
+    ]);
 
-    Cr8orServer::actingAs($actor, 'api')
-        ->tool(ConnectSocialAccountTool::class, [
-            'enterprise_id' => $enterprise->getKey(),
-            'channel_id' => $channel->getKey(),
-            'provider' => '  LinkedIn  ',
-            'name' => '  Company Page  ',
-            'external_id' => 'LinkedIn-Account-ABC',
-        ])
-        ->assertHasNoErrors();
+    $updated = app(SocialAccountUpdate::class)->execute($actor, [
+        'social_account_id' => $account->getKey(),
+        'name' => '  Updated by Operation  ',
+    ]);
+    $disabled = app(SocialAccountDisable::class)->execute($actor, [
+        'social_account_id' => $updated->getKey(),
+    ]);
 
-    $account = SocialAccount::query()->sole();
+    expect($updated->name)->toBe('Updated by Operation')
+        ->and($disabled->status)->toBe(SocialAccount::STATUS_DISABLED);
+});
 
-    expect($account->provider)->toBe('LinkedIn')
-        ->and($account->name)->toBe('Company Page')
-        ->and($account->external_id)->toBe('LinkedIn-Account-ABC');
+it('denies direct social destination Operations outside the authorized enterprise', function (): void {
+    [, $enterprise, $channel] = socialAccountNormalizationContext();
+    $account = createNormalizationAccount($enterprise, $channel, ['status' => SocialAccount::STATUS_ACTIVE]);
+    $otherOrganization = Organization::factory()->create();
+    $otherActor = User::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $otherActor->getKey(),
+        'organization_id' => $otherOrganization->getKey(),
+    ]);
 
-    Cr8orServer::actingAs($actor, 'api')
-        ->tool(ConnectSocialAccountTool::class, [
-            'enterprise_id' => $enterprise->getKey(),
-            'channel_id' => $channel->getKey(),
-            'provider' => 'LinkedIn',
-            'name' => 'Invalid Padded Identity',
-            'external_id' => ' LinkedIn-Account-XYZ ',
-        ])
-        ->assertHasErrors();
+    expect(fn () => app(SocialAccountUpdate::class)->execute($otherActor, [
+        'social_account_id' => $account->getKey(),
+        'name' => 'Unauthorized',
+    ]))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(SocialAccountDisable::class)->execute($otherActor, [
+            'social_account_id' => $account->getKey(),
+        ]))->toThrow(AuthorizationException::class);
+});
 
-    expect(SocialAccount::query()->count())->toBe(1);
+it('does not expose generic social-account creation outside the OAuth destination lifecycle', function (): void {
+    expect(SocialAccountResource::canCreate())->toBeFalse()
+        ->and(SocialAccountResource::getPages())->not->toHaveKey('create')
+        ->and(method_exists(DomainResourceService::class, 'connectSocialAccount'))->toBeFalse();
 });
 
 it('rejects cross-enterprise channel changes before persistence and preserves historical external identifiers', function (): void {
     [$actor, $enterprise, $channel] = socialAccountNormalizationContext();
-    $account = app(DomainResourceService::class)->connectSocialAccount($actor, $enterprise, [
-        'channel_id' => $channel->getKey(),
-        'provider' => 'Instagram',
+    $account = createNormalizationAccount($enterprise, $channel, [
         'name' => 'Original Name',
         'external_id' => 'legacy-external-id',
     ]);
@@ -178,18 +191,14 @@ it('rejects cross-enterprise channel changes before persistence and preserves hi
         'provider' => 'legacy-provider',
         'name' => 'Legacy Account',
         'external_id' => 'legacy-id-with-padding ',
-        'status' => SocialAccount::STATUS_ACTIVE,
+        'status' => SocialAccount::STATUS_DISABLED,
         'created_at' => now(),
         'updated_at' => now(),
     ]);
-    $legacy = SocialAccount::query()->where('provider', 'legacy-provider')->firstOrFail();
+    $legacy = SocialAccount::query()->where('name', 'Legacy Account')->firstOrFail();
     $legacy->name = '  Updated Display Name  ';
     $legacy->save();
 
     expect($legacy->refresh()->name)->toBe('Updated Display Name')
         ->and($legacy->external_id)->toBe('legacy-id-with-padding ');
-
-    $account->channel_id = $foreignChannel->getKey();
-    expect(fn () => $account->save())->toThrow(LogicException::class);
-    expect($account->refresh()->channel_id)->toBe($channel->getKey());
 });

@@ -6,7 +6,6 @@ use App\Contracts\Operation;
 use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
-use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -61,7 +60,6 @@ use App\Operations\ExecuteAgent;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
-use App\Operations\IntegrationConnectionCreate;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingAudienceArchive;
 use App\Operations\MarketingAudienceCreate;
@@ -81,12 +79,12 @@ use App\Operations\ProjectCreate;
 use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
 use App\Operations\PublishWorkflow;
+use App\Operations\ReconcilePublicationStatus;
 use App\Operations\RecordMemory;
 use App\Operations\ResumeWorkflowExecution;
 use App\Operations\RetrieveKnowledge;
 use App\Operations\RetrieveMemory;
-use App\Operations\SocialAccountConnect;
-use App\Operations\SocialAccountDisconnect;
+use App\Operations\SocialAccountDisable;
 use App\Operations\SocialAccountUpdate;
 use App\Operations\StartWorkflow;
 use App\Operations\SubmitContentForReview;
@@ -507,9 +505,18 @@ final class CapabilityRegistry
                 PublishContent::class,
                 PublishContentTool::class,
                 ['content_item_id' => 'integer|required', 'social_account_id' => 'integer|required', 'scheduled_at' => 'date|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
-                ['success' => 'boolean', 'result' => 'publication'],
-                'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
+                ['id' => 'integer', 'enterprise_id' => 'integer', 'content_item_id' => 'integer', 'channel_id' => 'integer', 'social_account_id' => 'integer', 'status' => 'string', 'external_id' => 'string|null', 'external_url' => 'string|null', 'scheduled_at' => 'datetime|null', 'submitted_at' => 'datetime|null', 'published_at' => 'datetime|null'],
+                'CapabilityInvocationService + ContentItem policy + PublishingService',
                 'required',
+            ),
+            $this->definition(
+                'publication.status.reconcile',
+                ReconcilePublicationStatus::class,
+                \App\Mcp\Tools\ReconcilePublicationStatusTool::class,
+                ['publication_id' => 'integer|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['publication_id' => 'integer', 'reconciliation_status' => 'string|null', 'status' => 'string', 'external_id' => 'string|null', 'external_url' => 'string|null', 'failure_code' => 'string|null', 'failure_reason' => 'string|null', 'latest_result_id' => 'integer|null'],
+                'CapabilityInvocationService + PublicationPolicy::reconcileStatus + PublishingService',
+                'none',
             ),
             $this->definition(
                 'strategy.create',
@@ -740,49 +747,22 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
-                'integration.connection.create',
-                IntegrationConnectionCreate::class,
-                CreateConnectionTool::class,
-                [
-                    'enterprise_id' => 'integer|required',
-                    'provider' => 'string|required',
-                    'external_account_id' => 'string|nullable',
-                    'credential_reference' => 'string|required',
-                    'status' => 'string|nullable',
-                    'agent_assignment_id' => 'integer|nullable',
-                    'agent_execution_id' => 'integer|nullable',
-                    'approval_request_id' => 'integer|nullable',
-                ],
-                ['success' => 'boolean', 'result' => 'integration-connection'],
-                'McpCapabilityAuthorizer::authorizeMutation + IntegrationConnection policy',
-                'none',
-            ),
-            $this->definition(
-                'marketing.social-account.connect',
-                SocialAccountConnect::class,
-                \App\Mcp\Tools\ConnectSocialAccountTool::class,
-                ['input' => 'object'],
-                ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'none',
-            ),
-            $this->definition(
                 'marketing.social-account.update',
                 SocialAccountUpdate::class,
                 \App\Mcp\Tools\UpdateSocialAccountTool::class,
-                ['input' => 'object'],
-                ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'none',
+                ['social_account_id' => 'integer|required', 'name' => 'string|optional', 'channel_id' => 'integer|optional', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['id' => 'integer', 'enterprise_id' => 'integer', 'channel_id' => 'integer', 'provider' => 'string', 'name' => 'string', 'external_id' => 'string', 'status' => 'string'],
+                'CapabilityInvocationService + SocialAccount policy + DomainResourceService',
+                'required',
             ),
             $this->definition(
-                'marketing.social-account.disconnect',
-                SocialAccountDisconnect::class,
-                \App\Mcp\Tools\DisconnectSocialAccountTool::class,
-                ['input' => 'object'],
-                ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + SocialAccount policy',
-                'none',
+                'marketing.social-account.disable',
+                SocialAccountDisable::class,
+                \App\Mcp\Tools\DisableSocialAccountTool::class,
+                ['social_account_id' => 'integer|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['id' => 'integer', 'enterprise_id' => 'integer', 'channel_id' => 'integer', 'provider' => 'string', 'name' => 'string', 'external_id' => 'string', 'status' => 'string'],
+                'CapabilityInvocationService + SocialAccount policy + DomainResourceService',
+                'required',
             ),
             $this->definition(
                 'marketing.strategy.archive',
@@ -1020,11 +1000,8 @@ final class CapabilityRegistry
             'enterprise.create',
             'approval.request',
             'marketing.content.publication-ready',
-            'publication.publish',
-            'marketing.social-account.connect',
-            'integration.connection.create',
             'marketing.social-account.update',
-            'marketing.social-account.disconnect',
+            'marketing.social-account.disable',
             'memory.create',
             'memory.update',
             'memory.archive',

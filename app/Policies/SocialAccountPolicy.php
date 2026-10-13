@@ -11,28 +11,33 @@ class SocialAccountPolicy
 {
     use HasExplicitCrudContract;
 
-    public function view(User $u, SocialAccount $a): bool
+    public function view(User $user, SocialAccount $account): bool
     {
-        return (new EnterprisePolicy)->view($u, $a->enterprise);
+        return (new EnterprisePolicy)->view($user, $account->enterprise);
     }
 
-    public function create(User $u): bool
+    public function create(User $user): bool
     {
-        return (new EnterprisePolicy)->create($u);
+        return false;
     }
 
-    public function createForEnterprise(User $u, Enterprise $e): bool
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
     {
-        return (new EnterprisePolicy)->update($u, $e);
+        return false;
     }
 
-    public function update(User $u, SocialAccount $a): bool
+    public function update(User $user, SocialAccount $account): bool
     {
-        return (new EnterprisePolicy)->update($u, $a->enterprise);
+        return (new EnterprisePolicy)->update($user, $account->enterprise);
     }
 
-    public function delete(User $u, SocialAccount $a): bool
+    public function disable(User $user, SocialAccount $account): bool
     {
-        return (new EnterprisePolicy)->delete($u, $a->enterprise);
+        return (new EnterprisePolicy)->delete($user, $account->enterprise);
+    }
+
+    public function delete(User $user, SocialAccount $account): bool
+    {
+        return false;
     }
 }

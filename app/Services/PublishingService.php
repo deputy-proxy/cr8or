@@ -27,6 +27,7 @@ use App\Models\SocialIdentity;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use LogicException;
 
@@ -583,6 +584,8 @@ final class PublishingService
         }
 
         if ($assignment === null) {
+            Gate::forUser($actor)->authorize('update', $content);
+
             return;
         }
 

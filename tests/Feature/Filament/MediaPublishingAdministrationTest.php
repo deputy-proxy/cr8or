@@ -84,10 +84,11 @@ it('limits mutable media and publishing administration to enterprise managers', 
     $this->actingAs($owner);
 
     expect(AssetResource::canCreate())->toBeTrue()
-        ->and(SocialAccountResource::canCreate())->toBeTrue()
+        ->and(SocialAccountResource::canCreate())->toBeFalse()
         ->and(PublicationResource::canCreate())->toBeFalse()
         ->and(PublicationScheduleResource::canCreate())->toBeFalse()
-        ->and(IntegrationConnectionResource::canCreate())->toBeTrue();
+        ->and(IntegrationConnectionResource::canCreate())->toBeTrue()
+        ->and(SocialAccountResource::getPages())->not->toHaveKey('create');
 
     $this->actingAs($member);
 

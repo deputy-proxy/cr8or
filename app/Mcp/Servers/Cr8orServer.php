@@ -13,7 +13,6 @@ use App\Mcp\Tools\ArchiveKnowledgeUnitTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
 use App\Mcp\Tools\ArchiveMemoryTool;
 use App\Mcp\Tools\CancelAgentExecutionTool;
-use App\Mcp\Tools\ConnectSocialAccountTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\CreateAgentExecutionTool;
@@ -21,7 +20,6 @@ use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
-use App\Mcp\Tools\CreateConnectionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
@@ -39,7 +37,7 @@ use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\DefineMarketingStrategySectionTool;
 use App\Mcp\Tools\DelegateAgentTool;
-use App\Mcp\Tools\DisconnectSocialAccountTool;
+use App\Mcp\Tools\DisableSocialAccountTool;
 use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
@@ -66,6 +64,7 @@ use App\Mcp\Tools\GetMemoryTool;
 use App\Mcp\Tools\GetObjectiveTool;
 use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
+use App\Mcp\Tools\GetPublicationTool;
 use App\Mcp\Tools\GetSocialAccountTool;
 use App\Mcp\Tools\GetStrategyTool;
 use App\Mcp\Tools\GetTaskTool;
@@ -94,6 +93,8 @@ use App\Mcp\Tools\ListMemoryTool;
 use App\Mcp\Tools\ListObjectiveTool;
 use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProjectTool;
+use App\Mcp\Tools\ListPublicationResultsTool;
+use App\Mcp\Tools\ListPublicationTool;
 use App\Mcp\Tools\ListSocialAccountTool;
 use App\Mcp\Tools\ListStrategyTool;
 use App\Mcp\Tools\ListTaskTool;
@@ -102,6 +103,7 @@ use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Mcp\Tools\PublishContentTool;
 use App\Mcp\Tools\PublishWorkflowTool;
+use App\Mcp\Tools\ReconcilePublicationStatusTool;
 use App\Mcp\Tools\RecordMemoryTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\ResumeAgentExecutionTool;
@@ -173,6 +175,9 @@ class Cr8orServer extends Server
         GetChannelTool::class,
         ListSocialAccountTool::class,
         GetSocialAccountTool::class,
+        ListPublicationTool::class,
+        GetPublicationTool::class,
+        ListPublicationResultsTool::class,
         ListProjectTool::class,
         GetProjectTool::class,
         ListTaskTool::class,
@@ -243,10 +248,8 @@ class Cr8orServer extends Server
         UpdateChannelTool::class,
         ArchiveChannelTool::class,
         ArchiveMarketingStrategyTool::class,
-        ConnectSocialAccountTool::class,
-        CreateConnectionTool::class,
         UpdateSocialAccountTool::class,
-        DisconnectSocialAccountTool::class,
+        DisableSocialAccountTool::class,
         CreateProjectTool::class,
         UpdateProjectTool::class,
 
@@ -267,6 +270,7 @@ class Cr8orServer extends Server
         SubmitContentForReviewTool::class,
         MarkContentPublicationReadyTool::class,
         PublishContentTool::class,
+        ReconcilePublicationStatusTool::class,
         RequestApprovalTool::class,
         DelegateAgentTool::class,
         AnalyzeBusinessContextTool::class,

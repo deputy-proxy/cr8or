@@ -445,27 +445,6 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
-    public function connectSocialAccount(User $actor, Enterprise $enterprise, array $attributes): SocialAccount
-    {
-        Gate::forUser($actor)->authorize('createForEnterprise', [SocialAccount::class, $enterprise]);
-        $attributes = SocialAccount::normalizeInput($attributes);
-
-        $channel = Channel::query()->findOrFail((int) $attributes['channel_id']);
-        if ((int) $channel->enterprise_id !== (int) $enterprise->getKey()) {
-            throw new LogicException('The channel must belong to the selected enterprise.');
-        }
-
-        return SocialAccount::query()->create([
-            'enterprise_id' => $enterprise->getKey(),
-            'channel_id' => $channel->getKey(),
-            'provider' => $attributes['provider'],
-            'name' => $attributes['name'],
-            'external_id' => $attributes['external_id'],
-            'status' => SocialAccount::STATUS_ACTIVE,
-        ]);
-    }
-
-    /** @param array<string, mixed> $attributes */
     public function updateSocialAccount(User $actor, SocialAccount $account, array $attributes): SocialAccount
     {
         Gate::forUser($actor)->authorize('update', $account);
@@ -484,9 +463,9 @@ final class DomainResourceService
         return $account->refresh();
     }
 
-    public function disconnectSocialAccount(User $actor, SocialAccount $account): SocialAccount
+    public function disableSocialAccount(User $actor, SocialAccount $account): SocialAccount
     {
-        Gate::forUser($actor)->authorize('delete', $account);
+        Gate::forUser($actor)->authorize('disable', $account);
 
         if ($account->status === SocialAccount::STATUS_DISABLED) {
             return $account;

@@ -2,7 +2,9 @@
 
 Issue #373. Repository: deputy-proxy/cr8or. Audit date: 2026-10-03.
 
-> **Historical baseline:** This document records the pre-#383 inventory state and is retained for historical traceability. Its execution-path findings are superseded by `docs/architecture/unified-execution-audit-2026-10-03.md`, which reflects the current implementation after the #383 remediation.
+> **Historical baseline:** This document records the pre-#383 inventory state and is retained for historical traceability. Its execution-path findings are superseded by `docs/architecture/unified-execution-audit-2026-10-03.md`, which reflects the implementation after the #383 remediation.
+> **Current inventory note (2026-10-13):** The historical rows below predate native social authorization and publication status reconciliation. For the actual registered MCP surface, current Capability/Operation mappings, and tenancy boundaries, use `docs/mcp.md`, `docs/mcp-authorization.md`, and `docs/capabilities-operations.md`.
+
 
 ## Executive summary
 

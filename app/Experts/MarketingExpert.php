@@ -22,6 +22,9 @@ final class MarketingExpert extends Expert
                 'marketing.graph.verify',
                 'marketing.content.publication-ready',
                 'publication.publish',
+                'publication.status.reconcile',
+                'marketing.social-account.update',
+                'marketing.social-account.disable',
             ],
         );
     }
