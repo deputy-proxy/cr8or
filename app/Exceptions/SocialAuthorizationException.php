@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use RuntimeException;
+use Throwable;
 
 final class SocialAuthorizationException extends RuntimeException
 {
@@ -10,7 +11,8 @@ final class SocialAuthorizationException extends RuntimeException
         public readonly string $errorCode,
         string $message,
         public readonly bool $retryable = false,
+        ?Throwable $previous = null,
     ) {
-        parent::__construct($message);
+        parent::__construct($message, 0, $previous);
     }
 }

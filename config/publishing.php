@@ -16,7 +16,7 @@ return [
         'facebook' => ['key' => 'facebook', 'class' => \App\Services\Publishing\FacebookPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'instagram' => ['key' => 'instagram', 'class' => \App\Services\Publishing\InstagramPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'tiktok' => ['key' => 'tiktok', 'class' => \App\Services\Publishing\TikTokPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
-        'bsky' => ['key' => 'bsky', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
+        'bsky' => ['key' => 'bsky', 'class' => \App\Services\Publishing\BlueskyPublishingAdapter::class, 'enabled' => false, 'native_scheduling' => false],
         'youtube' => ['key' => 'youtube', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
         'threads' => ['key' => 'threads', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
         'x' => ['key' => 'x', 'class' => null, 'enabled' => false, 'native_scheduling' => false],
