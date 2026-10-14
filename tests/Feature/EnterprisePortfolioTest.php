@@ -198,6 +198,7 @@ it('shows follower metrics only when available and reserves NCY for unknown valu
         'channel_id' => $channel->id,
         'provider' => 'linkedin',
         'follower_count' => 1234,
+        'profile_url' => 'https://www.linkedin.com/company/example-company',
     ]);
 
     $this->actingAs($user);
@@ -210,7 +211,20 @@ it('shows follower metrics only when available and reserves NCY for unknown valu
 
     expect($data['dashboardSocialNetworks']->all())->toBe(['linkedin', 'facebook', 'instagram', 'tiktok', 'youtube', 'threads'])
         ->and($followers['linkedin'])->toBe(1234)
-        ->and($followers['facebook'])->toBeNull();
+        ->and($followers['linkedin_url'])->toBe('https://www.linkedin.com/company/example-company')
+        ->and($followers['facebook'])->toBeNull()
+        ->and($followers['facebook_url'])->toBeNull();
+});
+
+it('renders follower metrics as links only when a resolved HTTPS profile URL exists', function () {
+    $view = file_get_contents(resource_path('views/filament/pages/enterprise-portfolio-dashboard.blade.php'));
+
+    expect($view)
+        ->toContain('socialProfileUrlForProject(project.project_id, network)')
+        ->toContain('target="_blank"')
+        ->toContain('rel="noopener noreferrer"')
+        ->toContain('x-if="!socialProfileUrlForProject(project.project_id, network)"')
+        ->not->toContain('https://linkedin.com/company/${handle}');
 });
 
 it('renders the Project Ecosystem Map from authorized Enterprise records and connections', function () {

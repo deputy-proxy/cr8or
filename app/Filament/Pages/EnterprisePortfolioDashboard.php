@@ -12,6 +12,7 @@ use App\Models\Issue;
 use App\Models\Publication;
 use App\Models\PublicationSchedule;
 use App\Models\SocialAccount;
+use App\Models\SocialAuthorizationAttempt;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorkflowExecution;
@@ -340,8 +341,31 @@ class EnterprisePortfolioDashboard extends Page
         $activeSocialAccounts = SocialAccount::query()
             ->whereIn('enterprise_id', $enterpriseIds)
             ->where('status', SocialAccount::STATUS_ACTIVE)
-            ->get(['enterprise_id', 'provider', 'follower_count']);
-        $dashboardSocialFollowers = $dashboardEnterprises->map(static function (Enterprise $enterprise) use ($activeSocialAccounts, $dashboardSocialNetworks): array {
+            ->get(['enterprise_id', 'provider', 'external_id', 'social_identity_id', 'follower_count', 'profile_url']);
+        $identityIds = $activeSocialAccounts->pluck('social_identity_id')->filter()->unique()->values();
+        $discoveredProfileUrls = [];
+        if ($identityIds->isNotEmpty()) {
+            $authorizationAttempts = SocialAuthorizationAttempt::query()
+                ->whereIn('social_identity_id', $identityIds)
+                ->where('status', SocialAuthorizationAttempt::STATUS_COMPLETED)
+                ->whereNotNull('completed_at')
+                ->orderByDesc('completed_at')
+                ->get(['social_identity_id', 'discovered_destinations']);
+
+            foreach ($authorizationAttempts as $attempt) {
+                foreach ($attempt->discovered_destinations ?? [] as $destination) {
+                    $provider = $destination['provider'] ?? null;
+                    $externalId = $destination['external_id'] ?? null;
+                    $url = $destination['url'] ?? null;
+                    $key = is_string($provider) && is_string($externalId) ? $provider.':'.$externalId : null;
+
+                    if ($key !== null && is_string($url) && str_starts_with($url, 'https://')) {
+                        $discoveredProfileUrls[$attempt->social_identity_id][$key] ??= $url;
+                    }
+                }
+            }
+        }
+        $dashboardSocialFollowers = $dashboardEnterprises->map(static function (Enterprise $enterprise) use ($activeSocialAccounts, $dashboardSocialNetworks, $discoveredProfileUrls): array {
             $accounts = $activeSocialAccounts->where('enterprise_id', $enterprise->id);
             $followers = ['project_id' => (string) $enterprise->id];
 
@@ -355,6 +379,17 @@ class EnterprisePortfolioDashboard extends Page
                 }
 
                 $followers[$network] = $followerCount;
+                $profileUrl = null;
+                if ($networkAccounts->count() === 1) {
+                    $account = $networkAccounts->first();
+                    $profileUrl = $account->profile_url;
+                    if (! is_string($profileUrl) || ! str_starts_with($profileUrl, 'https://')) {
+                        $identityId = $account->social_identity_id;
+                        $key = $network.':'.$account->external_id;
+                        $profileUrl = $identityId === null ? null : ($discoveredProfileUrls[$identityId][$key] ?? null);
+                    }
+                }
+                $followers[$network.'_url'] = is_string($profileUrl) && str_starts_with($profileUrl, 'https://') ? $profileUrl : null;
             }
 
             return $followers;

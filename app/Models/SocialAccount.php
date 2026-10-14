@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'channel_id', 'social_identity_id', 'provider', 'name', 'external_id', 'status', 'follower_count'])]
+#[Fillable(['enterprise_id', 'channel_id', 'social_identity_id', 'provider', 'name', 'external_id', 'profile_url', 'status', 'follower_count'])]
 class SocialAccount extends Model
 {
     /** @use HasFactory<\Database\Factories\SocialAccountFactory> */
@@ -105,6 +105,18 @@ class SocialAccount extends Model
 
             foreach (self::normalizeInput($fieldsToNormalize) as $field => $value) {
                 $account->{$field} = $value;
+            }
+
+            if ($account->profile_url !== null) {
+                $parts = parse_url($account->profile_url);
+                if (! is_array($parts)
+                    || ($parts['scheme'] ?? null) !== 'https'
+                    || ! is_string($parts['host'] ?? null)
+                    || $parts['host'] === ''
+                    || isset($parts['user'])
+                    || isset($parts['pass'])) {
+                    throw ValidationException::withMessages(['profile_url' => 'The social profile URL must be a valid HTTPS URL without embedded credentials.']);
+                }
             }
 
             $channel = Channel::query()->find($account->channel_id);
