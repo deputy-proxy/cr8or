@@ -380,6 +380,7 @@ final class SocialAuthorizationService
                 $provider = $destination['provider'] ?? null;
                 $externalId = $destination['external_id'] ?? null;
                 $name = $destination['name'] ?? null;
+                $profileUrl = $destination['url'] ?? null;
 
                 if (! is_string($provider) || ! is_string($externalId) || trim($externalId) === '' || ! is_string($name)) {
                     throw new SocialAuthorizationException('destination_selection_invalid', 'A discovered destination is invalid.');
@@ -409,6 +410,9 @@ final class SocialAuthorizationService
                     if ($account->name !== $name) {
                         $account->name = $name;
                     }
+                    if (is_string($profileUrl) && $profileUrl !== '') {
+                        $account->profile_url = $profileUrl;
+                    }
                     $account->save();
                 } else {
                     $account = SocialAccount::query()->create([
@@ -418,6 +422,7 @@ final class SocialAuthorizationService
                         'provider' => $provider,
                         'name' => $name,
                         'external_id' => $externalId,
+                        'profile_url' => is_string($profileUrl) && $profileUrl !== '' ? $profileUrl : null,
                         'status' => SocialAccount::STATUS_ACTIVE,
                     ]);
                 }
