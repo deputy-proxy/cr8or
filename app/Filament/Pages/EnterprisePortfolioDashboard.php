@@ -334,21 +334,31 @@ class EnterprisePortfolioDashboard extends Page
                 'created_at' => $execution->created_at?->diffForHumans() ?? '',
             ])->values();
 
-        $activeSocialAccounts = SocialAccount::query()->whereIn('enterprise_id', $enterpriseIds)
-            ->where('status', SocialAccount::STATUS_ACTIVE)->get(['enterprise_id', 'provider']);
-        $dashboardSocialNetworks = $activeSocialAccounts->pluck('provider')->filter()
-            ->unique()->values();
-        $dashboardSocialFollowers = $activeSocialAccounts->groupBy('enterprise_id')
-            ->map(static function ($accounts, int|string $enterpriseId) use ($dashboardSocialNetworks): array {
-                $counts = ['project_id' => (string) $enterpriseId];
-                foreach ($dashboardSocialNetworks as $network) {
-                    if (is_string($network)) {
-                        $counts[$network] = $accounts->where('provider', $network)->count();
-                    }
+        $dashboardSocialNetworks = collect([
+            'linkedin', 'facebook', 'instagram', 'tiktok', 'bsky', 'youtube', 'threads', 'x',
+        ]);
+        $activeSocialAccounts = SocialAccount::query()
+            ->whereIn('enterprise_id', $enterpriseIds)
+            ->where('status', SocialAccount::STATUS_ACTIVE)
+            ->get(['enterprise_id', 'provider', 'follower_count']);
+        $dashboardSocialFollowers = $dashboardEnterprises->map(static function (Enterprise $enterprise) use ($activeSocialAccounts, $dashboardSocialNetworks): array {
+            $accounts = $activeSocialAccounts->where('enterprise_id', $enterprise->id);
+            $followers = ['project_id' => (string) $enterprise->id];
+
+            foreach ($dashboardSocialNetworks as $network) {
+                $networkAccounts = $accounts->where('provider', $network)->values();
+                $followerCount = null;
+
+                // Avoid inventing an aggregate when an enterprise has multiple destinations on the same network.
+                if ($networkAccounts->count() === 1 && $networkAccounts->first()->follower_count !== null) {
+                    $followerCount = (int) $networkAccounts->first()->follower_count;
                 }
 
-                return $counts;
-            })->values();
+                $followers[$network] = $followerCount;
+            }
+
+            return $followers;
+        })->values();
 
         return [
             'enterprises' => $enterprises,
