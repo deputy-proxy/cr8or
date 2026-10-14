@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'channel_id', 'social_identity_id', 'provider', 'name', 'external_id', 'status'])]
+#[Fillable(['enterprise_id', 'channel_id', 'social_identity_id', 'provider', 'name', 'external_id', 'status', 'follower_count'])]
 class SocialAccount extends Model
 {
     /** @use HasFactory<\Database\Factories\SocialAccountFactory> */
