@@ -201,7 +201,7 @@ it('shows follower metrics only when available and reserves NCY for unknown valu
     $data = $method->invoke($page);
     $followers = collect($data['dashboardSocialFollowers'])->firstWhere('project_id', (string) $enterprise->id);
 
-    expect($data['dashboardSocialNetworks']->all())->toBe(['linkedin', 'facebook', 'instagram', 'tiktok', 'bsky', 'youtube', 'threads', 'x'])
+    expect($data['dashboardSocialNetworks']->all())->toBe(['linkedin', 'facebook', 'instagram', 'tiktok', 'youtube', 'threads'])
         ->and($followers['linkedin'])->toBe(1234)
         ->and($followers['facebook'])->toBeNull();
 });

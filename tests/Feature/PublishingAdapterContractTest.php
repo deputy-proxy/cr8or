@@ -10,14 +10,12 @@ use App\Exceptions\PublishingAdapterException;
 use App\Services\PublishingAdapterRegistry;
 use InvalidArgumentException;
 use LogicException;
-use Tests\Support\Publishing\FakeBlueskyPublishingAdapter;
 use Tests\Support\Publishing\FakeFacebookPublishingAdapter;
 use Tests\Support\Publishing\FakeInstagramPublishingAdapter;
 use Tests\Support\Publishing\FakeLinkedInPublishingAdapter;
 use Tests\Support\Publishing\FakeNetworkPublishingAdapter;
 use Tests\Support\Publishing\FakeThreadsPublishingAdapter;
 use Tests\Support\Publishing\FakeTikTokPublishingAdapter;
-use Tests\Support\Publishing\FakeXPublishingAdapter;
 use Tests\Support\Publishing\FakeYouTubePublishingAdapter;
 
 final class FakeAdapterWithUndeclaredStatusLookup implements PublishingAdapter
@@ -117,10 +115,8 @@ function publishingAdapterContractCases(): array
         'facebook' => FakeFacebookPublishingAdapter::class,
         'instagram' => FakeInstagramPublishingAdapter::class,
         'tiktok' => FakeTikTokPublishingAdapter::class,
-        'bsky' => FakeBlueskyPublishingAdapter::class,
         'youtube' => FakeYouTubePublishingAdapter::class,
         'threads' => FakeThreadsPublishingAdapter::class,
-        'x' => FakeXPublishingAdapter::class,
     ];
 }
 

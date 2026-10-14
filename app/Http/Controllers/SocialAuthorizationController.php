@@ -16,56 +16,6 @@ use Illuminate\View\View;
 
 final class SocialAuthorizationController
 {
-    public function clientMetadata(): \Illuminate\Http\JsonResponse
-    {
-        $configuration = config('social_authorization.providers.bluesky');
-        abort_unless(is_array($configuration) && ($configuration['driver'] ?? null) === 'atproto_oauth', 404);
-        $clientId = $configuration['client_id'] ?? null;
-        $redirectUri = $configuration['redirect_uri'] ?? null;
-        $clientParts = is_string($clientId) ? parse_url($clientId) : false;
-        $clientUri = $configuration['client_uri'] ?? null;
-        $clientUriParts = is_string($clientUri) ? parse_url($clientUri) : false;
-        $redirectParts = is_string($redirectUri) ? parse_url($redirectUri) : false;
-        abort_unless(
-            is_array($clientParts)
-                && ($clientParts['scheme'] ?? null) === 'https'
-                && ! isset($clientParts['port'])
-                && ! isset($clientParts['query'])
-                && ! isset($clientParts['fragment'])
-                && ! isset($clientParts['user'])
-                && ! isset($clientParts['pass'])
-                && ($clientParts['path'] ?? null) === '/oauth-client-metadata.json'
-                && is_array($clientUriParts)
-                && ($clientUriParts['scheme'] ?? null) === 'https'
-                && is_string($clientParts['host'] ?? null)
-                && is_string($clientUriParts['host'] ?? null)
-                && strtolower($clientParts['host']) === strtolower($clientUriParts['host'])
-                && is_array($redirectParts)
-                && ($redirectParts['scheme'] ?? null) === 'https'
-                && ! isset($redirectParts['port'])
-                && ! isset($redirectParts['query'])
-                && ! isset($redirectParts['fragment'])
-                && ! isset($redirectParts['user'])
-                && ! isset($redirectParts['pass'])
-                && is_string($redirectParts['host'] ?? null)
-                && strtolower($clientParts['host']) === strtolower($redirectParts['host']),
-            503,
-        );
-
-        return response()->json([
-            'client_id' => $clientId,
-            'client_name' => (string) ($configuration['client_name'] ?? 'CR8OR'),
-            'client_uri' => (string) ($configuration['client_uri'] ?? config('app.url')),
-            'redirect_uris' => [$redirectUri],
-            'grant_types' => ['authorization_code', 'refresh_token'],
-            'response_types' => ['code'],
-            'scope' => implode(' ', $configuration['scopes'] ?? ['atproto']),
-            'token_endpoint_auth_method' => 'none',
-            'dpop_bound_access_tokens' => true,
-            'application_type' => 'web',
-        ])->header('Content-Type', 'application/json');
-    }
-
     public function start(Request $request, string $network, SocialAuthorizationService $authorization): RedirectResponse
     {
         $validated = $request->validate([

@@ -50,10 +50,6 @@ final class SocialAuthorizationProviderRegistry
             throw new SocialAuthorizationException('provider_not_configured', 'The social authorization provider is not configured for this deployment.');
         }
 
-        if ($driver === 'atproto_oauth') {
-            return new AtProtocolOAuthProvider($configuration);
-        }
-
         if ($driver !== 'oauth2') {
             throw new SocialAuthorizationException('provider_unsupported', 'This social authorization provider has no supported driver.');
         }

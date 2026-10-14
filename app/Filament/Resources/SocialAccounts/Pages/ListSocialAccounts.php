@@ -35,10 +35,8 @@ class ListSocialAccounts extends ListRecords
                             'instagram' => 'Instagram',
                             'linkedin' => 'LinkedIn',
                             'tiktok' => 'TikTok',
-                            'bsky' => 'Bluesky',
                             'youtube' => 'YouTube',
                             'threads' => 'Threads',
-                            'x' => 'X',
                         ])
                         ->required()
                         ->default('facebook'),

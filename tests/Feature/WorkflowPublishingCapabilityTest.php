@@ -39,7 +39,7 @@ function workflowPublicationContext(): array
         'organization_id' => $organization->getKey(),
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
-    $channel = Channel::factory()->create(['enterprise_id' => $enterprise->getKey(), 'name' => 'X', 'type' => 'social']);
+    $channel = Channel::factory()->create(['enterprise_id' => $enterprise->getKey(), 'name' => 'LinkedIn', 'type' => 'social']);
     $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
@@ -52,9 +52,9 @@ function workflowPublicationContext(): array
     $account = SocialAccount::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'channel_id' => $channel->getKey(),
-        'provider' => 'x',
-        'name' => 'X destination',
-        'external_id' => 'x-workflow-user',
+        'provider' => 'linkedin',
+        'name' => 'LinkedIn destination',
+        'external_id' => 'linkedin-workflow-user',
         'status' => SocialAccount::STATUS_ACTIVE,
     ]);
     $publication = Publication::factory()->create([
@@ -65,7 +65,7 @@ function workflowPublicationContext(): array
         'status' => Publication::STATUS_SCHEDULED,
         'scheduled_at' => now()->subMinute(),
     ]);
-    $publication->markSubmitted('workflow-remote-post', 'https://x.com/i/web/status/workflow-remote-post')->save();
+    $publication->markSubmitted('workflow-remote-post', 'https://www.linkedin.com/feed/update/workflow-remote-post')->save();
     $publication->succeed()->save();
 
     return [$actor, $enterprise, $publication];

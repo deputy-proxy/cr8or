@@ -335,7 +335,7 @@ class EnterprisePortfolioDashboard extends Page
             ])->values();
 
         $dashboardSocialNetworks = collect([
-            'linkedin', 'facebook', 'instagram', 'tiktok', 'bsky', 'youtube', 'threads', 'x',
+            'linkedin', 'facebook', 'instagram', 'tiktok', 'youtube', 'threads',
         ]);
         $activeSocialAccounts = SocialAccount::query()
             ->whereIn('enterprise_id', $enterpriseIds)

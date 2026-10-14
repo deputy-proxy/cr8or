@@ -15,7 +15,7 @@ Each publishing.adapters.<network> entry defines:
 - enabled: explicit enablement; unknown, invalid, or disabled entries fail closed;
 - native_scheduling: explicit opt-in to adapter-managed scheduling, honored only when the adapter declares scheduling support.
 
-All eight target networks have dedicated native adapter implementations and remain disabled by default until their deployment-specific API permissions, user consent/settings, access-plan requirements and real-account verification are complete. X currently supports text-only publishing; media is rejected until its upload/access contract is verified. Test adapters are configured only in the testing environment.
+All six currently supported target networks have dedicated native adapter implementations and remain disabled by default until their deployment-specific API permissions, user consent/settings, access-plan requirements and real-account verification are complete. Test adapters are configured only in the testing environment.
 
 ## Contracts
 

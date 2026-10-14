@@ -91,7 +91,7 @@ The listed columns are generic and are not evidence that Postiz data exists in a
 4. **#522:** replace the singleton provider path with destination-aware adapter resolution; define content validation, provider identity, result correlation, idempotency and ambiguous-outcome reconciliation.
 5. **#523 (completed in source):** remove Postiz runtime/config/current docs/tests/deployment references after the destination-aware publishing path is in place. Operational verification of deployed secrets and historical provider data remains outstanding.
 6. **#524:** establish the shared adapter contract and reusable conformance suite before network adapters proliferate.
-7. **#525–#532:** implement LinkedIn, Facebook, Instagram, TikTok, Bluesky, YouTube, Threads and X adapters against the shared contract and current official API documentation.
+7. **Historical scope, #525–#532:** the original adapter initiative included Bluesky and X. Issue #563 subsequently removed both providers from current product/runtime support; this audit entry is retained only to preserve the migration history.
 8. **#533:** expose connection and publishing actions through existing authorized Capability → Operation entry points, MCP, Filament and persisted published WorkflowVersions.
 9. **#534:** perform cross-network security, reliability, migration rehearsal and production-readiness verification.
 

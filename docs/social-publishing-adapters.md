@@ -66,18 +66,6 @@ The adapter remains **disabled** in `config/publishing.php`. Enablement requires
 
 Official references: [Instagram API with Facebook Login: Content Publishing](https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/content-publishing/), [Instagram User Media endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/media/), [Instagram Media Publish endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/media_publish/), [Content Publishing Limit endpoint](https://developers.facebook.com/docs/instagram-platform/reference/ig-user/content_publishing_limit/), and [Meta Graph API version schedule](https://developers.facebook.com/docs/graph-api/changelog/versions/). Verify current account eligibility, app access, permissions and media restrictions before enabling the adapter in production.
 
-## Bluesky / AT Protocol adapter (issue #529)
-
-`App\Services\Publishing\BlueskyPublishingAdapter` implements immediate text and image posts against the authenticated account's PDS using the AT Protocol OAuth profile. The stable destination identifier is the account DID; the handle is mutable display metadata. Authorization resolves the handle/DID to a DID document, verifies the supplied handle against `alsoKnownAs`, discovers the PDS and authorization server, validates the OAuth security metadata, and uses PKCE, PAR, per-session P-256 DPoP keys/nonces, callback `iss` validation and the token response `sub` check. AT Protocol credentials and the DPoP private key are stored only in the encrypted social credential payload; the pending authorization context is encrypted at rest. App passwords are not collected or stored.
-
-The adapter currently supports plain text, up to four JPEG/PNG images (2,000,000 bytes each), URL link facets, resolvable mention facets, hashtag facets, deterministic record keys, and known-record status reconciliation. Text is validated against 300 Unicode grapheme clusters and a 3,000-byte UTF-8 ceiling. Image uploads use the authenticated PDS blob endpoint, strip common EXIF/IPTC/XMP metadata segments from JPEGs and text/time/EXIF metadata chunks from PNGs, validate declared sizes, and attach alt text and optional aspect-ratio hints. Video is not supported. Native scheduling, editing, deletion and analytics are unsupported. Each idempotency key maps to a deterministic `rkey`; before create, the adapter queries that record. An existing record with matching text, facets and embed is returned as success, while a conflicting record is rejected. Timeouts/server errors during record creation are ambiguous and must be reconciled by the same record URI before retrying.
-
-The requested OAuth permissions are `atproto`, `repo:app.bsky.feed.post?action=create`, and `blob:*/*`, avoiding record update/delete privileges while permitting image uploads. The authorization provider requires OAuth authorization-code and refresh-token support, PKCE S256, PAR, issuer responses, DPoP ES256, public client metadata, and a returned DID matching the DID resolved before login. Expired or invalid sessions use the shared credential manager's reconnect-required lifecycle. Remote OAuth-session revocation is not exposed by the current AT Protocol provider; disconnect therefore follows the shared provider's unsupported-revocation semantics and removes the local credential only according to the existing lifecycle policy.
-
-The adapter remains **disabled** in `config/publishing.php`. Configure `SOCIAL_BSKY_OAUTH_ENABLED=true` only after deploying the public HTTPS client metadata endpoint at `/oauth-client-metadata.json`, setting the public `APP_URL` and callback URI correctly, verifying the callback route and session behavior, and completing a real-account OAuth/publish test. The client metadata URL must be a stable public HTTPS URL with no port, credentials, query or fragment. Do not enable production publishing until the dedicated OAuth and adapter tests pass in CI.
-
-Official references: [AT Protocol OAuth specification](https://atproto.com/specs/oauth), [permission scope syntax](https://atproto.com/specs/permission), [OAuth patterns and least-privilege scopes](https://atproto.com/guides/oauth-patterns), [Creating a post](https://docs.bsky.app/docs/tutorials/creating-a-post), [Images and video blobs](https://atproto.com/guides/images-and-video), and [Repository record creation](https://docs.bsky.app/docs/api/com-atproto-repo-create-record).
-
 ## Threads publishing adapter (issue #531)
 
 `App\Services\Publishing\ThreadsPublishingAdapter` uses the dedicated Threads OAuth connection (`provider=threads`) and requires both `threads_basic` and `threads_content_publish`. It validates the canonical numeric Threads user ID against the active connection and its `SocialIdentity`; Threads is not treated as a Meta Page or Instagram destination. The adapter remains disabled by default in `config/publishing.php`.
@@ -118,18 +106,6 @@ The adapter remains **disabled** in `config/publishing.php`. Configure `SOCIAL_T
 
 Official references: [Direct Post](https://developers.tiktok.com/docs/en/content-posting-api-reference-direct-post), [Query Creator Info](https://developers.tiktok.com/docs/en/content-posting-api-reference-query-creator-info), [Get Post Status](https://developers.tiktok.com/docs/en/content-posting-api-reference-get-video-status), [Media Transfer Guide and video restrictions](https://developers.tiktok.com/docs/en/content-posting-api-media-transfer-guide), and [App Review Guidelines](https://developers.tiktok.com/docs/en/app-review-guidelines). Recheck these documents and the configured app's permissions before enabling the adapter.
 
-## X text publishing adapter (issue #532)
-
-`App\\Services\\Publishing\\XPublishingAdapter` implements immediate text-only publication through the X API v2 `POST /2/tweets` endpoint. It requires a dedicated active `provider=x` connection, matching `SocialIdentity` and destination user ID, and the `users.read`, `tweet.read`, and `tweet.write` user-context scopes. Before each create request, it verifies the authenticated account with `GET /2/users/me`; it never trusts a caller-supplied destination ID without matching it to the persisted connection and returned identity.
-
-Text is limited to 280 weighted characters, with URLs counted at the platform's transformed URL length and common emoji/CJK grapheme clusters weighted as two. Media is explicitly unsupported by this implementation and is rejected before any API request. This is intentional: X media upload has separate API access, upload protocol, media category and quota requirements, and the configured application's access tier must be verified before that behavior can safely be advertised. Native scheduling, editing, deletion and analytics are also unsupported. CR8OR retains scheduling and approval ownership.
-
-The adapter persists a request fingerprint and `submitting` phase in encrypted `PublishingJob.adapter_state_encrypted` before calling X. A known successful post ID is persisted and returned with a stable `https://x.com/i/web/status/{id}` URL. If the create request times out, returns an ambiguous server outcome, or succeeds without a valid post ID, the adapter blocks automatic resubmission: X's create-post endpoint does not accept a CR8OR idempotency key. Known post IDs can be reconciled through `GET /2/tweets/{id}`; the returned ID and `author_id` must match the requested publication and connected user. Rate limits and usage caps are reported separately from authentication and permission errors. Raw tokens, request headers, and provider response bodies are never stored in publication metadata.
-
-The adapter remains **disabled** in `config/publishing.php`. Configure `SOCIAL_X_CLIENT_ID`, `SOCIAL_X_CLIENT_SECRET`, and `SOCIAL_X_REDIRECT_URI` for the existing OAuth 2.0 Authorization Code with PKCE provider. The grant must include user-context scopes; app-only bearer tokens are not sufficient for posting. Confirm the application's current API access plan, endpoint availability, usage limits and current pay-per-use/subscription costs in the X Developer Console before enabling the adapter. Do not infer access from a configured client ID or assume a particular price/quota remains valid. The current implementation does not perform live-account posting and does not claim media support.
-
-Official references: [Create a Post](https://docs.x.com/x-api/posts/create-post), [Get Authenticated User](https://docs.x.com/x-api/users/get-my-user.md), [Get Post by ID](https://docs.x.com/x-api/posts/get-post-by-id.md), [OAuth 2.0 Authorization Code with PKCE](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code), and [X Developer Platform pricing and usage](https://docs.x.com/x-api/getting-started/pricing.md). Recheck current scopes, access-plan eligibility, pricing, rate limits and endpoint behavior before production enablement.
-
 ## Capability declarations
 
 `PublishingCapabilitySupport` has three values:
@@ -154,7 +130,7 @@ The registry validates optional contracts against capability declarations. If st
 
 ## Target network matrix
 
-The shared contract and reusable fake conformance harness remain the baseline for every target network. LinkedIn, Facebook, Instagram, TikTok, Bluesky, YouTube, Threads and X now have native adapter implementations, but all remain disabled until deployment-specific app permissions and real-account verification are complete. The matrix records implemented capability boundaries without claiming production readiness.
+The shared contract and reusable fake conformance harness remain the baseline for every supported target network. LinkedIn, Facebook, Instagram, TikTok, YouTube and Threads have native adapter implementations, but all remain disabled until deployment-specific app permissions and real-account verification are complete. The matrix records implemented capability boundaries without claiming production readiness.
 
 | Network key | Adapter implementation | Production state | Official API capability verification |
 |---|---|---|---|
@@ -162,12 +138,10 @@ The shared contract and reusable fake conformance harness remain the baseline fo
 | `facebook` | `FacebookPublishingAdapter` (text/link + single R2 image) | Disabled | Page Feed, Photos and known-post lookup implemented; video, multi-image, scheduling, editing, deletion and analytics unsupported |
 | `instagram` | `InstagramPublishingAdapter` (single JPEG image) | Disabled | Professional-account image container, bounded processing poll, publish and known-media lookup implemented; text-only, PNG, video/Reels, carousel, scheduling, editing, deletion and analytics unsupported |
 | `tiktok` | `TikTokPublishingAdapter` (single direct-post video) | Disabled | Creator-info validation, sequential R2 file upload, publish ID and status reconciliation implemented; draft upload, scheduling, editing, deletion and analytics unsupported |
-| `bsky` | `BlueskyPublishingAdapter` (text + image embeds/facets) | Disabled | AT Protocol OAuth, text records, link/mention/tag facets and deterministic record reconciliation implemented; video, scheduling, editing, deletion and analytics unsupported |
 | `youtube` | `YouTubePublishingAdapter` (single R2 video) | Disabled | OAuth-scoped channel verification, resumable video upload, encrypted session recovery and processing-status reconciliation implemented |
 | `threads` | `ThreadsPublishingAdapter` (text + one image or video) | Disabled | Container lifecycle and known-post reconciliation implemented; carousel, native scheduling, editing, deletion and analytics unsupported |
-| `x` | `XPublishingAdapter` (text-only) | Disabled | OAuth-scoped X API v2 text creation and known-post status lookup implemented; media, scheduling, editing, deletion and analytics unsupported |
 
-The eight `Fake*PublishingAdapter` classes in tests exist only to run the same contract suite against every target key. Their limits and capabilities are test fixtures, not claims about the real networks. When a real adapter is implemented, its contract dataset entry must be switched to that adapter and its declaration reviewed against official API documentation, account-type restrictions, permissions and media limits before production enablement.
+The six `Fake*PublishingAdapter` classes in tests exist only to run the same contract suite against every currently supported target key. Their limits and capabilities are test fixtures, not claims about the real networks. When a real adapter is implemented, its contract dataset entry must be switched to that adapter and its declaration reviewed against official API documentation, account-type restrictions, permissions and media limits before production enablement.
 
 ## Reusable conformance suite
 
@@ -177,7 +151,7 @@ Run:
 php artisan test tests/Feature/PublishingAdapterContractTest.php tests/Feature/PublishingTest.php
 ```
 
-The shared suite runs against all eight target-network fake adapters and covers:
+The shared suite runs against all six supported-network fake adapters and covers:
 
 - a complete capability declaration and canonical network identity;
 - successful normalized results with correlation/idempotency propagation;

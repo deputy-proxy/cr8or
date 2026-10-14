@@ -17,8 +17,6 @@ return [
         'tiktok' => 'social',
         'youtube' => 'social',
         'threads' => 'social',
-        'x' => 'social',
-        'bluesky' => 'social',
     ],
 
     'network_to_provider' => [
@@ -26,10 +24,8 @@ return [
         'facebook' => 'meta',
         'instagram' => 'meta',
         'tiktok' => 'tiktok',
-        'bsky' => 'bluesky',
         'youtube' => 'youtube',
         'threads' => 'threads',
-        'x' => 'x',
     ],
 
     'providers' => [
@@ -239,48 +235,6 @@ return [
             'token_response' => ['access_token' => 'access_token', 'refresh_token' => null, 'expires_in' => 'expires_in', 'refresh_expires_in' => null, 'scope' => 'scope'],
             'refresh' => ['strategy' => 'threads_long_lived', 'url' => 'https://graph.threads.net/refresh_access_token', 'grant_type' => 'th_refresh_token'],
             'revoke' => ['url' => null],
-        ],
-        'x' => [
-            'driver' => 'oauth2',
-            'enabled' => (bool) env('SOCIAL_X_CLIENT_ID') && (bool) env('SOCIAL_X_CLIENT_SECRET'),
-            'client_id' => env('SOCIAL_X_CLIENT_ID'),
-            'client_secret' => env('SOCIAL_X_CLIENT_SECRET'),
-            'redirect_uri' => env('SOCIAL_X_REDIRECT_URI', $applicationUrl.'/social/authorization/callback/x'),
-            'authorization_url' => 'https://x.com/i/oauth2/authorize',
-            'token_url' => 'https://api.x.com/2/oauth2/token',
-            'client_auth_method' => 'basic',
-            'pkce' => true,
-            'authorization_parameters' => [],
-            'scopes' => ['users.read', 'tweet.read', 'tweet.write', 'offline.access'],
-            'destination_networks' => ['x'],
-            'identity' => [
-                'url' => 'https://api.x.com/2/users/me?user.fields=id,name,username',
-                'id_path' => 'data.id',
-                'name_path' => 'data.name',
-            ],
-            'destinations' => [
-                [
-                    'network' => 'x',
-                    'url' => 'https://api.x.com/2/users/me?user.fields=id,name,username',
-                    'path' => 'data',
-                    'id_path' => 'id',
-                    'name_path' => 'name',
-                    'url_path' => null,
-                ],
-            ],
-            'token_response' => ['access_token' => 'access_token', 'refresh_token' => 'refresh_token', 'expires_in' => 'expires_in', 'refresh_expires_in' => null, 'scope' => 'scope'],
-            'refresh' => ['strategy' => 'oauth2'],
-            'revoke' => ['url' => 'https://api.x.com/2/oauth2/revoke', 'method' => 'POST', 'parameter' => 'token'],
-        ],
-        'bluesky' => [
-            'driver' => 'atproto_oauth',
-            'enabled' => (bool) env('SOCIAL_BSKY_OAUTH_ENABLED', false),
-            'client_id' => env('SOCIAL_BSKY_CLIENT_ID', $applicationUrl.'/oauth-client-metadata.json'),
-            'client_name' => env('SOCIAL_BSKY_CLIENT_NAME', env('APP_NAME', 'CR8OR')),
-            'client_uri' => env('SOCIAL_BSKY_CLIENT_URI', $applicationUrl),
-            'redirect_uri' => env('SOCIAL_BSKY_REDIRECT_URI', $applicationUrl.'/social/authorization/callback/bluesky'),
-            'scopes' => ['atproto', 'repo:app.bsky.feed.post?action=create', 'blob:*/*'],
-            'destination_networks' => ['bsky'],
         ],
     ],
 ];
