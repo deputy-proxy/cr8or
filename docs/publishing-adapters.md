@@ -46,3 +46,14 @@ Historical result rows retain their original provider attribution. The migration
 ## Adapter validation
 
 Before enabling a network, add tests for success, asynchronous acceptance, provider rejection, rate limits, authentication failures, malformed responses, timeout before/after remote acceptance, duplicate idempotency keys, unsupported media, text limits, and credential rotation/revocation. Verify provider app approval, scopes, quotas, native scheduling semantics, and destination eligibility independently of CI.
+
+## Manual publishing from Filament
+
+Authorized enterprise owners and administrators can operate the content lifecycle without starting an Agent or Workflow execution:
+
+1. In **Content Items**, submit a draft for review and use **Approve** on an item in review.
+2. On an approved item, use **Mark publication ready**. This is an explicit human action authorized by the ContentItem policy; it is separate from the execution-bound approval required for Agent/Workflow capability calls.
+3. On a publication-ready item, use **Publish now**, select an active connected social account for the same enterprise and content channel, and confirm.
+4. Inspect **Publications** for provider status, external ID/URL, timestamps, and any recorded failure. Publication and provider-result records remain read-only historical records.
+
+The UI delegates lifecycle changes to application services. The publishing service rechecks authorization, content state, account/channel/enterprise scope, the active integration connection, and provider adapter constraints. Repeated submissions reuse the existing publication record and idempotency identity; ambiguous provider outcomes are not retried blindly. Agent and Workflow execution paths continue to require their own matching, unexpired approval requests.

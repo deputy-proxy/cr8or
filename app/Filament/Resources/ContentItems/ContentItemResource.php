@@ -2,13 +2,17 @@
 
 namespace App\Filament\Resources\ContentItems;
 
+use App\Exceptions\PublishingAdapterException;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\ContentItems\Pages\CreateContentItem;
 use App\Filament\Resources\ContentItems\Pages\EditContentItem;
 use App\Filament\Resources\ContentItems\Pages\ListContentItems;
+use App\Models\Channel;
 use App\Models\ContentItem;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\ContentItemService;
+use App\Services\PublishingService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -18,13 +22,17 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
+use LogicException;
 
 class ContentItemResource extends Resource
 {
@@ -125,6 +133,84 @@ class ContentItemResource extends Resource
                         abort(403);
                     }
                     app(ContentItemService::class)->approve($actor, $record);
+                }),
+            Action::make('mark_publication_ready')
+                ->label('Mark publication ready')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Mark content publication-ready?')
+                ->modalDescription('This confirms the approved content is ready to be sent to a connected social account.')
+                ->visible(fn (ContentItem $record): bool => $record->status === ContentItem::STATUS_APPROVED && Gate::allows('update', $record))
+                ->action(function (ContentItem $record): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        abort(403);
+                    }
+
+                    app(ContentItemService::class)->markPublicationReadyManually($actor, $record);
+
+                    Notification::make()->success()->title('Content is publication-ready')->send();
+                }),
+            Action::make('publish_now')
+                ->label('Publish now')
+                ->color('primary')
+                ->modalHeading('Publish content now')
+                ->modalDescription('CR8OR will submit this content to the selected connected social account immediately.')
+                ->modalSubmitActionLabel('Publish now')
+                ->visible(fn (ContentItem $record): bool => $record->status === ContentItem::STATUS_PUBLICATION_READY && Gate::allows('update', $record))
+                ->schema([
+                    Select::make('social_account_id')
+                        ->label('Connected social account')
+                        ->options(fn (ContentItem $record): array => SocialAccount::query()
+                            ->where('enterprise_id', $record->enterprise_id)
+                            ->where('status', SocialAccount::STATUS_ACTIVE)
+                            ->whereHas('channel', fn (Builder $query) => $query->where('status', Channel::STATUS_ACTIVE))
+                            ->when($record->channel_id !== null, fn (Builder $query) => $query->where('channel_id', $record->channel_id))
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn (SocialAccount $account): array => [$account->getKey() => $account->name.' ('.$account->provider.')'])
+                            ->all())
+                        ->searchable()
+                        ->required()
+                        ->helperText('Only active accounts in this enterprise and the content channel are available.'),
+                ])
+                ->action(function (ContentItem $record, array $data): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        abort(403);
+                    }
+
+                    $account = SocialAccount::query()
+                        ->whereKey((int) $data['social_account_id'])
+                        ->where('enterprise_id', $record->enterprise_id)
+                        ->where('status', SocialAccount::STATUS_ACTIVE)
+                        ->whereHas('channel', fn (Builder $query) => $query->where('status', Channel::STATUS_ACTIVE))
+                        ->when($record->channel_id !== null, fn (Builder $query) => $query->where('channel_id', $record->channel_id))
+                        ->firstOrFail();
+
+                    try {
+                        $publication = app(PublishingService::class)->publishNow($actor, $record, $account);
+                    } catch (AuthorizationException|LogicException|PublishingAdapterException $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Publication failed')
+                            ->body($exception->getMessage())
+                            ->persistent()
+                            ->send();
+
+                        return;
+                    }
+
+                    $body = 'Publication #'.$publication->getKey().' status: '.$publication->status.'.';
+                    if (filled($publication->external_url)) {
+                        $body .= ' '.$publication->external_url;
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title('Publication request processed')
+                        ->body($body)
+                        ->send();
                 }),
         ]);
     }
