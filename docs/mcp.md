@@ -66,6 +66,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-audience` | `CreateAudienceTool` | `marketing.audience.create` | `MarketingAudienceCreate` |
 | `create-campaign` | `CreateCampaignTool` | `marketing.campaign.create` | `MarketingCampaignCreate` |
 | `create-channel` | `CreateChannelTool` | `marketing.channel.create` | `MarketingChannelCreate` |
+| `approve-content-item` | `ApproveContentItemTool` | `marketing.content.approve` | `ApproveContentItem` |
 | `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
 | `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
@@ -204,6 +205,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | update-task | work.task.update | UpdateTask | Update an existing task without changing enterprise ownership. |
 | create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
 | update-strategy | strategy.update | UpdateStrategy | Update an existing strategy without changing objective ownership. |
+| approve-content-item | marketing.content.approve | ApproveContentItem | Approve in-review content after required governed approval. |
 | create-content-item | marketing.content.create | CreateContentItem | Create draft Content Item state under an authorized enterprise. |
 | update-content-item | marketing.content.update | UpdateContentItem | Revise draft or in-review Content Item state. |
 | submit-content-for-review | marketing.content.review | SubmitContentForReview | Move draft content into the governed review state. |
@@ -331,7 +333,7 @@ The governed mutation surface now covers the core planning, content, work, and i
 | Social accounts | `list-social-accounts`, `get-social-account`, `update-social-account`, `disable-social-account` |
 | Projects | `list-projects`, `get-project`, `create-project`, `update-project` |
 | Publishing | `publish-content`, `get-publication`, `list-publications`, `list-publication-results`, `reconcile-publication-status` |
-| Existing content lifecycle | `create-content-item`, `update-content-item`, `submit-content-for-review`, `mark-content-publication-ready`, `request-approval` |
+| Existing content lifecycle | `create-content-item`, `update-content-item`, `submit-content-for-review`, `approve-content-item`, `mark-content-publication-ready`, `request-approval` |
 
 Campaign creation is intentionally bound to the existing `MarketingStrategy` relationship in the current domain model. Marketing strategies are therefore discoverable through `list-marketing-strategies` and `get-marketing-strategy`; the MCP layer does not invent a second strategy persistence model.
 

@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Models\WorkflowStage;
+use App\Services\ApprovalRequestService;
 use App\Services\WorkflowExecutionService;
 use App\Services\WorkflowVersionService;
 
@@ -170,8 +171,90 @@ it('executes a persisted publication stage without requiring a ModelProvider or 
         enterprise: $enterprise,
     );
 
+    $approval = ApprovalRequest::query()->where('capability', 'publication.publish')->firstOrFail();
+    $approver = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $approver->getKey(), 'organization_id' => $enterprise->organization_id]);
+    app(ApprovalRequestService::class)->approve($approval, $approver);
+    $approval->refresh();
+    $approvalTarget = json_decode((string) $approval->getRawOriginal('target_context'), true);
+    if (is_string($approvalTarget)) {
+        $approvalTarget = json_decode($approvalTarget, true);
+    }
+
     expect($version->status)->toBe('published')
-        ->and($execution->status)->toBe(WorkflowExecution::STATUS_FAILED)
-        ->and(data_get($execution->context, 'pending_approval_request_id'))->toBeNull()
-        ->and(ApprovalRequest::query()->where('capability', 'publication.publish')->exists())->toBeFalse();
+        ->and($execution->status)->toBe(WorkflowExecution::STATUS_WAITING_FOR_APPROVAL)
+        ->and(data_get($execution->context, 'pending_approval_request_id'))->toBe($approval->getKey())
+        ->and($approval->workflow_execution_id)->toBe($execution->getKey())
+        ->and($approval->agent_assignment_id)->toBeNull()
+        ->and(app(ApprovalRequestService::class)->matchesWorkflow($approval, $actor, $execution, 'publication.publish', $approvalTarget))->toBeTrue()
+        ->and(app(ApprovalRequestService::class)->matchesWorkflow($approval, $actor, $execution, 'publication.publish', ['content_item_id' => -1]))->toBeFalse()
+        ->and(app(ApprovalRequestService::class)->matchesWorkflow($approval, User::factory()->create(), $execution, 'publication.publish', $approvalTarget))->toBeFalse();
+
+    $approvals = app(ApprovalRequestService::class);
+    $approvals->consumeForWorkflow($approval, $execution);
+
+    expect($approvals->matchesWorkflow($approval->refresh(), $actor, $execution, 'publication.publish', $approvalTarget))->toBeFalse()
+        ->and($approvals->matchesWorkflow($approval->refresh(), $actor, $execution, 'publication.publish', $approvalTarget, allowConsumed: true))->toBeTrue();
+});
+it('requires a workflow-scoped approval before approving in-review content', function (): void {
+    [$actor, $enterprise] = workflowPublicationContext();
+    $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $campaign = Campaign::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'marketing_strategy_id' => $strategy->getKey(),
+    ]);
+    $content = ContentItem::factory()->forCampaign($campaign)->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'status' => ContentItem::STATUS_IN_REVIEW,
+    ]);
+
+    $capability = app(CapabilityRegistry::class)->resolve('marketing.content.approve');
+    expect($capability->supportsExecutionMode(\App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($capability->approvalRequirement)->toBe('required');
+
+    $workflow = Workflow::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'execution_policy' => ['mode' => 'interactive', 'requires_model_provider' => false],
+        'completion_criteria' => [],
+    ]);
+    WorkflowStage::query()->create([
+        'workflow_id' => $workflow->getKey(),
+        'key' => 'approve_content',
+        'name' => 'Approve content',
+        'instruction' => 'Obtain approval for this exact content item.',
+        'sequence' => 1,
+        'dependencies' => [],
+        'expert_slugs' => ['marketing'],
+        'capability_slugs' => ['marketing.content.approve'],
+        'capability_input_contract' => $capability->inputContract,
+        'capability_output_contract' => $capability->outputContract,
+        'input_contract' => ['required' => ['content_item_id']],
+        'output_contract' => ['required' => ['id', 'status']],
+        'repeatable' => false,
+        'completion_criteria' => ['requires_termination_completed' => true, 'required_output_keys' => ['id', 'status']],
+    ]);
+
+    $version = app(WorkflowVersionService::class)->publish($workflow, $actor, 'approve-content-version-'.$workflow->getKey());
+    $execution = app(WorkflowExecutionService::class)->start(
+        $actor,
+        $version,
+        ['content_item_id' => $content->getKey()],
+        'workflow-approve-content-'.$content->getKey(),
+        returnFailed: true,
+        enterprise: $enterprise,
+    );
+
+    expect($execution->status)->toBe(WorkflowExecution::STATUS_WAITING_FOR_APPROVAL)
+        ->and($content->refresh()->status)->toBe(ContentItem::STATUS_IN_REVIEW);
+
+    $approval = ApprovalRequest::query()->where('workflow_execution_id', $execution->getKey())->where('capability', 'marketing.content.approve')->firstOrFail();
+    $approver = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $approver->getKey(), 'organization_id' => $enterprise->organization_id]);
+    app(ApprovalRequestService::class)->approve($approval, $approver);
+
+    $completed = app(WorkflowExecutionService::class)->continue($actor, $execution->refresh(), $execution->continuation_token, true);
+
+    expect($completed->state_reason)->toBeNull()
+        ->and($completed->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
+        ->and($content->refresh()->status)->toBe(ContentItem::STATUS_APPROVED);
 });

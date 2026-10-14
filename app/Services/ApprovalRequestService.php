@@ -72,6 +72,82 @@ class ApprovalRequestService
         return $request;
     }
 
+    /** @param array<string, mixed> $targetContext */
+    public function requestForWorkflow(User $actor, string $capability, \App\Models\WorkflowExecution $execution, array $targetContext = [], ?string $correlationId = null, ?string $expertSlug = null): ApprovalRequest
+    {
+        if ((int) $execution->actor_id !== (int) $actor->getKey()) {
+            throw new LogicException('Workflow approval actor must match the Workflow execution actor.');
+        }
+        $enterprise = $execution->enterprise;
+        $policy = $this->policies->snapshotForScope((int) $enterprise->organization_id, (int) $enterprise->getKey(), $capability);
+        $normalized = $this->normalizeWorkflowTargetContext($capability, $targetContext);
+        $hash = hash('sha256', json_encode($this->normalizeContext(['workflow_execution_id' => $execution->getKey(), 'capability' => $capability, 'target_context' => $normalized]), JSON_THROW_ON_ERROR));
+        $now = now();
+
+        return ApprovalRequest::query()->create([
+            'organization_id' => $enterprise->organization_id, 'enterprise_id' => $enterprise->getKey(), 'agent_assignment_id' => null, 'agent_execution_id' => null,
+            'workflow_execution_id' => $execution->getKey(), 'actor_id' => $actor->getKey(), 'correlation_id' => $correlationId ?? $execution->correlation_id,
+            'capability' => $capability, 'target_context' => $normalized, 'organization_name' => $enterprise->organization->name, 'enterprise_name' => $enterprise->name,
+            'agent_slug' => null, 'agent_runtime_class' => null, 'expert_slug' => $expertSlug,
+            'expert_runtime_class' => $expertSlug !== null ? \App\Models\ExpertDescriptor::query()->where('slug', $expertSlug)->value('runtime_class') : null,
+            'actor_name' => $actor->name, 'status' => ApprovalRequest::STATUS_PENDING, 'requested_at' => $now,
+            'expires_at' => $now->copy()->addMinutes($policy['expires_in_minutes']), 'policy_snapshot' => $policy, 'policy_key' => $policy['policy_key'], 'current_stage' => 0, 'request_hash' => $hash,
+        ]);
+    }
+
+    /** @param array<string, mixed> $targetContext */
+    public function matchesWorkflow(ApprovalRequest $request, User $actor, \App\Models\WorkflowExecution $execution, string $capability, array $targetContext = [], bool $allowConsumed = false): bool
+    {
+        if (! $request->isValid() || (int) $request->actor_id !== (int) $actor->getKey() || (int) $request->workflow_execution_id !== (int) $execution->getKey()
+            || $request->agent_assignment_id !== null || $request->agent_execution_id !== null || (int) $request->organization_id !== (int) $execution->enterprise->organization_id
+            || (int) $request->enterprise_id !== (int) $execution->enterprise_id || $request->capability !== $capability
+            || (! $allowConsumed && $request->consumed_workflow_execution_id !== null)
+            || ($allowConsumed && (int) $request->consumed_workflow_execution_id !== (int) $execution->getKey())) {
+            return false;
+        }
+        $normalizedTarget = $this->normalizeWorkflowTargetContext($capability, $targetContext);
+        $expected = hash('sha256', json_encode($this->normalizeContext(['workflow_execution_id' => $execution->getKey(), 'capability' => $capability, 'target_context' => $normalizedTarget]), JSON_THROW_ON_ERROR));
+
+        return hash_equals((string) $request->request_hash, $expected)
+            && $this->normalizeWorkflowTargetContext($capability, $request->target_context ?? []) === $normalizedTarget;
+    }
+
+    /** @param array<string, mixed>|string|null $context
+     * @return array<string, mixed>
+     */
+    private function normalizeWorkflowTargetContext(string $capability, array|string|null $context): array
+    {
+        $normalized = $this->normalizeContext($context);
+        $keys = match ($capability) {
+            'marketing.content.approve', 'marketing.content.publication-ready' => ['content_item_id'],
+            'publication.publish' => ['content_item_id', 'social_account_id', 'scheduled_at'],
+            default => array_values(array_diff(array_keys($normalized), [
+                'enterprise_id', 'approval_request_id', 'agent_assignment_id', 'agent_execution_id',
+            ])),
+        };
+
+        return array_intersect_key($normalized, array_flip($keys));
+    }
+
+    public function consumeForWorkflow(ApprovalRequest $request, \App\Models\WorkflowExecution $execution): ApprovalRequest
+    {
+        DB::transaction(function () use ($request, $execution): void {
+            $locked = ApprovalRequest::query()->lockForUpdate()->findOrFail($request->getKey());
+
+            if ((int) $locked->workflow_execution_id !== (int) $execution->getKey() || $locked->agent_assignment_id !== null) {
+                throw new LogicException('Approval request is not bound to this Workflow execution.');
+            }
+            if ($locked->consumed_workflow_execution_id !== null) {
+                throw new LogicException('Approval request has already been consumed.');
+            }
+
+            $locked->consumed_workflow_execution_id = $execution->getKey();
+            $locked->save();
+        });
+
+        return $request->refresh();
+    }
+
     public function approve(ApprovalRequest $request, User $approver, ?string $reason = null): ApprovalRequest
     {
         if ($request->status !== ApprovalRequest::STATUS_PENDING) {

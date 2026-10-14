@@ -14,6 +14,8 @@ use LogicException;
     'enterprise_id',
     'agent_assignment_id',
     'agent_execution_id',
+    'workflow_execution_id',
+    'consumed_workflow_execution_id',
     'agent_delegation_id',
     'consumed_agent_execution_id',
     'consumed_agent_delegation_id',
@@ -74,6 +76,7 @@ class ApprovalRequest extends Model
         'enterprise_id',
         'agent_assignment_id',
         'agent_execution_id',
+        'workflow_execution_id',
         'actor_id',
         'capability',
         'target_context',
@@ -122,6 +125,11 @@ class ApprovalRequest extends Model
                 throw new LogicException('An approval request cannot be rebound after delegation consumption.');
             }
 
+            $originalConsumedWorkflow = $request->getRawOriginal('consumed_workflow_execution_id');
+            if ($originalConsumedWorkflow !== null && (int) $request->consumed_workflow_execution_id !== (int) $originalConsumedWorkflow) {
+                throw new LogicException('An approval request cannot be rebound after workflow execution consumption.');
+            }
+
             $originalConsumedExecution = $request->getRawOriginal('consumed_agent_execution_id');
 
             if ($originalConsumedExecution !== null && (int) $request->consumed_agent_execution_id !== (int) $originalConsumedExecution) {
@@ -148,7 +156,12 @@ class ApprovalRequest extends Model
         return $this->belongsTo(AgentAssignment::class);
     }
 
-    /** @return BelongsTo<AgentExecution, $this> */
+    /** @return BelongsTo<WorkflowExecution, $this> */
+    public function workflowExecution(): BelongsTo
+    {
+        return $this->belongsTo(WorkflowExecution::class);
+    }
+
     public function agentExecution(): BelongsTo
     {
         return $this->belongsTo(AgentExecution::class);
@@ -313,13 +326,28 @@ class ApprovalRequest extends Model
             }
         }
 
-        $assignment = AgentAssignment::query()->find($this->agent_assignment_id);
+        $hasAgentContext = $this->agent_assignment_id !== null;
+        $hasWorkflowContext = $this->workflow_execution_id !== null;
+        if ($hasAgentContext === $hasWorkflowContext) {
+            throw new LogicException('Approval request must belong to exactly one Agent or Workflow execution context.');
+        }
 
-        if ($assignment === null
-            || $assignment->organization_id !== $this->organization_id
-            || $assignment->enterprise_id !== $this->enterprise_id
-        ) {
-            throw new LogicException('Approval request assignment must belong to its organization and enterprise scope.');
+        if ($hasAgentContext) {
+            $assignment = AgentAssignment::query()->find($this->agent_assignment_id);
+
+            if ($assignment === null
+                || $assignment->organization_id !== $this->organization_id
+                || $assignment->enterprise_id !== $this->enterprise_id
+            ) {
+                throw new LogicException('Approval request assignment must belong to its organization and enterprise scope.');
+            }
+        }
+
+        if ($hasWorkflowContext) {
+            $workflowExecution = WorkflowExecution::query()->find($this->workflow_execution_id);
+            if ($workflowExecution === null || (int) $workflowExecution->enterprise_id !== (int) $this->enterprise_id || (int) $workflowExecution->actor_id !== (int) $this->actor_id || (int) $workflowExecution->enterprise->organization_id !== (int) $this->organization_id) {
+                throw new LogicException('Approval request Workflow execution must match its organization, enterprise and actor scope.');
+            }
         }
 
         if ($this->agent_execution_id !== null) {

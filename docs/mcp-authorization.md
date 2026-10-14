@@ -25,6 +25,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | Public tool | Tool class | Boundary family | Capability | Operation / query target | Authorization / tenant boundary |
 |---|---|---|---|---|---|
 | analyze-business-context | `AnalyzeBusinessContextTool` | `GovernedCapabilityTool` | `business.analysis` | `AnalyzeBusinessContext` | CapabilityInvocationService + operation/domain policy |
+| approve-content-item | `ApproveContentItemTool` | `GovernedCapabilityTool` | `marketing.content.approve` | `ApproveContentItem` | CapabilityInvocationService + workflow approval match + ContentItem policy/lifecycle |
 | archive-audience | `ArchiveAudienceTool` | `DomainMutationTool` | `marketing.audience.archive` | `MarketingAudienceArchive` | human target policy + DomainResourceService policy |
 | archive-channel | `ArchiveChannelTool` | `DomainMutationTool` | `marketing.channel.archive` | `MarketingChannelArchive` | human target policy + DomainResourceService policy |
 | archive-knowledge-unit | `ArchiveKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` | Operation/domain service; governed when registry-mapped |

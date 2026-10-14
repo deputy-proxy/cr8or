@@ -43,6 +43,19 @@ final class ApprovalPolicyService
         ];
     }
 
+    /** @return array{policy_key:string, stages:list<array{required:int, roles:list<string>}>, expires_in_minutes:int, allow_self_approval:bool, escalation_roles:list<string>} */
+    public function snapshotForScope(int $organizationId, ?int $enterpriseId, string $capability): array
+    {
+        $policy = ApprovalPolicy::query()->where('organization_id', $organizationId)->where('capability', $capability)->where('enabled', true)
+            ->where(fn ($query) => $query->where('enterprise_id', $enterpriseId)->orWhereNull('enterprise_id'))
+            ->orderByRaw('CASE WHEN enterprise_id IS NULL THEN 1 ELSE 0 END')->first();
+        if ($policy === null) {
+            return $this->legacySnapshot();
+        }
+
+        return ['policy_key' => $policy->policy_key, 'stages' => is_array($policy->stages) ? $this->normalizeStages($policy->stages) : [], 'expires_in_minutes' => (int) $policy->expires_in_minutes, 'allow_self_approval' => (bool) $policy->allow_self_approval, 'escalation_roles' => is_array($policy->escalation_roles) ? $this->normalizeRoles($policy->escalation_roles) : []];
+    }
+
     public function authorizeApprover(ApprovalRequest $request, User $approver): void
     {
         if ($request->status !== ApprovalRequest::STATUS_PENDING) {

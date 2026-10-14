@@ -89,6 +89,7 @@ final class ContentItemService
         ApprovalRequest $approval,
         ?AgentAssignment $assignment = null,
         ?AgentExecution $execution = null,
+        ?\App\Models\WorkflowExecution $workflowExecution = null,
     ): ContentItem {
         Gate::forUser($actor)->authorize('update', $item);
 
@@ -96,8 +97,16 @@ final class ContentItemService
             throw new LogicException('Only approved content can become publication-ready.');
         }
 
+        if ($assignment === null && $execution === null && $workflowExecution !== null) {
+            if ((int) $workflowExecution->enterprise_id !== (int) $item->enterprise_id || ! app(ApprovalRequestService::class)->matchesWorkflow($approval, $actor, $workflowExecution, 'marketing.content.publication-ready', ['content_item_id' => $item->getKey()], allowConsumed: true)) {
+                throw new \Illuminate\Auth\Access\AuthorizationException('The Workflow publication-readiness approval is invalid or unauthorized.');
+            }
+            $item->transitionToPublicationReady()->save();
+
+            return $item->refresh();
+        }
         if ($assignment === null || $execution === null) {
-            throw new LogicException('Publication readiness requires an Agent execution approval context.');
+            throw new LogicException('Publication readiness requires a complete Agent or Workflow approval context.');
         }
 
         if (! app(AgentCapabilityAuthorizer::class)->allowsExpertCapability(
