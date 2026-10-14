@@ -11,6 +11,7 @@ use App\Models\IntegrationConnection;
 use App\Models\Issue;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\GitHubIssueSyncService;
 use Illuminate\Support\Facades\Http;
@@ -177,6 +178,32 @@ it('hydrates and saves typed Enterprise connections through the Filament form', 
         'direction' => 'outgoing',
         'description' => 'Updated from Filament',
     ]]);
+});
+
+it('shows follower metrics only when available and reserves NCY for unknown values', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user->id, 'organization_id' => $organization->id]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $channel = \App\Models\Channel::factory()->create(['enterprise_id' => $enterprise->id]);
+    SocialAccount::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'channel_id' => $channel->id,
+        'provider' => 'linkedin',
+        'follower_count' => 1234,
+    ]);
+
+    $this->actingAs($user);
+    $page = app(EnterprisePortfolioDashboard::class);
+    $page->mount();
+    $method = new ReflectionMethod($page, 'getViewData');
+    $method->setAccessible(true);
+    $data = $method->invoke($page);
+    $followers = collect($data['dashboardSocialFollowers'])->firstWhere('project_id', (string) $enterprise->id);
+
+    expect($data['dashboardSocialNetworks']->all())->toBe(['linkedin', 'facebook', 'instagram', 'tiktok', 'bsky', 'youtube', 'threads', 'x'])
+        ->and($followers['linkedin'])->toBe(1234)
+        ->and($followers['facebook'])->toBeNull();
 });
 
 it('renders the Project Ecosystem Map from authorized Enterprise records and connections', function () {
