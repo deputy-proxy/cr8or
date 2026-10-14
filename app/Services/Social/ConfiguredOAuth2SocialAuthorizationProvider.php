@@ -241,6 +241,11 @@ final class ConfiguredOAuth2SocialAuthorizationProvider implements SocialAuthori
                     }
                 }
 
+                $urlPrefix = $destinationConfig['url_prefix'] ?? null;
+                if (is_string($urlValue) && $urlValue !== '' && is_string($urlPrefix) && $urlPrefix !== '' && ! str_starts_with($urlValue, 'https://')) {
+                    $urlValue = $urlPrefix.ltrim($urlValue, '/');
+                }
+
                 $credentialToken = data_get($item, (string) ($destinationConfig['credential_token_path'] ?? '__none__'));
                 if (($destinationConfig['require_credential_token'] ?? false) === true
                     && (! is_string($credentialToken) || trim($credentialToken) === '')) {
