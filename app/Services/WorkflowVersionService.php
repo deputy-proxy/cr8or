@@ -13,7 +13,7 @@ final class WorkflowVersionService
 {
     public function publish(Workflow $workflow, User $actor, ?string $idempotencyKey = null): WorkflowVersion
     {
-        Gate::forUser($actor)->authorize('view', $workflow);
+        Gate::forUser($actor)->authorize('update', $workflow);
 
         return DB::transaction(function () use ($workflow, $actor, $idempotencyKey): WorkflowVersion {
             /** @var Workflow $workflow */
@@ -40,7 +40,7 @@ final class WorkflowVersionService
 
     public function publishVersion(WorkflowVersion $version, User $actor, ?string $idempotencyKey = null): WorkflowVersion
     {
-        Gate::forUser($actor)->authorize('view', $version->workflow);
+        Gate::forUser($actor)->authorize('update', $version->workflow);
 
         return DB::transaction(function () use ($version, $idempotencyKey): WorkflowVersion {
             /** @var WorkflowVersion $version */
