@@ -397,30 +397,32 @@
                         <!-- Follower metrics are shown only when supplied by the connected account metadata. -->
                         <div class="mt-2.5 grid grid-cols-3 gap-1.5">
                           <template x-for="network in socialNetworks" :key="network">
-                            <template x-if="socialProfileUrlForProject(project.project_id, network)">
-                              <a
-                                :href="socialProfileUrlForProject(project.project_id, network)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                :aria-label="`${network} profile, ${formatFollowers(socialFollowerCountForProject(project.project_id, network))} followers`"
-                                :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
-                                class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150 hover:bg-white/[0.08] hover:border-white/20 focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/60"
-                                :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
-                              >
-                                <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
-                                <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
-                              </a>
-                            </template>
-                            <template x-if="!socialProfileUrlForProject(project.project_id, network)">
-                              <span
-                                :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
-                                class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150"
-                                :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
-                              >
-                                <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
-                                <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
-                              </span>
-                            </template>
+                            <div class="contents">
+                              <template x-if="socialProfileUrlForProject(project.project_id, network)">
+                                <a
+                                  :href="socialProfileUrlForProject(project.project_id, network)"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  :aria-label="`${network} profile, ${formatFollowers(socialFollowerCountForProject(project.project_id, network))} followers`"
+                                  :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
+                                  class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150 hover:bg-white/[0.08] hover:border-white/20 focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/60"
+                                  :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
+                                >
+                                  <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
+                                  <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
+                                </a>
+                              </template>
+                              <template x-if="!socialProfileUrlForProject(project.project_id, network)">
+                                <span
+                                  :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
+                                  class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150"
+                                  :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
+                                >
+                                  <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
+                                  <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
+                                </span>
+                              </template>
+                            </div>
                           </template>
                         </div>
                       </div>
