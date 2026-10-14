@@ -397,14 +397,30 @@
                         <!-- Follower metrics are shown only when supplied by the connected account metadata. -->
                         <div class="mt-2.5 grid grid-cols-3 gap-1.5">
                           <template x-for="network in socialNetworks" :key="network">
-                            <span
-                              :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
-                              class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150"
-                              :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
-                            >
-                              <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
-                              <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
-                            </span>
+                            <template x-if="socialProfileUrlForProject(project.project_id, network)">
+                              <a
+                                :href="socialProfileUrlForProject(project.project_id, network)"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                :aria-label="`${network} profile, ${formatFollowers(socialFollowerCountForProject(project.project_id, network))} followers`"
+                                :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
+                                class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150 hover:bg-white/[0.08] hover:border-white/20 focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/60"
+                                :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
+                              >
+                                <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
+                                <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
+                              </a>
+                            </template>
+                            <template x-if="!socialProfileUrlForProject(project.project_id, network)">
+                              <span
+                                :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
+                                class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150"
+                                :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
+                              >
+                                <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
+                                <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
+                              </span>
+                            </template>
                           </template>
                         </div>
                       </div>
@@ -1796,19 +1812,11 @@
             return Number.isInteger(entry[network]) && entry[network] >= 0 ? entry[network] : null;
           },
 
-          socialUrlForProject(projectId, network) {
-            const project = this.projects.find((p) => p.project_id === projectId);
-            if (!project) return '#';
-            const handle = project.name.replace(/\./g, '');
-            const urls = {
-              linkedin: `https://linkedin.com/company/${handle}`,
-              facebook: `https://facebook.com/${handle}`,
-              instagram: `https://instagram.com/${handle}`,
-              tiktok: `https://tiktok.com/@${handle}`,
-              youtube: `https://youtube.com/@${handle}`,
-              threads: `https://threads.net/@${handle}`,
-            };
-            return urls[network] || '#';
+          socialProfileUrlForProject(projectId, network) {
+            if (!projectId || !this.socialNetworks.includes(network)) return null;
+            const entry = this.socialFollowers.find((account) => account.project_id === projectId);
+            const url = entry?.[`${network}_url`];
+            return typeof url === 'string' && url.startsWith('https://') ? url : null;
           },
 
           formatFollowers(count) {
