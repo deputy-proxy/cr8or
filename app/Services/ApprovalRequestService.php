@@ -132,7 +132,7 @@ class ApprovalRequestService
     public function consumeForWorkflow(ApprovalRequest $request, \App\Models\WorkflowExecution $execution): ApprovalRequest
     {
         DB::transaction(function () use ($request, $execution): void {
-            $locked = ApprovalRequest::query()->lockForUpdate()->findOrFail($request->getKey());
+            $locked = ApprovalRequest::query()->whereKey($request->getKey())->lockForUpdate()->firstOrFail();
 
             if ((int) $locked->workflow_execution_id !== (int) $execution->getKey() || $locked->agent_assignment_id !== null) {
                 throw new LogicException('Approval request is not bound to this Workflow execution.');

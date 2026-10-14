@@ -53,7 +53,18 @@ final class ApprovalPolicyService
             return $this->legacySnapshot();
         }
 
-        return ['policy_key' => $policy->policy_key, 'stages' => is_array($policy->stages) ? $this->normalizeStages($policy->stages) : [], 'expires_in_minutes' => (int) $policy->expires_in_minutes, 'allow_self_approval' => (bool) $policy->allow_self_approval, 'escalation_roles' => is_array($policy->escalation_roles) ? $this->normalizeRoles($policy->escalation_roles) : []];
+        $rawStages = $policy->getRawOriginal('stages');
+        $rawEscalationRoles = $policy->getRawOriginal('escalation_roles');
+        $stages = is_string($rawStages) ? json_decode($rawStages, true) : [];
+        $escalationRoles = is_string($rawEscalationRoles) ? json_decode($rawEscalationRoles, true) : [];
+
+        return [
+            'policy_key' => $policy->policy_key,
+            'stages' => is_array($stages) ? $this->normalizeStages($stages) : [],
+            'expires_in_minutes' => (int) $policy->expires_in_minutes,
+            'allow_self_approval' => (bool) $policy->allow_self_approval,
+            'escalation_roles' => is_array($escalationRoles) ? $this->normalizeRoles($escalationRoles) : [],
+        ];
     }
 
     public function authorizeApprover(ApprovalRequest $request, User $approver): void

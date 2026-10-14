@@ -162,6 +162,7 @@ class ApprovalRequest extends Model
         return $this->belongsTo(WorkflowExecution::class);
     }
 
+    /** @return BelongsTo<AgentExecution, $this> */
     public function agentExecution(): BelongsTo
     {
         return $this->belongsTo(AgentExecution::class);

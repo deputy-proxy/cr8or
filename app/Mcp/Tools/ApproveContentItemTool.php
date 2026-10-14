@@ -43,7 +43,7 @@ class ApproveContentItemTool extends GovernedCapabilityTool
                 throw new AuthenticationException;
             }
 
-            $item = ContentItem::query()->findOrFail($validated['content_item_id']);
+            $item = ContentItem::query()->whereKey((int) $validated['content_item_id'])->firstOrFail();
             $authorization->authorizeMutation(
                 $actor,
                 $this->capability($registry),
