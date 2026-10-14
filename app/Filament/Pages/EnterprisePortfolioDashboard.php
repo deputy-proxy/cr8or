@@ -350,7 +350,7 @@ class EnterprisePortfolioDashboard extends Page
                 $followerCount = null;
 
                 // Avoid inventing an aggregate when an enterprise has multiple destinations on the same network.
-                if ($networkAccounts->count() === 1 && is_numeric($networkAccounts->first()->follower_count) && (int) $networkAccounts->first()->follower_count >= 0) {
+                if ($networkAccounts->count() === 1 && $networkAccounts->first()->follower_count !== null) {
                     $followerCount = (int) $networkAccounts->first()->follower_count;
                 }
 
