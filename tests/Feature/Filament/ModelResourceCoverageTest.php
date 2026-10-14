@@ -15,6 +15,7 @@ it('provides exactly one Filament resource for every model', function () {
         'SocialCredential',
         'SocialAuthorizationAttempt',
         'SocialAuthorizationAudit',
+        'WorkflowContinuationOutbox',
     ]));
 
     $resources = [];

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\CapabilityInvocationRequest;
 use App\Data\ResolvedWorkflowStageInput;
 use App\Models\ApprovalRequest;
+use App\Models\ContentItem;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Models\Workflow;
@@ -211,6 +212,330 @@ final class WorkflowExecutionService
         return $this->runStages($actor, $claimed, $returnFailed, $repeatableStagesToReenter);
     }
 
+    /**
+     * Continue eligible failed or approval-waiting WorkflowExecutions after an authorized
+     * content approval. The approval transition is authoritative evidence that review and
+     * content approval have already occurred; those non-repeatable stages are reconciled
+     * against the immutable WorkflowVersion rather than executed again.
+     */
+    public function continueAfterContentApproval(ContentItem $item, ?int $approverId = null): bool
+    {
+        if (! in_array($item->status, [ContentItem::STATUS_APPROVED, ContentItem::STATUS_PUBLICATION_READY], true)) {
+            return true;
+        }
+
+        $candidates = WorkflowExecution::query()
+            ->where('enterprise_id', $item->enterprise_id)
+            ->whereIn('status', [WorkflowExecution::STATUS_RUNNING, WorkflowExecution::STATUS_FAILED, WorkflowExecution::STATUS_WAITING_FOR_APPROVAL])
+            ->with(['workflow.enterprise', 'workflowVersion', 'actor', 'enterprise'])
+            ->orderBy('id')
+            ->get();
+
+        foreach ($candidates as $execution) {
+            if (! $this->canReconcileApprovedContent($execution, $item)) {
+                continue;
+            }
+
+            if ($execution->status === WorkflowExecution::STATUS_RUNNING) {
+                return false;
+            }
+
+            $actor = $execution->actor;
+            if (! $actor instanceof User) {
+                continue;
+            }
+
+            $this->recoverApprovedContent($actor, $execution, $item, $approverId);
+        }
+
+        return true;
+    }
+
+    public function continueAfterWorkflowApproval(ApprovalRequest $approval): bool
+    {
+        if ($approval->status !== ApprovalRequest::STATUS_APPROVED || $approval->workflow_execution_id === null) {
+            return true;
+        }
+
+        $execution = WorkflowExecution::query()
+            ->with(['workflow.enterprise', 'workflowVersion', 'actor', 'enterprise'])
+            ->find($approval->workflow_execution_id);
+        if (! $execution instanceof WorkflowExecution) {
+            return true;
+        }
+
+        if ($execution->status === WorkflowExecution::STATUS_RUNNING) {
+            return false;
+        }
+        if ($execution->status !== WorkflowExecution::STATUS_WAITING_FOR_APPROVAL) {
+            return true;
+        }
+
+        $context = $execution->getAttribute('context');
+        $context = is_array($context) ? $context : [];
+        if ((int) ($context['pending_approval_request_id'] ?? 0) !== (int) $approval->getKey()) {
+            return true;
+        }
+
+        $actor = $execution->actor;
+        if (! $actor instanceof User) {
+            throw new LogicException('Workflow approval continuation requires the original execution actor.');
+        }
+        Gate::forUser($actor)->authorize('viewForEnterprise', [$execution->workflow, $execution->enterprise]);
+
+        $definitions = $execution->workflowVersion?->getAttribute('stage_definitions');
+        $currentDefinition = null;
+        foreach (is_array($definitions) ? $definitions : [] as $definition) {
+            if (is_array($definition) && ($definition['key'] ?? null) === $execution->current_stage_key) {
+                $currentDefinition = $definition;
+                break;
+            }
+        }
+        $stageCapabilities = is_array($currentDefinition['capability_slugs'] ?? null) ? $currentDefinition['capability_slugs'] : [];
+        $target = $approval->getAttribute('target_context');
+        $target = is_array($target) ? $target : [];
+        $expectedContentId = (int) data_get($execution->outputs, 'create_content.id', 0);
+        if ($expectedContentId < 1) {
+            $executionInput = $execution->getAttribute('input');
+            $executionInput = is_array($executionInput) ? $executionInput : [];
+            $expectedContentId = (int) data_get(
+                $executionInput,
+                'stages.'.$execution->current_stage_key.'.content_item_id',
+                data_get($executionInput, 'content_item_id', 0),
+            );
+        }
+        $targetContentId = (int) ($target['content_item_id'] ?? 0);
+        if ((int) $approval->enterprise_id !== (int) $execution->enterprise_id
+            || (int) $approval->actor_id !== (int) $execution->actor_id
+            || (int) $approval->workflow_execution_id !== (int) $execution->getKey()
+            || $approval->consumed_workflow_execution_id !== null
+            || ! in_array($approval->capability, $stageCapabilities, true)
+            || (in_array($approval->capability, ['marketing.content.approve', 'marketing.content.publication-ready'], true)
+                && ($expectedContentId < 1 || $targetContentId !== $expectedContentId))) {
+            throw new AuthorizationException('Approved request is not valid for the waiting WorkflowExecution.');
+        }
+
+        $this->continue($actor, $execution);
+
+        return true;
+    }
+
+    private function canReconcileApprovedContent(WorkflowExecution $execution, ContentItem $item): bool
+    {
+        if ((int) $execution->enterprise_id !== (int) $item->enterprise_id
+            || ! in_array($execution->status, [WorkflowExecution::STATUS_RUNNING, WorkflowExecution::STATUS_FAILED, WorkflowExecution::STATUS_WAITING_FOR_APPROVAL], true)) {
+            return false;
+        }
+
+        $outputs = $execution->getAttribute('outputs');
+        $outputs = is_array($outputs) ? $outputs : [];
+        if ((int) data_get($outputs, 'create_content.id', 0) !== (int) $item->getKey()) {
+            return false;
+        }
+
+        $definitions = $execution->workflowVersion?->getAttribute('stage_definitions');
+        if (! is_array($definitions)) {
+            return false;
+        }
+
+        $reviewKey = null;
+        $approvalKey = null;
+        foreach ($definitions as $definition) {
+            if (! is_array($definition) || ! is_string($definition['key'] ?? null)) {
+                continue;
+            }
+            $capabilities = $definition['capability_slugs'] ?? [];
+            if (in_array('marketing.content.review', $capabilities, true)) {
+                $reviewKey = $definition['key'];
+            }
+            if (in_array('marketing.content.approve', $capabilities, true)) {
+                $approvalKey = $definition['key'];
+            }
+        }
+
+        return $reviewKey !== null
+            && $approvalKey !== null
+            && in_array($execution->current_stage_key, [$reviewKey, $approvalKey], true);
+    }
+
+    private function recoverApprovedContent(User $actor, WorkflowExecution $execution, ContentItem $item, ?int $approverId = null): WorkflowExecution
+    {
+        [$claimed, $shouldContinue] = DB::transaction(function () use ($actor, $execution, $item, $approverId): array {
+            /** @var WorkflowExecution $locked */
+            $locked = WorkflowExecution::query()->lockForUpdate()->whereKey($execution->getKey())->firstOrFail();
+
+            if (! in_array($locked->status, [WorkflowExecution::STATUS_FAILED, WorkflowExecution::STATUS_WAITING_FOR_APPROVAL], true)) {
+                return [$locked, false];
+            }
+
+            $locked->loadMissing(['workflow.enterprise', 'workflowVersion', 'actor']);
+            Gate::forUser($actor)->authorize('viewForEnterprise', [$locked->workflow, $locked->enterprise]);
+
+            if ((int) $locked->actor_id !== (int) $actor->getKey()
+                || (int) $locked->enterprise_id !== (int) $item->enterprise_id
+                || ! in_array($item->status, [ContentItem::STATUS_APPROVED, ContentItem::STATUS_PUBLICATION_READY], true)) {
+                throw new AuthorizationException('Approved content cannot recover this WorkflowExecution.');
+            }
+
+            $outputsValue = $locked->getAttribute('outputs');
+            $outputs = is_array($outputsValue) ? $outputsValue : [];
+            if ((int) data_get($outputs, 'create_content.id', 0) !== (int) $item->getKey()) {
+                throw new AuthorizationException('Approved content does not match this WorkflowExecution target.');
+            }
+
+            $version = $locked->workflowVersion;
+            $definitions = $version?->getAttribute('stage_definitions');
+            if (! is_array($definitions)) {
+                throw new LogicException('Workflow recovery requires the persisted WorkflowVersion stage snapshot.');
+            }
+
+            $stages = [];
+            foreach ($definitions as $definition) {
+                if (! is_array($definition) || ! is_string($definition['key'] ?? null)) {
+                    continue;
+                }
+                $capabilities = $definition['capability_slugs'] ?? [];
+                if (in_array('marketing.content.review', $capabilities, true) || in_array('marketing.content.approve', $capabilities, true)) {
+                    if (($definition['repeatable'] ?? false) === true) {
+                        throw new LogicException('Workflow recovery cannot reconcile repeatable content lifecycle stages.');
+                    }
+                    $stages[$definition['key']] = $definition;
+                }
+            }
+
+            $currentKey = (string) $locked->current_stage_key;
+            if (! isset($stages[$currentKey])) {
+                return [$locked, false];
+            }
+
+            $reviewKeys = [];
+            $approvalKeys = [];
+            foreach ($stages as $key => $definition) {
+                $capabilities = is_array($definition['capability_slugs'] ?? null) ? $definition['capability_slugs'] : [];
+                if (in_array('marketing.content.review', $capabilities, true)) {
+                    $reviewKeys[] = $key;
+                }
+                if (in_array('marketing.content.approve', $capabilities, true)) {
+                    $approvalKeys[] = $key;
+                }
+            }
+            if (count($reviewKeys) !== 1 || count($approvalKeys) !== 1) {
+                throw new LogicException('Workflow recovery requires exactly one review stage and one content-approval stage.');
+            }
+
+            $reconcileKeys = [$reviewKeys[0], $approvalKeys[0]];
+            $available = array_fill_keys(array_keys($outputs), true);
+            foreach ($reconcileKeys as $key) {
+                $definition = $stages[$key];
+                foreach (is_array($definition['dependencies'] ?? null) ? $definition['dependencies'] : [] as $dependency) {
+                    if (! is_string($dependency) || (! isset($available[$dependency]) && ! in_array($dependency, $reconcileKeys, true))) {
+                        throw new LogicException("Workflow stage [{$key}] has an unsatisfied dependency and cannot be reconciled.");
+                    }
+                }
+            }
+
+            usort($reconcileKeys, static fn (string $left, string $right): int => (int) ($stages[$left]['sequence'] ?? 0) <=> (int) ($stages[$right]['sequence'] ?? 0));
+            $reconciledStageKeys = [];
+            foreach ($reconcileKeys as $key) {
+                if (array_key_exists($key, $outputs)) {
+                    continue;
+                }
+
+                $definition = $stages[$key];
+                $capabilities = is_array($definition['capability_slugs'] ?? null) ? $definition['capability_slugs'] : [];
+                $capability = $capabilities[0] ?? null;
+                if (! in_array($capability, ['marketing.content.review', 'marketing.content.approve'], true)) {
+                    throw new LogicException("Workflow stage [{$key}] is not a reconcilable content lifecycle stage.");
+                }
+
+                $stageOutput = [
+                    'success' => true,
+                    'result' => $item->toArray(),
+                    'id' => $item->getKey(),
+                    'status' => $item->status,
+                    'termination' => 'completed',
+                    'reconciled' => true,
+                ];
+                $stage = new WorkflowStage;
+                $stage->forceFill([
+                    'key' => $key,
+                    'output_contract' => is_array($definition['output_contract'] ?? null) ? $definition['output_contract'] : [],
+                    'completion_criteria' => is_array($definition['completion_criteria'] ?? null) ? $definition['completion_criteria'] : [],
+                ]);
+                $this->outputValidator->validate($stage, $stageOutput);
+                $this->validateCapabilityOutputContract($stage, $stageOutput);
+                if (! $stage->completionSatisfied($stageOutput)) {
+                    throw new LogicException("Workflow stage [{$key}] recovery output does not satisfy its completion criteria.");
+                }
+
+                $outputs[$key] = $stageOutput;
+                $reconciledStageKeys[] = $key;
+            }
+
+            $contextValue = $locked->getAttribute('context');
+            $context = is_array($contextValue) ? $contextValue : [];
+            $pendingApprovalId = (int) ($context['pending_approval_request_id'] ?? 0);
+            if ($pendingApprovalId > 0) {
+                $pendingApproval = ApprovalRequest::query()->find($pendingApprovalId);
+                if ($pendingApproval instanceof ApprovalRequest && $pendingApproval->status === ApprovalRequest::STATUS_PENDING) {
+                    $pendingTarget = $pendingApproval->getAttribute('target_context');
+                    $pendingTarget = is_array($pendingTarget) ? $pendingTarget : [];
+                    if ((int) $pendingApproval->workflow_execution_id !== (int) $locked->getKey()
+                        || (int) $pendingApproval->actor_id !== (int) $locked->actor_id
+                        || $pendingApproval->capability !== 'marketing.content.approve'
+                        || (int) ($pendingTarget['content_item_id'] ?? 0) !== (int) $item->getKey()) {
+                        throw new AuthorizationException('Pending content approval does not match the approved recovery target.');
+                    }
+
+                    app(ApprovalRequestService::class)->cancel(
+                        $pendingApproval,
+                        $actor,
+                        'Superseded by an authorized content approval transition.',
+                    );
+                }
+            }
+
+            if ($locked->status === WorkflowExecution::STATUS_FAILED) {
+                $locked->retry();
+            } else {
+                $locked->start();
+            }
+
+            $contextValue = $locked->getAttribute('context');
+            $context = is_array($contextValue) ? $contextValue : [];
+            $contextStages = is_array($context['stages'] ?? null) ? $context['stages'] : [];
+            foreach ($reconcileKeys as $key) {
+                if (isset($outputs[$key]['reconciled'])) {
+                    $contextStages[$key] = $outputs[$key];
+                }
+            }
+            $context['stages'] = $contextStages;
+            $stageReconciliations = is_array($context['stage_reconciliations'] ?? null) ? $context['stage_reconciliations'] : [];
+            $reconciledAt = now()->toISOString();
+            foreach ($reconciledStageKeys as $reconciledKey) {
+                $stageReconciliations[$reconciledKey] = [
+                    'reason' => 'content_approved_domain_state',
+                    'content_item_id' => $item->getKey(),
+                    'approval_actor_id' => $approverId,
+                    'reconciled_at' => $reconciledAt,
+                ];
+            }
+            $context['stage_reconciliations'] = $stageReconciliations;
+            unset($context['pending_approval_request_id']);
+            $locked->setAttribute('outputs', $outputs);
+            $locked->setAttribute('context', $context);
+            $locked->current_stage_key = null;
+            $locked->current_stage_id = null;
+            $locked->state_reason = null;
+            $locked->continuation_token = (string) str()->uuid();
+            $locked->save();
+
+            return [$locked->refresh(), true];
+        });
+
+        return $shouldContinue ? $this->runStages($actor, $claimed) : $claimed;
+    }
+
     /** @param list<string> $repeatableStagesToReenter */
     private function runStages(User $actor, WorkflowExecution $execution, bool $returnFailed = false, array $repeatableStagesToReenter = []): WorkflowExecution
     {
@@ -263,7 +588,9 @@ final class WorkflowExecutionService
                     $stageOutput = is_array($result['result'] ?? null)
                         ? $result['result']
                         : ['value' => $result['result'] ?? null];
+                    $stageOutput = $this->adaptStageOutput($stage, $stageOutput);
                     $this->outputValidator->validate($stage, $stageOutput);
+                    $this->validateCapabilityOutputContract($stage, $stageOutput);
                 }
 
                 $state = DB::transaction(function () use ($execution, $stage, $result, $stageOutput): array {
@@ -278,23 +605,23 @@ final class WorkflowExecutionService
                         $contextValue = $locked->getAttribute('context');
                         /** @var array<string, mixed> $context */
                         $context = is_array($contextValue) ? $contextValue : [];
-                        $approval = $result['approval'] ?? null;
-                        $context['pending_approval_request_id'] = $approval instanceof ApprovalRequest ? $approval->getKey() : null;
+                        $context['pending_approval_request_id'] = $result['approval']->getKey();
                         $locked->setAttribute('context', $context);
                         $locked->continuation_token = (string) str()->uuid();
-                        $locked->waitForApproval($result['reason'] ?? 'Workflow stage is waiting for approval.')->save();
+                        $locked->waitForApproval('Workflow stage is waiting for approval.')->save();
 
                         return ['waiting' => true];
                     }
 
                     if ($result['status'] === 'waiting_for_input') {
                         $locked->continuation_token = (string) str()->uuid();
-                        $locked->waitForInput($result['reason'] ?? 'Workflow stage is waiting for input.')->save();
+                        $locked->waitForInput($result['reason'])->save();
 
                         return ['waiting' => true];
                     }
 
-                    $stageOutput ??= is_array($result['result'] ?? null) ? $result['result'] : ['value' => $result['result'] ?? null];
+                    $resultValue = $result['result'];
+                    $stageOutput ??= is_array($resultValue) ? $resultValue : ['value' => $resultValue];
                     $stageOutput['termination'] = 'completed';
 
                     if (! $stage->completionSatisfied($stageOutput, [$result])) {
@@ -343,6 +670,47 @@ final class WorkflowExecutionService
     }
 
     /** @return array{status: string, result?: mixed, approval?: ApprovalRequest, reason?: string} */
+    /** @param array<string, mixed> $output
+     * @return array<string, mixed>
+     */
+    private function adaptStageOutput(WorkflowStage $stage, array $output): array
+    {
+        $contract = $stage->getAttribute('capability_output_contract');
+        if (! is_array($contract)
+            || ! array_key_exists('success', $contract)
+            || ! array_key_exists('result', $contract)) {
+            return $output;
+        }
+
+        // Operations may return their domain result directly while the public
+        // Capability contract exposes the standard success/result envelope. Keep
+        // the domain fields at the top level for existing deterministic mappings.
+        if (! array_key_exists('success', $output)) {
+            return ['success' => true, 'result' => $output] + $output;
+        }
+
+        $domainResult = $output['result'] ?? null;
+
+        return is_array($domainResult) ? $output + $domainResult : $output;
+    }
+
+    /** @param array<string, mixed> $output */
+    private function validateCapabilityOutputContract(WorkflowStage $stage, array $output): void
+    {
+        $contract = $stage->getAttribute('capability_output_contract');
+        if (! is_array($contract) || $contract === []) {
+            return;
+        }
+
+        $contractStage = new WorkflowStage;
+        $contractStage->forceFill([
+            'key' => $stage->key,
+            'output_contract' => $contract,
+        ]);
+        $this->outputValidator->validate($contractStage, $output);
+    }
+
+    /** @return array{status: 'executed', capability: string, result: mixed, raw_result?: mixed, provenance: array<string, mixed>}|array{status: 'waiting', capability: string, approval: ApprovalRequest, provenance: array<string, mixed>}|array{status: 'waiting_for_input', reason: string} */
     private function executeStage(User $actor, WorkflowExecution $execution, WorkflowStage $stage): array
     {
         $expertSlugsValue = $stage->getAttribute('expert_slugs');
@@ -401,7 +769,28 @@ final class WorkflowExecutionService
             workflowStage: $stage,
         );
 
-        return $this->capabilities->invoke($request);
+        $invocation = $this->capabilities->invoke($request);
+        if ($invocation['status'] === 'waiting') {
+            $approvalRequest = $invocation['approval'] ?? null;
+            if (! $approvalRequest instanceof ApprovalRequest) {
+                throw new LogicException('An approval-waiting Capability invocation must return its ApprovalRequest.');
+            }
+
+            return [
+                'status' => 'waiting',
+                'capability' => $invocation['capability'],
+                'approval' => $approvalRequest,
+                'provenance' => $invocation['provenance'],
+            ];
+        }
+
+        return [
+            'status' => 'executed',
+            'capability' => $invocation['capability'],
+            'result' => $invocation['result'] ?? null,
+            'raw_result' => $invocation['raw_result'] ?? null,
+            'provenance' => $invocation['provenance'],
+        ];
     }
 
     private function persistInputResolution(WorkflowExecution $execution, WorkflowStage $stage, ResolvedWorkflowStageInput $resolved): void
@@ -577,6 +966,8 @@ final class WorkflowExecutionService
                 'dependencies' => json_encode($dependencies, JSON_THROW_ON_ERROR),
                 'expert_slugs' => json_encode($definition['expert_slugs'] ?? [], JSON_THROW_ON_ERROR),
                 'capability_slugs' => json_encode($definition['capability_slugs'] ?? [], JSON_THROW_ON_ERROR),
+                'capability_input_contract' => json_encode($definition['capability_input_contract'] ?? [], JSON_THROW_ON_ERROR),
+                'capability_output_contract' => json_encode($definition['capability_output_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'input_contract' => json_encode($definition['input_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'output_contract' => json_encode($definition['output_contract'] ?? [], JSON_THROW_ON_ERROR),
                 'repeatable' => (bool) ($definition['repeatable'] ?? false),

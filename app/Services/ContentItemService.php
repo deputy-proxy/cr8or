@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\ContentItemApproved;
 use App\Experts\MarketingExpert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDecision;
@@ -12,7 +13,10 @@ use App\Models\ContentItem;
 use App\Models\ContentSeries;
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Models\WorkflowContinuationOutbox;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use LogicException;
 
 final class ContentItemService
@@ -78,9 +82,36 @@ final class ContentItemService
     public function approve(User $actor, ContentItem $item): ContentItem
     {
         Gate::forUser($actor)->authorize('update', $item);
-        $item->transitionTo(ContentItem::STATUS_APPROVED)->save();
 
-        return $item->refresh();
+        return DB::transaction(function () use ($actor, $item): ContentItem {
+            /** @var ContentItem $locked */
+            $locked = ContentItem::query()->with('enterprise.organization')->lockForUpdate()->findOrFail($item->getKey());
+            Gate::forUser($actor)->authorize('update', $locked);
+            $locked->transitionTo(ContentItem::STATUS_APPROVED)->save();
+            $locked->refresh()->loadMissing('enterprise.organization');
+
+            $outbox = WorkflowContinuationOutbox::query()->create([
+                'event_key' => (string) Str::uuid(),
+                'event_type' => ContentItemApproved::EVENT_TYPE,
+                'organization_id' => $locked->enterprise->organization_id,
+                'enterprise_id' => $locked->enterprise_id,
+                'actor_id' => $actor->getKey(),
+                'aggregate_id' => $locked->getKey(),
+                'payload' => ['content_item_id' => $locked->getKey()],
+                'occurred_at' => now(),
+                'attempts' => 0,
+            ]);
+
+            event(new ContentItemApproved(
+                organizationId: (int) $locked->enterprise->organization_id,
+                enterpriseId: (int) $locked->enterprise_id,
+                actorId: (int) $actor->getKey(),
+                correlationId: null,
+                data: ['content_item_id' => $locked->getKey(), 'outbox_id' => $outbox->getKey()],
+            ));
+
+            return $locked;
+        });
     }
 
     public function markPublicationReady(

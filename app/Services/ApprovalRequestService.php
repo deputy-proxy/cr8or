@@ -4,14 +4,17 @@ namespace App\Services;
 
 use App\Events\ApprovalGranted;
 use App\Events\ApprovalRequested;
+use App\Events\WorkflowApprovalGranted;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
 use App\Models\AgentExecution;
 use App\Models\ApprovalDecision;
 use App\Models\ApprovalRequest;
 use App\Models\User;
+use App\Models\WorkflowContinuationOutbox;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use LogicException;
 
 class ApprovalRequestService
@@ -215,6 +218,34 @@ class ApprovalRequestService
                         'stage' => $stage,
                     ]);
                 }
+            } elseif ($request->status === ApprovalRequest::STATUS_APPROVED && $request->workflow_execution_id !== null) {
+                $outbox = WorkflowContinuationOutbox::query()->create([
+                    'event_key' => (string) Str::uuid(),
+                    'event_type' => WorkflowApprovalGranted::EVENT_TYPE,
+                    'organization_id' => $request->organization_id,
+                    'enterprise_id' => $request->enterprise_id,
+                    'actor_id' => $approver->getKey(),
+                    'aggregate_id' => $request->getKey(),
+                    'payload' => [
+                        'approval_request_id' => $request->getKey(),
+                        'workflow_execution_id' => $request->workflow_execution_id,
+                        'capability' => $request->capability,
+                    ],
+                    'occurred_at' => now(),
+                    'attempts' => 0,
+                ]);
+
+                event(new WorkflowApprovalGranted(
+                    organizationId: (int) $request->organization_id,
+                    enterpriseId: (int) $request->enterprise_id,
+                    actorId: (int) $approver->getKey(),
+                    correlationId: $request->correlation_id,
+                    data: [
+                        'approval_request_id' => $request->getKey(),
+                        'workflow_execution_id' => $request->workflow_execution_id,
+                        'outbox_id' => $outbox->getKey(),
+                    ],
+                ));
             }
 
             return $request->refresh();
