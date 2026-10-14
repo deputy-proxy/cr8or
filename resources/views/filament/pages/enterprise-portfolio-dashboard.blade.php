@@ -394,16 +394,16 @@
                           <span class="font-semibold text-white/70" x-text="workflowCountForProject(project.project_id)"></span>
                         </button>
 
-                        <!-- Configured social accounts; counts are account records, not follower metrics. -->
+                        <!-- Follower metrics are shown only when supplied by the connected account metadata. -->
                         <div class="mt-2.5 grid grid-cols-4 gap-1.5">
                           <template x-for="network in socialNetworks" :key="network">
                             <span
-                              :title="`${network}: ${socialAccountCountForProject(project.project_id, network)} active account(s)`"
+                              :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"
                               class="flex items-center gap-1 rounded-md border border-white/[0.06] bg-white/[0.02] px-1.5 py-1 transition-all duration-150"
-                              :class="{ 'opacity-50': socialAccountCountForProject(project.project_id, network) === 0 }"
+                              :class="{ 'opacity-50': socialFollowerCountForProject(project.project_id, network) === null }"
                             >
                               <span class="flex-shrink-0 text-white" x-html="socialIconSvg(network)"></span>
-                              <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialAccountCountForProject(project.project_id, network))"></span>
+                              <span class="text-[9px] text-white/60 font-medium" x-text="formatFollowers(socialFollowerCountForProject(project.project_id, network))"></span>
                             </span>
                           </template>
                         </div>
@@ -1778,23 +1778,23 @@
 
           socialIconSvg(platform) {
             const icons = {
-              twitter: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+              x: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
               linkedin: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
               instagram: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.012-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.781-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>',
               facebook: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.999 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.072 24 12.073z"/></svg>',
               tiktok: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01.87-.01 1.74-.01 2.62.01 1.87-.34 3.77-1.34 5.37-1.27 2.05-3.52 3.37-5.86 3.57-1.96.16-3.99-.42-5.54-1.61-1.55-1.18-2.54-3.01-2.66-4.96-.02-.52-.03-1.04-.01-1.56.14-1.75.91-3.44 2.21-4.62 1.51-1.37 3.63-2.02 5.67-1.82.02 1.48.02 2.96.02 4.44-.81-.27-1.76-.18-2.49.34-.66.42-1.1 1.12-1.23 1.89-.1.67-.01 1.38.32 1.98.42.78 1.26 1.33 2.14 1.45.88.12 1.81-.13 2.47-.79.42-.42.65-1 .75-1.59.12-.68.07-1.37.08-2.05.01-3.42-.01-6.83.02-10.24z"/></svg>',
-              bluesky: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>',
+              bsky: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M5.202 2.857C7.954 4.922 10.913 9.11 12 11.358c1.087-2.247 4.046-6.436 6.798-8.501C20.783 1.366 24 .213 24 3.883c0 .732-.42 6.156-.667 7.037-.856 3.061-3.978 3.842-6.755 3.37 4.854.826 6.089 3.562 3.422 6.299-5.065 5.196-7.28-1.304-7.847-2.97-.104-.305-.152-.448-.153-.327 0-.121-.05.022-.153.327-.568 1.666-2.782 8.166-7.847 2.97-2.667-2.737-1.432-5.473 3.422-6.3-2.777.473-5.899-.308-6.755-3.369C.42 10.04 0 4.615 0 3.883c0-3.67 3.217-2.517 5.202-1.026"/></svg>',
               youtube: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
               threads: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.263 11.097c-.03-3.486-1.92-5.586-5.111-5.586-2.13 0-3.922.963-4.863 2.499l2.062 1.438c.535-.843 1.272-1.543 2.628-1.543 1.528 0 2.318.85 2.544 2.431a15 15 0 0 0-2.236-.173c-4.125 0-6.068 1.867-6.068 4.336s1.943 3.99 4.804 3.99c3.139 0 5.013-2.115 5.781-4.735.798.361 1.348 1.204 1.348 2.47 0 3.387-3.907 5.232-7.22 5.232-4.885 0-8.077-3.207-8.077-8.424 0-6.392 4.223-10.487 9.9-10.487 3.808 0 5.69 1.671 6.97 3.914l2.108-1.475C21.44 2.078 18.331 0 13.663 0 6.227 0 1.168 5.277 1.168 12.934c0 7 4.953 11.066 10.856 11.066 4.878 0 9.809-2.846 9.809-7.716 0-2.545-1.46-4.231-3.569-5.187m-6.33 4.855c-1.077 0-2.026-.512-2.026-1.453 0-1.483 1.822-1.934 3.606-1.934.678 0 1.34.045 1.927.173-.422 1.927-1.671 3.215-3.508 3.214Z"/></svg>',
             };
             return icons[platform] || '';
           },
 
-          socialAccountCountForProject(projectId, network) {
-            if (!projectId) return 0;
+          socialFollowerCountForProject(projectId, network) {
+            if (!projectId) return null;
             const entry = this.socialFollowers.find((account) => account.project_id === projectId);
-            if (!entry) return 0;
-            return entry[network] || 0;
+            if (!entry || !Object.prototype.hasOwnProperty.call(entry, network)) return null;
+            return Number.isInteger(entry[network]) && entry[network] >= 0 ? entry[network] : null;
           },
 
           socialUrlForProject(projectId, network) {
@@ -1815,6 +1815,7 @@
           },
 
           formatFollowers(count) {
+            if (!Number.isInteger(count) || count < 0) return 'NCY';
             if (count >= 1000000) return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
             if (count >= 1000) return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
             return String(count);
