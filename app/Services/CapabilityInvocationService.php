@@ -36,20 +36,14 @@ final class CapabilityInvocationService
         $this->dispatchRequested($request, $definition);
         $this->authorize($request);
 
-        $requiresApproval = $request->isAgentBacked()
+        $requiresApproval = ($request->isAgentBacked() || $request->isWorkflowBacked())
             && $request->expertSlug !== null
             && $definition->approvalRequirement === 'required';
 
         if ($requiresApproval && $request->approval === null) {
-            $approval = $this->approvals->request(
-                actor: $request->actor,
-                capability: $request->capability,
-                assignment: $request->assignment,
-                execution: $request->execution,
-                targetContext: $request->targetContext,
-                correlationId: $request->resolvedCorrelationId(),
-                expertSlug: $request->expertSlug,
-            );
+            $approval = $request->isWorkflowBacked()
+                ? $this->approvals->requestForWorkflow($request->actor, $request->capability, $request->workflowExecution, $request->inputPayload, $request->resolvedCorrelationId(), $request->expertSlug)
+                : $this->approvals->request($request->actor, $request->capability, $request->assignment, $request->execution, $request->targetContext, $request->resolvedCorrelationId(), $request->expertSlug);
 
             return [
                 'status' => 'waiting',
@@ -66,7 +60,14 @@ final class CapabilityInvocationService
                 );
             }
 
-            $this->approvals->consume($request->approval, $request->execution);
+            if ($request->isWorkflowBacked()) {
+                if (! $this->approvals->matchesWorkflow($request->approval, $request->actor, $request->workflowExecution, $request->capability, $request->inputPayload)) {
+                    throw new AuthorizationException('The Workflow approval does not match the exact execution, capability and target context.');
+                }
+                $this->approvals->consumeForWorkflow($request->approval, $request->workflowExecution);
+            } else {
+                $this->approvals->consume($request->approval, $request->execution);
+            }
         }
 
         $this->dispatchAuthorized($request, $definition);

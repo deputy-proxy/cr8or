@@ -5,6 +5,7 @@ namespace App\Capabilities;
 use App\Contracts\Operation;
 use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
+use App\Mcp\Tools\ApproveContentItemTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
@@ -36,6 +37,7 @@ use App\Mcp\Tools\UpdateTaskTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
 use App\Operations\AnalyzeBusinessContext;
 use App\Operations\ApprovalRequestCreate;
+use App\Operations\ApproveContentItem;
 use App\Operations\CampaignLifecycle;
 use App\Operations\ContentSeriesLifecycle;
 use App\Operations\ContinueAgentExecution;
@@ -474,6 +476,15 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
+                'marketing.content.approve',
+                ApproveContentItem::class,
+                ApproveContentItemTool::class,
+                ['content_item_id' => 'integer|required', 'approval_request_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'content-item'],
+                'McpCapabilityAuthorizer::authorizeMutation + explicit approval match',
+                'required',
+            ),
+            $this->definition(
                 'marketing.content.review',
                 SubmitContentForReview::class,
                 SubmitContentForReviewTool::class,
@@ -486,7 +497,7 @@ final class CapabilityRegistry
                 'marketing.content.publication-ready',
                 MarkContentPublicationReady::class,
                 MarkContentPublicationReadyTool::class,
-                ['content_item_id' => 'integer|required', 'approval_request_id' => 'integer|required', 'agent_assignment_id' => 'integer|required', 'agent_execution_id' => 'integer|required'],
+                ['content_item_id' => 'integer|required', 'approval_request_id' => 'integer|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'content-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + explicit approval match',
                 'required',
@@ -999,7 +1010,6 @@ final class CapabilityRegistry
             'agent.delegate',
             'enterprise.create',
             'approval.request',
-            'marketing.content.publication-ready',
             'marketing.social-account.update',
             'marketing.social-account.disable',
             'memory.create',

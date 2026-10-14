@@ -7,6 +7,7 @@ use App\Mcp\Resources\KnowledgeContextResource;
 use App\Mcp\Resources\StrategyContextResource;
 use App\Mcp\Resources\WorkContextResource;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
+use App\Mcp\Tools\ApproveContentItemTool;
 use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveKnowledgeUnitTool;
@@ -268,6 +269,7 @@ class Cr8orServer extends Server
         CreateScriptTool::class,
         UpdateContentItemTool::class,
         SubmitContentForReviewTool::class,
+        ApproveContentItemTool::class,
         MarkContentPublicationReadyTool::class,
         PublishContentTool::class,
         ReconcilePublicationStatusTool::class,

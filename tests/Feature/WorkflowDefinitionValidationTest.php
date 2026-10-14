@@ -207,7 +207,7 @@ it('allows deterministic graph verification without Agent assignment or executio
     expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and($execution->outputs['verification']['verification_passed'])->toBeTrue();
 });
-it('rejects capabilities that do not support deterministic Workflow execution', function (): void {
+it('allows publication-readiness capability in deterministic Workflows with its domain input contract', function (): void {
     $enterprise = Enterprise::factory()->create();
     $actor = definitionActor($enterprise);
     $workflow = Workflow::factory()->create(['enterprise_id' => $enterprise]);
@@ -215,19 +215,12 @@ it('rejects capabilities that do not support deterministic Workflow execution', 
     definitionStage($workflow, [
         'expert_slugs' => ['marketing'],
         'capability_slugs' => ['marketing.content.publication-ready'],
-        'input_contract' => [
-            'required' => ['content_item_id', 'approval_request_id', 'agent_assignment_id', 'agent_execution_id'],
-        ],
-        'output_contract' => ['required' => ['id']],
+        'input_contract' => ['required' => ['content_item_id']],
+        'output_contract' => ['required' => ['result']],
     ]);
 
-    try {
-        app(WorkflowVersionService::class)->publish($workflow, $actor, 'unsupported-workflow-capability');
-        expect(false)->toBeTrue();
-    } catch (WorkflowDefinitionException $exception) {
-        expect(collect($exception->errors)->pluck('code'))
-            ->toContain('capability.execution_mode.unsupported');
-    }
+    $version = app(WorkflowVersionService::class)->publish($workflow, $actor, 'publication-readiness-workflow-capability');
 
-    expect($workflow->refresh()->published_version_id)->toBeNull();
+    expect($version->workflow_id)->toBe($workflow->getKey())
+        ->and($workflow->refresh()->published_version_id)->toBe($version->getKey());
 });
