@@ -435,6 +435,7 @@ final class WorkflowExecutionService
             }
 
             usort($reconcileKeys, static fn (string $left, string $right): int => (int) ($stages[$left]['sequence'] ?? 0) <=> (int) ($stages[$right]['sequence'] ?? 0));
+            $reconciledStageKeys = [];
             foreach ($reconcileKeys as $key) {
                 if (array_key_exists($key, $outputs)) {
                     continue;
@@ -468,6 +469,7 @@ final class WorkflowExecutionService
                 }
 
                 $outputs[$key] = $stageOutput;
+                $reconciledStageKeys[] = $key;
             }
 
             $contextValue = $locked->getAttribute('context');
@@ -508,15 +510,17 @@ final class WorkflowExecutionService
                 }
             }
             $context['stages'] = $contextStages;
-            $context['stage_reconciliations'] = array_merge(
-                is_array($context['stage_reconciliations'] ?? null) ? $context['stage_reconciliations'] : [],
-                [$currentKey => [
+            $stageReconciliations = is_array($context['stage_reconciliations'] ?? null) ? $context['stage_reconciliations'] : [];
+            $reconciledAt = now()->toISOString();
+            foreach ($reconciledStageKeys as $reconciledKey) {
+                $stageReconciliations[$reconciledKey] = [
                     'reason' => 'content_approved_domain_state',
                     'content_item_id' => $item->getKey(),
                     'approval_actor_id' => $approverId,
-                    'reconciled_at' => now()->toISOString(),
-                ]],
-            );
+                    'reconciled_at' => $reconciledAt,
+                ];
+            }
+            $context['stage_reconciliations'] = $stageReconciliations;
             unset($context['pending_approval_request_id']);
             $locked->setAttribute('outputs', $outputs);
             $locked->setAttribute('context', $context);
