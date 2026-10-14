@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Workflows;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Exceptions\WorkflowDefinitionException;
 use App\Experts\ExpertRegistry;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Workflows\Pages\CreateWorkflow;
@@ -11,7 +12,10 @@ use App\Filament\Resources\Workflows\Pages\ListWorkflows;
 use App\Models\Enterprise;
 use App\Models\Workflow;
 use App\Services\ExpertCapabilityResolver;
+use App\Services\WorkflowDefinitionValidator;
+use App\Services\WorkflowVersionService;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -356,6 +360,72 @@ class WorkflowResource extends Resource
             ])
             ->recordActions([
                 \Filament\Actions\EditAction::make(),
+                Action::make('publish')
+                    ->label('Publish')
+                    ->icon(Heroicon::OutlinedArrowUpOnSquare)
+                    ->authorize(fn (Workflow $record): bool => auth()->check()
+                        && Gate::forUser(auth()->user())->allows('update', $record))
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (Workflow $record): string => $record->published_version_id === null
+                        ? 'Publish workflow'
+                        : 'Publish new workflow version')
+                    ->modalDescription('CR8OR validates the current definition before creating and activating an immutable published version. Invalid workflows will not be published.')
+                    ->action(function (Workflow $record): void {
+                        $actor = auth()->user();
+                        Gate::forUser($actor)->authorize('update', $record);
+
+                        try {
+                            $workflow = $record->refresh()->load('stages');
+                            app(WorkflowDefinitionValidator::class)->validateWorkflow($workflow);
+
+                            $definition = [
+                                'name' => $workflow->name,
+                                'canonical_key' => $workflow->canonical_key,
+                                'purpose' => $workflow->purpose,
+                                'enterprise_specific' => $workflow->enterprise_specific,
+                                'enterprise_id' => $workflow->enterprise_id,
+                                'execution_policy' => $workflow->execution_policy,
+                                'completion_criteria' => $workflow->completion_criteria,
+                                'stages' => $workflow->stages->map(fn ($stage): array => $stage->only([
+                                    'key', 'name', 'instruction', 'sequence', 'dependencies',
+                                    'expert_slugs', 'capability_slugs', 'capability_input_contract',
+                                    'capability_output_contract', 'input_contract', 'output_contract',
+                                    'repeatable', 'completion_criteria',
+                                ]))->values()->all(),
+                            ];
+                            $idempotencyKey = 'filament-publish:'.$workflow->getKey().':'.hash(
+                                'sha256',
+                                json_encode($definition, JSON_THROW_ON_ERROR),
+                            );
+                            $version = app(WorkflowVersionService::class)->publish(
+                                $workflow,
+                                $actor,
+                                $idempotencyKey,
+                            );
+                        } catch (WorkflowDefinitionException $exception) {
+                            $messages = collect($exception->errors)
+                                ->map(fn (array $error): string => ($error['stage'] ?? null)
+                                    ? '['.$error['stage'].'] '.$error['message']
+                                    : $error['message'])
+                                ->filter()
+                                ->values();
+
+                            Notification::make()
+                                ->danger()
+                                ->title('Workflow validation failed')
+                                ->body($messages->isNotEmpty() ? $messages->implode("\n") : $exception->getMessage())
+                                ->persistent()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Workflow published')
+                            ->body("Published version {$version->version}.")
+                            ->send();
+                    }),
                 \Filament\Actions\Action::make('duplicate')
                     ->label('Duplicate')
                     ->icon(Heroicon::OutlinedDocumentDuplicate)
