@@ -110,7 +110,9 @@ class ApprovalRequest extends Model
             }
 
             foreach (self::HISTORICAL_FIELDS as $field) {
-                $request->{$field} = $request->getRawOriginal($field);
+                if ($request->isDirty($field)) {
+                    throw new LogicException("Approval request {$field} is historical and cannot be changed.");
+                }
             }
 
             $originalDelegation = $request->getRawOriginal('agent_delegation_id');

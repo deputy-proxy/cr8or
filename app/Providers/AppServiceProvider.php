@@ -132,6 +132,10 @@ class AppServiceProvider extends ServiceProvider
             Event::listen($eventClass, [RecordEnterpriseActivityEvent::class, 'handleAgent']);
         }
         Event::listen(\App\Events\StrategicContextVersionPublished::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
+        Event::listen(\App\Events\ContentItemApproved::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
+        Event::listen(\App\Events\ContentItemApproved::class, [\App\Listeners\QueueWorkflowContinuationAfterDomainEvent::class, 'handle']);
+        Event::listen(\App\Events\WorkflowApprovalGranted::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
+        Event::listen(\App\Events\WorkflowApprovalGranted::class, [\App\Listeners\QueueWorkflowContinuationAfterDomainEvent::class, 'handle']);
         foreach ([Enterprise::class, EnterpriseContext::class, Project::class, Task::class, Milestone::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
             $model::observe(EnterpriseActivityObserver::class);
         }

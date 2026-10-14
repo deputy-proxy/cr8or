@@ -125,6 +125,7 @@ it('executes status reconciliation from a persisted published WorkflowVersion wi
         ->and(data_get($execution->outputs, 'reconcile-publication.status'))->toBe(Publication::STATUS_SUCCEEDED);
 });
 it('executes a persisted publication stage without requiring a ModelProvider or Agent approval', function (): void {
+    Queue::fake();
     [$actor, $enterprise, $publication] = workflowPublicationContext();
 
     $provider = Mockery::mock(ModelProvider::class);

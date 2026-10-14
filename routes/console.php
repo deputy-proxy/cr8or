@@ -8,3 +8,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 \Illuminate\Support\Facades\Schedule::command('enterprise-portfolio:sync-github-issues')->dailyAt('02:15');
+
+\Illuminate\Support\Facades\Schedule::command('workflow:dispatch-pending-continuations')->everyMinute()->withoutOverlapping();

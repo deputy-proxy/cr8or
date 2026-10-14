@@ -104,6 +104,16 @@ WorkflowExecution persists stage progress, outputs, correlation, idempotency and
 
 A stage marked `repeatable` does not loop during a normal execution. When a failed WorkflowExecution is explicitly retried, previously completed repeatable stages may be re-entered once during that retry; non-repeatable completed stages reuse their persisted outputs. Re-entered stages receive a new attempt-specific idempotency key, while a failed stage without a completed output retains its original stage idempotency key.
 
+## Domain-event continuation and recovery
+
+Content approval and Workflow approval decisions create durable continuation-outbox records in the same database transaction as the authoritative state change. Laravel domain events are dispatched after commit and enqueue processing; a scheduled dispatcher also redelivers unprocessed outbox records so a process interruption between commit and queue dispatch does not lose the continuation request.
+
+Outbox processing is idempotent. It delegates to `WorkflowExecutionService` and never invokes Operations, publishing adapters, or MCP business Tools directly. Workflow approval continuation verifies that the approved request belongs to the exact waiting execution and remains valid for its capability and target before consuming it through the normal Capability boundary.
+
+When content is approved while a deterministic execution is failed at its review or content-approval stage, the runtime may reconcile those stages only when the immutable published WorkflowVersion declares the expected review and approval Capabilities, the execution's persisted `create_content.id` matches the approved content item, the item belongs to the same Enterprise, the stage dependencies are satisfied, and the lifecycle status proves the side effect occurred. Reconciliation outputs are validated against both the stage and Capability output contracts and include persisted reconciliation provenance. Repeatable stages, mismatched targets, ambiguous states, and unauthorized executions are not reconciled.
+
+Approval-required Capabilities own creation of their approval requests. A nullable `approval_request_id` declared in a Capability input contract is therefore not treated as caller-required Workflow input; the Capability boundary creates the request and the execution waits for that exact request. Approval grants wake the same execution through the durable outbox. Content approval, publication readiness, and publication remain separate approval gates.
+
 ## Agent relationship
 
 An Agent may select a persisted Workflow when work is known and repeatable. The Workflow remains the deterministic execution authority and can complete without an AgentExecution. Agent reasoning may inspect the persisted result, but does not rewrite it.

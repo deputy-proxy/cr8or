@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\AI\Contracts\ModelProvider;
 use App\AI\Data\ModelRequest;
+use App\Capabilities\CapabilityRegistry;
 use App\Data\ResolvedWorkflowStageInput;
 use App\Exceptions\WorkflowDefinitionException;
 use App\Models\WorkflowExecution;
@@ -15,6 +16,7 @@ final class WorkflowStageInputResolver
 {
     public function __construct(
         private readonly ModelProvider $provider,
+        private readonly CapabilityRegistry $capabilities,
     ) {}
 
     /**
@@ -32,6 +34,19 @@ final class WorkflowStageInputResolver
         $mappings = $this->array($contract['mappings'] ?? []);
         $generated = $this->list($contract['generated'] ?? []);
         $requested = $this->list($contract['requested'] ?? []);
+
+        // Approval request IDs are produced by CapabilityInvocationService when an
+        // approval-required Capability is first reached. They are not caller inputs.
+        $capabilitySlugs = $this->list($stage->getAttribute('capability_slugs') ?? []);
+        $capability = isset($capabilitySlugs[0]) ? $this->capabilities->resolve($capabilitySlugs[0]) : null;
+        $capabilityInputContract = $this->array($stage->getAttribute('capability_input_contract'));
+        $approvalInput = $capabilityInputContract['approval_request_id'] ?? null;
+        if ($capability?->approvalRequirement === 'required'
+            && is_string($approvalInput)
+            && (str_contains($approvalInput, '|nullable') || str_contains($approvalInput, '|null'))) {
+            $required = array_values(array_diff($required, ['approval_request_id']));
+            $requested = array_values(array_diff($requested, ['approval_request_id']));
+        }
 
         $supplied = $this->resolveStageInput($stage, $executionInput);
         $context = $this->executionContext($execution);
