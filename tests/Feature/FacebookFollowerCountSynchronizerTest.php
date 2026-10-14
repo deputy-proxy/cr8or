@@ -79,15 +79,52 @@ it('fetches and persists the real Facebook Page follower count using the stored 
         'https://graph.facebook.com/v26.0/123456*' => Http::response([
             'id' => '123456',
             'followers_count' => 1842,
+            'link' => 'https://www.facebook.com/afacereonline',
         ]),
     ]);
 
     expect($synchronizer->synchronize($account))->toBe(1842)
-        ->and($account->fresh()->follower_count)->toBe(1842);
+        ->and($account->fresh()->follower_count)->toBe(1842)
+        ->and($account->fresh()->profile_url)->toBe('https://www.facebook.com/afacereonline');
 
     Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
         && str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/123456')
+        && $request->data()['fields'] === 'id,followers_count,link'
         && $request->hasHeader('Authorization', 'Bearer page-access-token'));
+});
+
+it('preserves an existing Facebook profile URL when Meta omits the link', function () {
+    [$account, , $synchronizer] = facebookFollowerSyncContext();
+    $account->profile_url = 'https://www.facebook.com/existing-page';
+    $account->save();
+
+    Http::fake([
+        'https://graph.facebook.com/v26.0/123456*' => Http::response([
+            'id' => '123456',
+            'followers_count' => 1842,
+        ]),
+    ]);
+
+    $synchronizer->synchronize($account);
+
+    expect($account->fresh()->profile_url)->toBe('https://www.facebook.com/existing-page');
+});
+
+it('does not persist an untrusted profile URL returned by Meta', function () {
+    [$account, , $synchronizer] = facebookFollowerSyncContext();
+
+    Http::fake([
+        'https://graph.facebook.com/v26.0/123456*' => Http::response([
+            'id' => '123456',
+            'followers_count' => 1842,
+            'link' => 'https://evil.example/impersonation',
+        ]),
+    ]);
+
+    $synchronizer->synchronize($account);
+
+    expect($account->fresh()->follower_count)->toBe(1842)
+        ->and($account->fresh()->profile_url)->toBeNull();
 });
 
 it('persists zero as a real follower count', function () {
