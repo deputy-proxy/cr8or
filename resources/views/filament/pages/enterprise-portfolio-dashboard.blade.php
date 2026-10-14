@@ -395,7 +395,7 @@
                         </button>
 
                         <!-- Follower metrics are shown only when supplied by the connected account metadata. -->
-                        <div class="mt-2.5 grid grid-cols-4 gap-1.5">
+                        <div class="mt-2.5 grid grid-cols-3 gap-1.5">
                           <template x-for="network in socialNetworks" :key="network">
                             <span
                               :title="`${network}: ${socialFollowerCountForProject(project.project_id, network) === null ? 'follower count unavailable' : formatFollowers(socialFollowerCountForProject(project.project_id, network))}`"

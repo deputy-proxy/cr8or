@@ -110,6 +110,13 @@ it('sizes Enterprise card columns to the available width without horizontal card
         ->and($css)->not->toContain('min-width: 100vw !important');
 });
 
+it('renders the six social network metrics in a three-column grid', function () {
+    $view = file_get_contents(resource_path('views/filament/pages/enterprise-portfolio-dashboard.blade.php'));
+
+    expect($view)->toContain('mt-2.5 grid grid-cols-3 gap-1.5')
+        ->and($view)->not->toContain('mt-2.5 grid grid-cols-4 gap-1.5');
+});
+
 it('renders only authorized Enterprises on the portfolio dashboard', function () {
     $organization = Organization::factory()->create();
     $foreignOrganization = Organization::factory()->create();
