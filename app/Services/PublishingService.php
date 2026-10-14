@@ -75,6 +75,63 @@ final class PublishingService
         });
     }
 
+    /**
+     * Publish content immediately from an explicit human action.
+     * Existing publication history is reused so repeated UI clicks cannot create a second post.
+     */
+    public function publishNow(User $actor, ContentItem $content, SocialAccount $account): Publication
+    {
+        Gate::forUser($actor)->authorize('update', $content);
+        $this->assertContentChannelMatchesAccount($content, $account);
+        $this->resolveDestination($content, $account);
+
+        [$publication, $shouldSubmit] = DB::transaction(function () use ($actor, $content, $account): array {
+            /** @var ContentItem $lockedContent */
+            $lockedContent = ContentItem::query()->lockForUpdate()->findOrFail($content->getKey());
+            Gate::forUser($actor)->authorize('update', $lockedContent);
+            $this->assertContentChannelMatchesAccount($lockedContent, $account);
+            $this->resolveDestination($lockedContent, $account);
+
+            $existing = Publication::query()
+                ->where('content_item_id', $lockedContent->getKey())
+                ->where('social_account_id', $account->getKey())
+                ->lockForUpdate()
+                ->orderByDesc('id')
+                ->get();
+
+            $ambiguous = $existing->firstWhere('status', Publication::STATUS_UNKNOWN);
+            if ($ambiguous instanceof Publication) {
+                throw new LogicException('A previous publication has an ambiguous outcome. Reconcile it before attempting another submission.');
+            }
+
+            $futureScheduled = $existing->first(fn (Publication $publication): bool => $publication->status === Publication::STATUS_SCHEDULED
+                && $publication->scheduled_at !== null
+                && $publication->scheduled_at->isFuture()
+            );
+            if ($futureScheduled instanceof Publication) {
+                throw new LogicException('This content already has a future publication scheduled for the selected account.');
+            }
+
+            $accepted = $existing->first(fn (Publication $publication): bool => in_array(
+                $publication->status,
+                [Publication::STATUS_SUBMITTED, Publication::STATUS_SUCCEEDED],
+                true,
+            ));
+            if ($accepted instanceof Publication) {
+                return [$accepted, false];
+            }
+
+            $publication = $existing->first();
+            if ($publication instanceof Publication) {
+                return [$publication, true];
+            }
+
+            return [$this->schedule($actor, $lockedContent, $account, now()), true];
+        });
+
+        return $shouldSubmit ? $this->submit($actor, $publication) : $publication;
+    }
+
     public function submit(
         User $actor,
         Publication $publication,
@@ -365,6 +422,13 @@ final class PublishingService
         $this->record($publication, $job, $adapterKey, $network, $result);
 
         return $publication->refresh();
+    }
+
+    private function assertContentChannelMatchesAccount(ContentItem $content, SocialAccount $account): void
+    {
+        if ($content->channel_id !== null && (int) $content->channel_id !== (int) $account->channel_id) {
+            throw new LogicException('The selected social account must match the content item channel.');
+        }
     }
 
     /**

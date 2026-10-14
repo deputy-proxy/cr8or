@@ -46,7 +46,12 @@ class PublicationResource extends Resource
             TextColumn::make('approvalRequest.id')->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
             TextColumn::make('external_id')->searchable()->sortable(),
-            TextColumn::make('external_url')->searchable()->sortable(),
+            TextColumn::make('external_url')->label('External URL')->url(fn (Publication $record): ?string => $record->external_url)->openUrlInNewTab()->searchable(),
+            TextColumn::make('failure_code')->badge()->searchable(),
+            TextColumn::make('failure_reason')->wrap()->limit(120),
+            TextColumn::make('scheduled_at')->dateTime()->sortable(),
+            TextColumn::make('submitted_at')->dateTime()->sortable(),
+            TextColumn::make('published_at')->dateTime()->sortable(),
         ])->recordActions([]);
     }
 

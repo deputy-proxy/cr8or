@@ -114,6 +114,30 @@ final class ContentItemService
         });
     }
 
+    /**
+     * Mark approved content publication-ready from an explicit human action in the administration UI.
+     * Agent and Workflow execution paths must continue to use markPublicationReady() with their
+     * execution-bound approval request.
+     */
+    public function markPublicationReadyManually(User $actor, ContentItem $item): ContentItem
+    {
+        Gate::forUser($actor)->authorize('update', $item);
+
+        return DB::transaction(function () use ($actor, $item): ContentItem {
+            /** @var ContentItem $locked */
+            $locked = ContentItem::query()->lockForUpdate()->findOrFail($item->getKey());
+            Gate::forUser($actor)->authorize('update', $locked);
+
+            if ($locked->status !== ContentItem::STATUS_APPROVED) {
+                throw new LogicException('Only approved content can become publication-ready.');
+            }
+
+            $locked->transitionToPublicationReady()->save();
+
+            return $locked->refresh();
+        });
+    }
+
     public function markPublicationReady(
         User $actor,
         ContentItem $item,
