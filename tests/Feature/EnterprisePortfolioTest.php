@@ -219,6 +219,8 @@ it('shows follower metrics only when available and reserves NCY for unknown valu
 it('renders follower metrics as links only when a resolved HTTPS profile URL exists', function () {
     $view = file_get_contents(resource_path('views/filament/pages/enterprise-portfolio-dashboard.blade.php'));
 
+    expect(preg_match('/<template x-for="network in socialNetworks" :key="network">\\s*<div class="contents">/', $view))->toBe(1);
+
     expect($view)
         ->toContain('socialProfileUrlForProject(project.project_id, network)')
         ->toContain('target="_blank"')
