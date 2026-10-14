@@ -22,9 +22,6 @@ return [
         'api_version' => env('SOCIAL_THREADS_API_VERSION', 'v1.0'),
         'media_url_expiry_minutes' => (int) env('SOCIAL_THREADS_MEDIA_URL_EXPIRY_MINUTES', 60),
     ],
-    'x' => [
-        'api_base_url' => env('SOCIAL_X_API_BASE_URL', 'https://api.x.com/2'),
-    ],
     'instagram' => [
         'container_poll_attempts' => (int) env('SOCIAL_INSTAGRAM_CONTAINER_POLL_ATTEMPTS', 5),
         'container_poll_interval_ms' => (int) env('SOCIAL_INSTAGRAM_CONTAINER_POLL_INTERVAL_MS', 250),
@@ -37,9 +34,7 @@ return [
         'facebook' => ['key' => 'facebook', 'class' => \App\Services\Publishing\FacebookPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_FACEBOOK_ENABLED', false), 'native_scheduling' => false],
         'instagram' => ['key' => 'instagram', 'class' => \App\Services\Publishing\InstagramPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_INSTAGRAM_ENABLED', false), 'native_scheduling' => false],
         'tiktok' => ['key' => 'tiktok', 'class' => \App\Services\Publishing\TikTokPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_TIKTOK_ENABLED', false), 'native_scheduling' => false],
-        'bsky' => ['key' => 'bsky', 'class' => \App\Services\Publishing\BlueskyPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_BSKY_ENABLED', false), 'native_scheduling' => false],
         'youtube' => ['key' => 'youtube', 'class' => \App\Services\Publishing\YouTubePublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_YOUTUBE_ENABLED', false), 'native_scheduling' => false],
         'threads' => ['key' => 'threads', 'class' => \App\Services\Publishing\ThreadsPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_THREADS_ENABLED', false), 'native_scheduling' => false],
-        'x' => ['key' => 'x', 'class' => \App\Services\Publishing\XPublishingAdapter::class, 'enabled' => (bool) env('SOCIAL_PUBLISHING_X_ENABLED', false), 'native_scheduling' => false],
     ],
 ];

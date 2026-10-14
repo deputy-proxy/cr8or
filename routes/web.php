@@ -4,7 +4,6 @@ use App\Http\Controllers\SocialAuthorizationController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
-Route::get('/oauth-client-metadata.json', [SocialAuthorizationController::class, 'clientMetadata'])->name('social.authorization.bluesky.metadata');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');

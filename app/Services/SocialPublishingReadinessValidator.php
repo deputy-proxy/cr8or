@@ -40,8 +40,7 @@ final class SocialPublishingReadinessValidator
                     $networkErrors[] = 'The mapped social authorization provider is missing its client identifier.';
                 }
 
-                if (($provider['driver'] ?? null) !== 'atproto_oauth'
-                    && (! is_string($provider['client_secret'] ?? null) || trim($provider['client_secret']) === '')) {
+                if (! is_string($provider['client_secret'] ?? null) || trim($provider['client_secret']) === '') {
                     $networkErrors[] = 'The mapped social authorization provider is missing its client secret.';
                 }
 
@@ -66,35 +65,6 @@ final class SocialPublishingReadinessValidator
                     $networkErrors[] = 'The OAuth callback URL is invalid for the configured application environment.';
                 }
 
-                if (($provider['driver'] ?? null) === 'atproto_oauth') {
-                    $clientId = is_string($provider['client_id'] ?? null) ? parse_url($provider['client_id']) : false;
-                    $clientUri = is_string($provider['client_uri'] ?? null) ? parse_url($provider['client_uri']) : false;
-                    if (! is_array($clientId)
-                        || ($clientId['scheme'] ?? null) !== 'https'
-                        || ($clientId['path'] ?? null) !== '/oauth-client-metadata.json'
-                        || isset($clientId['port'])
-                        || isset($clientId['query'])
-                        || isset($clientId['fragment'])
-                        || isset($clientId['user'])
-                        || isset($clientId['pass'])
-                        || ! is_array($clientUri)
-                        || ($clientUri['scheme'] ?? null) !== 'https'
-                        || strtolower((string) ($clientId['host'] ?? '')) !== strtolower((string) ($clientUri['host'] ?? ''))) {
-                        $networkErrors[] = 'The AT Protocol OAuth client metadata URL and client URI must use the same public HTTPS host.';
-                    }
-                }
-            }
-
-            if ($network === 'x') {
-                $apiUrl = parse_url((string) config('publishing.x.api_base_url'));
-                if (! is_array($apiUrl)
-                    || ($apiUrl['scheme'] ?? null) !== 'https'
-                    || strtolower((string) ($apiUrl['host'] ?? '')) !== 'api.x.com'
-                    || rtrim((string) ($apiUrl['path'] ?? ''), '/') !== '/2'
-                    || isset($apiUrl['user'])
-                    || isset($apiUrl['pass'])) {
-                    $networkErrors[] = 'The X API base URL must be https://api.x.com/2.';
-                }
             }
 
             try {

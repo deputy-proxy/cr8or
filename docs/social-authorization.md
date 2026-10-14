@@ -29,8 +29,6 @@ Register an application with the network provider, enable the required API produ
 | TikTok | `SOCIAL_TIKTOK_CLIENT_KEY`, `SOCIAL_TIKTOK_CLIENT_SECRET`, optional `SOCIAL_TIKTOK_REDIRECT_URI` | `/social/authorization/callback/tiktok` | OAuth 2.0 with PKCE and TikTok's `client_key` parameter convention. Product approval and scopes depend on the TikTok developer application. |
 | YouTube | `SOCIAL_YOUTUBE_CLIENT_ID`, `SOCIAL_YOUTUBE_CLIENT_SECRET`, optional `SOCIAL_YOUTUBE_REDIRECT_URI` | `/social/authorization/callback/youtube` | Google OAuth 2.0 with PKCE, offline access and refresh support. API quota and project verification rules apply. |
 | Threads | `SOCIAL_THREADS_CLIENT_ID`, `SOCIAL_THREADS_CLIENT_SECRET`, optional `SOCIAL_THREADS_REDIRECT_URI` | `/social/authorization/callback/threads` | Threads OAuth 2.0 and configured long-lived token refresh. API permissions depend on the Meta developer application. |
-| X | `SOCIAL_X_CLIENT_ID`, `SOCIAL_X_CLIENT_SECRET`, optional `SOCIAL_X_REDIRECT_URI` | `/social/authorization/callback/x` | OAuth 2.0 with PKCE, Basic client authentication and refresh support. App permissions and API access tier apply. |
-| Bluesky | `SOCIAL_BSKY_OAUTH_ENABLED`, `SOCIAL_BSKY_CLIENT_ID`, `SOCIAL_BSKY_CLIENT_NAME`, `SOCIAL_BSKY_CLIENT_URI`, optional `SOCIAL_BSKY_REDIRECT_URI` | `/social/authorization/callback/bluesky` | Dedicated AT Protocol OAuth: account DID/handle resolution, PDS and authorization-server discovery, public client metadata, PKCE S256, PAR, DPoP ES256/nonces, callback issuer validation and refresh-token rotation. Requires a public HTTPS client metadata URL and create-only post plus blob-upload scopes. |
 
 Default callback base URL is `APP_URL`. Configure explicit `*_REDIRECT_URI` values in each deployment where the externally visible URL differs. The provider must have the exact full URI registered, including scheme, host, path and any configured port.
 
@@ -42,9 +40,6 @@ Default callback base URL is `APP_URL`. Configure explicit `*_REDIRECT_URI` valu
 - `SOCIAL_AUTH_REFRESH_LOCK_WAIT_SECONDS`: maximum wait to acquire the refresh lock.
 - `SOCIAL_AUTH_REFRESH_LEEWAY_SECONDS`: refresh access tokens this many seconds before expiry.
 - `SOCIAL_LINKEDIN_API_VERSION`: versioned LinkedIn Marketing API header; default `202609`, which must be reviewed against LinkedIn's current version migration schedule.
-- `SOCIAL_BSKY_OAUTH_ENABLED`: explicitly enables the dedicated AT Protocol OAuth provider; defaults to `false`.
-- `SOCIAL_BSKY_CLIENT_ID`: stable public HTTPS URL for `/oauth-client-metadata.json`; must not contain a port, credentials, query or fragment.
-- `SOCIAL_BSKY_CLIENT_NAME`, `SOCIAL_BSKY_CLIENT_URI`, `SOCIAL_BSKY_REDIRECT_URI`: public client display name, HTTPS home URL and exact registered HTTPS callback URI.
 - `META_GRAPH_API_VERSION`: shared Meta Graph API version for OAuth, Page discovery and publishing endpoints; default `v26.0`. Upgrade only after reviewing Meta's version changelog and rerunning the Meta adapter tests.
 
 Use a shared cache backend with atomic lock support in multi-instance deployments. Configure the database and cache before enabling social authorization. All app instances must use the same encryption key and compatible credential storage.
@@ -60,4 +55,4 @@ Use a shared cache backend with atomic lock support in multi-instance deployment
 
 ## Validation status and deployment caveats
 
-Automated tests use fake HTTP responses; they do not prove that a provider application has been approved or that its live permissions, redirect registrations, quotas, or account eligibility are correct. Before production enablement, verify each network's current official developer documentation and app configuration, perform a live consent/discovery/refresh/revocation rehearsal with a dedicated test account, and confirm secret rotation/monitoring procedures. Bluesky remains disabled until the public client metadata/callback are deployed and a real-account consent, refresh, text/image publish and reconciliation rehearsal succeeds.
+Automated tests use fake HTTP responses; they do not prove that a provider application has been approved or that its live permissions, redirect registrations, quotas, or account eligibility are correct. Before production enablement, verify each network's current official developer documentation and app configuration, perform a live consent/discovery/refresh/revocation rehearsal with a dedicated test account, and confirm secret rotation/monitoring procedures.

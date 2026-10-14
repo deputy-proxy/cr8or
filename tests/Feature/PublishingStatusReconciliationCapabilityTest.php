@@ -28,7 +28,7 @@ function statusReconciliationContext(string $suffix = '123'): array
         'organization_id' => $organization->getKey(),
     ]);
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
-    $channel = Channel::factory()->create(['enterprise_id' => $enterprise->getKey(), 'name' => 'X', 'type' => 'social']);
+    $channel = Channel::factory()->create(['enterprise_id' => $enterprise->getKey(), 'name' => 'LinkedIn', 'type' => 'social']);
     $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     $campaign = Campaign::factory()->create(['enterprise_id' => $enterprise->getKey(), 'marketing_strategy_id' => $strategy->getKey()]);
     $content = ContentItem::factory()->forCampaign($campaign)->create([
@@ -38,9 +38,9 @@ function statusReconciliationContext(string $suffix = '123'): array
     $account = SocialAccount::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'channel_id' => $channel->getKey(),
-        'provider' => 'x',
-        'name' => 'X destination',
-        'external_id' => 'x-user-'.$suffix,
+        'provider' => 'linkedin',
+        'name' => 'LinkedIn destination',
+        'external_id' => 'linkedin-user-'.$suffix,
         'status' => SocialAccount::STATUS_ACTIVE,
     ]);
     $publication = Publication::factory()->create([
@@ -51,7 +51,7 @@ function statusReconciliationContext(string $suffix = '123'): array
         'status' => Publication::STATUS_SCHEDULED,
         'scheduled_at' => now()->subMinute(),
     ]);
-    $publication->markSubmitted('remote-post-123', 'https://x.com/i/web/status/remote-post-123')->save();
+    $publication->markSubmitted('remote-post-123', 'https://www.linkedin.com/feed/update/remote-post-123')->save();
 
     return [$actor, $organization, $enterprise, $publication];
 }
@@ -68,7 +68,7 @@ it('reconciles publication status through the governed Operation and returns the
         'destination_external_id' => $publication->target_external_id,
         'provider_status' => 'succeeded',
         'external_id' => 'remote-post-123',
-        'external_url' => 'https://x.com/i/web/status/remote-post-123',
+        'external_url' => 'https://www.linkedin.com/feed/update/remote-post-123',
         'failure_code' => null,
         'failure_reason' => null,
         'payload' => ['access_token' => 'fake-secret-token', 'status' => 'succeeded'],
@@ -113,7 +113,7 @@ it('exposes scoped publication status and sanitized reconciliation history throu
         'destination_external_id' => $publication->target_external_id,
         'provider_status' => 'succeeded',
         'external_id' => 'remote-post-123',
-        'external_url' => 'https://x.com/i/web/status/remote-post-123',
+        'external_url' => 'https://www.linkedin.com/feed/update/remote-post-123',
         'payload' => ['access_token' => 'fake-secret-token', 'status' => 'succeeded'],
         'recorded_at' => now(),
     ]);
@@ -123,7 +123,7 @@ it('exposes scoped publication status and sanitized reconciliation history throu
 
     $server->tool(ListPublicationTool::class, ['per_page' => 50])
         ->assertOk()
-        ->assertSee('x-user-123')
+        ->assertSee('linkedin-user-123')
         ->assertDontSee('x-user-456');
 
     $server->tool(GetPublicationTool::class, ['id' => $publication->getKey()])

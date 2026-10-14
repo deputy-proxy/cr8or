@@ -52,12 +52,12 @@ it('requires social integration connections to be created through the OAuth life
     expect(fn () => IntegrationConnection::query()->create([
         'organization_id' => $organization->getKey(),
         'enterprise_id' => null,
-        'provider' => 'x',
+        'provider' => 'linkedin',
         'external_account_id' => '123456789012345678',
-        'credential_reference' => 'secret://x/test-user',
+        'credential_reference' => 'secret://linkedin/test-user',
         'configuration' => [],
         'status' => IntegrationConnection::STATUS_ACTIVE,
     ]))->toThrow(LogicException::class, 'created through the OAuth lifecycle');
 
-    expect(IntegrationConnection::query()->where('provider', 'x')->exists())->toBeFalse();
+    expect(IntegrationConnection::query()->where('provider', 'linkedin')->exists())->toBeFalse();
 });
