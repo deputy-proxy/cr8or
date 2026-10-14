@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('enterprise-portfolio:sync-github-issues')->dailyAt('02:15');
 
 \Illuminate\Support\Facades\Schedule::command('workflow:dispatch-pending-continuations')->everyMinute()->withoutOverlapping();
+
+\Illuminate\Support\Facades\Schedule::command('social-accounts:sync-facebook-follower-counts')->everySixHours()->withoutOverlapping();
