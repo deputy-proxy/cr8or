@@ -94,7 +94,7 @@ final class FacebookFollowerCountSynchronizer
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($pageToken)
                 ->get("https://graph.facebook.com/{$version}/".rawurlencode($pageId), [
-                    'fields' => 'id,followers_count',
+                    'fields' => 'id,followers_count,link',
                 ]);
         } catch (ConnectionException $exception) {
             throw new RuntimeException('Meta follower metrics request timed out or failed to connect.', previous: $exception);
@@ -113,9 +113,28 @@ final class FacebookFollowerCountSynchronizer
         }
 
         $account->follower_count = $body['followers_count'];
+
+        // Meta's Page link is the authoritative profile URL. Preserve an existing URL
+        // when the API omits it or returns a value outside Facebook's HTTPS hosts.
+        $profileUrl = $body['link'] ?? null;
+        if (is_string($profileUrl) && $this->isFacebookProfileUrl($profileUrl)) {
+            $account->profile_url = $profileUrl;
+        }
+
         $account->save();
 
         return $body['followers_count'];
+    }
+
+    private function isFacebookProfileUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+
+        return is_array($parts)
+            && ($parts['scheme'] ?? null) === 'https'
+            && in_array(strtolower((string) ($parts['host'] ?? '')), ['facebook.com', 'www.facebook.com', 'm.facebook.com'], true)
+            && ! isset($parts['user'])
+            && ! isset($parts['pass']);
     }
 
     private function assertReadEngagementPermission(string $userToken, string $version): void
