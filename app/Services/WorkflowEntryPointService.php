@@ -389,9 +389,8 @@ final class WorkflowEntryPointService
     {
         if ($enterprise instanceof Enterprise) {
             Gate::forUser($actor)->authorize('viewForEnterprise', [$workflow, $enterprise]);
-        } else {
-            Gate::forUser($actor)->authorize('view', $workflow);
         }
+        Gate::forUser($actor)->authorize('update', $workflow);
 
         return app(WorkflowVersionService::class)->publish($workflow, $actor, $idempotencyKey);
     }
