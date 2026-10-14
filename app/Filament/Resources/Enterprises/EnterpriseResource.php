@@ -89,6 +89,12 @@ class EnterpriseResource extends Resource
                     ->getTitleFromRecordUsing(fn (Enterprise $record): string => $record->group->name ?? 'Ungrouped')
                     ->titlePrefixedWithLabel(false)
                     ->collapsible(),
+                Group::make('enterprise_category_id')
+                    ->label('Category')
+                    ->getKeyFromRecordUsing(fn (Enterprise $record): int|string => $record->enterprise_category_id ?? 'ungrouped')
+                    ->getTitleFromRecordUsing(fn (Enterprise $record): string => $record->category->name ?? 'Ungrouped')
+                    ->titlePrefixedWithLabel(false)
+                    ->collapsible(),
             ])
             ->defaultGroup('enterprise_group_id')
             ->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
