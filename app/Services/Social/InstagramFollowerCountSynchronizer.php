@@ -93,7 +93,7 @@ final class InstagramFollowerCountSynchronizer
         }
 
         try {
-            $response = Http::acceptJson()
+            $response = Http::withoutRedirecting()->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($destinationAccessToken)
                 ->get(($connection->provider === 'meta' ? 'https://graph.facebook.com/' : 'https://graph.instagram.com/').$version.'/'.rawurlencode($instagramUserId), [

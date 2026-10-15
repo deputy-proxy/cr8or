@@ -99,7 +99,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         $imageUrl = $this->temporaryMediaUrl($media[0]);
 
         try {
-            $containerResponse = Http::asForm()
+            $containerResponse = Http::withoutRedirecting()->asForm()
                 ->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
@@ -127,7 +127,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         $this->awaitContainerReady($containerId, $accessToken, $version, $graphHost);
 
         try {
-            $publishResponse = Http::asForm()
+            $publishResponse = Http::withoutRedirecting()->asForm()
                 ->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
@@ -189,7 +189,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         $graphHost = $this->graphApiHost($connection->provider);
 
         try {
-            $response = Http::acceptJson()
+            $response = Http::withoutRedirecting()->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
                 ->get("{$graphHost}/{$version}/".rawurlencode($publication->externalPublicationId), [
@@ -381,7 +381,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
     private function assertPublishingQuota(string $instagramUserId, string $accessToken, string $version, string $graphHost): void
     {
         try {
-            $response = Http::acceptJson()
+            $response = Http::withoutRedirecting()->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
                 ->get("{$graphHost}/{$version}/{$instagramUserId}/content_publishing_limit", [
@@ -427,7 +427,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
 
         for ($attempt = 0; $attempt < $attempts; $attempt++) {
             try {
-                $response = Http::acceptJson()
+                $response = Http::withoutRedirecting()->acceptJson()
                     ->timeout((int) config('social_authorization.timeout', 15))
                     ->withToken($accessToken)
                     ->get("{$graphHost}/{$version}/".rawurlencode($containerId), [

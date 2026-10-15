@@ -77,7 +77,7 @@ final class InstagramLoginAuthorizationProvider implements StatefulSocialAuthori
                 'client_secret' => $this->requiredString('client_secret'),
                 'access_token' => $short->json('access_token'),
             ]);
-            if (! $long->successful() || ! is_array($long->json()) || ! is_string($long->json('access_token')) || ! is_numeric($long->json('expires_in'))) {
+            if (! $long->successful() || ! is_array($long->json()) || ! is_string($long->json('access_token')) || ! is_numeric($long->json('expires_in')) || (int) $long->json('expires_in') < 1) {
                 throw new SocialAuthorizationException('token_exchange_failed', 'Instagram did not issue a valid long-lived access token.');
             }
 
@@ -125,7 +125,7 @@ final class InstagramLoginAuthorizationProvider implements StatefulSocialAuthori
         }
 
         $body = $response->json();
-        if (! $response->successful() || ! is_array($body) || ! is_string($body['access_token'] ?? null) || ! is_numeric($body['expires_in'] ?? null)) {
+        if (! $response->successful() || ! is_array($body) || ! is_string($body['access_token'] ?? null) || ! is_numeric($body['expires_in'] ?? null) || (int) $body['expires_in'] < 1) {
             throw new SocialAuthorizationException('invalid_token', 'Instagram rejected the long-lived token refresh; reconnect the account.');
         }
 
@@ -187,7 +187,12 @@ final class InstagramLoginAuthorizationProvider implements StatefulSocialAuthori
 
     private function graphUrl(string $path): string
     {
-        return 'https://graph.instagram.com/'.trim((string) ($this->configuration['graph_api_version'] ?? 'v26.0'), '/').$path;
+        $version = trim((string) ($this->configuration['graph_api_version'] ?? 'v26.0'), '/');
+        if (preg_match('/^v[0-9]+\.[0-9]+$/D', $version) !== 1) {
+            throw new SocialAuthorizationException('provider_configuration_invalid', 'The configured Instagram Graph API version is invalid.');
+        }
+
+        return 'https://graph.instagram.com/'.$version.$path;
     }
 
     private function timeout(): int
