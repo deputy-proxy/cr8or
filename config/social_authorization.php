@@ -129,9 +129,9 @@ return [
         ],
         'instagram' => [
             'driver' => 'instagram_login',
-            'enabled' => (bool) env('META_APP_ID') && (bool) env('META_APP_SECRET'),
-            'client_id' => env('META_APP_ID'),
-            'client_secret' => env('META_APP_SECRET'),
+            'enabled' => (bool) env('INSTAGRAM_APP_ID') && (bool) env('INSTAGRAM_APP_SECRET'),
+            'client_id' => env('INSTAGRAM_APP_ID'),
+            'client_secret' => env('INSTAGRAM_APP_SECRET'),
             'redirect_uri' => env('INSTAGRAM_SOCIAL_REDIRECT_URI', $applicationUrl.'/social/authorization/callback/instagram'),
             'graph_api_version' => env('META_GRAPH_API_VERSION', 'v26.0'),
             'scopes' => ['instagram_business_basic', 'instagram_business_content_publish'],
