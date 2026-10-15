@@ -21,9 +21,11 @@ use Illuminate\Support\Facades\Storage;
  */
 function instagramPublishingAdapterContext(
     array $destinationTokens = ['instagram:17841400000000000' => ['access_token' => 'instagram-destination-token', 'expires_at' => null]],
-    array $scopes = ['instagram_basic', 'instagram_content_publish'],
+    array $scopes = ['instagram_business_basic', 'instagram_business_content_publish'],
+    string $connectionProvider = 'instagram',
 ): array {
     config([
+        'social_authorization.providers.instagram.graph_api_version' => 'v26.0',
         'social_authorization.providers.meta.graph_api_version' => 'v26.0',
         'publishing.instagram.container_poll_attempts' => 2,
         'publishing.instagram.container_poll_interval_ms' => 0,
@@ -32,13 +34,13 @@ function instagramPublishingAdapterContext(
     $organization = Organization::factory()->create();
     $identity = SocialIdentity::query()->create([
         'organization_id' => $organization->id,
-        'provider' => 'meta',
-        'external_id' => 'meta-user-17841400000000000',
+        'provider' => $connectionProvider,
+        'external_id' => $connectionProvider.'-user-17841400000000000',
         'name' => 'Test Meta User',
     ]);
     $credentialReference = app(SocialCredentialStore::class)->store(
         $organization,
-        'meta',
+        $connectionProvider,
         new SocialTokenSet(
             accessToken: 'parent-user-token',
             refreshToken: null,
@@ -51,7 +53,7 @@ function instagramPublishingAdapterContext(
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $organization->id,
         'social_identity_id' => $identity->id,
-        'provider' => 'meta',
+        'provider' => $connectionProvider,
         'external_account_id' => $identity->external_id,
         'credential_reference' => $credentialReference,
         'status' => IntegrationConnection::STATUS_ACTIVE,
@@ -129,10 +131,10 @@ it('publishes a single R2-backed JPEG using the Instagram destination token and 
     Storage::shouldReceive('disk')->once()->with('r2')->andReturn($disk);
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
-        'https://graph.facebook.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => 'FINISHED'], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media_publish' => Http::response(['id' => '180000000000002'], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
+        'https://graph.instagram.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => 'FINISHED'], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media_publish' => Http::response(['id' => '180000000000002'], 200),
     ]);
 
     $result = $adapter->publish(instagramPublishingRequest($connection));
@@ -152,15 +154,40 @@ it('publishes a single R2-backed JPEG using the Instagram destination token and 
         ->and(json_encode($result->payload))->not->toContain('instagram-destination-token');
 
     Http::assertSent(fn ($request): bool => $request->method() === 'POST'
-        && $request->url() === 'https://graph.facebook.com/v26.0/17841400000000000/media'
+        && $request->url() === 'https://graph.instagram.com/v26.0/17841400000000000/media'
         && $request->hasHeader('Authorization', 'Bearer instagram-destination-token')
         && $request['image_url'] === 'https://r2.example.test/assets/instagram.jpg?signature=temporary-secret'
         && $request['caption'] === 'A photo from CR8OR.'
         && $request['alt_text'] === 'A red bicycle by the sea.');
 
     Http::assertSent(fn ($request): bool => $request->method() === 'POST'
-        && $request->url() === 'https://graph.facebook.com/v26.0/17841400000000000/media_publish'
+        && $request->url() === 'https://graph.instagram.com/v26.0/17841400000000000/media_publish'
         && $request['creation_id'] === '180000000000001');
+});
+
+it('preserves existing Facebook Login Instagram connections without using them for new authorization', function () {
+    [, $connection, $adapter] = instagramPublishingAdapterContext(
+        scopes: ['instagram_basic', 'instagram_content_publish'],
+        connectionProvider: 'meta',
+    );
+    $disk = Mockery::mock();
+    $disk->shouldReceive('exists')->once()->with('assets/instagram.jpg')->andReturn(true);
+    $disk->shouldReceive('temporaryUrl')->once()
+        ->with('assets/instagram.jpg', Mockery::type(DateTimeInterface::class))
+        ->andReturn('https://r2.example.test/assets/instagram.jpg?signature=temporary-secret');
+    Storage::shouldReceive('disk')->once()->with('r2')->andReturn($disk);
+
+    Http::fake([
+        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
+        'https://graph.facebook.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
+        'https://graph.facebook.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => 'FINISHED'], 200),
+        'https://graph.facebook.com/v26.0/17841400000000000/media_publish' => Http::response(['id' => '180000000000002'], 200),
+    ]);
+
+    $adapter->publish(instagramPublishingRequest($connection));
+
+    Http::assertSent(fn ($request): bool => $request->url() === 'https://graph.facebook.com/v26.0/17841400000000000/media_publish');
+    Http::assertNotSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.instagram.com/'));
 });
 
 it('rejects Facebook Page IDs, missing images, unsupported formats, invalid dimensions and oversized captions before network submission', function () {
@@ -187,7 +214,7 @@ it('rejects Facebook Page IDs, missing images, unsupported formats, invalid dime
         ->toThrow(PublishingAdapterException::class, '2,200-character limit');
 });
 
-it('requires the selected Instagram destination token and matching active Meta connection', function () {
+it('requires the selected Instagram destination token and matching active Instagram Login connection', function () {
     [, $connection, $adapter] = instagramPublishingAdapterContext(destinationTokens: []);
     Http::preventStrayRequests();
 
@@ -223,15 +250,15 @@ it('stops before publication when Meta reports failed or unfinished media proces
     Storage::shouldReceive('disk')->once()->with('r2')->andReturn($disk);
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
-        'https://graph.facebook.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => $status], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
+        'https://graph.instagram.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => $status], 200),
     ]);
 
     expect(fn () => $adapter->publish(instagramPublishingRequest($connection)))
         ->toThrow(PublishingAdapterException::class, $expectedMessage);
 
-    Http::assertNotSent(fn ($request): bool => $request->url() === 'https://graph.facebook.com/v26.0/17841400000000000/media_publish');
+    Http::assertNotSent(fn ($request): bool => $request->url() === 'https://graph.instagram.com/v26.0/17841400000000000/media_publish');
 })->with([
     ['ERROR', 'could not process the Instagram media container'],
     ['IN_PROGRESS', 'did not finish within the configured polling window'],
@@ -247,10 +274,10 @@ it('classifies an ambiguous publish timeout without permitting blind retry', fun
     Storage::shouldReceive('disk')->once()->with('r2')->andReturn($disk);
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
-        'https://graph.facebook.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => 'FINISHED'], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media_publish' => Http::failedConnection(),
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response(['data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]]], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media' => Http::response(['id' => '180000000000001'], 200),
+        'https://graph.instagram.com/v26.0/180000000000001?*' => Http::response(['id' => '180000000000001', 'status_code' => 'FINISHED'], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media_publish' => Http::failedConnection(),
     ]);
 
     try {
@@ -266,7 +293,7 @@ it('classifies an ambiguous publish timeout without permitting blind retry', fun
 it('reconciles a known Instagram media ID without inventing a permalink', function () {
     [, $connection, $adapter] = instagramPublishingAdapterContext();
     Http::fake([
-        'https://graph.facebook.com/v26.0/180000000000002?*' => Http::response([
+        'https://graph.instagram.com/v26.0/180000000000002?*' => Http::response([
             'id' => '180000000000002',
             'media_type' => 'IMAGE',
             'permalink' => 'https://www.instagram.com/p/abc123/',
@@ -306,7 +333,7 @@ it('blocks submission when the Instagram content-publishing quota is exhausted',
     [, $connection, $adapter] = instagramPublishingAdapterContext();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response([
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response([
             'data' => [['quota_usage' => 100, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]],
         ], 200),
     ]);
@@ -326,10 +353,10 @@ it('maps Meta rate-limit responses to a retryable non-ambiguous failure', functi
         ->andReturn('https://r2.example.test/assets/instagram.jpg');
     Storage::shouldReceive('disk')->once()->with('r2')->andReturn($disk);
     Http::fake([
-        'https://graph.facebook.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response([
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response([
             'data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]],
         ], 200),
-        'https://graph.facebook.com/v26.0/17841400000000000/media' => Http::response([
+        'https://graph.instagram.com/v26.0/17841400000000000/media' => Http::response([
             'error' => ['message' => 'Rate limit reached', 'code' => 4],
         ], 429),
     ]);
