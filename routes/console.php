@@ -12,3 +12,4 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('workflow:dispatch-pending-continuations')->everyMinute()->withoutOverlapping();
 
 \Illuminate\Support\Facades\Schedule::command('social-accounts:sync-facebook-follower-counts')->everySixHours()->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('social-accounts:sync-instagram-follower-counts')->everySixHours()->withoutOverlapping();
