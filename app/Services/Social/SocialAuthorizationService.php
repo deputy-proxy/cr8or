@@ -401,10 +401,22 @@ final class SocialAuthorizationService
                         throw new SocialAuthorizationException('destination_already_assigned', 'A discovered destination is already assigned to another channel.');
                     }
                     if ($account->social_identity_id !== null && (int) $account->social_identity_id !== (int) $identity->id) {
-                        throw new SocialAuthorizationException('destination_identity_conflict', 'A destination is already linked to another authenticated identity.');
-                    }
+                        $previousIdentity = SocialIdentity::query()->whereKey($account->social_identity_id)->first();
+                        $canMigrateInstagramLogin = $provider === 'instagram'
+                            && $previousIdentity instanceof SocialIdentity
+                            && $previousIdentity->provider === 'meta'
+                            && $identity->provider === 'instagram'
+                            && $identity->external_id === $externalId
+                            && (int) $previousIdentity->organization_id === (int) $identity->organization_id;
 
-                    if ($account->social_identity_id === null) {
+                        if (! $canMigrateInstagramLogin) {
+                            throw new SocialAuthorizationException('destination_identity_conflict', 'A destination is already linked to another authenticated identity.');
+                        }
+
+                        // A native Instagram Login grant supersedes only this Instagram destination's
+                        // old Facebook Login identity link; the Meta identity remains for Facebook Pages.
+                        $account->social_identity_id = $identity->id;
+                    } elseif ($account->social_identity_id === null) {
                         $account->social_identity_id = $identity->id;
                     }
                     if ($account->name !== $name) {

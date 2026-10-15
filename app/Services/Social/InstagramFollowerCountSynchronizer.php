@@ -35,13 +35,13 @@ final class InstagramFollowerCountSynchronizer
 
         if ($identity === null
             || $connection === null
-            || $identity->provider !== 'meta'
+            || $identity->provider !== 'instagram'
             || (int) $identity->organization_id !== (int) $account->enterprise->organization_id
             || (int) $connection->organization_id !== (int) $account->enterprise->organization_id
             || ($connection->enterprise_id !== null && (int) $connection->enterprise_id !== (int) $account->enterprise_id)
-            || $connection->provider !== 'meta'
+            || $connection->provider !== 'instagram'
             || ! $connection->isOperational()) {
-            throw new SocialAuthorizationException('connection_not_operational', 'The Instagram destination has no matching operational Meta connection.');
+            throw new SocialAuthorizationException('connection_not_operational', 'The Instagram destination has no matching operational Instagram Login connection.');
         }
 
         $instagramUserId = (string) $account->external_id;
@@ -51,65 +51,59 @@ final class InstagramFollowerCountSynchronizer
 
         try {
             // Resolve through the standard credential lifecycle first, allowing the parent token to refresh.
-            $userToken = $this->credentials->resolveAccessToken($connection, 'instagram');
+            $this->credentials->resolveAccessToken($connection, 'instagram');
             $tokens = $this->credentialStore->forConnection($connection)->tokenSet();
         } catch (Throwable $exception) {
-            throw new SocialAuthorizationException('credential_unavailable', 'The Meta credential could not be resolved for follower synchronization.', previous: $exception);
+            throw new SocialAuthorizationException('credential_unavailable', 'The Instagram credential could not be resolved for follower synchronization.', previous: $exception);
         }
 
         $version = $this->graphApiVersion();
 
-        if ($tokens->scopes !== [] && ! in_array('instagram_basic', $tokens->scopes, true)) {
-            throw new SocialAuthorizationException('permission_denied', 'The Meta authorization grant lacks instagram_basic. Reauthorize the connection with the required permission.');
+        if ($tokens->scopes !== [] && ! in_array('instagram_business_basic', $tokens->scopes, true)) {
+            throw new SocialAuthorizationException('permission_denied', 'The Instagram authorization grant lacks instagram_business_basic. Reauthorize the connection with the required permission.');
         }
 
         if ($tokens->scopes === []) {
-            $this->assertInstagramBasicPermission($userToken, $version);
+            throw new SocialAuthorizationException('permission_denied', 'The Instagram authorization scopes are missing from the stored grant. Reconnect the Instagram account.');
         }
 
-        $destinationToken = $tokens->destinationTokens['instagram:'.$instagramUserId] ?? null;
-        $destinationAccessToken = is_array($destinationToken) ? $destinationToken['access_token'] : null;
-
-        if (! is_string($destinationAccessToken) || trim($destinationAccessToken) === '') {
-            throw new SocialAuthorizationException('destination_token_missing', 'No destination token is stored for this Instagram professional account.');
-        }
-
-        $expiresAt = $destinationToken['expires_at'] ?? null;
+        $destinationAccessToken = $tokens->accessToken;
+        $expiresAt = $tokens->accessTokenExpiresAt?->toIso8601String();
         if (is_string($expiresAt) && $expiresAt !== '') {
             try {
                 if (CarbonImmutable::parse($expiresAt)->lessThanOrEqualTo(now()->addMinute())) {
-                    throw new SocialAuthorizationException('destination_token_expired', 'The stored Instagram destination token has expired. Reconnect Meta and select the account again.');
+                    throw new SocialAuthorizationException('destination_token_expired', 'The stored Instagram User access token has expired. Reconnect the Instagram account.');
                 }
             } catch (SocialAuthorizationException $exception) {
                 throw $exception;
             } catch (Throwable $exception) {
-                throw new SocialAuthorizationException('destination_token_invalid', 'The stored Instagram destination token expiry is invalid.', previous: $exception);
+                throw new SocialAuthorizationException('destination_token_invalid', 'The stored Instagram User access token expiry is invalid.', previous: $exception);
             }
         } elseif ($expiresAt !== null) {
-            throw new SocialAuthorizationException('destination_token_invalid', 'The stored Instagram destination token expiry is invalid.');
+            throw new SocialAuthorizationException('destination_token_invalid', 'The stored Instagram User access token expiry is invalid.');
         }
 
         try {
             $response = Http::acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($destinationAccessToken)
-                ->get("https://graph.facebook.com/{$version}/".rawurlencode($instagramUserId), [
-                    'fields' => 'id,username,followers_count',
+                ->get("https://graph.instagram.com/{$version}/me", [
+                    'fields' => 'user_id,username,followers_count',
                 ]);
         } catch (ConnectionException $exception) {
-            throw new RuntimeException('Meta follower metrics request timed out or failed to connect.', previous: $exception);
+            throw new RuntimeException('Instagram follower metrics request timed out or failed to connect.', previous: $exception);
         }
 
         if (! $response->successful()) {
-            throw new RuntimeException('Meta rejected the Instagram follower metrics request.');
+            throw new RuntimeException('Instagram rejected the follower metrics request.');
         }
 
         $body = $response->json();
         if (! is_array($body)
-            || (string) ($body['id'] ?? '') !== $instagramUserId
+            || (string) ($body['user_id'] ?? '') !== $instagramUserId
             || ! is_int($body['followers_count'] ?? null)
             || $body['followers_count'] < 0) {
-            throw new RuntimeException('Meta returned an invalid Instagram follower metrics response.');
+            throw new RuntimeException('Instagram returned an invalid follower metrics response.');
         }
 
         $account->follower_count = $body['followers_count'];
@@ -126,40 +120,9 @@ final class InstagramFollowerCountSynchronizer
         return $body['followers_count'];
     }
 
-    private function assertInstagramBasicPermission(string $userToken, string $version): void
-    {
-        try {
-            $response = Http::acceptJson()
-                ->timeout((int) config('social_authorization.timeout', 15))
-                ->withToken($userToken)
-                ->get('https://graph.facebook.com/'.$version.'/me/permissions');
-        } catch (ConnectionException $exception) {
-            throw new RuntimeException('Meta permission status could not be verified before follower synchronization.', previous: $exception);
-        }
-
-        if (! $response->successful()) {
-            throw new SocialAuthorizationException('permission_status_unavailable', 'Meta permission status could not be verified before follower synchronization.');
-        }
-
-        $permissions = $response->json('data');
-        if (! is_array($permissions)) {
-            throw new SocialAuthorizationException('permission_status_invalid', 'Meta did not return permission status for follower synchronization.');
-        }
-
-        foreach ($permissions as $permission) {
-            if (is_array($permission)
-                && ($permission['permission'] ?? null) === 'instagram_basic'
-                && ($permission['status'] ?? null) === 'granted') {
-                return;
-            }
-        }
-
-        throw new SocialAuthorizationException('permission_denied', 'Meta has not granted instagram_basic for this connection.');
-    }
-
     private function graphApiVersion(): string
     {
-        $version = (string) config('social_authorization.providers.meta.graph_api_version', 'v26.0');
+        $version = (string) config('social_authorization.providers.instagram.graph_api_version', 'v26.0');
         if (preg_match('/^v\d+\.\d+$/D', $version) !== 1) {
             throw new RuntimeException('The configured Meta Graph API version is invalid.');
         }

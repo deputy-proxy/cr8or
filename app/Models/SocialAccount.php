@@ -89,7 +89,19 @@ class SocialAccount extends Model
             }
 
             if ($account->exists && $account->getOriginal('social_identity_id') !== null && $account->isDirty('social_identity_id')) {
-                throw new LogicException('A linked social destination cannot be reassigned to another authenticated identity.');
+                $previousIdentity = SocialIdentity::query()->whereKey($account->getOriginal('social_identity_id'))->first();
+                $nextIdentity = $account->social_identity_id === null ? null : SocialIdentity::query()->whereKey($account->social_identity_id)->first();
+                $isInstagramLoginMigration = $account->provider === 'instagram'
+                    && $previousIdentity instanceof SocialIdentity
+                    && $nextIdentity instanceof SocialIdentity
+                    && $previousIdentity->provider === 'meta'
+                    && $nextIdentity->provider === 'instagram'
+                    && $nextIdentity->external_id === $account->external_id
+                    && (int) $previousIdentity->organization_id === (int) $nextIdentity->organization_id;
+
+                if (! $isInstagramLoginMigration) {
+                    throw new LogicException('A linked social destination cannot be reassigned to another authenticated identity except when migrating a matching Instagram destination from Facebook Login to Instagram Login.');
+                }
             }
 
             if (! in_array($account->status, [self::STATUS_ACTIVE, self::STATUS_DISABLED], true)) {

@@ -91,7 +91,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         }
 
         $connection = $this->resolveConnection($request->integrationConnectionId, $request->credentialReference);
-        $accessToken = $this->instagramAccessToken($connection, $instagramUserId, 'instagram_content_publish');
+        $accessToken = $this->instagramAccessToken($connection, $instagramUserId, 'instagram_business_content_publish');
         $version = $this->graphApiVersion();
         $this->assertPublishingQuota($instagramUserId, $accessToken, $version);
         $imageUrl = $this->temporaryMediaUrl($media[0]);
@@ -101,14 +101,14 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
                 ->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
-                ->post("https://graph.facebook.com/{$version}/{$instagramUserId}/media", array_filter([
+                ->post("https://graph.instagram.com/{$version}/{$instagramUserId}/media", array_filter([
                     'image_url' => $imageUrl,
                     'caption' => $request->content,
                     'alt_text' => $altText,
                 ], static fn (mixed $value): bool => $value !== null));
         } catch (ConnectionException $exception) {
             throw new PublishingAdapterException(
-                'Meta did not return a definitive response while creating the Instagram media container.',
+                'Instagram did not return a definitive response while creating the media container.',
                 'timeout',
                 retryable: true,
                 previous: $exception,
@@ -129,12 +129,12 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
                 ->acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
-                ->post("https://graph.facebook.com/{$version}/{$instagramUserId}/media_publish", [
+                ->post("https://graph.instagram.com/{$version}/{$instagramUserId}/media_publish", [
                     'creation_id' => $containerId,
                 ]);
         } catch (ConnectionException $exception) {
             throw new PublishingAdapterException(
-                'Meta did not return a definitive response after Instagram media publication; the outcome is unknown and must be reconciled before retrying.',
+                'Instagram did not return a definitive response after publication; the outcome is unknown and must be reconciled before retrying.',
                 'timeout',
                 retryable: true,
                 previous: $exception,
@@ -146,7 +146,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         $mediaId = $body['id'] ?? null;
         if (! is_string($mediaId) || preg_match('/^[0-9]+$/D', $mediaId) !== 1) {
             throw new PublishingAdapterException(
-                'Meta accepted Instagram publication without returning a valid media identifier; the outcome is unknown and must be reconciled before retrying.',
+                'Instagram accepted publication without returning a valid media identifier; the outcome is unknown and must be reconciled before retrying.',
                 'invalid_adapter_response',
                 retryable: true,
                 ambiguous: true,
@@ -181,14 +181,14 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         }
 
         $connection = $this->resolveConnection($publication->integrationConnectionId, $publication->credentialReference);
-        $accessToken = $this->instagramAccessToken($connection, $instagramUserId, 'instagram_basic');
+        $accessToken = $this->instagramAccessToken($connection, $instagramUserId, 'instagram_business_basic');
         $version = $this->graphApiVersion();
 
         try {
             $response = Http::acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
-                ->get("https://graph.facebook.com/{$version}/".rawurlencode($publication->externalPublicationId), [
+                ->get("https://graph.instagram.com/{$version}/".rawurlencode($publication->externalPublicationId), [
                     'fields' => 'id,media_type,permalink,timestamp',
                 ]);
         } catch (ConnectionException $exception) {
@@ -227,15 +227,15 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
     private function resolveConnection(?int $connectionId, ?string $credentialReference): IntegrationConnection
     {
         if ($connectionId === null || $credentialReference === null) {
-            throw new PublishingAdapterException('Instagram publishing requires an authorized Meta connection.', 'authentication_required');
+            throw new PublishingAdapterException('Instagram publishing requires an authorized Instagram Login connection.', 'authentication_required');
         }
 
         $connection = IntegrationConnection::query()->find($connectionId);
         if ($connection === null
-            || $connection->provider !== 'meta'
+            || $connection->provider !== 'instagram'
             || ! $connection->isOperational()
             || ! hash_equals((string) $connection->credential_reference, $credentialReference)) {
-            throw new PublishingAdapterException('The Meta connection is unavailable or does not match the publication credential reference.', 'authentication_required');
+            throw new PublishingAdapterException('The Instagram connection is unavailable or does not match the publication credential reference.', 'authentication_required');
         }
 
         return $connection;
@@ -244,11 +244,11 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
     private function instagramAccessToken(IntegrationConnection $connection, string $instagramUserId, string $requiredScope): string
     {
         try {
-            $userToken = $this->credentials->resolveAccessToken($connection, 'instagram');
+            $this->credentials->resolveAccessToken($connection, 'instagram');
             $tokens = $this->credentialStore->forConnection($connection)->tokenSet();
         } catch (SocialAuthorizationException $exception) {
             throw new PublishingAdapterException(
-                'Meta authorization is unavailable and must be renewed before using Instagram publishing.',
+                'Instagram authorization is unavailable and must be renewed before publishing.',
                 'authentication_required',
                 previous: $exception,
             );
@@ -256,62 +256,30 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
 
         if ($tokens->scopes !== []) {
             if (! in_array($requiredScope, $tokens->scopes, true)) {
-                throw new PublishingAdapterException('The Meta authorization grant lacks a required Instagram permission; review app scopes and authorize the connection again.', 'permission_denied');
+                throw new PublishingAdapterException('The Instagram authorization grant lacks a required permission; review Instagram Login scopes and authorize the connection again.', 'permission_denied');
             }
         } else {
-            $this->assertGrantedScope($userToken, $requiredScope);
+            throw new PublishingAdapterException('The Instagram authorization scopes are missing from the stored grant; reconnect the Instagram account.', 'permission_denied');
         }
 
-        $destinationToken = $tokens->destinationTokens['instagram:'.$instagramUserId] ?? null;
-        $accessToken = is_array($destinationToken) ? $destinationToken['access_token'] : null;
-        if (! is_string($accessToken) || trim($accessToken) === '') {
-            throw new PublishingAdapterException('No destination token is stored for this Instagram professional account. Reconnect Meta and select the linked account again.', 'authentication_required');
-        }
-
-        $expiresAt = $destinationToken['expires_at'] ?? null;
+        // Instagram Login issues an Instagram User access token, not a Facebook Page token.
+        $accessToken = $tokens->accessToken;
+        $expiresAt = $tokens->accessTokenExpiresAt?->toIso8601String();
         if (is_string($expiresAt) && $expiresAt !== '') {
             try {
                 if (CarbonImmutable::parse($expiresAt)->lessThanOrEqualTo(now()->addMinute())) {
-                    throw new PublishingAdapterException('The stored Instagram destination token has expired. Reconnect Meta and select the account again.', 'authentication_required');
+                    throw new PublishingAdapterException('The stored Instagram User access token has expired. Reconnect the Instagram account.', 'authentication_required');
                 }
             } catch (PublishingAdapterException $exception) {
                 throw $exception;
             } catch (Throwable $exception) {
-                throw new PublishingAdapterException('The stored Instagram token expiry is invalid; reconnect Meta and select the account again.', 'authentication_required', previous: $exception);
+                throw new PublishingAdapterException('The stored Instagram token expiry is invalid; reconnect the Instagram account.', 'authentication_required', previous: $exception);
             }
         } elseif ($expiresAt !== null) {
-            throw new PublishingAdapterException('The stored Instagram token expiry is invalid; reconnect Meta and select the account again.', 'authentication_required');
+            throw new PublishingAdapterException('The stored Instagram token expiry is invalid; reconnect the Instagram account.', 'authentication_required');
         }
 
         return $accessToken;
-    }
-
-    private function assertGrantedScope(string $userToken, string $requiredScope): void
-    {
-        try {
-            $response = Http::acceptJson()
-                ->timeout((int) config('social_authorization.timeout', 15))
-                ->withToken($userToken)
-                ->get('https://graph.facebook.com/'.$this->graphApiVersion().'/me/permissions');
-        } catch (ConnectionException $exception) {
-            throw new PublishingAdapterException('Meta permission status could not be verified before Instagram publishing.', 'timeout', retryable: true, previous: $exception);
-        }
-
-        $body = $this->assertGraphSuccess($response, submission: false);
-        $permissions = $body['data'] ?? null;
-        if (! is_array($permissions)) {
-            throw new PublishingAdapterException('Meta did not return permission status; Instagram publishing is blocked until the grant can be verified.', 'permission_denied');
-        }
-
-        foreach ($permissions as $permission) {
-            if (is_array($permission)
-                && ($permission['permission'] ?? null) === $requiredScope
-                && ($permission['status'] ?? null) === 'granted') {
-                return;
-            }
-        }
-
-        throw new PublishingAdapterException('Meta has not granted the required Instagram permission; review app scopes and authorize the connection again.', 'permission_denied');
     }
 
     /** @param list<array<string, mixed>> $media
@@ -406,7 +374,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
             $response = Http::acceptJson()
                 ->timeout((int) config('social_authorization.timeout', 15))
                 ->withToken($accessToken)
-                ->get("https://graph.facebook.com/{$version}/{$instagramUserId}/content_publishing_limit", [
+                ->get("https://graph.instagram.com/{$version}/{$instagramUserId}/content_publishing_limit", [
                     'fields' => 'quota_usage,config',
                 ]);
         } catch (ConnectionException $exception) {
@@ -452,7 +420,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
                 $response = Http::acceptJson()
                     ->timeout((int) config('social_authorization.timeout', 15))
                     ->withToken($accessToken)
-                    ->get("https://graph.facebook.com/{$version}/".rawurlencode($containerId), [
+                    ->get("https://graph.instagram.com/{$version}/".rawurlencode($containerId), [
                         'fields' => 'id,status_code',
                     ]);
             } catch (ConnectionException $exception) {
@@ -507,7 +475,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
             }
 
             throw new PublishingAdapterException(
-                'Meta returned an invalid response to the Instagram publishing request.',
+                'Instagram returned an invalid response to the publishing request.',
                 'invalid_adapter_response',
                 retryable: $submission,
                 ambiguous: $submission,
@@ -515,7 +483,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         }
 
         if ($response->status() === 429 || in_array($errorCode, [4, 17, 32, 613, 80001], true)) {
-            throw new PublishingAdapterException('Meta rate-limited the Instagram operation; retry after the provider limit resets.', 'rate_limited', retryable: true);
+            throw new PublishingAdapterException('Instagram rate-limited the operation; retry after the provider limit resets.', 'rate_limited', retryable: true);
         }
 
         if ($response->status() === 401 || $errorCode === 190) {
@@ -540,7 +508,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
 
     private function graphApiVersion(): string
     {
-        $version = (string) config('social_authorization.providers.meta.graph_api_version', 'v26.0');
+        $version = (string) config('social_authorization.providers.instagram.graph_api_version', 'v26.0');
         if (preg_match('/^v[0-9]+\.[0-9]+$/D', $version) !== 1) {
             throw new PublishingAdapterException('The configured Meta Graph API version must use the format vNN.N.', 'provider_configuration_invalid');
         }

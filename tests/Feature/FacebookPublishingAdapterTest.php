@@ -6,6 +6,7 @@ use App\Data\PublishingRemotePublication;
 use App\Data\Social\SocialTokenSet;
 use App\Enums\PublishingCapabilitySupport;
 use App\Exceptions\PublishingAdapterException;
+use App\Exceptions\SocialAuthorizationException;
 use App\Models\IntegrationConnection;
 use App\Models\Organization;
 use App\Models\SocialIdentity;
@@ -396,49 +397,14 @@ it('discovers only Meta Pages whose tasks permit content creation and preserves 
     Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/me/accounts'));
 });
 
-it('discovers Instagram professional destinations only through authorized linked Pages', function () {
+it('does not discover Instagram destinations through Facebook Login', function () {
     $providerConfig = config('social_authorization.providers.meta');
     $providerConfig['enabled'] = true;
     $provider = new ConfiguredOAuth2SocialAuthorizationProvider('meta', $providerConfig);
+    Http::preventStrayRequests();
 
-    Http::fake([
-        'https://graph.facebook.com/v26.0/me/accounts*' => Http::response([
-            'data' => [
-                [
-                    'id' => 'page-123',
-                    'name' => 'Allowed Page',
-                    'access_token' => 'page-token-allowed',
-                    'tasks' => ['CREATE_CONTENT', 'MODERATE'],
-                    'instagram_business_account' => ['id' => '17841400000000000', 'username' => 'allowed_creator'],
-                ],
-                [
-                    'id' => 'page-234',
-                    'name' => 'Moderator Only Page',
-                    'access_token' => 'page-token-moderator',
-                    'tasks' => ['MODERATE'],
-                    'instagram_business_account' => ['id' => '17841400000000001', 'username' => 'moderator_creator'],
-                ],
-                [
-                    'id' => 'page-345',
-                    'name' => 'Unlinked Page',
-                    'access_token' => 'page-token-unlinked',
-                    'tasks' => ['CREATE_CONTENT'],
-                ],
-            ],
-        ]),
-        'https://graph.facebook.com/v26.0/me*' => Http::response(['id' => 'meta-user-123', 'name' => 'Test Meta User']),
-    ]);
-
-    $result = $provider->discover(
-        new SocialTokenSet('parent-user-token', null, null, null, ['pages_show_list', 'instagram_basic', 'instagram_content_publish']),
+    expect(fn () => $provider->discover(
+        new SocialTokenSet('parent-user-token', null, null, null, ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts']),
         'instagram',
-    );
-
-    expect($result->destinations)->toHaveCount(1)
-        ->and($result->destinations[0]->externalId)->toBe('17841400000000000')
-        ->and($result->destinations[0]->externalId)->not->toBe('page-123')
-        ->and($result->destinations[0]->name)->toBe('allowed_creator')
-        ->and($result->destinations[0]->credentialToken)->toBe('page-token-allowed');
-
-    Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/me/accounts'));
+    ))->toThrow(SocialAuthorizationException::class, 'cannot discover the requested destination network');
 });

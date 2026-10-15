@@ -23,7 +23,7 @@ final class SyncInstagramFollowerCounts extends Command
             ->where('provider', 'instagram')
             ->where('status', SocialAccount::STATUS_ACTIVE)
             ->whereHas('socialIdentity.integrationConnection', fn ($query) => $query
-                ->where('provider', 'meta')
+                ->where('provider', 'instagram')
                 ->where('status', IntegrationConnection::STATUS_ACTIVE))
             ->with(['enterprise', 'channel', 'socialIdentity.integrationConnection'])
             ->orderBy('id')

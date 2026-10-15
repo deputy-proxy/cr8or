@@ -253,21 +253,29 @@ it('models expiration and reconnect-required as non-operational grant states', f
     expect($connection->refresh()->isOperational())->toBeTrue();
 });
 
-it('allows one Meta authorization identity to expose destinations on multiple networks', function (): void {
+it('keeps Facebook Login and Instagram Login destinations on separate identity grants', function (): void {
     $organization = Organization::factory()->create();
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
     $facebookChannel = Channel::factory()->create(['enterprise_id' => $enterprise->id, 'type' => 'facebook']);
     $instagramChannel = Channel::factory()->create(['enterprise_id' => $enterprise->id, 'type' => 'instagram']);
-    $identity = SocialIdentity::factory()->create([
+    $facebookIdentity = SocialIdentity::factory()->create([
         'organization_id' => $organization->id,
         'provider' => 'meta',
         'external_id' => 'meta-user-opaque-1',
     ]);
+    $instagramIdentity = SocialIdentity::factory()->create([
+        'organization_id' => $organization->id,
+        'provider' => 'instagram',
+        'external_id' => '17841400000000000',
+    ]);
 
-    $facebook = socialIdentityDestination($enterprise, $facebookChannel, $identity, 'shared-external-id', 'Facebook Page');
-    $instagram = socialIdentityDestination($enterprise, $instagramChannel, $identity, 'shared-external-id', 'Instagram Account');
+    $facebook = socialIdentityDestination($enterprise, $facebookChannel, $facebookIdentity, 'shared-external-id', 'Facebook Page');
+    $instagram = socialIdentityDestination($enterprise, $instagramChannel, $instagramIdentity, '17841400000000000', 'Instagram Account');
 
     expect($facebook->provider)->toBe('facebook')
         ->and($instagram->provider)->toBe('instagram')
-        ->and($identity->destinations()->count())->toBe(2);
+        ->and($facebook->socialIdentity->provider)->toBe('meta')
+        ->and($instagram->socialIdentity->provider)->toBe('instagram')
+        ->and($facebookIdentity->destinations()->count())->toBe(1)
+        ->and($instagramIdentity->destinations()->count())->toBe(1);
 });

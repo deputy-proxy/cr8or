@@ -352,12 +352,11 @@ it('requests only Facebook Page scopes when authorizing a Facebook destination',
             'client_auth_method' => 'body',
             'pkce' => false,
             'authorization_parameters' => [],
-            'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish'],
+            'scopes' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts'],
             'scopes_by_network' => [
                 'facebook' => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
-                'instagram' => ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
             ],
-            'destination_networks' => ['facebook', 'instagram'],
+            'destination_networks' => ['facebook'],
         ],
     ]);
     Gate::before(fn (): bool => true);
