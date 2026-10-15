@@ -11,43 +11,43 @@ use App\Models\SocialAccount;
 use App\Models\SocialIdentity;
 use App\Services\Social\InstagramFollowerCountSynchronizer;
 use App\Services\Social\SocialCredentialStore;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 function instagramFollowerSyncContext(
     ?int $existingCount = null,
-    array $scopes = ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'instagram_content_publish'],
+    array $scopes = ['instagram_business_basic', 'instagram_business_content_publish'],
     array $destinationTokens = ['instagram:123456' => ['access_token' => 'instagram-access-token', 'expires_at' => null]],
 ): array {
-    config(['social_authorization.providers.meta.graph_api_version' => 'v26.0']);
+    config(['social_authorization.providers.instagram.graph_api_version' => 'v26.0']);
 
     $enterprise = Enterprise::factory()->create();
     $channel = Channel::factory()->create(['enterprise_id' => $enterprise->id]);
     $identity = SocialIdentity::query()->create([
         'organization_id' => $enterprise->organization_id,
-        'provider' => 'meta',
-        'external_id' => 'meta-user-123',
+        'provider' => 'instagram',
+        'external_id' => '123456',
         'name' => 'Meta User',
     ]);
 
     $credentialReference = app(SocialCredentialStore::class)->store(
         Organization::query()->findOrFail($enterprise->organization_id),
-        'meta',
+        'instagram',
         new SocialTokenSet(
             accessToken: 'parent-user-token',
             refreshToken: null,
-            accessTokenExpiresAt: null,
+            accessTokenExpiresAt: (isset($destinationTokens['instagram:123456']['expires_at']) && is_string($destinationTokens['instagram:123456']['expires_at'])) ? CarbonImmutable::parse($destinationTokens['instagram:123456']['expires_at']) : null,
             refreshTokenExpiresAt: null,
             scopes: $scopes,
-            destinationTokens: $destinationTokens,
         ),
     );
 
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $enterprise->organization_id,
         'social_identity_id' => $identity->id,
-        'provider' => 'meta',
+        'provider' => 'instagram',
         'external_account_id' => $identity->external_id,
         'credential_reference' => $credentialReference,
         'status' => IntegrationConnection::STATUS_ACTIVE,
@@ -73,12 +73,12 @@ function instagramFollowerSyncContext(
     return [$account, $connection, app(InstagramFollowerCountSynchronizer::class)];
 }
 
-it('fetches and persists the real Instagram professional account follower count using the stored Instagram destination token', function () {
+it('fetches and persists the real Instagram professional account follower count using the Instagram User access token', function () {
     [$account, , $synchronizer] = instagramFollowerSyncContext();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'username' => 'afacereonline',
             'followers_count' => 1842,
         ]),
@@ -89,9 +89,9 @@ it('fetches and persists the real Instagram professional account follower count 
         ->and($account->fresh()->profile_url)->toBe('https://www.instagram.com/afacereonline/');
 
     Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
-        && str_starts_with($request->url(), 'https://graph.facebook.com/v26.0/123456')
-        && $request->data()['fields'] === 'id,username,followers_count'
-        && $request->hasHeader('Authorization', 'Bearer instagram-access-token'));
+        && str_starts_with($request->url(), 'https://graph.instagram.com/v26.0/me')
+        && $request->data()['fields'] === 'user_id,username,followers_count'
+        && $request->hasHeader('Authorization', 'Bearer parent-user-token'));
 });
 
 it('preserves an existing Instagram profile URL when Meta omits the username', function () {
@@ -100,8 +100,8 @@ it('preserves an existing Instagram profile URL when Meta omits the username', f
     $account->save();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'followers_count' => 1842,
         ]),
     ]);
@@ -115,8 +115,8 @@ it('does not persist an invalid username returned by Meta', function () {
     [$account, , $synchronizer] = instagramFollowerSyncContext();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'username' => 'https://evil.example/impersonation',
             'followers_count' => 1842,
         ]),
@@ -132,8 +132,8 @@ it('persists zero as a real follower count', function () {
     [$account, , $synchronizer] = instagramFollowerSyncContext();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'username' => 'afacereonline',
             'followers_count' => 0,
         ]),
@@ -147,13 +147,13 @@ it('preserves the previous follower count when Meta returns an error', function 
     [$account, , $synchronizer] = instagramFollowerSyncContext(1842);
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
             'error' => ['message' => 'Permission denied', 'type' => 'OAuthException', 'code' => 10],
         ], 400),
     ]);
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(RuntimeException::class, 'Meta rejected the Instagram follower metrics request.')
+        ->toThrow(RuntimeException::class, 'Instagram rejected the follower metrics request.')
         ->and($account->fresh()->follower_count)->toBe(1842);
 });
 
@@ -161,15 +161,15 @@ it('rejects malformed responses without overwriting the previous count', functio
     [$account, , $synchronizer] = instagramFollowerSyncContext(1842);
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'username' => 'afacereonline',
             'followers_count' => 'unknown',
         ]),
     ]);
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(RuntimeException::class, 'Meta returned an invalid Instagram follower metrics response.')
+        ->toThrow(RuntimeException::class, 'Instagram returned an invalid follower metrics response.')
         ->and($account->fresh()->follower_count)->toBe(1842);
 });
 
@@ -182,13 +182,13 @@ it('rejects non-Instagram destinations before making provider requests', functio
         ->toThrow(RuntimeException::class, 'Only active Instagram professional account destinations');
 });
 
-it('rejects a Instagram destination without an operational Meta connection', function () {
+it('rejects an Instagram destination without an operational Instagram Login connection', function () {
     [$account, $connection, $synchronizer] = instagramFollowerSyncContext();
     $connection->transitionTo(IntegrationConnection::STATUS_DISABLED)->save();
     Http::preventStrayRequests();
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(SocialAuthorizationException::class, 'matching operational Meta connection');
+        ->toThrow(SocialAuthorizationException::class, 'matching operational Instagram Login connection');
 });
 
 it('rejects a Meta identity that belongs to another organization before requesting metrics', function () {
@@ -202,41 +202,33 @@ it('rejects a Meta identity that belongs to another organization before requesti
     Http::preventStrayRequests();
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(SocialAuthorizationException::class, 'matching operational Meta connection');
+        ->toThrow(SocialAuthorizationException::class, 'matching operational Instagram Login connection');
 });
 
-it('rejects missing Instagram destination tokens before requesting follower metrics', function () {
-    [$account, , $synchronizer] = instagramFollowerSyncContext(destinationTokens: []);
-    Http::preventStrayRequests();
-
-    expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(SocialAuthorizationException::class, 'No destination token is stored');
-});
-
-it('rejects expired Instagram destination tokens before requesting follower metrics', function () {
+it('rejects an expired Instagram User access token before requesting follower metrics', function () {
     [$account, , $synchronizer] = instagramFollowerSyncContext(destinationTokens: [
         'instagram:123456' => ['access_token' => 'instagram-access-token', 'expires_at' => now()->subMinute()->toIso8601String()],
     ]);
     Http::preventStrayRequests();
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(SocialAuthorizationException::class, 'Instagram destination token has expired');
+        ->toThrow(SocialAuthorizationException::class, 'stored Instagram User access token has expired');
 });
 
-it('rejects missing instagram_basic permission without requesting follower metrics', function () {
-    [$account, , $synchronizer] = instagramFollowerSyncContext(scopes: ['pages_show_list', 'instagram_content_publish']);
+it('rejects missing instagram_business_basic permission without requesting follower metrics', function () {
+    [$account, , $synchronizer] = instagramFollowerSyncContext(scopes: ['instagram_business_content_publish']);
     Http::preventStrayRequests();
 
     expect(fn () => $synchronizer->synchronize($account))
-        ->toThrow(SocialAuthorizationException::class, 'lacks instagram_basic');
+        ->toThrow(SocialAuthorizationException::class, 'lacks instagram_business_basic');
 });
 
 it('refreshes connected Instagram professional account counts through the scheduled command', function () {
     [$account] = instagramFollowerSyncContext();
 
     Http::fake([
-        'https://graph.facebook.com/v26.0/123456*' => Http::response([
-            'id' => '123456',
+        'https://graph.instagram.com/v26.0/me*' => Http::response([
+            'user_id' => '123456',
             'username' => 'afacereonline',
             'followers_count' => 1842,
         ]),

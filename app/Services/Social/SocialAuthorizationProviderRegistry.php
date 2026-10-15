@@ -41,6 +41,10 @@ final class SocialAuthorizationProviderRegistry
         $configuration = $this->configuration($provider);
         $driver = $configuration['driver'] ?? null;
 
+        if ($driver === 'instagram_login') {
+            return new InstagramLoginAuthorizationProvider($configuration);
+        }
+
         if ($driver === 'unsupported') {
             $reason = $configuration['reason'] ?? 'A dedicated authorization protocol driver is required.';
             throw new SocialAuthorizationException('provider_protocol_unsupported', is_string($reason) ? $reason : 'A dedicated authorization protocol driver is required.');

@@ -100,11 +100,11 @@ function nativePublishingContext(string $network): array
     $oldAccount->delete();
 
     $channel = Channel::factory()->create(['enterprise_id' => $enterprise->id, 'type' => $network]);
-    $identityProvider = $network === 'instagram' ? 'meta' : $network;
+    $identityProvider = $network === 'instagram' ? 'instagram' : ($network === 'facebook' ? 'meta' : $network);
     $identity = SocialIdentity::factory()->create([
         'organization_id' => $organization->id,
         'provider' => $identityProvider,
-        'external_id' => 'identity-'.$network.'-'.$enterprise->id,
+        'external_id' => $network === 'instagram' ? '17841400000000000' : 'identity-'.$network.'-'.$enterprise->id,
     ]);
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $organization->id,
@@ -121,7 +121,7 @@ function nativePublishingContext(string $network): array
         'social_identity_id' => $identity->id,
         'provider' => $network,
         'name' => 'Test '.$network,
-        'external_id' => 'destination-'.$network,
+        'external_id' => $network === 'instagram' ? '17841400000000000' : 'destination-'.$network,
     ]);
 
     return [$organization, $user, $enterprise, $content, $channel, $account, $identity, $connection];
@@ -271,10 +271,10 @@ it('resolves multiple network adapters and records adapter and destination separ
         expect($publication->status)->toBe(Publication::STATUS_SUBMITTED)
             ->and($job->adapter_key)->toBe($network)
             ->and($job->network)->toBe($network)
-            ->and($job->destination_external_id)->toBe('destination-'.$network)
+            ->and($job->destination_external_id)->toBe($network === 'instagram' ? '17841400000000000' : 'destination-'.$network)
             ->and($result->provider)->toBe($network)
             ->and($result->network)->toBe($network)
-            ->and($result->destination_external_id)->toBe('destination-'.$network)
+            ->and($result->destination_external_id)->toBe($network === 'instagram' ? '17841400000000000' : 'destination-'.$network)
             ->and($result->correlation_id)->toBe($publication->correlation_id);
     }
 });
