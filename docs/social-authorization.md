@@ -25,7 +25,7 @@ Register an application with the network provider, enable the required API produ
 | Network / auth provider | Environment variables | Callback URI default | Current implementation notes |
 |---|---|---|---|
 | LinkedIn | `SOCIAL_LINKEDIN_CLIENT_ID`, `SOCIAL_LINKEDIN_CLIENT_SECRET`, optional `SOCIAL_LINKEDIN_REDIRECT_URI`, optional `SOCIAL_LINKEDIN_API_VERSION` | `/social/authorization/callback/linkedin` | OAuth 2.0; discovers the member profile and organizations for which the member has an ACL. Publishing requires approved app access and eligible scopes/roles. |
-| Facebook / Instagram | `META_APP_ID`, `META_APP_SECRET`, optional `META_SOCIAL_REDIRECT_URI`, optional `META_GRAPH_API_VERSION` | `/social/authorization/callback/meta` | Shared Meta authorization grant; discovers Facebook Pages with `CREATE_CONTENT` or `MANAGE` tasks and linked Instagram professional destinations. Page access tokens are stored encrypted per destination. Publishing requires `pages_show_list`, `pages_read_engagement` and `pages_manage_posts`; app review/Advanced Access and Page tasks apply. |
+| Facebook / Instagram | `META_APP_ID`, `META_APP_SECRET`, optional `META_SOCIAL_REDIRECT_URI`, optional `META_GRAPH_API_VERSION` | `/social/authorization/callback/meta` | Shared Meta authorization grant; discovers Facebook Pages with `CREATE_CONTENT` or `MANAGE` tasks and linked Instagram professional destinations. Page and linked Instagram professional-account destination tokens are stored encrypted per destination. Facebook publishing requires `pages_show_list`, `pages_read_engagement` and `pages_manage_posts`; Instagram publishing and account metrics require the applicable `instagram_content_publish` and `instagram_basic` scopes. App review/Advanced Access and eligible Page/account relationships apply. |
 | TikTok | `SOCIAL_TIKTOK_CLIENT_KEY`, `SOCIAL_TIKTOK_CLIENT_SECRET`, optional `SOCIAL_TIKTOK_REDIRECT_URI` | `/social/authorization/callback/tiktok` | OAuth 2.0 with PKCE and TikTok's `client_key` parameter convention. Product approval and scopes depend on the TikTok developer application. |
 | YouTube | `SOCIAL_YOUTUBE_CLIENT_ID`, `SOCIAL_YOUTUBE_CLIENT_SECRET`, optional `SOCIAL_YOUTUBE_REDIRECT_URI` | `/social/authorization/callback/youtube` | Google OAuth 2.0 with PKCE, offline access and refresh support. API quota and project verification rules apply. |
 | Threads | `SOCIAL_THREADS_CLIENT_ID`, `SOCIAL_THREADS_CLIENT_SECRET`, optional `SOCIAL_THREADS_REDIRECT_URI` | `/social/authorization/callback/threads` | Threads OAuth 2.0 and configured long-lived token refresh. API permissions depend on the Meta developer application. |
@@ -43,6 +43,11 @@ Default callback base URL is `APP_URL`. Configure explicit `*_REDIRECT_URI` valu
 - `META_GRAPH_API_VERSION`: shared Meta Graph API version for OAuth, Page discovery and publishing endpoints; default `v26.0`. Upgrade only after reviewing Meta's version changelog and rerunning the Meta adapter tests.
 
 Use a shared cache backend with atomic lock support in multi-instance deployments. Configure the database and cache before enabling social authorization. All app instances must use the same encryption key and compatible credential storage.
+
+## Social account metrics
+
+Facebook Page and Instagram professional-account follower metrics are refreshed by scheduled commands, not during Enterprise Portfolio rendering. `social-accounts:sync-facebook-follower-counts` and `social-accounts:sync-instagram-follower-counts` run every six hours. The Instagram synchronizer reads `id`, `username`, and `followers_count` from the configured Meta Graph API version using the destination-specific token. It persists a canonical `https://www.instagram.com/{username}/` profile URL only when the returned username matches the allowed Instagram username format. A missing or invalid username leaves the last known URL unchanged; invalid counts and provider failures leave the last known metrics intact. The command reports per-account failures and continues processing other accounts.
+
 
 ## Failure and recovery semantics
 
