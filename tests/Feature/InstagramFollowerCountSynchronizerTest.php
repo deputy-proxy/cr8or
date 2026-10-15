@@ -12,6 +12,7 @@ use App\Models\SocialIdentity;
 use App\Services\Social\InstagramFollowerCountSynchronizer;
 use App\Services\Social\SocialCredentialStore;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 function instagramFollowerSyncContext(
@@ -184,6 +185,20 @@ it('rejects non-Instagram destinations before making provider requests', functio
 it('rejects a Instagram destination without an operational Meta connection', function () {
     [$account, $connection, $synchronizer] = instagramFollowerSyncContext();
     $connection->transitionTo(IntegrationConnection::STATUS_DISABLED)->save();
+    Http::preventStrayRequests();
+
+    expect(fn () => $synchronizer->synchronize($account))
+        ->toThrow(SocialAuthorizationException::class, 'matching operational Meta connection');
+});
+
+it('rejects a Meta identity that belongs to another organization before requesting metrics', function () {
+    [$account, , $synchronizer] = instagramFollowerSyncContext();
+    $otherOrganization = Organization::factory()->create();
+
+    DB::table('social_identities')
+        ->where('id', $account->social_identity_id)
+        ->update(['organization_id' => $otherOrganization->id]);
+
     Http::preventStrayRequests();
 
     expect(fn () => $synchronizer->synchronize($account))
