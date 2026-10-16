@@ -18,6 +18,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Grouping\Group;
 
 class ChannelResource extends Resource
 {
@@ -44,7 +45,25 @@ class ChannelResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('type')->badge(), TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('status')->badge()->sortable()])->recordActions([EditAction::make(), DeleteAction::make()]);
+        return 
+            $table
+                ->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('type')->badge(), TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('status')->badge()->sortable()])
+                ->groups([
+                    Group::make('type')
+                        ->label('Type')
+                        ->getKeyFromRecordUsing(fn (Channel $record): int|string => $record->type ?? 'ungrouped')
+                        ->getTitleFromRecordUsing(fn (Channel $record): string => $record->type ?? 'Ungrouped')
+                        ->titlePrefixedWithLabel(false)
+                        ->collapsible(),
+                    Group::make('enterprise_id')
+                        ->label('Enterprise')
+                        ->getKeyFromRecordUsing(fn (Channel $record): int|string => $record->enterprise_id ?? 'ungrouped')
+                        ->getTitleFromRecordUsing(fn (Channel $record): string => $record->enterprise->name ?? 'Ungrouped')
+                        ->titlePrefixedWithLabel(false)
+                        ->collapsible(),
+                ])
+                ->defaultGroup('type')
+                ->recordActions([EditAction::make(), DeleteAction::make()]);
     }
 
     public static function getEloquentQuery(): Builder
