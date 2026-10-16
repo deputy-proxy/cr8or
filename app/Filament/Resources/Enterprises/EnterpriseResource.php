@@ -36,7 +36,7 @@ class EnterpriseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Organization & Access';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprises & Products';
 
     protected static ?string $navigationLabel = 'Enterprises';
 
