@@ -38,19 +38,15 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Organization & Access',
-                'Strategy & Planning',
-                'Work Management',
-                'Knowledge',
-                'Agent Configuration',
-                'Agent Operations & Governance',
-                'Workflows',
-                'Marketing & Content',
-                'Media Production',
-                'Publishing',
+                'Enterprises & Products',
+                'Strategy & Execution Planning',
+                'Agent Governance & Operations',
+                'Media Production & Publishing',
+                'Knowledge & Documentation',
+                'Workflows & Integrations',
+                'Marketing',
                 'Finance',
-                'Reporting & Analytics',
-                'Integrations',
-                'Operations',
+                'Reporting',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

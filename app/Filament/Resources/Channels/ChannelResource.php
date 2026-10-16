@@ -16,9 +16,9 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Tables\Grouping\Group;
 
 class ChannelResource extends Resource
 {
@@ -32,7 +32,7 @@ class ChannelResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketing & Content';
+    protected static string|\UnitEnum|null $navigationGroup = 'Marketing';
 
     protected static ?string $navigationLabel = 'Channels';
 
@@ -45,13 +45,13 @@ class ChannelResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return 
+        return
             $table
                 ->columns([TextColumn::make('name')->searchable()->sortable(), TextColumn::make('type')->badge(), TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(), TextColumn::make('status')->badge()->sortable()])
                 ->groups([
                     Group::make('type')
                         ->label('Type')
-                        ->getKeyFromRecordUsing(fn (Channel $record): int|string => $record->type ?? 'ungrouped')
+                        ->getKeyFromRecordUsing(fn (Channel $record): string => $record->type ?? 'ungrouped')
                         ->getTitleFromRecordUsing(fn (Channel $record): string => $record->type ?? 'Ungrouped')
                         ->titlePrefixedWithLabel(false)
                         ->collapsible(),

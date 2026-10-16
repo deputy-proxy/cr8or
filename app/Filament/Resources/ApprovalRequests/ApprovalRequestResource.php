@@ -27,11 +27,11 @@ class ApprovalRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckBadge;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Governance & Operations';
 
     protected static ?string $navigationLabel = 'Approval Requests';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 80;
 
     public static function table(Table $table): Table
     {

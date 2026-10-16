@@ -29,11 +29,11 @@ class ProductResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprises & Products';
 
     protected static ?string $navigationLabel = 'Products';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {

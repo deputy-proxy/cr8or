@@ -35,11 +35,11 @@ class TaskResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCheckCircle;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Tasks';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 90;
 
     public static function form(Schema $schema): Schema
     {

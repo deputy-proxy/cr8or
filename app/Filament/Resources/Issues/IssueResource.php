@@ -28,11 +28,11 @@ class IssueResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBugAnt;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Issues';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 130;
 
     public static function table(Table $table): Table
     {

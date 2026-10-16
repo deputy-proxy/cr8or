@@ -25,11 +25,11 @@ class IntegrationJobResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflows & Integrations';
 
     protected static ?string $navigationLabel = 'Integration Jobs';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {

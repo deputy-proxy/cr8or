@@ -23,11 +23,11 @@ class CommandWebhookDeliveryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflows & Integrations';
 
     protected static ?string $navigationLabel = 'Command Webhook Deliveries';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 90;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {

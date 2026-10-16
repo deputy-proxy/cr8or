@@ -40,9 +40,9 @@ class WorkOverview extends Page
 
     protected static ?string $title = 'Work Overview';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Work Management';
+    protected static string|UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
-    protected static ?int $navigationSort = 0;
+    protected static ?int $navigationSort = 125;
 
     protected string $view = 'filament.pages.work-overview';
 
