@@ -32,11 +32,11 @@ class EnterpriseContextResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInformationCircle;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
+    protected static string|\UnitEnum|null $navigationGroup = 'Enterprises & Products';
 
     protected static ?string $navigationLabel = 'Enterprise Contexts';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 20;
 
     public static function form(Schema $schema): Schema
     {
