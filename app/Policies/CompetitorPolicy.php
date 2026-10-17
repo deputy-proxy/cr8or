@@ -31,10 +31,19 @@ class CompetitorPolicy
         return (new EnterprisePolicy)->createForOrganization($user, $enterprise->organization);
     }
 
-    /** Competitor records are versioned; changes create successor records. */
+    /** Revising means creating a successor version, never mutating this version's descriptive fields. */
     public function update(User $user, Competitor $record): bool
     {
-        return false;
+        return $record->is_current
+            && $record->status === Competitor::STATUS_ACTIVE
+            && $this->enterpriseRole($user, $record->enterprise_id, MembershipRole::Owner, MembershipRole::Admin);
+    }
+
+    public function archive(User $user, Competitor $record): bool
+    {
+        return $record->is_current
+            && $record->status === Competitor::STATUS_ACTIVE
+            && $this->enterpriseRole($user, $record->enterprise_id, MembershipRole::Owner, MembershipRole::Admin);
     }
 
     public function delete(User $user, Competitor $record): bool

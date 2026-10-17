@@ -317,3 +317,6 @@ CR8OR treats Filament resource presentation as an explicit UI contract, not as a
 - Secrets, credentials, tokens, raw private payloads, vectors, and sensitive implementation details must not be exposed merely for completeness.
 - Table definitions must avoid unnecessary relationship loading and obvious N+1 query patterns.
 - The exhaustive resource presentation inventory is maintained in docs/filament-resource-presentation.md and is enforced by tests/Feature/Filament/PresentationContractTest.php.\n
+## Competitor version lifecycle
+
+Competitor descriptive fields are immutable after creation. Authorized revisions run through `StrategicContextService::reviseCompetitor()`, archive the current version, and create a successor linked by `supersedes_id`; renaming a competitor does not break that lineage. Version numbers are allocated under an Enterprise row lock and are unique within the Enterprise, matching the database constraint. `archiveCompetitor()` archives only the current active version and preserves the historical row. Filament exposes record viewing, revision, and archive actions through the same policy abilities used by the domain service. Hard deletion remains denied.
