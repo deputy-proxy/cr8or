@@ -59,7 +59,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
             supportedDestinationTypes: ['instagram.professional'],
             supportedMediaTypes: ['image/jpeg'],
             maxTextLength: self::MAX_CAPTION_LENGTH,
-            maxMediaItems: 1,
+            maxMediaItems: 10,
             maxMediaSizeBytes: self::MAX_IMAGE_SIZE_BYTES,
             immediatePublishing: PublishingCapabilitySupport::Supported,
             nativeScheduling: PublishingCapabilitySupport::Unsupported,
@@ -80,11 +80,8 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
 
         $instagramUserId = $this->instagramUserId($request->destinationExternalId);
         $media = $this->validatedMedia($request->media);
-        $altText = $this->validatedAltText($media[0]);
-
-        if (count($media) !== 1) {
-            throw new PublishingAdapterException('Instagram publishing currently requires exactly one JPEG image.', 'unsupported_media');
-        }
+        $isCarousel = count($media) > 1;
+        $altTexts = array_map(fn (array $item): ?string => $this->validatedAltText($item), $media);
 
         if (mb_strlen($request->content) > self::MAX_CAPTION_LENGTH) {
             throw new PublishingAdapterException('Instagram caption exceeds the 2,200-character limit.', 'content_too_long');
@@ -94,35 +91,74 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
         $accessToken = $this->instagramAccessToken($connection, $instagramUserId, 'instagram_business_content_publish');
         $version = $this->graphApiVersion();
         $this->assertPublishingQuota($instagramUserId, $accessToken, $version);
-        $imageUrl = $this->temporaryMediaUrl($media[0]);
+        $childContainerIds = [];
+        foreach ($media as $index => $item) {
+            $imageUrl = $this->temporaryMediaUrl($item);
+            $parameters = [
+                'image_url' => $imageUrl,
+                'is_carousel_item' => $isCarousel ? 'true' : null,
+                'alt_text' => $altTexts[$index],
+            ];
+            if (! $isCarousel) {
+                $parameters['caption'] = $request->content;
+            }
 
-        try {
-            $containerResponse = Http::asForm()
-                ->acceptJson()
-                ->timeout((int) config('social_authorization.timeout', 15))
-                ->withToken($accessToken)
-                ->post("https://graph.instagram.com/{$version}/{$instagramUserId}/media", array_filter([
-                    'image_url' => $imageUrl,
-                    'caption' => $request->content,
-                    'alt_text' => $altText,
-                ], static fn (mixed $value): bool => $value !== null));
-        } catch (ConnectionException $exception) {
-            throw new PublishingAdapterException(
-                'Instagram did not return a definitive response while creating the media container.',
-                'timeout',
-                retryable: true,
-                previous: $exception,
-                ambiguous: true,
-            );
+            try {
+                $containerResponse = Http::asForm()
+                    ->acceptJson()
+                    ->timeout((int) config('social_authorization.timeout', 15))
+                    ->withToken($accessToken)
+                    ->post("https://graph.instagram.com/{$version}/{$instagramUserId}/media", array_filter(
+                        $parameters, static fn (mixed $value): bool => $value !== null,
+                    ));
+            } catch (ConnectionException $exception) {
+                throw new PublishingAdapterException(
+                    'Instagram did not return a definitive response while creating a media container; no publication was submitted.',
+                    'timeout',
+                    retryable: true,
+                    previous: $exception,
+                );
+            }
+
+            $containerBody = $this->assertGraphSuccess($containerResponse, submission: false);
+            $childId = $containerBody['id'] ?? null;
+            if (! is_string($childId) || preg_match('/^[0-9]+$/D', $childId) !== 1) {
+                throw new PublishingAdapterException('Meta did not return a valid Instagram media-container identifier.', 'invalid_adapter_response');
+            }
+
+            $childContainerIds[] = $childId;
+            $this->awaitContainerReady($childId, $accessToken, $version);
         }
 
-        $containerBody = $this->assertGraphSuccess($containerResponse, submission: false);
-        $containerId = $containerBody['id'] ?? null;
-        if (! is_string($containerId) || preg_match('/^[0-9]+$/D', $containerId) !== 1) {
-            throw new PublishingAdapterException('Meta did not return a valid Instagram media-container identifier.', 'invalid_adapter_response');
-        }
+        $containerId = $childContainerIds[0];
+        if ($isCarousel) {
+            try {
+                $carouselResponse = Http::asForm()
+                    ->acceptJson()
+                    ->timeout((int) config('social_authorization.timeout', 15))
+                    ->withToken($accessToken)
+                    ->post("https://graph.instagram.com/{$version}/{$instagramUserId}/media", [
+                        'media_type' => 'CAROUSEL',
+                        'children' => implode(',', $childContainerIds),
+                        'caption' => $request->content,
+                    ]);
+            } catch (ConnectionException $exception) {
+                throw new PublishingAdapterException(
+                    'Instagram did not return a definitive response while creating the carousel container; no publication was submitted.',
+                    'timeout',
+                    retryable: true,
+                    previous: $exception,
+                );
+            }
 
-        $this->awaitContainerReady($containerId, $accessToken, $version);
+            $carouselBody = $this->assertGraphSuccess($carouselResponse, submission: false);
+            $containerId = $carouselBody['id'] ?? null;
+            if (! is_string($containerId) || preg_match('/^[0-9]+$/D', $containerId) !== 1) {
+                throw new PublishingAdapterException('Meta did not return a valid Instagram carousel-container identifier.', 'invalid_adapter_response');
+            }
+
+            $this->awaitContainerReady($containerId, $accessToken, $version);
+        }
 
         try {
             $publishResponse = Http::asForm()
@@ -162,8 +198,8 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
             payload: [
                 'network' => 'instagram',
                 'destination_external_id' => $instagramUserId,
-                'content_type' => 'image',
-                'media_count' => 1,
+                'content_type' => $isCarousel ? 'carousel' : 'image',
+                'media_count' => count($media),
                 'container_id' => $containerId,
             ],
         );
@@ -206,7 +242,7 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
 
         $body = $this->assertGraphSuccess($response, submission: false);
         if (($body['id'] ?? null) !== $publication->externalPublicationId
-            || ($body['media_type'] ?? null) !== 'IMAGE') {
+            || ! in_array(($body['media_type'] ?? null), ['IMAGE', 'CAROUSEL_ALBUM'], true)) {
             throw new PublishingAdapterException('Meta returned a media object that does not match the requested Instagram publication.', 'invalid_adapter_response');
         }
 
@@ -287,40 +323,42 @@ final class InstagramPublishingAdapter implements PublishingStatusLookupAdapter
      */
     private function validatedMedia(array $media): array
     {
-        if (count($media) !== 1) {
-            throw new PublishingAdapterException('Instagram publishing currently supports exactly one JPEG image.', 'unsupported_media');
+        $count = count($media);
+        if ($count < 1 || $count > 10) {
+            throw new PublishingAdapterException('Instagram publishing supports one JPEG image or a carousel of 2 to 10 JPEG images.', 'unsupported_media');
         }
 
-        $item = $media[0];
-        if (($item['mime_type'] ?? null) !== 'image/jpeg') {
-            throw new PublishingAdapterException('Instagram publishing currently supports JPEG images only.', 'unsupported_media');
-        }
+        foreach ($media as $item) {
+            if (($item['mime_type'] ?? null) !== 'image/jpeg') {
+                throw new PublishingAdapterException('Instagram publishing currently supports JPEG images only; carousel items must all be JPEG images.', 'unsupported_media');
+            }
 
-        $size = $item['size'] ?? null;
-        if (! is_numeric($size) || (int) $size < 1 || (int) $size > self::MAX_IMAGE_SIZE_BYTES) {
-            throw new PublishingAdapterException('The Instagram JPEG must have a known size no greater than 8 MiB.', 'media_size_exceeded');
-        }
+            $size = $item['size'] ?? null;
+            if (! is_numeric($size) || (int) $size < 1 || (int) $size > self::MAX_IMAGE_SIZE_BYTES) {
+                throw new PublishingAdapterException('Each Instagram JPEG must have a known size no greater than 8 MiB.', 'media_size_exceeded');
+            }
 
-        if (($item['disk'] ?? null) !== 'r2' || ! is_string($item['path'] ?? null) || trim($item['path']) === '') {
-            throw new PublishingAdapterException('Instagram publishing requires an active JPEG image stored in CR8OR R2.', 'media_unavailable');
-        }
+            if (($item['disk'] ?? null) !== 'r2' || ! is_string($item['path'] ?? null) || trim($item['path']) === '') {
+                throw new PublishingAdapterException('Instagram publishing requires JPEG images stored in CR8OR R2.', 'media_unavailable');
+            }
 
-        $path = trim($item['path']);
-        if (str_starts_with($path, '/') || in_array('..', explode('/', $path), true)) {
-            throw new PublishingAdapterException('The Instagram image storage path is invalid.', 'media_unavailable');
-        }
+            $path = trim($item['path']);
+            if (str_starts_with($path, '/') || in_array('..', explode('/', $path), true)) {
+                throw new PublishingAdapterException('The Instagram image storage path is invalid.', 'media_unavailable');
+            }
 
-        $metadata = $item['metadata'] ?? [];
-        $dimensions = $item['dimensions'] ?? (is_array($metadata) ? ($metadata['dimensions'] ?? $metadata) : []);
-        $width = is_array($dimensions) ? ($dimensions['width'] ?? null) : null;
-        $height = is_array($dimensions) ? ($dimensions['height'] ?? null) : null;
-        if (! is_numeric($width) || ! is_numeric($height) || (int) $width < 320 || (int) $width > 1440 || (int) $height < 320) {
-            throw new PublishingAdapterException('Instagram JPEG dimensions must be known, at least 320 pixels on each side, and no wider than 1440 pixels.', 'invalid_media_dimensions');
-        }
+            $metadata = $item['metadata'] ?? [];
+            $dimensions = $item['dimensions'] ?? (is_array($metadata) ? ($metadata['dimensions'] ?? $metadata) : []);
+            $width = is_array($dimensions) ? ($dimensions['width'] ?? null) : null;
+            $height = is_array($dimensions) ? ($dimensions['height'] ?? null) : null;
+            if (! is_numeric($width) || ! is_numeric($height) || (int) $width < 320 || (int) $width > 1440 || (int) $height < 320) {
+                throw new PublishingAdapterException('Instagram JPEG dimensions must be known, at least 320 pixels on each side, and no wider than 1440 pixels.', 'invalid_media_dimensions');
+            }
 
-        $ratio = (float) $width / (float) $height;
-        if ($ratio < 0.8 || $ratio > 1.91) {
-            throw new PublishingAdapterException('Instagram image aspect ratio must be between 4:5 and 1.91:1.', 'invalid_media_dimensions');
+            $ratio = (float) $width / (float) $height;
+            if ($ratio < 0.8 || $ratio > 1.91) {
+                throw new PublishingAdapterException('Instagram image aspect ratio must be between 4:5 and 1.91:1.', 'invalid_media_dimensions');
+            }
         }
 
         return $media;
