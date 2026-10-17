@@ -16,6 +16,8 @@ A Tool does not grant authority. A Capability declaration does not grant permiss
 
 The full per-tool authorization and tenancy mapping is maintained in [`mcp-authorization.md`](mcp-authorization.md). It records the shared boundary family, capability/operation mapping where present, and the concrete tenant/policy enforcement path for every public tool.
 
+The canonical structured persona schema, product-association rules, update semantics, privacy boundaries, and examples for `create-audience` / `update-audience` are documented in [`client-personas.md`](client-personas.md). These tools retain the existing `marketing.audience.create` / `marketing.audience.update` capability-operation path; persona fields do not create a parallel MCP business layer.
+
 ## Public Tool rename and compatibility decision
 
 This change standardizes the current public identifiers in place. Repository-owned tests, examples, and runtime references are updated together. No legacy aliases are registered: aliases would keep obsolete identifiers publicly discoverable and create a second name for the same operation. External MCP clients and saved prompts/configuration are not fully observable from this repository, so consumers outside the repository must update to the canonical names below. This is a breaking public-interface change; business behavior, payloads, capability identifiers, and authorization remain unchanged.

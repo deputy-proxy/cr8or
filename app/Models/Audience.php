@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Pivots\AudienceProduct;
 use Database\Factories\AudienceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'name', 'description', 'status'])]
+#[Fillable(['enterprise_id', 'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range', 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'])]
 class Audience extends Model
 {
     /** @use HasFactory<AudienceFactory> */
@@ -19,6 +21,20 @@ class Audience extends Model
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_ARCHIVED = 'archived';
+
+    public const PERSONA_TYPES = ['buyer', 'user', 'influencer', 'decision_maker', 'gatekeeper'];
+
+    protected function casts(): array
+    {
+        return [
+            'research_confidence' => 'decimal:2',
+            'last_reviewed_at' => 'date',
+            'psychographics' => 'array',
+            'goals_and_motivations' => 'array',
+            'pain_points' => 'array',
+            'buying_behavior' => 'array',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -37,6 +53,12 @@ class Audience extends Model
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsToMany<Product, $this, AudienceProduct> */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class)->using(AudienceProduct::class)->withTimestamps();
     }
 
     /** @return HasMany<ContentItem, $this> */

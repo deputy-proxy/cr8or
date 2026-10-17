@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\DefinesAudiencePersonaSchema;
 use App\Models\Audience;
 use App\Models\Enterprise;
 use App\Models\User;
@@ -12,17 +13,36 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('update-audience')]
-#[Description('Update an audience without changing enterprise ownership.')]
+#[Description('Update a client persona without changing enterprise ownership. Omitted fields and omitted product_ids are preserved; product_ids: [] clears product associations.')]
 class UpdateAudienceTool extends DomainMutationTool
 {
+    use DefinesAudiencePersonaSchema;
+
     protected static function schemaFields(JsonSchema $schema): array
     {
-        return ['audience_id' => $schema->integer()->min(1)->required(), 'name' => $schema->string()->min(1)->max(255), 'description' => $schema->string()->max(10000), 'status' => $schema->string()->min(1)->max(100), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
+        return array_merge([
+            'audience_id' => $schema->integer()->min(1)->required(),
+            'name' => $schema->string()->min(1)->max(255),
+            'description' => $schema->string()->max(10000),
+            'status' => $schema->string()->enum(['active', 'archived']),
+        ], static::personaSchemaFields($schema), [
+            'agent_assignment_id' => $schema->integer()->min(1),
+            'agent_execution_id' => $schema->integer()->min(1),
+            'approval_request_id' => $schema->integer()->min(1),
+        ]);
     }
 
     protected static function rules(): array
     {
-        return ['audience_id' => ['required', 'integer', 'min:1', 'exists:audiences,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'description' => ['sometimes', 'nullable', 'string', 'max:10000'], 'status' => ['sometimes', 'string', 'min:1', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
+        return array_merge([
+            'audience_id' => ['required', 'integer', 'min:1', 'exists:audiences,id'],
+            'name' => ['sometimes', 'string', 'min:1', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'status' => ['sometimes', 'string', 'in:active,archived'],
+            'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+            'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+        ], static::personaValidationRules());
     }
 
     /** @param array<string, mixed> $validated */
@@ -61,7 +81,13 @@ class UpdateAudienceTool extends DomainMutationTool
     {
         if (! $target instanceof Audience) {
             throw new \LogicException('Unexpected audience target.');
-        } $attributes = array_intersect_key($validated, array_flip(['name', 'description', 'status']));
+        }
+
+        $attributes = array_intersect_key($validated, array_flip([
+            'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range',
+            'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics',
+            'goals_and_motivations', 'pain_points', 'buying_behavior', 'product_ids',
+        ]));
         if ($attributes === []) {
             throw new \LogicException('At least one mutable audience field is required.');
         }
@@ -75,6 +101,12 @@ class UpdateAudienceTool extends DomainMutationTool
             throw new \LogicException('Unexpected audience result.');
         }
 
-        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
+        return array_merge([
+            'id' => $record->id,
+            'enterprise_id' => $record->enterprise_id,
+            'name' => $record->name,
+            'description' => $record->description,
+            'status' => $record->status,
+        ], static::personaResult($record));
     }
 }

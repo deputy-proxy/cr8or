@@ -123,7 +123,7 @@ it('preserves agreed labels for primary navigation resources', function () {
         ->and(CampaignResource::getNavigationLabel())->toBe('Campaigns')
         ->and(ContentSeriesResource::getNavigationLabel())->toBe('Content Series')
         ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
-        ->and(AudienceResource::getNavigationLabel())->toBe('Audiences')
+        ->and(AudienceResource::getNavigationLabel())->toBe('Personas')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
         ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests')
         ->and(EventResource::getNavigationLabel())->toBe('Events')
