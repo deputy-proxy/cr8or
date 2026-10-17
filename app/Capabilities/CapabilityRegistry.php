@@ -7,6 +7,7 @@ use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ApproveContentItemTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
+use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -42,6 +43,7 @@ use App\Operations\CampaignLifecycle;
 use App\Operations\ContentSeriesLifecycle;
 use App\Operations\ContinueAgentExecution;
 use App\Operations\CreateAgentAssignment;
+use App\Operations\CreateCompetitor;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateKnowledgeIndex;
 use App\Operations\CreateKnowledgeItem;
@@ -610,6 +612,15 @@ final class CapabilityRegistry
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'none',
+            ),
+            $this->definition(
+                'marketing.competitor.create',
+                CreateCompetitor::class,
+                CreateCompetitorTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'website' => 'string|nullable', 'positioning' => 'string|nullable', 'strengths' => 'array|nullable', 'weaknesses' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'competitor-version'],
+                'McpCapabilityAuthorizer::authorizeMutation + CompetitorPolicy::createForEnterprise + StrategicContextService',
                 'none',
             ),
             $this->definition(
