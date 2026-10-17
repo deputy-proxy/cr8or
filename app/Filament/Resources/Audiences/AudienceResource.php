@@ -35,13 +35,13 @@ class AudienceResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Personas';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Enterprises & Products';
 
     protected static ?string $navigationLabel = 'Personas';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 80;
 
     public static function form(Schema $schema): Schema
     {
