@@ -32,13 +32,13 @@ class EnterprisePortfolioDashboard extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartPie;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Organization & Access';
+    protected static string|UnitEnum|null $navigationGroup = 'Enterprises & Products';
 
     protected static ?string $navigationLabel = 'Enterprise Portfolio';
 
     protected static ?string $title = 'Enterprise Portfolio';
 
-    protected static ?int $navigationSort = 45;
+    protected static ?int $navigationSort = 15;
 
     protected string $view = 'filament.pages.enterprise-portfolio-dashboard';
 

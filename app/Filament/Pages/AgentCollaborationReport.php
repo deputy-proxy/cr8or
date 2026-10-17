@@ -17,9 +17,9 @@ class AgentCollaborationReport extends Page
 
     protected static ?string $navigationLabel = 'Agent Collaboration Report';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reporting & Analytics';
+    protected static string|UnitEnum|null $navigationGroup = 'Reporting';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 35;
 
     protected string $view = 'filament.pages.agent-collaboration-report';
 

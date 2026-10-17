@@ -30,11 +30,11 @@ class MilestoneResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Milestones';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 80;
 
     public static function form(Schema $schema): Schema
     {

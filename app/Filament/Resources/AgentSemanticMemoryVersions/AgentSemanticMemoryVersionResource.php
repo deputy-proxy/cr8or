@@ -23,11 +23,11 @@ class AgentSemanticMemoryVersionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Governance & Operations';
 
     protected static ?string $navigationLabel = 'Agent Semantic Memory Versions';
 
-    protected static ?int $navigationSort = 110;
+    protected static ?int $navigationSort = 150;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {

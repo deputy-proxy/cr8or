@@ -25,11 +25,11 @@ class PublishingJobResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Publishing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Media Production & Publishing';
 
     protected static ?string $navigationLabel = 'Publishing Jobs';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 120;
 
     public static function form(Schema $schema): Schema
     {

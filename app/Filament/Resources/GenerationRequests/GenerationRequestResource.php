@@ -25,7 +25,7 @@ class GenerationRequestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Media Production';
+    protected static string|\UnitEnum|null $navigationGroup = 'Media Production & Publishing';
 
     protected static ?string $navigationLabel = 'Generation Requests';
 

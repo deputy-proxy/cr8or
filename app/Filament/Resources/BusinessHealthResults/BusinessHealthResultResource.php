@@ -29,11 +29,11 @@ class BusinessHealthResultResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHeart;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Reporting';
 
     protected static ?string $navigationLabel = 'Business Health Results';
 
-    protected static ?int $navigationSort = 140;
+    protected static ?int $navigationSort = 60;
 
     public static function form(Schema $schema): Schema
     {

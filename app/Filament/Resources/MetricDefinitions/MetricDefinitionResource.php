@@ -32,7 +32,7 @@ class MetricDefinitionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Reporting & Analytics';
+    protected static string|\UnitEnum|null $navigationGroup = 'Reporting';
 
     protected static ?string $navigationLabel = 'Metric Definitions';
 

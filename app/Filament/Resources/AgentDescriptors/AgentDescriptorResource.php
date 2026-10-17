@@ -32,7 +32,7 @@ class AgentDescriptorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agent Configuration';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Governance & Operations';
 
     protected static ?string $navigationLabel = 'Agents';
 

@@ -33,11 +33,11 @@ class ApprovalPolicyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Governance & Operations';
 
     protected static ?string $navigationLabel = 'Approval Policies';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 90;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {

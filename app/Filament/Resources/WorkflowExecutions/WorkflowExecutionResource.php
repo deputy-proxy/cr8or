@@ -23,7 +23,7 @@ class WorkflowExecutionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Workflows';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflows & Integrations';
 
     protected static ?string $navigationLabel = 'Workflow Executions';
 

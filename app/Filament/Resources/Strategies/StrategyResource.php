@@ -30,11 +30,11 @@ class StrategyResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Strategies';
 
-    protected static ?int $navigationSort = 50;
+    protected static ?int $navigationSort = 10;
 
     public static function form(Schema $schema): Schema
     {

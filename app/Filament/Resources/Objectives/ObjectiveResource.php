@@ -30,7 +30,7 @@ class ObjectiveResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLightBulb;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Planning';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Objectives';
 

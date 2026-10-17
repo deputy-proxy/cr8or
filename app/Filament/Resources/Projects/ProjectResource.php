@@ -30,11 +30,11 @@ class ProjectResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Projects';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {

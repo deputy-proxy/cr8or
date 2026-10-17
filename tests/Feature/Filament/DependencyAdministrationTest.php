@@ -8,9 +8,9 @@ use App\Models\Organization;
 use App\Models\Task;
 use App\Models\User;
 
-it('places Work Dependencies under Work Management and exposes the complete endpoint set', function () {
-    expect(DependencyResource::getNavigationGroup())->toBe('Work Management')
-        ->and(DependencyResource::getNavigationSort())->toBe(50)
+it('places Work Dependencies under Strategy & Execution Planning and exposes the complete endpoint set', function () {
+    expect(DependencyResource::getNavigationGroup())->toBe('Strategy & Execution Planning')
+        ->and(DependencyResource::getNavigationSort())->toBe(100)
         ->and(DependencyResource::getPages())->toHaveKeys(['index', 'create', 'edit']);
 
     $schema = DependencyResource::form(new \Filament\Schemas\Schema);

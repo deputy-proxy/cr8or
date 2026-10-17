@@ -23,7 +23,7 @@ class KnowledgeEmbeddingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Knowledge';
+    protected static string|\UnitEnum|null $navigationGroup = 'Knowledge & Documentation';
 
     protected static ?string $navigationLabel = 'Knowledge Embeddings';
 

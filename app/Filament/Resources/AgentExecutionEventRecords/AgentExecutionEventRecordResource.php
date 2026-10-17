@@ -23,11 +23,11 @@ class AgentExecutionEventRecordResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Agent Operations & Governance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Agent Governance & Operations';
 
     protected static ?string $navigationLabel = 'Agent Execution Event Records';
 
-    protected static ?int $navigationSort = 80;
+    protected static ?int $navigationSort = 120;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {

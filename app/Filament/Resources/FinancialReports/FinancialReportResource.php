@@ -29,11 +29,11 @@ class FinancialReportResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Reporting';
 
     protected static ?string $navigationLabel = 'Financial Reports';
 
-    protected static ?int $navigationSort = 130;
+    protected static ?int $navigationSort = 50;
 
     public static function form(Schema $schema): Schema
     {

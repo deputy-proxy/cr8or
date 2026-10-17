@@ -23,11 +23,11 @@ class IntegrationResultResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Integrations';
+    protected static string|\UnitEnum|null $navigationGroup = 'Workflows & Integrations';
 
     protected static ?string $navigationLabel = 'Integration Results';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 80;
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {

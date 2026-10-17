@@ -28,11 +28,11 @@ class AssignmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserPlus;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Work Management';
+    protected static string|\UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
     protected static ?string $navigationLabel = 'Assignments';
 
-    protected static ?int $navigationSort = 60;
+    protected static ?int $navigationSort = 110;
 
     public static function form(Schema $schema): Schema
     {
