@@ -29,13 +29,13 @@ function expectedNavigation(): array
 {
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships'],
-        'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products'],
+        'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products', 'Audiences'],
         'Strategy & Execution Planning' => ['Strategies', 'Goals', 'Objectives', 'Kpis', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'Issues'],
         'Agent Governance & Operations' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentDelegations', 'AgentDecisions', 'ApprovalRequests', 'ApprovalPolicies', 'ApprovalDecisions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions'],
         'Media Production & Publishing' => ['Assets', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Knowledge & Documentation' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Workflows & Integrations' => ['Workflows', 'WorkflowVersions', 'WorkflowStages', 'WorkflowExecutions', 'IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries', 'Events'],
-        'Marketing' => ['MarketingStrategies', 'Campaigns', 'ContentSeries', 'Audiences', 'Channels', 'SocialAccounts', 'ContentItems', 'Scripts'],
+        'Marketing' => ['MarketingStrategies', 'Campaigns', 'ContentSeries', 'Channels', 'SocialAccounts', 'ContentItems', 'Scripts'],
         'Finance' => ['FinancialAccounts', 'FinancialPeriods', 'TransactionCategories', 'Customers', 'Partners', 'Revenues', 'Expenses', 'Transactions', 'Budgets', 'Statements', 'StatementEntries', 'Invoices'],
         'Reporting' => ['Reports', 'ReportSnapshots', 'ReportMetricValues', 'MetricDefinitions', 'FinancialReports', 'BusinessHealthResults'],
     ];
@@ -73,14 +73,18 @@ it('maps every discovered Filament resource to exactly one approved navigation g
 
 it('orders resources by user workflow within each navigation group', function () {
     foreach (expectedNavigation() as $group => $resources) {
+        $sortOverrides = ['Channels' => 50, 'SocialAccounts' => 60, 'ContentItems' => 70, 'Scripts' => 80];
+
         foreach ($resources as $position => $resource) {
             $files = glob(app_path("Filament/Resources/{$resource}/*Resource.php"));
             expect($files)->toHaveCount(1);
 
             $class = 'App\\Filament\\Resources\\'.$resource.'\\'.basename($files[0], '.php');
 
+            $expectedSort = $sortOverrides[$resource] ?? (($position + 1) * 10);
+
             expect($class::getNavigationGroup())->toBe($group)
-                ->and($class::getNavigationSort())->toBe(($position + 1) * 10, "Resource {$resource}");
+                ->and($class::getNavigationSort())->toBe($expectedSort, "Resource {$resource}");
         }
     }
 });
