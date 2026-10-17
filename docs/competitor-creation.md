@@ -4,16 +4,19 @@
 
 The existing `App\Models\Competitor`, `competitors` table, `Enterprise::competitors()` relationship, `CompetitorPolicy`, and `StrategicContextService::createCompetitor()` are the canonical competitor domain. This feature adds no model, table, Filament resource, or parallel persistence abstraction.
 
-The governed path is:
+The primary governed path is:
 
-`MCP identity → authenticated User → enterprise context → CompetitorPolicy::createForEnterprise → marketing.competitor.create → App\Operations\CreateCompetitor → StrategicContextService::createCompetitor`
+`MCP identity → authenticated User → Enterprise context → policy/capability authorization → marketing.competitor.create_and_report → App\Operations\CreateCompetitorAndGenerateReport → existing CreateCompetitor and GenerateCompetitiveAnalysisReport operations → domain services`
 
-- Capability: `marketing.competitor.create`
-- Operation: `App\Operations\CreateCompetitor`
+- Combined capability: `marketing.competitor.create_and_report`
+- Combined operation: `App\Operations\CreateCompetitorAndGenerateReport`
+- Record-only capability: `marketing.competitor.create`
+- Record-only operation: `App\Operations\CreateCompetitor`
 - MCP tool: `create-competitor` (`App\Mcp\Tools\CreateCompetitorTool`)
+- Record-only MCP tool: `create-competitor-record` (`App\Mcp\Tools\CreateCompetitorRecordTool`)
 - Expert exposure: `App\Experts\MarketingExpert`
 
-The tool validates transport input, asks the existing `McpCapabilityAuthorizer` to authorize the mutation, and invokes the registered capability. The operation delegates the business action to `StrategicContextService`; it does not persist records itself. The service remains the domain validation, authorization, versioning, and persistence boundary, including when called outside MCP.
+Both tools validate transport input and ask the existing `McpCapabilityAuthorizer` to authorize the mutation. `create-competitor-record` invokes only the record-creation capability. `create-competitor` invokes exactly one composite capability; its operation coordinates the existing record-creation and report-generation operations inside one database transaction. Domain validation, authorization, versioning, report persistence, and provenance remain in the existing services.
 
 ## Input contract
 
@@ -33,13 +36,13 @@ The MCP schema and Laravel validation rules expose the same business fields and 
 
 ## Output contract
 
-Successful calls return `{ success: true, result: ... }` with `id`, `enterprise_id`, `version`, `name`, `website`, `positioning`, `strengths`, `weaknesses`, `status`, `effective_from`, `effective_to`, `supersedes_id`, and `is_current`. Timestamps are ISO-8601 strings or null. No credentials or unrelated tenant data are returned.
+Successful `create-competitor-record` calls return `{ success: true, result: competitor }` with `id`, `enterprise_id`, `version`, base descriptive fields, all structured profile fields, `status`, `effective_from`, `effective_to`, `supersedes_id`, and `is_current`. Successful `create-competitor` calls return `{ success: true, result: { competitor, report } }`. The report includes its persisted ID, type, status, generated timestamp, methodology version, source fingerprint, and structured report payload. The report snapshot must contain the exact competitor version produced by the call. Timestamps are ISO-8601 strings or null. No credentials or unrelated tenant data are returned.
 
 ## Ownership and authorization
 
 `enterprise_id` is resolved to an `Enterprise`, then the caller is checked against `CompetitorPolicy::createForEnterprise`. The policy delegates to `EnterprisePolicy::createForOrganization`, which permits an Owner or Admin of that enterprise's organization. A user who belongs to a different organization, or a Member without create permission, is denied before a competitor is persisted. The domain service repeats the policy check; UI visibility is not a security boundary.
 
-Agent-backed calls must additionally pass the existing capability/assignment authorization path. `MarketingExpert` explicitly exposes `marketing.competitor.create`; the capability registry does not grant permission by itself. The tool is registered through `Cr8orServer`, and the runtime capability map binds the tool to exactly one operation.
+Agent-backed calls must additionally pass the existing capability/assignment authorization path. `MarketingExpert` explicitly exposes both `marketing.competitor.create` and `marketing.competitor.create_and_report`; the capability registry does not grant permission by itself. Both MCP tools are registered through `Cr8orServer`, and each tool maps to exactly one operation.
 
 ## Version and duplicate semantics
 
@@ -57,7 +60,7 @@ There is no separate domain-level idempotency record for competitor creation. Th
 
 ## Runtime registration and verification
 
-No database seed or schema migration is required for the capability itself. Deploy the application code with the new operation, registry entry, Marketing Expert exposure, and `Cr8orServer` tool registration using the repository's normal release procedure. Refresh/restart the MCP application runtime only as required by the deployed environment, then verify `create-competitor` appears in the authenticated MCP tool list and that `CapabilityRegistry::forTool(CreateCompetitorTool::class)` resolves to `marketing.competitor.create` and `CreateCompetitor`. Do not claim live discoverability until verified in the target environment.
+No database seed or schema migration is required for these capability mappings. Deploy the application code with both operations, registry entries, Marketing Expert exposure, and `Cr8orServer` tool registrations using the repository's normal release procedure. Verify `create-competitor` resolves to `marketing.competitor.create_and_report` and `CreateCompetitorAndGenerateReport`, and `create-competitor-record` resolves to `marketing.competitor.create` and `CreateCompetitor`. Do not claim live discoverability until verified in the target environment.
 
 ## Tests
 
@@ -67,4 +70,10 @@ Focused regression coverage is in `tests/Feature/Mcp/CompetitorCreationToolTest.
 
 Competitor creation accepts optional structured arrays for products, target_segments, pricing, markets, differentiators, channels, reputation, digital_presence, and source_references. Each item is a plain object matching the contract documented in [competitive-analysis-reporting.md](competitive-analysis-reporting.md). Domain validation runs in StrategicContextService; the Filament Builder is an editor and does not define the persistence contract. Evidence references must belong to the same Enterprise. All structured fields are versioned with the existing competitor profile and cannot be changed on a persisted version.
 
-Competitive analysis is generated through the separate marketing.competitor.report.generate capability, GenerateCompetitiveAnalysisReport operation, and generate-competitive-analysis-report MCP tool. The tool returns a persisted competitive_analysis report and source fingerprint. It does not mutate competitor records. See the competitive-analysis document for the report payload, snapshot, methodology, and provenance contract.
+The combined `create-competitor` capability creates/revises the competitor and persists a competitive-analysis report in one transaction. The standalone `generate-competitive-analysis-report` capability remains available when callers need to generate a report without creating a competitor. See the competitive-analysis document for the report payload, snapshot, methodology, and provenance contract.
+
+## Automatic competitive-analysis report
+
+`create-competitor` is the combined entry point. Its single governed operation invokes the existing `CreateCompetitor` and `GenerateCompetitiveAnalysisReport` operations inside an outer database transaction. Report generation selects all current competitor profile versions belonging to the same Enterprise, so the newly created successor version is included alongside other current competitors. Before returning success, the operation verifies that the report snapshot contains the created competitor ID. Any report generation or persistence failure rolls back both the report and the competitor version change. The standalone `generate-competitive-analysis-report` tool remains available for regenerating a report later, and `create-competitor-record` remains available for callers that explicitly need record-only behavior.
+
+The structured profile contract includes `products`, `target_segments`, `pricing`, `markets`, `differentiators`, `channels`, `reputation`, `digital_presence`, and `source_references`; each list is validated by the existing domain service. Evidence references and report inputs remain scoped to the target Enterprise.

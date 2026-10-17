@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Capabilities\CapabilityRegistry;
 use App\Models\Competitor;
 use App\Models\Enterprise;
+use App\Models\Report;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
@@ -17,7 +18,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-competitor')]
-#[Description('Create an enterprise-scoped competitor record. Reusing the same exact name within the enterprise creates a new version and archives the current version; it does not overwrite history.')]
+#[Description('Create or revise an enterprise-scoped competitor profile using structured product, pricing, market, channel, reputation, digital-presence, and evidence fields, then generate and return an immutable competitive-analysis report. Reusing the same exact name creates a new version; history is preserved.')]
 class CreateCompetitorTool extends GovernedCapabilityTool
 {
     public function schema(JsonSchema $schema): array
@@ -111,62 +112,98 @@ class CreateCompetitorTool extends GovernedCapabilityTool
 
     public function handle(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.marketing.competitor.create', function () use ($request, $authorization, $registry) {
-            $validated = $request->validate([
-                'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
-                'name' => ['required', 'string', 'min:1', 'max:255'],
-                'website' => ['sometimes', 'nullable', 'url', 'max:255'],
-                'positioning' => ['sometimes', 'nullable', 'string', 'max:10000'],
-                'strengths' => ['sometimes', 'array', 'list', 'max:50'],
-                'strengths.*' => ['required', 'string', 'min:1', 'max:500'],
-                'weaknesses' => ['sometimes', 'array', 'list', 'max:50'],
-                'weaknesses.*' => ['required', 'string', 'min:1', 'max:500'],
-                ...array_fill_keys(Competitor::PROFILE_FIELDS, ['sometimes', 'array', 'list', 'max:50']),
-                'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
-                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
-                'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
-            ]);
+        return $this->executeWithErrors($request, 'mcp.marketing.competitor.create_and_report', function () use ($request, $authorization, $registry) {
+            $result = $this->performCreation($request, $authorization, $registry);
 
-            $actor = $request->user();
-            if (! $actor instanceof User) {
-                throw new AuthenticationException;
+            if (! is_array($result)
+                || ! ($result['competitor'] ?? null) instanceof Competitor
+                || ! ($result['report'] ?? null) instanceof Report) {
+                throw new \LogicException('The create-competitor capability must return both a Competitor and a Report.');
             }
-
-            $enterprise = Enterprise::query()->findOrFail((int) $validated['enterprise_id']);
-            $authorization->authorizeMutation(
-                $actor,
-                $this->capability($registry),
-                $enterprise,
-                $validated['agent_assignment_id'] ?? null,
-                $validated['agent_execution_id'] ?? null,
-                $validated['approval_request_id'] ?? null,
-                ['enterprise_id' => $enterprise->getKey()],
-                ['createForEnterprise', [Competitor::class, $enterprise]],
-            );
-
-            /** @var Competitor $competitor */
-            $competitor = $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
 
             return Response::structured([
                 'success' => true,
                 'result' => [
-                    'id' => $competitor->getKey(),
-                    'enterprise_id' => $competitor->enterprise_id,
-                    'version' => $competitor->version,
-                    'name' => $competitor->name,
-                    'website' => $competitor->website,
-                    'positioning' => $competitor->positioning,
-                    'strengths' => $competitor->strengths ?? [],
-                    'weaknesses' => $competitor->weaknesses ?? [],
-                    ...collect(Competitor::PROFILE_FIELDS)->mapWithKeys(fn (string $field): array => [$field => $competitor->{$field} ?? []])->all(),
-                    'status' => $competitor->status,
-                    'effective_from' => self::timestamp($competitor->getRawOriginal('effective_from')),
-                    'effective_to' => self::timestamp($competitor->getRawOriginal('effective_to')),
-                    'supersedes_id' => $competitor->supersedes_id,
-                    'is_current' => $competitor->is_current,
+                    'competitor' => $this->serializeCompetitor($result['competitor']),
+                    'report' => $this->serializeReport($result['report']),
                 ],
             ]);
         });
+    }
+
+    protected function performCreation(Request $request, McpCapabilityAuthorizer $authorization, CapabilityRegistry $registry): mixed
+    {
+        $validated = $request->validate([
+            'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+            'name' => ['required', 'string', 'min:1', 'max:255'],
+            'website' => ['sometimes', 'nullable', 'url', 'max:255'],
+            'positioning' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'strengths' => ['sometimes', 'array', 'list', 'max:50'],
+            'strengths.*' => ['required', 'string', 'min:1', 'max:500'],
+            'weaknesses' => ['sometimes', 'array', 'list', 'max:50'],
+            'weaknesses.*' => ['required', 'string', 'min:1', 'max:500'],
+            ...array_fill_keys(Competitor::PROFILE_FIELDS, ['sometimes', 'array', 'list', 'max:50']),
+            'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+            'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+        ]);
+
+        $actor = $request->user();
+        if (! $actor instanceof User) {
+            throw new AuthenticationException;
+        }
+
+        $enterprise = Enterprise::query()->findOrFail((int) $validated['enterprise_id']);
+        $authorization->authorizeMutation(
+            $actor,
+            $this->capability($registry),
+            $enterprise,
+            $validated['agent_assignment_id'] ?? null,
+            $validated['agent_execution_id'] ?? null,
+            $validated['approval_request_id'] ?? null,
+            ['enterprise_id' => $enterprise->getKey()],
+            ['createForEnterprise', [Competitor::class, $enterprise]],
+        );
+
+        return $this->executeCapability($registry, $actor, ['enterprise' => $enterprise, ...$validated]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function serializeCompetitor(Competitor $competitor): array
+    {
+        return [
+            'id' => $competitor->getKey(),
+            'enterprise_id' => $competitor->enterprise_id,
+            'version' => $competitor->version,
+            'name' => $competitor->name,
+            'website' => $competitor->website,
+            'positioning' => $competitor->positioning,
+            'strengths' => $competitor->strengths ?? [],
+            'weaknesses' => $competitor->weaknesses ?? [],
+            ...collect(Competitor::PROFILE_FIELDS)->mapWithKeys(fn (string $field): array => [$field => $competitor->{$field} ?? []])->all(),
+            'status' => $competitor->status,
+            'effective_from' => self::timestamp($competitor->getRawOriginal('effective_from')),
+            'effective_to' => self::timestamp($competitor->getRawOriginal('effective_to')),
+            'supersedes_id' => $competitor->supersedes_id,
+            'is_current' => $competitor->is_current,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected function serializeReport(Report $report): array
+    {
+        return [
+            'id' => $report->getKey(),
+            'enterprise_id' => $report->enterprise_id,
+            'report_type' => $report->report_type,
+            'status' => $report->status,
+            'generated_at' => $report->getAttribute('generated_at') instanceof \DateTimeInterface
+                ? $report->getAttribute('generated_at')->format(DATE_ATOM)
+                : null,
+            'methodology_version' => $report->methodology_version,
+            'source_fingerprint' => $report->snapshot?->source_fingerprint,
+            'report' => $report->result_payload,
+        ];
     }
 
     private static function timestamp(mixed $value): ?string

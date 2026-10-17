@@ -39,7 +39,8 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-audience | `CreateAudienceTool` | `DomainMutationTool` | `marketing.audience.create` | `MarketingAudienceCreate` | human target policy + DomainResourceService policy |
 | create-campaign | `CreateCampaignTool` | `DomainMutationTool` | `marketing.campaign.create` | `MarketingCampaignCreate` | human target policy + DomainResourceService policy |
 | create-channel | `CreateChannelTool` | `DomainMutationTool` | `marketing.channel.create` | `MarketingChannelCreate` | human target policy + DomainResourceService policy |
-| create-competitor | `CreateCompetitorTool` | `GovernedCapabilityTool` | `marketing.competitor.create` | `CreateCompetitor` | CapabilityInvocationService + `CompetitorPolicy::createForEnterprise` + StrategicContextService |
+| create-competitor | `CreateCompetitorTool` | `GovernedCapabilityTool` | `marketing.competitor.create_and_report` | `CreateCompetitorAndGenerateReport` | McpCapabilityAuthorizer + CompetitorPolicy::createForEnterprise + Enterprise view policy + atomic competitor/report transaction |
+| create-competitor-record | `CreateCompetitorRecordTool` | `GovernedCapabilityTool` | `marketing.competitor.create` | `CreateCompetitor` | CapabilityInvocationService + `CompetitorPolicy::createForEnterprise` + StrategicContextService |
 | create-content-item | `CreateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.create` | `CreateContentItem` | CapabilityInvocationService + operation/domain policy |
 | create-content-series | `CreateContentSeriesTool` | `DomainMutationTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` | human target policy + DomainResourceService policy |
 | create-enterprise | `CreateEnterpriseTool` | `Explicit direct-tool boundary` | `enterprise.create` | `EnterpriseCreate` | organization scope + EnterprisePolicy::createForOrganization |

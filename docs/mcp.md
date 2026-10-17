@@ -18,7 +18,7 @@ The full per-tool authorization and tenancy mapping is maintained in [`mcp-autho
 
 The canonical structured persona schema, product-association rules, update semantics, privacy boundaries, and examples for `create-audience` / `update-audience` are documented in [`client-personas.md`](client-personas.md). These tools retain the existing `marketing.audience.create` / `marketing.audience.update` capability-operation path; persona fields do not create a parallel MCP business layer.
 
-The `create-competitor` contract, enterprise authorization, versioning behavior, retry semantics, and deployment verification are documented in [`competitor-creation.md`](competitor-creation.md).
+The `create-competitor` tool atomically creates/revises a competitor and generates a competitive-analysis report; `create-competitor-record` preserves the record-only capability. Contracts, enterprise authorization, versioning behavior, report provenance, retry semantics, and deployment verification are documented in [`competitor-creation.md`](competitor-creation.md).
 
 ## Public Tool rename and compatibility decision
 
@@ -70,7 +70,8 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-audience` | `CreateAudienceTool` | `marketing.audience.create` | `MarketingAudienceCreate` |
 | `create-campaign` | `CreateCampaignTool` | `marketing.campaign.create` | `MarketingCampaignCreate` |
 | `create-channel` | `CreateChannelTool` | `marketing.channel.create` | `MarketingChannelCreate` |
-| `create-competitor` | `CreateCompetitorTool` | `marketing.competitor.create` | `CreateCompetitor` |
+| `create-competitor` | `CreateCompetitorTool` | `marketing.competitor.create_and_report` | `CreateCompetitorAndGenerateReport` |
+| `create-competitor-record` | `CreateCompetitorRecordTool` | `marketing.competitor.create` | `CreateCompetitor` |
 | `approve-content-item` | `ApproveContentItemTool` | `marketing.content.approve` | `ApproveContentItem` |
 | `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
