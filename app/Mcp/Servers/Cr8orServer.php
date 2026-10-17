@@ -21,6 +21,7 @@ use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
+use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
@@ -232,6 +233,7 @@ class Cr8orServer extends Server
         DefineMarketingStrategySectionTool::class,
         UpdateStrategyTool::class,
         CreateCampaignTool::class,
+        CreateCompetitorTool::class,
         UpdateCampaignTool::class,
         TransitionCampaignTool::class,
         CreateContentSeriesTool::class,

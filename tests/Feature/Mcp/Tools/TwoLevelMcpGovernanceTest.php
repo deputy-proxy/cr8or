@@ -9,6 +9,7 @@ use App\Mcp\Tools\CreateAssetTool;
 use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
+use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
@@ -57,6 +58,7 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         CreateObjectiveTool::class,
         UpdateObjectiveTool::class,
         CreateCampaignTool::class,
+        CreateCompetitorTool::class,
         UpdateCampaignTool::class,
         TransitionCampaignTool::class,
         CreateContentSeriesTool::class,

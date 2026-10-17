@@ -24,26 +24,53 @@ final class StrategicContextService
         array $strengths = [],
         array $weaknesses = [],
     ): Competitor {
-        Gate::forUser($actor)->authorize('update', $enterprise);
+        Gate::forUser($actor)->authorize('createForEnterprise', [Competitor::class, $enterprise]);
+
+        $name = trim($name);
+        $website = $website === null || trim($website) === '' ? null : trim($website);
+        $positioning = $positioning === null || trim($positioning) === '' ? null : trim($positioning);
+        $validated = validator([
+            'name' => $name,
+            'website' => $website,
+            'positioning' => $positioning,
+            'strengths' => $strengths,
+            'weaknesses' => $weaknesses,
+        ], [
+            'name' => ['required', 'string', 'min:1', 'max:255'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'positioning' => ['nullable', 'string', 'max:10000'],
+            'strengths' => ['array', 'list', 'max:50'],
+            'strengths.*' => ['required', 'string', 'min:1', 'max:500'],
+            'weaknesses' => ['array', 'list', 'max:50'],
+            'weaknesses.*' => ['required', 'string', 'min:1', 'max:500'],
+        ])->validate();
+        $name = $validated['name'];
+        $website = $validated['website'] ?? null;
+        $positioning = $validated['positioning'] ?? null;
+        $strengths = $validated['strengths'] ?? [];
+        $weaknesses = $validated['weaknesses'] ?? [];
 
         return DB::transaction(function () use ($enterprise, $name, $website, $positioning, $strengths, $weaknesses): Competitor {
-            $current = $enterprise->competitors()
+            // Serialize version allocation for this enterprise so concurrent creates cannot pick the same version.
+            $lockedEnterprise = Enterprise::query()->whereKey($enterprise->getKey())->lockForUpdate()->firstOrFail();
+            $current = $lockedEnterprise->competitors()
                 ->where('name', $name)
                 ->where('is_current', true)
                 ->latest('version')
                 ->first();
 
-            $version = ((int) $enterprise->competitors()->where('name', $name)->max('version')) + 1;
+            $version = ((int) $lockedEnterprise->competitors()->where('name', $name)->max('version')) + 1;
+            $now = Carbon::now();
 
             if ($current !== null) {
                 $current->is_current = false;
                 $current->status = Competitor::STATUS_ARCHIVED;
-                $current->effective_to = Carbon::now();
+                $current->effective_to = $now;
                 $current->save();
             }
 
             return Competitor::query()->create([
-                'enterprise_id' => $enterprise->getKey(),
+                'enterprise_id' => $lockedEnterprise->getKey(),
                 'version' => $version,
                 'name' => $name,
                 'website' => $website,
@@ -51,7 +78,7 @@ final class StrategicContextService
                 'strengths' => $strengths,
                 'weaknesses' => $weaknesses,
                 'status' => Competitor::STATUS_ACTIVE,
-                'effective_from' => Carbon::now(),
+                'effective_from' => $now,
                 'is_current' => true,
                 'supersedes_id' => $current?->getKey(),
             ]);
