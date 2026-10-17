@@ -84,7 +84,7 @@ it('persists structured competitor profile fields through the versioned domain s
         [
             'products' => [['name' => 'Starter', 'features' => ['analytics', 'exports'], 'differentiators' => []]],
             'target_segments' => [['name' => 'Small businesses', 'needs' => ['low setup cost']]],
-            'pricing' => [['model' => 'subscription', 'amount' => 19, 'currency' => 'EUR']],
+            'pricing' => [['model' => 'subscription', 'amount' => '19', 'currency' => 'eur']],
             'markets' => [['geography' => 'Romania', 'languages' => ['ro', 'en']]],
             'differentiators' => [['claim' => 'Simple onboarding', 'claim_type' => 'competitor_claim']],
             'channels' => [['channel_type' => 'sales', 'name' => 'Direct sales']],
@@ -112,7 +112,8 @@ it('persists structured competitor profile fields through the versioned domain s
         ->and($second->version)->toBe(2)
         ->and($second->products)->toBe([['name' => 'Pro', 'features' => ['automation'], 'differentiators' => []]])
         ->and($context['competitors'][0]['products'])->toBe([['name' => 'Starter', 'features' => ['analytics', 'exports'], 'differentiators' => []]])
-        ->and($context['competitors'][0]['source_references'][0]['knowledge_reference_id'])->toBe($evidence->getKey());
+        ->and($context['competitors'][0]['source_references'][0]['knowledge_reference_id'])->toBe($evidence->getKey())
+        ->and($first->pricing)->toBe([['model' => 'subscription', 'amount' => 19, 'currency' => 'EUR']]);
 });
 
 it('rejects malformed structured data and cross-Enterprise Knowledge references', function () {

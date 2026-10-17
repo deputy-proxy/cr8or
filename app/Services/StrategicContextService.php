@@ -314,6 +314,17 @@ final class StrategicContextService
             }
         }
 
+        foreach ($profile['pricing'] ?? [] as $index => $entry) {
+            if (is_array($entry) && isset($entry['currency']) && is_string($entry['currency'])) {
+                $profile['pricing'][$index]['currency'] = strtoupper(trim($entry['currency']));
+            }
+        }
+
+        $input = [
+            ...$input,
+            ...array_intersect_key($profile, array_flip(Competitor::PROFILE_FIELDS)),
+        ];
+
         $validated = Validator::make($input, $rules)->validate();
 
         $listFields = [
@@ -332,6 +343,29 @@ final class StrategicContextService
         foreach (Competitor::PROFILE_FIELDS as $field) {
             foreach ($validated[$field] as $index => $entry) {
                 $validated[$field][$index] = array_filter($entry, static fn (mixed $value): bool => $value !== null);
+            }
+        }
+
+        foreach ($validated['pricing'] as $index => $entry) {
+            foreach (['amount', 'minimum_amount', 'maximum_amount'] as $key) {
+                if (array_key_exists($key, $entry) && $entry[$key] !== null) {
+                    $validated['pricing'][$index][$key] = $this->normalizeNumber($entry[$key]);
+                }
+            }
+        }
+
+        foreach ($validated['reputation'] as $index => $entry) {
+            if (array_key_exists('rating', $entry) && $entry['rating'] !== null) {
+                $validated['reputation'][$index]['rating'] = $this->normalizeNumber($entry['rating']);
+            }
+            if (array_key_exists('review_count', $entry) && $entry['review_count'] !== null) {
+                $validated['reputation'][$index]['review_count'] = (int) $entry['review_count'];
+            }
+        }
+
+        foreach ($validated['source_references'] as $index => $entry) {
+            if (isset($entry['knowledge_reference_id'])) {
+                $validated['source_references'][$index]['knowledge_reference_id'] = (int) $entry['knowledge_reference_id'];
             }
         }
 
@@ -390,6 +424,13 @@ final class StrategicContextService
         }
 
         return $result;
+    }
+
+    private function normalizeNumber(mixed $value): int|float
+    {
+        $number = (float) $value;
+
+        return floor($number) === $number ? (int) $number : $number;
     }
 
     private function timestamp(mixed $value): ?string
