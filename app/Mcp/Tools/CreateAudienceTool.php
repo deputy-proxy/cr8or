@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Tools\Concerns\DefinesAudiencePersonaSchema;
 use App\Models\Audience;
 use App\Models\Enterprise;
 use App\Models\User;
@@ -12,17 +13,34 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('create-audience')]
-#[Description('Create an audience under an authorized enterprise.')]
+#[Description('Create a client persona under an authorized enterprise, including structured persona attributes and optional same-enterprise product associations. Persona fields describe an archetype, not an identifiable customer.')]
 class CreateAudienceTool extends DomainMutationTool
 {
+    use DefinesAudiencePersonaSchema;
+
     protected static function schemaFields(JsonSchema $schema): array
     {
-        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'name' => $schema->string()->min(1)->max(255)->required(), 'description' => $schema->string()->max(10000), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
+        return array_merge([
+            'enterprise_id' => $schema->integer()->min(1)->required(),
+            'name' => $schema->string()->min(1)->max(255)->required(),
+            'description' => $schema->string()->max(10000),
+        ], static::personaSchemaFields($schema), [
+            'agent_assignment_id' => $schema->integer()->min(1),
+            'agent_execution_id' => $schema->integer()->min(1),
+            'approval_request_id' => $schema->integer()->min(1),
+        ]);
     }
 
     protected static function rules(): array
     {
-        return ['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'name' => ['required', 'string', 'min:1', 'max:255'], 'description' => ['nullable', 'string', 'max:10000'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
+        return array_merge([
+            'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+            'name' => ['required', 'string', 'min:1', 'max:255'],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+            'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+            'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
+        ], static::personaValidationRules());
     }
 
     protected static function enterprise(array $validated): Enterprise
@@ -57,6 +75,12 @@ class CreateAudienceTool extends DomainMutationTool
             throw new \LogicException('Unexpected audience result.');
         }
 
-        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
+        return array_merge([
+            'id' => $record->id,
+            'enterprise_id' => $record->enterprise_id,
+            'name' => $record->name,
+            'description' => $record->description,
+            'status' => $record->status,
+        ], static::personaResult($record));
     }
 }

@@ -32,7 +32,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | AssetVersions | AssetVersion | Asset Versions | Asset Version | Asset Versions | Marketing | 100 | asset.name, version, disk, path, mime_type, size, checksum, external_reference |
 | Assets | Asset | Assets | Asset | Assets | Marketing | 90 | enterprise_id, content_item_id, name, type, status, enterprise.name, contentItem.title, name, type, status |
 | Assignments | Assignment | Assignments | Assignment | Assignments | Work Management | 60 | assignable.name, assignable_type, enterprise.name, user.name, agentAssignment.agentDescriptor.slug |
-| Audiences | Audience | Audiences | Audience | Audiences | Marketing | 40 | enterprise_id, name |
+| Audiences | Audience | Personas | Persona | Personas | Marketing | 40 | enterprise_id, name |
 | Budgets | Budget | Budgets | Budget | Budgets | Finance | 90 | enterprise_id, financial_period_id, financial_account_id, transaction_category_id, name, planned_amount, currency, description, enterprise_id, financial_period_id, financial_account_id, transaction_category_id, name, planned_amount, currency, description |
 | BusinessHealthResults | BusinessHealthResult | Business Health Results | Business Health Result | Business Health Results | Finance | 140 | enterprise_id, financial_report_id, health_status, metrics, source_snapshot, evaluated_at, enterprise_id, financial_report_id, health_status, evaluated_at |
 | Campaigns | Campaign | Campaigns | Campaign | Campaigns | Marketing | 20 | enterprise_id, marketing_strategy_id, name, description, status, name, enterprise.name, marketingStrategy.name, status, transition, status |

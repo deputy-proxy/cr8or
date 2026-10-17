@@ -173,14 +173,14 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'audience',
                 'name' => 'Create Target Audience',
-                'instruction' => 'Define the primary target audience for the marketing system from the Enterprise context and strategy context. Request only semantic audience fields from the caller.',
+                'instruction' => 'Define a reusable client persona for the marketing system from the Enterprise context and strategy context. Request semantic persona fields where supported, keep assumptions distinct from researched facts, and never model an identifiable individual customer.',
                 'sequence' => 2,
                 'dependencies' => ['strategy'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.audience.create'],
                 'input_contract' => [
                     'required' => ['name', 'description'],
-                    'requested' => ['name', 'description'],
+                    'requested' => ['name', 'description', 'persona_type', 'age_range', 'location', 'job_title', 'income_range', 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior', 'product_ids'],
                 ],
                 'output_contract' => ['required' => ['id']],
                 'completion_criteria' => [

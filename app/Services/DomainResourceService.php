@@ -27,6 +27,7 @@ use App\Models\Script;
 use App\Models\SocialAccount;
 use App\Models\Strategy;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -346,29 +347,112 @@ final class DomainResourceService
     public function createAudience(User $actor, Enterprise $enterprise, array $attributes): Audience
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [Audience::class, $enterprise]);
+        if (! isset($attributes['name']) || ! is_string($attributes['name']) || trim($attributes['name']) === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['name' => 'A persona name is required.']);
+        }
+        $this->validateAudiencePersonaAttributes($attributes, $enterprise);
 
-        return $enterprise->audiences()->create([
-            'name' => $attributes['name'],
-            'description' => $attributes['description'] ?? null,
-            'status' => Audience::STATUS_ACTIVE,
-        ]);
+        return DB::transaction(function () use ($enterprise, $attributes): Audience {
+            $audience = $enterprise->audiences()->create(array_intersect_key($attributes, array_flip([
+                'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range',
+                'education_level', 'family_status', 'research_confidence', 'last_reviewed_at',
+                'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior',
+            ])) + ['status' => Audience::STATUS_ACTIVE]);
+
+            if (array_key_exists('product_ids', $attributes)) {
+                $audience->products()->sync($attributes['product_ids'] ?? []);
+            }
+
+            return $audience->load('products');
+        });
     }
 
     /** @param array<string, mixed> $attributes */
     public function updateAudience(User $actor, Audience $audience, array $attributes): Audience
     {
         Gate::forUser($actor)->authorize('update', $audience);
+        $this->validateAudiencePersonaAttributes($attributes, $audience->enterprise);
 
-        $audience->update(array_intersect_key($attributes, array_flip(['name', 'description'])));
-        if (isset($attributes['status'])) {
-            if (! in_array($attributes['status'], [Audience::STATUS_ACTIVE, Audience::STATUS_ARCHIVED], true)) {
-                throw new LogicException('Invalid audience status.');
+        return DB::transaction(function () use ($audience, $attributes): Audience {
+            foreach (['psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'] as $group) {
+                if (array_key_exists($group, $attributes) && is_array($attributes[$group])) {
+                    $existingGroup = json_decode((string) ($audience->getRawOriginal($group) ?? '{}'), true);
+                    $attributes[$group] = array_replace(is_array($existingGroup) ? $existingGroup : [], $attributes[$group]);
+                }
             }
-            $audience->status = $attributes['status'];
-            $audience->save();
-        }
 
-        return $audience->refresh();
+            $mutable = ['name', 'description', 'persona_type', 'age_range', 'location', 'job_title', 'income_range',
+                'education_level', 'family_status', 'research_confidence', 'last_reviewed_at',
+                'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'];
+            $audience->update(array_intersect_key($attributes, array_flip($mutable)));
+            if (isset($attributes['status'])) {
+                if (! in_array($attributes['status'], [Audience::STATUS_ACTIVE, Audience::STATUS_ARCHIVED], true)) {
+                    throw new LogicException('Invalid audience status.');
+                }
+                $audience->status = $attributes['status'];
+                $audience->save();
+            }
+            if (array_key_exists('product_ids', $attributes)) {
+                $audience->products()->sync($attributes['product_ids'] ?? []);
+            }
+
+            return $audience->load('products')->refresh();
+        });
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function validateAudiencePersonaAttributes(array $attributes, Enterprise $enterprise): void
+    {
+        $rules = [
+            'name' => ['sometimes', 'required', 'string', 'min:1', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'status' => ['sometimes', 'string', 'in:active,archived'],
+            'persona_type' => ['sometimes', 'nullable', 'string', 'in:buyer,user,influencer,decision_maker,gatekeeper'],
+            'age_range' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'job_title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'income_range' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'education_level' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'family_status' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'research_confidence' => ['sometimes', 'nullable', 'numeric', 'between:0,1'],
+            'last_reviewed_at' => ['sometimes', 'nullable', 'date'],
+            'psychographics' => ['sometimes', 'nullable', 'array:values,interests,lifestyle,attitudes,aspirations'],
+            'psychographics.values' => ['sometimes', 'array'], 'psychographics.values.*' => ['string', 'max:500'],
+            'psychographics.interests' => ['sometimes', 'array'], 'psychographics.interests.*' => ['string', 'max:500'],
+            'psychographics.lifestyle' => ['sometimes', 'array'], 'psychographics.lifestyle.*' => ['string', 'max:500'],
+            'psychographics.attitudes' => ['sometimes', 'array'], 'psychographics.attitudes.*' => ['string', 'max:500'],
+            'psychographics.aspirations' => ['sometimes', 'array'], 'psychographics.aspirations.*' => ['string', 'max:500'],
+            'goals_and_motivations' => ['sometimes', 'nullable', 'array:goals,purchase_motivations,success_criteria,practical_motivations,emotional_motivations'],
+            'goals_and_motivations.goals' => ['sometimes', 'array'], 'goals_and_motivations.goals.*' => ['string', 'max:500'],
+            'goals_and_motivations.purchase_motivations' => ['sometimes', 'array'], 'goals_and_motivations.purchase_motivations.*' => ['string', 'max:500'],
+            'goals_and_motivations.success_criteria' => ['sometimes', 'array'], 'goals_and_motivations.success_criteria.*' => ['string', 'max:500'],
+            'goals_and_motivations.practical_motivations' => ['sometimes', 'array'], 'goals_and_motivations.practical_motivations.*' => ['string', 'max:500'],
+            'goals_and_motivations.emotional_motivations' => ['sometimes', 'array'], 'goals_and_motivations.emotional_motivations.*' => ['string', 'max:500'],
+            'pain_points' => ['sometimes', 'nullable', 'array:problems,obstacles,current_alternatives,consequences_of_inaction,desired_improvements'],
+            'pain_points.problems' => ['sometimes', 'array'], 'pain_points.problems.*' => ['string', 'max:500'],
+            'pain_points.obstacles' => ['sometimes', 'array'], 'pain_points.obstacles.*' => ['string', 'max:500'],
+            'pain_points.current_alternatives' => ['sometimes', 'array'], 'pain_points.current_alternatives.*' => ['string', 'max:500'],
+            'pain_points.consequences_of_inaction' => ['sometimes', 'array'], 'pain_points.consequences_of_inaction.*' => ['string', 'max:500'],
+            'pain_points.desired_improvements' => ['sometimes', 'array'], 'pain_points.desired_improvements.*' => ['string', 'max:500'],
+            'buying_behavior' => ['sometimes', 'nullable', 'array:preferred_channels,research_habits,decision_criteria,purchase_triggers,objections,budget_sensitivity,purchase_frequency,preferred_content_formats'],
+            'buying_behavior.preferred_channels' => ['sometimes', 'array'], 'buying_behavior.preferred_channels.*' => ['string', 'max:100'],
+            'buying_behavior.research_habits' => ['sometimes', 'array'], 'buying_behavior.research_habits.*' => ['string', 'max:500'],
+            'buying_behavior.decision_criteria' => ['sometimes', 'array'], 'buying_behavior.decision_criteria.*' => ['string', 'max:500'],
+            'buying_behavior.purchase_triggers' => ['sometimes', 'array'], 'buying_behavior.purchase_triggers.*' => ['string', 'max:500'],
+            'buying_behavior.objections' => ['sometimes', 'array'], 'buying_behavior.objections.*' => ['string', 'max:500'],
+            'buying_behavior.budget_sensitivity' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'buying_behavior.purchase_frequency' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'buying_behavior.preferred_content_formats' => ['sometimes', 'array'], 'buying_behavior.preferred_content_formats.*' => ['string', 'max:100'],
+            'product_ids' => ['sometimes', 'array'], 'product_ids.*' => ['integer', 'distinct', 'min:1'],
+        ];
+        $validated = validator($attributes, $rules)->validate();
+        $productIds = $validated['product_ids'] ?? [];
+        if ($productIds !== []) {
+            $count = $enterprise->products()->whereIn('products.id', $productIds)->count();
+            if ($count !== count(array_unique($productIds))) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['product_ids' => 'Every associated product must belong to the same enterprise.']);
+            }
+        }
     }
 
     public function archiveAudience(User $actor, Audience $audience): Audience
