@@ -7,6 +7,7 @@ use App\Enums\CapabilityExecutionMode;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ApproveContentItemTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
+use App\Mcp\Tools\CreateCompetitorRecordTool;
 use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
@@ -45,6 +46,7 @@ use App\Operations\ContentSeriesLifecycle;
 use App\Operations\ContinueAgentExecution;
 use App\Operations\CreateAgentAssignment;
 use App\Operations\CreateCompetitor;
+use App\Operations\CreateCompetitorAndGenerateReport;
 use App\Operations\CreateContentItem;
 use App\Operations\CreateKnowledgeIndex;
 use App\Operations\CreateKnowledgeItem;
@@ -619,10 +621,19 @@ final class CapabilityRegistry
             $this->definition(
                 'marketing.competitor.create',
                 CreateCompetitor::class,
-                CreateCompetitorTool::class,
+                CreateCompetitorRecordTool::class,
                 ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'website' => 'string|nullable', 'positioning' => 'string|nullable', 'strengths' => 'array|nullable', 'weaknesses' => 'array|nullable', 'products' => 'array|nullable', 'target_segments' => 'array|nullable', 'pricing' => 'array|nullable', 'markets' => 'array|nullable', 'differentiators' => 'array|nullable', 'channels' => 'array|nullable', 'reputation' => 'array|nullable', 'digital_presence' => 'array|nullable', 'source_references' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'competitor-version'],
                 'McpCapabilityAuthorizer::authorizeMutation + CompetitorPolicy::createForEnterprise + StrategicContextService',
+                'none',
+            ),
+            $this->definition(
+                'marketing.competitor.create_and_report',
+                CreateCompetitorAndGenerateReport::class,
+                CreateCompetitorTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'website' => 'string|nullable', 'positioning' => 'string|nullable', 'strengths' => 'array|nullable', 'weaknesses' => 'array|nullable', 'products' => 'array|nullable', 'target_segments' => 'array|nullable', 'pricing' => 'array|nullable', 'markets' => 'array|nullable', 'differentiators' => 'array|nullable', 'channels' => 'array|nullable', 'reputation' => 'array|nullable', 'digital_presence' => 'array|nullable', 'source_references' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'competitor-version-and-analysis-report'],
+                'McpCapabilityAuthorizer::authorizeMutation + CompetitorPolicy::createForEnterprise + Enterprise view policy + atomic competitor/report transaction',
                 'none',
             ),
             $this->definition(
