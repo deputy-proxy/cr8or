@@ -17,6 +17,7 @@ use LogicException;
     'period_end',
     'generated_at',
     'methodology_version',
+    'result_payload',
 ])]
 class Report extends Model
 {
@@ -33,7 +34,12 @@ class Report extends Model
                 throw new LogicException('Report must belong to an enterprise.');
             }
 
-            if ($report->exists && $report->isDirty(['enterprise_id', 'report_type', 'period_start', 'period_end', 'methodology_version'])) {
+            $resultPayload = $report->getAttribute('result_payload');
+            if ($report->report_type === 'competitive_analysis' && (! is_array($resultPayload) || $resultPayload === [])) {
+                throw new LogicException('Competitive-analysis reports require a structured result payload.');
+            }
+
+            if ($report->exists && $report->isDirty(['enterprise_id', 'report_type', 'period_start', 'period_end', 'generated_at', 'methodology_version', 'result_payload'])) {
                 throw new LogicException('Report identity is immutable; create a new report instead.');
             }
         });
@@ -45,6 +51,7 @@ class Report extends Model
             'period_start' => 'datetime',
             'period_end' => 'datetime',
             'generated_at' => 'datetime',
+            'result_payload' => 'array',
         ];
     }
 

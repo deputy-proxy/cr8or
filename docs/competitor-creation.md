@@ -62,3 +62,9 @@ No database seed or schema migration is required for the capability itself. Depl
 ## Tests
 
 Focused regression coverage is in `tests/Feature/Mcp/CompetitorCreationToolTest.php` and existing version-history coverage remains in `tests/Feature/StrategicContextTest.php`. Run the focused tests first, then `composer ci:check` and the frontend checks required by `.github/workflows/tests.yml`.
+
+## Structured profile fields
+
+Competitor creation accepts optional structured arrays for products, target_segments, pricing, markets, differentiators, channels, reputation, digital_presence, and source_references. Each item is a plain object matching the contract documented in [competitive-analysis-reporting.md](competitive-analysis-reporting.md). Domain validation runs in StrategicContextService; the Filament Builder is an editor and does not define the persistence contract. Evidence references must belong to the same Enterprise. All structured fields are versioned with the existing competitor profile and cannot be changed on a persisted version.
+
+Competitive analysis is generated through the separate marketing.competitor.report.generate capability, GenerateCompetitiveAnalysisReport operation, and generate-competitive-analysis-report MCP tool. The tool returns a persisted competitive_analysis report and source fingerprint. It does not mutate competitor records. See the competitive-analysis document for the report payload, snapshot, methodology, and provenance contract.

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Competitors\Pages;
 
 use App\Filament\Resources\Competitors\CompetitorResource;
 use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
+use App\Models\Competitor;
 use App\Models\Enterprise;
 use App\Services\StrategicContextService;
 use Filament\Resources\Pages\CreateRecord;
@@ -27,6 +28,7 @@ class CreateCompetitor extends CreateRecord
             isset($data['positioning']) ? (string) $data['positioning'] : null,
             array_values($data['strengths'] ?? []),
             array_values($data['weaknesses'] ?? []),
+            array_intersect_key($data, array_flip(Competitor::PROFILE_FIELDS)),
         );
     }
 }

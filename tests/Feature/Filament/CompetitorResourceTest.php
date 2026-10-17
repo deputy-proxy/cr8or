@@ -179,11 +179,12 @@ it('saves the Filament edit form as a successor and redirects to the successor v
             'positioning' => 'Revised positioning',
             'strengths' => ['product'],
             'weaknesses' => ['pricing'],
+            'products' => [['type' => 'product', 'data' => ['name' => 'Revised suite']]],
         ])
         ->call('save')
         ->assertHasNoFormErrors()
         ->assertRedirect(CompetitorResource::getUrl('view', ['record' => Competitor::query()->where('name', 'Competitor A revised')->firstOrFail()]));
 
     expect($competitor->refresh()->is_current)->toBeFalse()
-        ->and(Competitor::query()->where('name', 'Competitor A revised')->where('is_current', true)->exists())->toBeTrue();
+        ->and(Competitor::query()->where('name', 'Competitor A revised')->where('is_current', true)->firstOrFail()->products)->toBe([['name' => 'Revised suite', 'features' => [], 'differentiators' => []]]);
 });

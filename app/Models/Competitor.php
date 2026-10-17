@@ -16,6 +16,15 @@ use LogicException;
     'positioning',
     'strengths',
     'weaknesses',
+    'products',
+    'target_segments',
+    'pricing',
+    'markets',
+    'differentiators',
+    'channels',
+    'reputation',
+    'digital_presence',
+    'source_references',
     'status',
     'effective_from',
     'effective_to',
@@ -28,11 +37,33 @@ class Competitor extends Model
 
     public const STATUS_ARCHIVED = 'archived';
 
+    /** @var list<string> */
+    public const PROFILE_FIELDS = [
+        'products',
+        'target_segments',
+        'pricing',
+        'markets',
+        'differentiators',
+        'channels',
+        'reputation',
+        'digital_presence',
+        'source_references',
+    ];
+
     protected function casts(): array
     {
         return [
             'strengths' => 'array',
             'weaknesses' => 'array',
+            'products' => 'array',
+            'target_segments' => 'array',
+            'pricing' => 'array',
+            'markets' => 'array',
+            'differentiators' => 'array',
+            'channels' => 'array',
+            'reputation' => 'array',
+            'digital_presence' => 'array',
+            'source_references' => 'array',
             'effective_from' => 'datetime',
             'effective_to' => 'datetime',
             'is_current' => 'boolean',
@@ -77,6 +108,7 @@ class Competitor extends Model
                     'positioning',
                     'strengths',
                     'weaknesses',
+                    ...self::PROFILE_FIELDS,
                     'supersedes_id',
                     'effective_from',
                 ] as $field) {

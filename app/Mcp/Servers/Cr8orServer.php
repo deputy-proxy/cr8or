@@ -42,6 +42,7 @@ use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DisableSocialAccountTool;
 use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
+use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetAgentAssignmentTool;
 use App\Mcp\Tools\GetAgentDelegationTool;
@@ -280,6 +281,7 @@ class Cr8orServer extends Server
         AnalyzeBusinessContextTool::class,
         PlanMarketingTool::class,
         GenerateFinancialReportTool::class,
+        GenerateCompetitiveAnalysisReportTool::class,
     ];
 
     protected array $resources = [

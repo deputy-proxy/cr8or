@@ -265,7 +265,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Reports do not replace or rewrite authoritative records.
 
-**Deferred:** Reporting engine and visualization implementation.
+**Deferred:** Generalized reporting engine and visualization implementation; competitive analysis uses the existing Report and ReportSnapshot contracts.
+
+**Verified competitor profile/report implementation:** Competitors remain Enterprise-owned, immutable versioned profile aggregates. Structured JSON fields capture products, target segments, pricing, markets, differentiators, channels, reputation, digital presence, and links to canonical Knowledge references. StrategicContextService validates these contracts for all entry points and every descriptive field participates in successor-version creation. Competitive analysis is persisted as a completed Report with a structured immutable result payload and a ReportSnapshot containing normalized competitor profile versions, linked Knowledge reference/version content, methodology version, and deterministic source fingerprint. The canonical contract is documented in [competitive-analysis-reporting.md](competitive-analysis-reporting.md).
 
 ## Cross-Domain Rules
 

@@ -168,3 +168,25 @@ it('enforces create policy and domain validation when the Operation is called wi
     expect(fn () => app(StrategicContextService::class)->createCompetitor($actor, $foreignEnterprise, 'Forbidden'))
         ->toThrow(AuthorizationException::class);
 });
+it('accepts structured profile fields through the governed competitor capability', function () {
+    $organization = Organization::factory()->create();
+    $actor = competitorToolOwner($organization);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(CreateCompetitorTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'name' => 'Structured Competitor',
+            'products' => [['name' => 'Core', 'features' => ['analytics']]],
+            'pricing' => [['model' => 'subscription', 'amount' => 29, 'currency' => 'EUR']],
+            'markets' => [['geography' => 'Romania', 'languages' => ['ro', 'en']]],
+        ])
+        ->assertOk()
+        ->assertSee(['Structured Competitor', 'Core', 'Romania']);
+
+    $competitor = Competitor::query()->where('enterprise_id', $enterprise->getKey())->firstOrFail();
+
+    expect($competitor->products)->toBe([['name' => 'Core', 'features' => ['analytics'], 'differentiators' => []]])
+        ->and($competitor->pricing)->toBe([['model' => 'subscription', 'amount' => 29, 'currency' => 'EUR']])
+        ->and($competitor->markets)->toBe([['geography' => 'Romania', 'languages' => ['ro', 'en'], 'industries' => []]]);
+});

@@ -38,7 +38,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | Campaigns | Campaign | Campaigns | Campaign | Campaigns | Marketing | 20 | enterprise_id, marketing_strategy_id, name, description, status, name, enterprise.name, marketingStrategy.name, status, transition, status |
 | Channels | Channel | Channels | Channel | Channels | Marketing | 50 | enterprise_id, name |
 | CommandWebhookDeliveries | CommandWebhookDelivery | Command Webhook Deliveries | Command Webhook Delivery | Command Webhook Deliveries | Integrations & External Systems | 50 | capability, idempotency_key, status, failure_code, processed_at |
-| Competitors | Competitor | Competitors | Competitor | Competitors | Enterprise Context | 70 | enterprise_id, name, website, positioning, strengths, weaknesses, name, enterprise.name, version, status |
+| Competitors | Competitor | Competitors | Competitor | Competitors | Enterprises & Products | 60 | enterprise_id, name, website, positioning, strengths, weaknesses, products, target_segments, pricing, markets, differentiators, channels, reputation, digital_presence, source_references, name, enterprise.name, version, status |
 | ContentItems | ContentItem | Content Items | Content Item | Content Items | Marketing | 70 | enterprise_id, campaign_id, content_series_id, channel_id, audience_id, title, body, title, enterprise.name, campaign.name, contentSeries.name, status, submit_for_review, approve |
 | ContentSeries | ContentSeries | Content Series | Content Series | Content Series | Marketing | 30 | campaign_id, name, description, status, name, campaign.name, status, transition, status |
 | Customers | Customer | Customers | Customer | Customers | Finance | 40 | enterprise_id, name |

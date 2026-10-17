@@ -14,6 +14,12 @@
             </dl>
         </x-filament::section>
 
+        @foreach ($this->getStructuredProfile() as $label => $values)
+            <x-filament::section :heading="$label">
+                <pre class="overflow-x-auto whitespace-pre-wrap text-sm">{{ json_encode($values, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+            </x-filament::section>
+        @endforeach
+
         <x-filament::section heading="Version history">
             <ol class="space-y-3">
                 @foreach ($this->getHistory() as $version)

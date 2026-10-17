@@ -49,6 +49,32 @@ class ViewCompetitor extends Page
         ];
     }
 
+    /** @return array<string, array<int, array<string, mixed>>> */
+    public function getStructuredProfile(): array
+    {
+        $labels = [
+            'products' => 'Products and services',
+            'target_segments' => 'Target segments',
+            'pricing' => 'Pricing',
+            'markets' => 'Markets',
+            'differentiators' => 'Differentiators',
+            'channels' => 'Channels',
+            'reputation' => 'Reputation',
+            'digital_presence' => 'Digital presence',
+            'source_references' => 'Knowledge evidence references',
+        ];
+
+        $profile = [];
+        foreach ($labels as $field => $label) {
+            $values = $this->competitor->{$field} ?? [];
+            if ($values !== []) {
+                $profile[$label] = $values;
+            }
+        }
+
+        return $profile;
+    }
+
     /** @return list<Competitor> */
     public function getHistory(): array
     {

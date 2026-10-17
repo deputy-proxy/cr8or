@@ -60,6 +60,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | disable-social-account | `DisableSocialAccountTool` | `GovernedCapabilityTool` | `marketing.social-account.disable` | `SocialAccountDisable` | CapabilityInvocationService + `SocialAccountPolicy::disable` + DomainResourceService; approval required for Agent execution |
 | duplicate-workflow | `DuplicateWorkflowTool` | `GovernedCapabilityTool` | `workflow.duplicate` | `DuplicateWorkflow` | CapabilityInvocationService + operation/domain policy |
 | execute-agent | `ExecuteAgentTool` | `GovernedCapabilityTool` | `agent.execute` | `ExecuteAgent` | CapabilityInvocationService + operation/domain policy |
+| generate-competitive-analysis-report | `GenerateCompetitiveAnalysisReportTool` | `GovernedCapabilityTool` | marketing.competitor.report.generate | GenerateCompetitiveAnalysisReport | McpCapabilityAuthorizer + Enterprise view policy + CompetitiveAnalysisReportingService Enterprise scoping |
 | generate-financial-report | `GenerateFinancialReportTool` | `GovernedCapabilityTool` | `finance.report.generate` | `GenerateFinancialReport` | CapabilityInvocationService + operation/domain policy |
 | get-agent | `GetAgentDescriptorTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\AgentDescriptor` | organization-scoped lookup + `Gate::view` |
 | get-agent-assignment | `GetAgentAssignmentTool` | `AgentAssignmentResourceTool` | — | `GetAgentAssignment` | AgentAssignmentService scope + policy |
