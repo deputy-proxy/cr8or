@@ -105,7 +105,7 @@ it('declares a narrow, disabled Instagram professional-account capability set', 
         ->and($capabilities->supportedDestinationTypes)->toBe(['instagram.professional'])
         ->and($capabilities->supportedMediaTypes)->toBe(['image/jpeg'])
         ->and($capabilities->maxTextLength)->toBe(2200)
-        ->and($capabilities->maxMediaItems)->toBe(1)
+        ->and($capabilities->maxMediaItems)->toBe(10)
         ->and($capabilities->maxMediaSizeBytes)->toBe(8_388_608)
         ->and($capabilities->immediatePublishing)->toBe(PublishingCapabilitySupport::Supported)
         ->and($capabilities->nativeScheduling)->toBe(PublishingCapabilitySupport::Unsupported)
@@ -170,7 +170,7 @@ it('rejects Facebook Page IDs, missing images, unsupported formats, invalid dime
         ->toThrow(PublishingAdapterException::class, 'numeric Instagram professional-account ID');
 
     expect(fn () => $adapter->publish(instagramPublishingRequest($connection, media: [])))
-        ->toThrow(PublishingAdapterException::class, 'exactly one JPEG image');
+        ->toThrow(PublishingAdapterException::class, 'one JPEG image or a carousel of 2 to 10 JPEG images');
 
     expect(fn () => $adapter->publish(instagramPublishingRequest($connection, media: [[
         'mime_type' => 'image/png', 'size' => 1024, 'disk' => 'r2', 'path' => 'assets/photo.png',
@@ -340,4 +340,74 @@ it('rejects malformed or excessive image alt text before creating a container', 
         'dimensions' => ['width' => 1080, 'height' => 1350],
         'metadata' => ['alt_text' => str_repeat('x', 1001)],
     ]])))->toThrow(PublishingAdapterException::class, 'at most 1,000 characters');
+});
+it('publishes a JPEG carousel only after each child and the parent container are ready', function () {
+    [, $connection, $adapter] = instagramPublishingAdapterContext();
+    $disk = Mockery::mock();
+    foreach (['assets/one.jpg', 'assets/two.jpg'] as $path) {
+        $disk->shouldReceive('exists')->once()->with($path)->andReturn(true);
+        $disk->shouldReceive('temporaryUrl')->once()
+            ->with($path, Mockery::type(DateTimeInterface::class))
+            ->andReturn('https://r2.example.test/'.$path);
+    }
+    Storage::shouldReceive('disk')->twice()->with('r2')->andReturn($disk);
+
+    Http::fake([
+        'https://graph.instagram.com/v26.0/17841400000000000/content_publishing_limit*' => Http::response([
+            'data' => [['quota_usage' => 0, 'config' => ['quota_total' => 100, 'quota_duration' => 86400]]],
+        ], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media' => Http::sequence()
+            ->push(['id' => '180000000000011'], 200)
+            ->push(['id' => '180000000000012'], 200)
+            ->push(['id' => '180000000000013'], 200),
+        'https://graph.instagram.com/v26.0/180000000000011?*' => Http::response(['id' => '180000000000011', 'status_code' => 'FINISHED'], 200),
+        'https://graph.instagram.com/v26.0/180000000000012?*' => Http::response(['id' => '180000000000012', 'status_code' => 'FINISHED'], 200),
+        'https://graph.instagram.com/v26.0/180000000000013?*' => Http::response(['id' => '180000000000013', 'status_code' => 'FINISHED'], 200),
+        'https://graph.instagram.com/v26.0/17841400000000000/media_publish' => Http::response(['id' => '180000000000014'], 200),
+    ]);
+
+    $result = $adapter->publish(instagramPublishingRequest($connection, media: [
+        [
+            'mime_type' => 'image/jpeg', 'size' => 2048, 'disk' => 'r2', 'path' => 'assets/one.jpg',
+            'dimensions' => ['width' => 1080, 'height' => 1350],
+        ],
+        [
+            'mime_type' => 'image/jpeg', 'size' => 3072, 'disk' => 'r2', 'path' => 'assets/two.jpg',
+            'dimensions' => ['width' => 1080, 'height' => 1350],
+        ],
+    ]));
+
+    expect($result->externalId)->toBe('180000000000014')
+        ->and($result->payload['content_type'])->toBe('carousel')
+        ->and($result->payload['media_count'])->toBe(2)
+        ->and($result->payload['container_id'])->toBe('180000000000013');
+
+    Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+        && $request->url() === 'https://graph.instagram.com/v26.0/17841400000000000/media'
+        && ($request['media_type'] ?? null) === 'CAROUSEL'
+        && $request['children'] === '180000000000011,180000000000012'
+        && $request['caption'] === 'A photo from CR8OR.');
+
+    Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+        && $request->url() === 'https://graph.instagram.com/v26.0/17841400000000000/media_publish'
+        && $request['creation_id'] === '180000000000013');
+});
+
+it('rejects carousels with more than ten items or mixed unsupported media before provider requests', function () {
+    [, $connection, $adapter] = instagramPublishingAdapterContext();
+    Http::preventStrayRequests();
+
+    $item = [
+        'mime_type' => 'image/jpeg', 'size' => 1024, 'disk' => 'r2', 'path' => 'assets/photo.jpg',
+        'dimensions' => ['width' => 1080, 'height' => 1350],
+    ];
+
+    expect(fn () => $adapter->publish(instagramPublishingRequest($connection, media: array_fill(0, 11, $item))))
+        ->toThrow(PublishingAdapterException::class, '2 to 10 JPEG images');
+
+    $png = $item;
+    $png['mime_type'] = 'image/png';
+
+    expect(fn () => $adapter->publish(instagramPublishingRequest($connection, media: [$item, $png])))
+        ->toThrow(PublishingAdapterException::class, 'JPEG images only');
 });
