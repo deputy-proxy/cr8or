@@ -16,6 +16,7 @@ use App\Mcp\Tools\CreateWorkflowTool;
 use App\Mcp\Tools\DelegateAgentTool;
 use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
+use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
@@ -61,6 +62,7 @@ use App\Operations\EnterpriseContextRetrieve;
 use App\Operations\EnterpriseContextUpdate;
 use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
+use App\Operations\GenerateCompetitiveAnalysisReport;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
@@ -618,9 +620,18 @@ final class CapabilityRegistry
                 'marketing.competitor.create',
                 CreateCompetitor::class,
                 CreateCompetitorTool::class,
-                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'website' => 'string|nullable', 'positioning' => 'string|nullable', 'strengths' => 'array|nullable', 'weaknesses' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'website' => 'string|nullable', 'positioning' => 'string|nullable', 'strengths' => 'array|nullable', 'weaknesses' => 'array|nullable', 'products' => 'array|nullable', 'target_segments' => 'array|nullable', 'pricing' => 'array|nullable', 'markets' => 'array|nullable', 'differentiators' => 'array|nullable', 'channels' => 'array|nullable', 'reputation' => 'array|nullable', 'digital_presence' => 'array|nullable', 'source_references' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'competitor-version'],
                 'McpCapabilityAuthorizer::authorizeMutation + CompetitorPolicy::createForEnterprise + StrategicContextService',
+                'none',
+            ),
+            $this->definition(
+                'marketing.competitor.report.generate',
+                GenerateCompetitiveAnalysisReport::class,
+                GenerateCompetitiveAnalysisReportTool::class,
+                ['enterprise_id' => 'integer|required', 'competitor_ids' => 'array|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'competitive-analysis-report'],
+                'McpCapabilityAuthorizer::authorizeMutation + Enterprise view policy + competitor enterprise scope',
                 'none',
             ),
             $this->definition(

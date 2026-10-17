@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Reports;
 
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Reports\Pages\ListReports;
+use App\Filament\Resources\Reports\Pages\ViewReport;
 use App\Models\Report;
 use BackedEnum;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -37,20 +39,22 @@ class ReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('enterprise_id')->label('Enterprise')->searchable()->sortable(),
+            TextColumn::make('enterprise_id')->label('Enterprise ID')->sortable()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
             TextColumn::make('report_type')->badge()->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
             TextColumn::make('period_start')->date()->sortable(),
             TextColumn::make('period_end')->date()->sortable(),
             TextColumn::make('generated_at')->dateTime()->sortable(),
             TextColumn::make('methodology_version')->searchable()->sortable(),
-        ]);
+        ])->recordActions([ViewAction::make()]);
     }
 
     public static function getPages(): array
     {
         return [
             'index' => ListReports::route('/'),
+            'view' => ViewReport::route('/{record}'),
         ];
     }
 }

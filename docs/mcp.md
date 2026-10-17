@@ -92,6 +92,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `disable-social-account` | `DisableSocialAccountTool` | `marketing.social-account.disable` | `SocialAccountDisable` |
 | `duplicate-workflow` | `DuplicateWorkflowTool` | `workflow.duplicate` | `DuplicateWorkflow` |
 | `execute-agent` | `ExecuteAgentTool` | `agent.execute` | `ExecuteAgent` |
+| `generate-competitive-analysis-report` | `GenerateCompetitiveAnalysisReportTool` | `marketing.competitor.report.generate` | `GenerateCompetitiveAnalysisReport` |
 | `generate-financial-report` | `GenerateFinancialReportTool` | `finance.report.generate` | `GenerateFinancialReport` |
 | `get-agent` | `GetAgentDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `get-agent-assignment` | `GetAgentAssignmentTool` | Unregistered read/discovery/resource | N/A |
@@ -220,6 +221,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | analyze-business-context | `business.analysis` | AnalyzeBusinessContext | Run Business Analysis Expert methodology against authorized Enterprise, Strategy, Work and Financial context. |
 | plan-marketing | `marketing.plan` | PlanMarketing | Run Marketing Expert planning methodology against authorized Enterprise, Strategy and Knowledge context. |
 | generate-financial-report | `finance.report.generate` | GenerateFinancialReport | Generate a historical, Enterprise-scoped financial report through `FinancialReportingService`; no generic financial CRUD is exposed. |
+| generate-competitive-analysis-report | `marketing.competitor.report.generate` | GenerateCompetitiveAnalysisReport | Generate an immutable Enterprise-scoped competitive analysis from versioned competitor profiles and linked Knowledge evidence; persist result payload and provenance snapshot. |
 
 For mutation tools, a human MCP call uses the existing Laravel policy for the target resource. An Agent-backed call must provide both agent_assignment_id and agent_execution_id; CR8OR resolves the MCP Tool through `CapabilityRegistry` first, then verifies that the execution belongs to the authenticated actor, assignment and enterprise before calling AgentCapabilityAuthorizer. Every state-changing MCP Tool has exactly one explicit Capability and one Operation. Generic mutation/transition fallbacks are not registered and cannot grant Agent authority; governed Tools must resolve directly through their explicit CapabilityRegistry definitions.
 
@@ -478,3 +480,7 @@ MCP responses expose the correlation ID, diagnostic ID and canonical failure cod
 ## Named-enterprise strategy workflow
 
 When a strategy request names an Enterprise rather than providing an internal id, resolve the Enterprise first with `get-enterprise` using its canonical slug. For example, `valid.guide` normalizes to `valid-guide`. Continue the strategy workflow using the resolved Enterprise id and preserve the resolved id/slug pair through Agent assignment and execution context. Never derive an Enterprise id by inference or silently substitute a different Enterprise.
+
+## Competitive analysis reports
+
+The generate-competitive-analysis-report tool delegates to the governed marketing.competitor.report.generate Capability and GenerateCompetitiveAnalysisReport Operation. It accepts an Enterprise ID and optional list of competitor profile-version IDs; an omitted or empty list selects current versions. The operation enforces Enterprise scope and creates an immutable competitive_analysis Report, structured result payload, and provenance snapshot. The report uses the deterministic recorded-profile methodology 1.0; it does not infer missing facts. See [competitive-analysis-reporting.md](competitive-analysis-reporting.md).

@@ -18,6 +18,7 @@ use App\Experts\StrategyExpert;
 use App\Mcp\Servers\Cr8orServer;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\DelegateAgentTool;
+use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\PlanMarketingTool;
 use App\Models\AgentAssignment;
@@ -100,6 +101,7 @@ it('registers the new governed action tools for an organization member', functio
         AnalyzeBusinessContextTool::class,
         PlanMarketingTool::class,
         GenerateFinancialReportTool::class,
+        GenerateCompetitiveAnalysisReportTool::class,
     ]);
 });
 

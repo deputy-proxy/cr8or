@@ -30,11 +30,13 @@ final class CreateCompetitor implements Operation
             }
         }
 
-        foreach (['strengths', 'weaknesses'] as $field) {
+        foreach (array_merge(['strengths', 'weaknesses'], Competitor::PROFILE_FIELDS) as $field) {
             if (isset($input[$field]) && ! is_array($input[$field])) {
-                throw ValidationException::withMessages([$field => 'This field must be a list of strings.']);
+                throw ValidationException::withMessages([$field => 'This field must be a structured list.']);
             }
         }
+
+        $profile = array_intersect_key($input, array_flip(Competitor::PROFILE_FIELDS));
 
         return $this->strategicContext->createCompetitor(
             $actor,
@@ -44,6 +46,7 @@ final class CreateCompetitor implements Operation
             $input['positioning'] ?? null,
             $input['strengths'] ?? [],
             $input['weaknesses'] ?? [],
+            $profile,
         );
     }
 }

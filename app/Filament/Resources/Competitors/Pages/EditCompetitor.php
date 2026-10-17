@@ -32,6 +32,7 @@ class EditCompetitor extends EditRecord
             isset($data['positioning']) ? (string) $data['positioning'] : null,
             array_values($data['strengths'] ?? []),
             array_values($data['weaknesses'] ?? []),
+            array_intersect_key($data, array_flip(Competitor::PROFILE_FIELDS)),
         );
 
         $this->record = $successor;
