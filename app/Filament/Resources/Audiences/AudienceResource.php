@@ -41,7 +41,7 @@ class AudienceResource extends Resource
 
     protected static ?string $navigationLabel = 'Personas';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 70;
 
     public static function form(Schema $schema): Schema
     {
