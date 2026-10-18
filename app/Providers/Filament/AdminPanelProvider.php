@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandName('CR8OR')
-            ->favicon(asset('favicon.svg'))
+            ->favicon(asset('favicon.ico'))
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
             ->colors([
