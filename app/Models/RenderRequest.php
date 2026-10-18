@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'content_item_id', 'asset_id', 'source_version_id', 'type', 'parameters', 'status', 'idempotency_key', 'correlation_id', 'external_request_id', 'failure_code', 'failure_reason'])]
+#[Fillable(['enterprise_id', 'content_item_id', 'asset_id', 'source_version_id', 'template_version_id', 'type', 'parameters', 'status', 'idempotency_key', 'correlation_id', 'external_request_id', 'failure_code', 'failure_reason'])]
 class RenderRequest extends Model
 {
     /** @use HasFactory<RenderRequestFactory> */
@@ -49,7 +49,21 @@ class RenderRequest extends Model
                 if ($v === null || (int) $v->asset->enterprise_id !== (int) $r->enterprise_id) {
                     throw new LogicException('Render source version must belong to its enterprise.');
                 }
-            }if ($r->status === self::STATUS_SUCCEEDED && $r->failure_reason !== null) {
+            }
+            if ($r->template_version_id !== null) {
+                $templateVersion = TemplateVersion::query()->with('template')->find($r->template_version_id);
+                if ($templateVersion === null) {
+                    throw new LogicException('Render request template version does not exist.');
+                }
+                $isNewSelection = ! $r->exists || (int) $r->getRawOriginal('template_version_id') !== (int) $r->template_version_id;
+                if ($isNewSelection && ($templateVersion->status !== TemplateVersion::STATUS_PUBLISHED || $templateVersion->template?->status !== Template::STATUS_PUBLISHED)) {
+                    throw new LogicException('Render requests may only select a currently published template version.');
+                }
+            }
+            if ($r->exists && $r->isDirty('template_version_id')) {
+                throw new LogicException('Render request template version identity is immutable.');
+            }
+            if ($r->status === self::STATUS_SUCCEEDED && $r->failure_reason !== null) {
                 throw new LogicException('A succeeded render request cannot have a failure reason.');
             }if ($r->status === self::STATUS_FAILED && $r->failure_reason === null) {
                 throw new LogicException('A failed render request must have a failure reason.');
@@ -75,6 +89,12 @@ class RenderRequest extends Model
     public function sourceVersion(): BelongsTo
     {
         return $this->belongsTo(AssetVersion::class, 'source_version_id');
+    }
+
+    /** @return BelongsTo<TemplateVersion, $this> */
+    public function templateVersion(): BelongsTo
+    {
+        return $this->belongsTo(TemplateVersion::class, 'template_version_id');
     }
 
     /** @return BelongsTo<Enterprise, $this> */

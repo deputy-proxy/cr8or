@@ -23,9 +23,30 @@ final class MediaLifecycleService
     public function requestGeneration(User $actor, Asset $asset, string $type, array $parameters, string $idempotencyKey): GenerationRequest
     {
         Gate::forUser($actor)->authorize('view', $asset);
+        $templateVersionId = null;
+        if (isset($parameters['template_key'])) {
+            $outputFormat = match ($type) {
+                'image', 'still', 'still-image' => 'image',
+                'video', 'motion', 'motion-video' => 'video',
+                default => throw new \LogicException("Generation type [{$type}] cannot be matched to a template output format."),
+            };
+            $templateVersion = app(TemplateCatalogService::class)->resolvePublished(
+                (string) $parameters['template_key'],
+                $outputFormat,
+                isset($parameters['template_version']) ? (int) $parameters['template_version'] : null,
+            );
+            $templateInputs = $parameters['template_inputs'] ?? [];
+            if (! is_array($templateInputs)) {
+                throw new \LogicException('Template inputs must be an object.');
+            }
+            app(TemplateCatalogService::class)->validateInputs($templateVersion, $templateInputs);
+            $templateVersionId = $templateVersion->getKey();
+            $parameters['template_version_id'] = $templateVersionId;
+            $parameters['template_definition_artifact_path'] = $templateVersion->definition_artifact_path;
+        }
         $request = GenerationRequest::query()->firstOrCreate(
             ['idempotency_key' => $idempotencyKey],
-            ['enterprise_id' => $asset->enterprise_id, 'asset_id' => $asset->id, 'type' => $type, 'parameters' => $parameters, 'status' => GenerationRequest::STATUS_PENDING, 'correlation_id' => (string) Str::uuid()],
+            ['enterprise_id' => $asset->enterprise_id, 'asset_id' => $asset->id, 'template_version_id' => $templateVersionId, 'type' => $type, 'parameters' => $parameters, 'status' => GenerationRequest::STATUS_PENDING, 'correlation_id' => (string) Str::uuid()],
         );
         if ((int) $request->enterprise_id !== (int) $asset->enterprise_id) {
             throw new AuthorizationException('Generation request enterprise mismatch.');
@@ -109,9 +130,30 @@ final class MediaLifecycleService
         Gate::forUser($actor)->authorize('view', $asset);
         /** @var AssetVersion|null $version */
         $version = $asset->versions()->orderByDesc('version')->first();
+        $templateVersionId = null;
+        if (isset($parameters['template_key'])) {
+            $outputFormat = match ($type) {
+                'image', 'still', 'still-image' => 'image',
+                'video', 'motion', 'motion-video' => 'video',
+                default => throw new \LogicException("Render type [{$type}] cannot be matched to a template output format."),
+            };
+            $templateVersion = app(TemplateCatalogService::class)->resolvePublished(
+                (string) $parameters['template_key'],
+                $outputFormat,
+                isset($parameters['template_version']) ? (int) $parameters['template_version'] : null,
+            );
+            $templateInputs = $parameters['template_inputs'] ?? [];
+            if (! is_array($templateInputs)) {
+                throw new \LogicException('Template inputs must be an object.');
+            }
+            app(TemplateCatalogService::class)->validateInputs($templateVersion, $templateInputs);
+            $templateVersionId = $templateVersion->getKey();
+            $parameters['template_version_id'] = $templateVersionId;
+            $parameters['template_definition_artifact_path'] = $templateVersion->definition_artifact_path;
+        }
         $request = RenderRequest::query()->firstOrCreate(
             ['idempotency_key' => $idempotencyKey],
-            ['enterprise_id' => $asset->enterprise_id, 'asset_id' => $asset->id, 'source_version_id' => $version?->id, 'content_item_id' => $contentItemId, 'type' => $type, 'parameters' => $parameters, 'status' => RenderRequest::STATUS_PENDING, 'correlation_id' => (string) Str::uuid()],
+            ['enterprise_id' => $asset->enterprise_id, 'asset_id' => $asset->id, 'source_version_id' => $version?->id, 'template_version_id' => $templateVersionId, 'content_item_id' => $contentItemId, 'type' => $type, 'parameters' => $parameters, 'status' => RenderRequest::STATUS_PENDING, 'correlation_id' => (string) Str::uuid()],
         );
         if ((int) $request->enterprise_id !== (int) $asset->enterprise_id) {
             throw new AuthorizationException('Render request enterprise mismatch.');

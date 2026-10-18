@@ -32,7 +32,7 @@ function expectedNavigation(): array
         'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products', 'Audiences'],
         'Strategy & Execution Planning' => ['Strategies', 'Goals', 'Objectives', 'Kpis', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'Issues'],
         'Agent Governance & Operations' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentDelegations', 'AgentDecisions', 'ApprovalRequests', 'ApprovalPolicies', 'ApprovalDecisions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions'],
-        'Media Production & Publishing' => ['Assets', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
+        'Media Production & Publishing' => ['Assets', 'Templates', 'TemplateVersions', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Knowledge & Documentation' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
         'Workflows & Integrations' => ['Workflows', 'WorkflowVersions', 'WorkflowStages', 'WorkflowExecutions', 'IntegrationConnections', 'ExternalResources', 'IntegrationJobs', 'IntegrationResults', 'CommandWebhookDeliveries', 'Events'],
         'Marketing' => ['MarketingStrategies', 'Campaigns', 'ContentSeries', 'Channels', 'SocialAccounts', 'ContentItems', 'Scripts'],
@@ -56,7 +56,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(97);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(99);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {
@@ -73,7 +73,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
 
 it('orders resources by user workflow within each navigation group', function () {
     foreach (expectedNavigation() as $group => $resources) {
-        $sortOverrides = ['Channels' => 50, 'SocialAccounts' => 60, 'ContentItems' => 70, 'Scripts' => 80];
+        $sortOverrides = ['Templates' => 15, 'TemplateVersions' => 16, 'GenerationRequests' => 20, 'GenerationJobs' => 30, 'RenderRequests' => 40, 'RenderJobs' => 50, 'RenderOutputs' => 60, 'Transformations' => 70, 'MediaMetadata' => 80, 'AssetVersions' => 90, 'Publications' => 100, 'PublicationSchedules' => 110, 'PublishingJobs' => 120, 'PublicationResults' => 130, 'Channels' => 50, 'SocialAccounts' => 60, 'ContentItems' => 70, 'Scripts' => 80];
 
         foreach ($resources as $position => $resource) {
             $files = glob(app_path("Filament/Resources/{$resource}/*Resource.php"));

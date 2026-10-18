@@ -16,7 +16,7 @@ class RenderRequestFactory extends Factory
     {
         $a = Asset::factory();
 
-        return ['enterprise_id' => null, 'content_item_id' => null, 'asset_id' => $a, 'source_version_id' => null, 'type' => 'video', 'parameters' => [], 'status' => RenderRequest::STATUS_PENDING, 'idempotency_key' => (string) Str::uuid(), 'correlation_id' => (string) Str::uuid(), 'external_request_id' => null, 'failure_code' => null, 'failure_reason' => null];
+        return ['enterprise_id' => null, 'content_item_id' => null, 'asset_id' => $a, 'source_version_id' => null, 'template_version_id' => null, 'type' => 'video', 'parameters' => [], 'status' => RenderRequest::STATUS_PENDING, 'idempotency_key' => (string) Str::uuid(), 'correlation_id' => (string) Str::uuid(), 'external_request_id' => null, 'failure_code' => null, 'failure_reason' => null];
     }
 
     public function configure(): static

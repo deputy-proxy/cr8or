@@ -143,6 +143,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(\App\Models\SocialAuthorizationAttempt::class, SocialAuthorizationAttemptPolicy::class);
         Gate::policy(\App\Models\SocialAuthorizationAudit::class, SocialAuthorizationAuditPolicy::class);
         Gate::policy(\App\Models\SocialCredential::class, SocialCredentialPolicy::class);
+        Gate::policy(\App\Models\Template::class, \App\Policies\TemplatePolicy::class);
+        Gate::policy(\App\Models\TemplateVersion::class, \App\Policies\TemplateVersionPolicy::class);
         Gate::policy(Workflow::class, WorkflowPolicy::class);
         Gate::policy(WorkflowExecution::class, WorkflowExecutionPolicy::class);
     }
