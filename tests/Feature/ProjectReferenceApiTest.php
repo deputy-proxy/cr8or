@@ -90,3 +90,12 @@ it('rejects malformed and duplicate reference IDs', function (): void {
     $this->postJson('/api/integrations/project-references/validate', ['ids' => [1, 1]])->assertUnprocessable();
     $this->postJson('/api/integrations/project-references/validate', ['ids' => ['not-an-id']])->assertUnprocessable();
 });
+
+it('rejects OAuth clients that do not support the client-credentials grant', function (): void {
+    $client = Client::factory()->create();
+    expect($client->hasGrantType('client_credentials'))->toBeFalse();
+
+    Passport::actingAsClient($client, ['enterprise:read']);
+
+    $this->getJson('/api/integrations/project-references')->assertUnauthorized();
+});
