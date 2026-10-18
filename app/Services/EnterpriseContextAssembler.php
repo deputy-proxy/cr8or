@@ -6,6 +6,7 @@ use App\Data\AgentContext;
 use App\Data\AgentContextSection;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
@@ -97,11 +98,40 @@ final class EnterpriseContextAssembler
             'products' => $enterprise->products()
                 ->orderBy('id')
                 ->get()
-                ->map(fn ($product) => [
+                ->map(fn (Product $product): array => [
                     'id' => $product->getKey(),
                     'name' => $product->name,
                     'slug' => $product->slug,
                     'status' => $product->status,
+                    'product_type' => $product->product_type,
+                    'tagline' => $product->tagline,
+                    'summary' => $product->summary,
+                    'description' => $product->description,
+                    'problem_statement' => $product->problem_statement,
+                    'value_proposition' => $product->value_proposition,
+                    'primary_outcome' => $product->primary_outcome,
+                    'positioning' => $product->positioning,
+                    'differentiators' => $product->differentiators,
+                    'features' => $product->features,
+                    'benefits' => $product->benefits,
+                    'deliverables' => $product->deliverables,
+                    'requirements' => $product->requirements,
+                    'limitations' => $product->limitations,
+                    'delivery_model' => $product->delivery_model,
+                    'fulfillment_method' => $product->fulfillment_method,
+                    'support_model' => $product->support_model,
+                    'monetization_model' => $product->monetization_model,
+                    'pricing_model' => $product->pricing_model,
+                    'price_amount' => $product->price_amount,
+                    'currency' => $product->currency,
+                    'billing_interval' => $product->billing_interval,
+                    'commercial_terms' => $product->commercial_terms,
+                    'commercial_notes' => $product->commercial_notes,
+                    'is_commercially_available' => $product->is_commercially_available,
+                    'availability_start_at' => self::isoDateTime($product->getAttribute('availability_start_at')),
+                    'availability_end_at' => self::isoDateTime($product->getAttribute('availability_end_at')),
+                    'required_disclosures' => $product->required_disclosures,
+                    'restrictions' => $product->restrictions,
                 ])
                 ->all(),
             'customers' => $enterprise->customers()
@@ -127,5 +157,10 @@ final class EnterpriseContextAssembler
                 ])
                 ->all(),
         ];
+    }
+
+    private static function isoDateTime(mixed $value): ?string
+    {
+        return $value instanceof \DateTimeInterface ? \Illuminate\Support\Carbon::instance($value)->toISOString() : null;
     }
 }

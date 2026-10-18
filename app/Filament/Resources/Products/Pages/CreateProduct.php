@@ -5,9 +5,11 @@ namespace App\Filament\Resources\Products\Pages;
 use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Enterprise;
-use App\Models\Product;
+use App\Models\User;
+use App\Services\DomainResourceService;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\Model;
 
 class CreateProduct extends CreateRecord
 {
@@ -15,11 +17,16 @@ class CreateProduct extends CreateRecord
 
     protected static string $resource = ProductResource::class;
 
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function handleRecordCreation(array $data): Model
     {
-        $parent = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
-        Gate::authorize('createForEnterprise', [Product::class, $parent]);
+        $actor = auth()->user();
+        if (! $actor instanceof User) {
+            throw new AuthenticationException;
+        }
 
-        return $data;
+        $enterprise = Enterprise::query()->findOrFail((int) $data['enterprise_id']);
+        unset($data['enterprise_id']);
+
+        return app(DomainResourceService::class)->createProduct($actor, $enterprise, $data);
     }
 }

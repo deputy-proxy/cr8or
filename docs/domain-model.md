@@ -34,7 +34,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Phase 1 implementation:** Enterprise is organization-scoped through `organization_id`. Enterprise Context is a dedicated one-to-one model. Products, customers, partners, goals, KPIs and enterprise decisions belong to an enterprise and are authorized through the enterprise's organization membership.
 
-**Deferred:** Detailed CRM, product catalog and KPI calculation behavior.
+**Deferred:** Detailed CRM and KPI calculation behavior; multi-offer/variant catalog features remain deferred.
+
+**Verified Product domain implementation:** Product represents an offering and one inline commercial configuration. Its controlled type/lifecycle/delivery/monetization/pricing/billing values, positioning fields, bounded structured lists, commercial invariants, Enterprise ownership, and Audience relationship are documented in [`product-domain.md`](product-domain.md). Product fields are persisted directly on Product; no offer/variant hierarchy or duplicate Audience/Persona data is introduced.
 
 ## Agent Runtime & Governance
 

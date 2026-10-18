@@ -18,6 +18,8 @@ The full per-tool authorization and tenancy mapping is maintained in [`mcp-autho
 
 The canonical structured persona schema, product-association rules, update semantics, privacy boundaries, and examples for `create-audience` / `update-audience` are documented in [`client-personas.md`](client-personas.md). These tools retain the existing `marketing.audience.create` / `marketing.audience.update` capability-operation path; persona fields do not create a parallel MCP business layer.
 
+The complete Product field contract, controlled values, commercial invariants, backward-compatible defaults, and `create-product` response shape are documented in [`product-domain.md`](product-domain.md). The tool remains a thin entry point through `product.create` → `ProductCreate` → `DomainResourceService`; schema and capability contract changes must stay aligned.
+
 The `create-competitor` tool atomically creates/revises a competitor and generates a competitive-analysis report; `create-competitor-record` preserves the record-only capability. Contracts, enterprise authorization, versioning behavior, report provenance, retry semantics, and deployment verification are documented in [`competitor-creation.md`](competitor-creation.md).
 
 ## Public Tool rename and compatibility decision
