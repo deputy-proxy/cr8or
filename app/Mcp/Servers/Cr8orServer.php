@@ -33,6 +33,7 @@ use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
 use App\Mcp\Tools\CreateObjectiveTool;
+use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -231,6 +232,7 @@ class Cr8orServer extends Server
         CreateObjectiveTool::class,
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
+        CreateProductTool::class,
         CreateMarketingStrategyTool::class,
         DefineMarketingStrategySectionTool::class,
         UpdateStrategyTool::class,

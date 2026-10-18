@@ -11,6 +11,7 @@ use App\Mcp\Tools\CreateCompetitorRecordTool;
 use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
+use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateStrategyTool;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\CreateWorkflowTool;
@@ -83,6 +84,7 @@ use App\Operations\MarketingStrategyArchive;
 use App\Operations\ObjectiveCreate;
 use App\Operations\ObjectiveUpdate;
 use App\Operations\PlanMarketing;
+use App\Operations\ProductCreate;
 use App\Operations\ProjectCreate;
 use App\Operations\ProjectUpdate;
 use App\Operations\PublishContent;
@@ -590,6 +592,17 @@ final class CapabilityRegistry
                 'required',
                 'lifecycle',
                 'request-approval',
+            ),
+            $this->definition(
+                'product.create',
+                ProductCreate::class,
+                CreateProductTool::class,
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'slug' => 'string|nullable', 'status' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'product'],
+                'McpCapabilityAuthorizer::authorizeMutation + ProductPolicy::createForEnterprise + DomainResourceService',
+                'none',
+                'business',
+                'create-product',
             ),
             $this->definition(
                 'marketing.audience.create',

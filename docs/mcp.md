@@ -84,6 +84,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-memory` | `CreateMemoryTool` | `memory.create` | `CreateMemory` |
 | `create-objective` | `CreateObjectiveTool` | `marketing.objective.create` | `ObjectiveCreate` |
 | `create-project` | `CreateProjectTool` | `marketing.project.create` | `ProjectCreate` |
+| `create-product` | `CreateProductTool` | `product.create` | `ProductCreate` |
 | `create-script` | `CreateScriptTool` | `marketing.script.create` | `CreateScript` |
 | `create-strategy` | `CreateStrategyTool` | `strategy.create` | `CreateStrategy` |
 | `create-task` | `CreateTaskTool` | `work.task.create` | `CreateTask` |
