@@ -2,6 +2,7 @@
 
 use App\Filament\Resources\Competitors\CompetitorResource;
 use App\Filament\Resources\Competitors\Pages\EditCompetitor;
+use App\Filament\Resources\Competitors\Pages\ListCompetitors;
 use App\Models\Competitor;
 use App\Models\Enterprise;
 use App\Models\Membership;
@@ -44,6 +45,23 @@ function createResourceCompetitor(User $actor, Enterprise $enterprise, string $n
         ['brand awareness'],
     );
 }
+
+it('groups competitors by enterprise and defaults the list status filter to active', function () {
+    [, , $owner, , , $enterprise] = competitorResourceActors();
+    $active = createResourceCompetitor($owner, $enterprise, 'Active competitor');
+    $archived = createResourceCompetitor($owner, $enterprise, 'Archived competitor');
+    app(StrategicContextService::class)->archiveCompetitor($owner, $archived);
+
+    $this->actingAs($owner);
+
+    Livewire::test(ListCompetitors::class)
+        ->assertSet('tableGrouping', 'enterprise_id:asc')
+        ->assertCanSeeTableRecords([$active])
+        ->assertCanNotSeeTableRecords([$archived])
+        ->filterTable('status', Competitor::STATUS_ARCHIVED)
+        ->assertCanSeeTableRecords([$archived])
+        ->assertCanNotSeeTableRecords([$active]);
+});
 
 it('registers individual view and revision routes without a hard-delete route', function () {
     expect(array_keys(CompetitorResource::getPages()))->toBe(['index', 'create', 'view', 'edit'])
