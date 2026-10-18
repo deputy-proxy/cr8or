@@ -22,6 +22,7 @@ use App\Models\MarketingStrategy;
 use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Plan;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\Script;
 use App\Models\SocialAccount;
@@ -340,6 +341,38 @@ final class DomainResourceService
             'title' => $attributes['title'],
             'body' => $attributes['body'],
             'asset_requirements' => $attributes['asset_requirements'] ?? null,
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function createProduct(User $actor, Enterprise $enterprise, array $attributes): Product
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [Product::class, $enterprise]);
+
+        $name = trim((string) ($attributes['name'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 255) {
+            throw ValidationException::withMessages(['name' => 'A product name between 1 and 255 characters is required.']);
+        }
+
+        $slug = trim((string) ($attributes['slug'] ?? ''));
+        $slug = $slug !== '' ? $slug : Str::slug($name);
+        if ($slug === '' || mb_strlen($slug) > 255 || preg_match('/^[A-Za-z0-9_-]+$/', $slug) !== 1) {
+            throw ValidationException::withMessages(['slug' => 'The product slug must contain only letters, numbers, dashes, and underscores.']);
+        }
+
+        $status = $attributes['status'] ?? Product::STATUS_ACTIVE;
+        if (! in_array($status, [Product::STATUS_ACTIVE, Product::STATUS_ARCHIVED], true)) {
+            throw ValidationException::withMessages(['status' => 'The product status must be active or archived.']);
+        }
+
+        if ($enterprise->products()->where('slug', $slug)->exists()) {
+            throw ValidationException::withMessages(['slug' => 'This slug is already used by a product in the enterprise.']);
+        }
+
+        return $enterprise->products()->create([
+            'name' => $name,
+            'slug' => $slug,
+            'status' => $status,
         ]);
     }
 

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use LogicException;
 
 it('creates a product belonging to an enterprise', function () {
     $enterprise = Enterprise::factory()->create();
@@ -77,4 +78,13 @@ it('keeps the product schema limited to supported fields', function () {
     expect(Schema::getColumnListing('products'))->toBe([
         'id', 'enterprise_id', 'name', 'slug', 'status', 'created_at', 'updated_at',
     ]);
+});
+
+it('rejects invalid product statuses and enterprise ownership changes', function () {
+    $enterprise = Enterprise::factory()->create();
+    $otherEnterprise = Enterprise::factory()->create();
+    $product = Product::factory()->create(['enterprise_id' => $enterprise]);
+
+    expect(fn () => $product->update(['status' => 'pending']))->toThrow(LogicException::class)
+        ->and(fn () => $product->update(['enterprise_id' => $otherEnterprise->id]))->toThrow(LogicException::class);
 });

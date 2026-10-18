@@ -52,6 +52,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-memory | `CreateMemoryTool` | `MemoryResourceTool` | `memory.create` | `CreateMemory` | Operation/domain service; governed when registry-mapped |
 | create-objective | `CreateObjectiveTool` | `DomainMutationTool` | `marketing.objective.create` | `ObjectiveCreate` | human target policy + DomainResourceService policy |
 | create-project | `CreateProjectTool` | `DomainMutationTool` | `marketing.project.create` | `ProjectCreate` | human target policy + DomainResourceService policy |
+| create-product | `CreateProductTool` | `DomainMutationTool` | `product.create` | `ProductCreate` | human target policy + DomainResourceService policy |
 | create-script | `CreateScriptTool` | `DomainMutationTool` | `marketing.script.create` | `CreateScript` | human target policy + DomainResourceService policy |
 | create-strategy | `CreateStrategyTool` | `GovernedCapabilityTool` | `strategy.create` | `CreateStrategy` | CapabilityInvocationService + operation/domain policy |
 | create-task | `CreateTaskTool` | `GovernedCapabilityTool` | `work.task.create` | `CreateTask` | CapabilityInvocationService + operation/domain policy |

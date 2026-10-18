@@ -15,6 +15,7 @@ use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
+use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
 use App\Mcp\Tools\DisableSocialAccountTool;
@@ -68,6 +69,7 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         TransitionContentSeriesTool::class,
         CreateAssetTool::class,
         CreateAudienceTool::class,
+        CreateProductTool::class,
         UpdateAudienceTool::class,
         ArchiveAudienceTool::class,
         CreateChannelTool::class,
