@@ -117,6 +117,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Passport::authorizationView('mcp.authorize');
+        Passport::tokensCan([
+            'enterprise:read' => 'Read explicitly assigned Enterprise references for integrations.',
+        ]);
         HandleCors::skipWhen(static fn (Request $request): bool => $request->is('api/events/website'));
 
         $this->configureDefaults();
