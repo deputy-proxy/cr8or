@@ -51,6 +51,12 @@ it('assembles complete authorized Enterprise context into the canonical Agent co
     $product = Product::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'name' => 'Core Product',
+        'product_type' => 'digital_product',
+        'features' => ['Analytics', 'Exports'],
+        'pricing_model' => 'fixed',
+        'price_amount' => '49.00',
+        'currency' => 'USD',
+        'is_commercially_available' => true,
     ]);
     $customer = Customer::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
@@ -103,6 +109,12 @@ it('assembles complete authorized Enterprise context into the canonical Agent co
             'name' => 'Core Product',
             'slug' => $product->slug,
             'status' => 'active',
+            'product_type' => 'digital_product',
+            'features' => ['Analytics', 'Exports'],
+            'pricing_model' => 'fixed',
+            'price_amount' => '49.00',
+            'currency' => 'USD',
+            'is_commercially_available' => true,
         ])
         ->and($data['customers'])->toHaveCount(1)
         ->and($data['customers'][0])->toMatchArray([

@@ -3,7 +3,14 @@
 namespace App\Services;
 
 use App\Data\CapabilityExecutionContext;
+use App\Domain\Products\ProductInputRules;
 use App\Enums\CapabilityExecutionMode;
+use App\Enums\ProductBillingInterval;
+use App\Enums\ProductDeliveryModel;
+use App\Enums\ProductMonetizationModel;
+use App\Enums\ProductPricingModel;
+use App\Enums\ProductStatus;
+use App\Enums\ProductType;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\Asset;
@@ -28,8 +35,10 @@ use App\Models\Script;
 use App\Models\SocialAccount;
 use App\Models\Strategy;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -349,31 +358,72 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [Product::class, $enterprise]);
 
-        $name = trim((string) ($attributes['name'] ?? ''));
+        $validated = $this->validateProductInput($attributes);
+        $name = trim((string) $validated['name']);
+        $slug = trim((string) ($validated['slug'] ?? ''));
+        $slug = $slug !== '' ? $slug : Str::slug($name);
+
         if ($name === '' || mb_strlen($name) > 255) {
             throw ValidationException::withMessages(['name' => 'A product name between 1 and 255 characters is required.']);
         }
 
-        $slug = trim((string) ($attributes['slug'] ?? ''));
-        $slug = $slug !== '' ? $slug : Str::slug($name);
         if ($slug === '' || mb_strlen($slug) > 255 || preg_match('/^[A-Za-z0-9_-]+$/', $slug) !== 1) {
             throw ValidationException::withMessages(['slug' => 'The product slug must contain only letters, numbers, dashes, and underscores.']);
-        }
-
-        $status = $attributes['status'] ?? Product::STATUS_ACTIVE;
-        if (! in_array($status, [Product::STATUS_ACTIVE, Product::STATUS_ARCHIVED], true)) {
-            throw ValidationException::withMessages(['status' => 'The product status must be active or archived.']);
         }
 
         if ($enterprise->products()->where('slug', $slug)->exists()) {
             throw ValidationException::withMessages(['slug' => 'This slug is already used by a product in the enterprise.']);
         }
 
-        return $enterprise->products()->create([
+        return $enterprise->products()->create(array_merge($validated, [
             'name' => $name,
             'slug' => $slug,
-            'status' => $status,
-        ]);
+        ]));
+    }
+
+    /** @param array<string, mixed> $attributes
+     * @return array<string, mixed>
+     */
+    private function validateProductInput(array $attributes): array
+    {
+        $data = ProductInputRules::normalize(array_merge([
+            'status' => ProductStatus::ACTIVE->value,
+            'product_type' => ProductType::OTHER->value,
+            'delivery_model' => ProductDeliveryModel::OTHER->value,
+            'monetization_model' => ProductMonetizationModel::OTHER->value,
+            'pricing_model' => ProductPricingModel::OTHER->value,
+            'is_commercially_available' => false,
+        ], $attributes));
+
+        $validator = Validator::make($data, ProductInputRules::rules());
+        $validator->after(static function ($validator) use ($data): void {
+            if (! $validator->errors()->has('price_amount') && ! $validator->errors()->has('currency')
+                && array_key_exists('price_amount', $data) && $data['price_amount'] !== null
+                && (! isset($data['currency']) || $data['currency'] === '')) {
+                $validator->errors()->add('currency', 'A price requires a valid ISO 4217 currency.');
+            }
+
+            if (! $validator->errors()->has('price_amount')
+                && (($data['pricing_model'] ?? null) === ProductPricingModel::FREE->value || ($data['monetization_model'] ?? null) === ProductMonetizationModel::FREE->value)
+                && isset($data['price_amount']) && is_numeric($data['price_amount']) && (float) $data['price_amount'] > 0) {
+                $validator->errors()->add('price_amount', 'A free product cannot have a positive price.');
+            }
+
+            $recurring = ($data['pricing_model'] ?? null) === ProductPricingModel::SUBSCRIPTION->value
+                || ($data['monetization_model'] ?? null) === ProductMonetizationModel::SUBSCRIPTION->value;
+            if ($recurring && ! in_array($data['billing_interval'] ?? null, ProductBillingInterval::recurringValues(), true)) {
+                $validator->errors()->add('billing_interval', 'Recurring products require a supported recurring billing interval.');
+            }
+
+            if (isset($data['availability_start_at'], $data['availability_end_at'])
+                && ! $validator->errors()->has('availability_start_at')
+                && ! $validator->errors()->has('availability_end_at')
+                && Carbon::parse((string) $data['availability_end_at'])->lt(Carbon::parse((string) $data['availability_start_at']))) {
+                $validator->errors()->add('availability_end_at', 'Availability end cannot precede availability start.');
+            }
+        });
+
+        return $validator->validate();
     }
 
     /** @param array<string, mixed> $attributes */

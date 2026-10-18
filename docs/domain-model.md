@@ -36,6 +36,8 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Deferred:** Detailed CRM, product catalog and KPI calculation behavior.
 
+**Verified Product domain implementation:** Product represents an offering and one inline commercial configuration. Its controlled type/lifecycle/delivery/monetization/pricing/billing values, positioning fields, bounded structured lists, commercial invariants, Enterprise ownership, and Audience relationship are documented in [`product-domain.md`](product-domain.md). Product fields are persisted directly on Product; no offer/variant hierarchy or duplicate Audience/Persona data is introduced.
+
 ## Agent Runtime & Governance
 
 **Purpose:** Define executable Agents and Experts and the persistent records required to register, assign, authorize and audit them.

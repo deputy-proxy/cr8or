@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Audience;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\Organization;
@@ -74,10 +75,133 @@ it('enforces product authorization through the enterprise organization', functio
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Product::class, $product->enterprise]))->toBeFalse();
 });
 
-it('keeps the product schema limited to supported fields', function () {
-    expect(Schema::getColumnListing('products'))->toBe([
+it('defines the complete product domain schema without dropping legacy identity columns', function () {
+    expect(Schema::getColumnListing('products'))->toEqualCanonicalizing([
         'id', 'enterprise_id', 'name', 'slug', 'status', 'created_at', 'updated_at',
+        'product_type', 'tagline', 'summary', 'description', 'problem_statement', 'value_proposition',
+        'primary_outcome', 'positioning', 'differentiators', 'features', 'benefits', 'deliverables',
+        'requirements', 'limitations', 'delivery_model', 'fulfillment_method', 'support_model',
+        'monetization_model', 'pricing_model', 'price_amount', 'currency', 'billing_interval',
+        'commercial_terms', 'commercial_notes', 'is_commercially_available', 'availability_start_at',
+        'availability_end_at', 'required_disclosures', 'restrictions',
     ]);
+});
+
+it('applies conservative defaults while preserving existing Product and Audience identity', function () {
+    $enterprise = Enterprise::factory()->create();
+    $audience = Audience::factory()->create(['enterprise_id' => $enterprise->id]);
+    $product = Product::factory()->create(['enterprise_id' => $enterprise->id]);
+    $productId = $product->id;
+    $product->audiences()->attach($audience->id);
+
+    expect($product->refresh())
+        ->product_type->toBe('other')
+        ->delivery_model->toBe('other')
+        ->monetization_model->toBe('other')
+        ->pricing_model->toBe('other')
+        ->is_commercially_available->toBeFalse()
+        ->and($product->audiences->modelKeys())->toBe([$audience->id]);
+
+    $product->update(['tagline' => 'Clear outcomes', 'features' => ['Reporting', 'Automation']]);
+
+    expect(Product::query()->findOrFail($productId)->audiences->modelKeys())->toBe([$audience->id])
+        ->and(Product::query()->findOrFail($productId)->features)->toBe(['Reporting', 'Automation']);
+});
+
+it('supports a complete inline commercial configuration and normalizes currency', function () {
+    $product = Product::factory()->create([
+        'status' => 'draft',
+        'product_type' => 'course',
+        'delivery_model' => 'digital_self_service',
+        'monetization_model' => 'subscription',
+        'pricing_model' => 'subscription',
+        'price_amount' => '19.99',
+        'currency' => 'usd',
+        'billing_interval' => 'monthly',
+        'features' => ['Lessons', 'Exercises'],
+        'benefits' => ['Self-paced learning'],
+        'required_disclosures' => ['Results vary by learner'],
+        'is_commercially_available' => true,
+        'availability_start_at' => '2026-01-01 00:00:00',
+        'availability_end_at' => '2026-12-31 23:59:59',
+    ]);
+
+    expect($product->refresh())
+        ->status->toBe('draft')
+        ->product_type->toBe('course')
+        ->price_amount->toBe('19.99')
+        ->currency->toBe('USD')
+        ->billing_interval->toBe('monthly')
+        ->features->toBe(['Lessons', 'Exercises'])
+        ->required_disclosures->toBe(['Results vary by learner'])
+        ->is_commercially_available->toBeTrue();
+});
+
+it('rejects unsupported controlled Product values at persistence', function () {
+    $enterprise = Enterprise::factory()->create();
+
+    foreach ([
+        ['product_type' => 'made_up_type'],
+        ['delivery_model' => 'made_up_delivery'],
+        ['monetization_model' => 'made_up_monetization'],
+        ['pricing_model' => 'made_up_pricing'],
+        ['billing_interval' => 'every_six_weeks'],
+    ] as $invalidAttributes) {
+        expect(fn () => Product::factory()->create(array_merge(
+            ['enterprise_id' => $enterprise->id],
+            $invalidAttributes,
+        )))->toThrow(LogicException::class);
+    }
+});
+
+it('allows quote-based offerings without inventing a fixed price and keeps lifecycle independent from availability', function () {
+    $product = Product::factory()->create([
+        'status' => 'discontinued',
+        'product_type' => 'service',
+        'monetization_model' => 'quote_based',
+        'pricing_model' => 'quote_based',
+        'price_amount' => null,
+        'currency' => null,
+        'is_commercially_available' => false,
+    ]);
+
+    expect($product->status)->toBe('discontinued')
+        ->and($product->pricing_model)->toBe('quote_based')
+        ->and($product->price_amount)->toBeNull()
+        ->and($product->currency)->toBeNull()
+        ->and($product->is_commercially_available)->toBeFalse();
+});
+
+it('rejects invalid commercial combinations and malformed structured lists at persistence', function () {
+    $enterprise = Enterprise::factory()->create();
+
+    expect(fn () => Product::factory()->create([
+        'enterprise_id' => $enterprise->id, 'price_amount' => '10.00',
+    ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'pricing_model' => 'free', 'price_amount' => '10.00', 'currency' => 'USD',
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'price_amount' => '10.001', 'currency' => 'USD',
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'pricing_model' => 'subscription', 'billing_interval' => null,
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'currency' => 'ZZZ',
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'currency' => 'XXX',
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'availability_start_at' => '2026-12-01', 'availability_end_at' => '2026-11-01',
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'features' => ['Valid', ['invalid' => 'shape']],
+        ]))->toThrow(LogicException::class)
+        ->and(fn () => Product::factory()->create([
+            'enterprise_id' => $enterprise->id, 'status' => 'pending',
+        ]))->toThrow(LogicException::class);
 });
 
 it('rejects invalid product statuses and enterprise ownership changes', function () {
