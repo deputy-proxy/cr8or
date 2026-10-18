@@ -23,6 +23,8 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\Gate;
@@ -162,7 +164,21 @@ class CompetitorResource extends Resource
             TextColumn::make('enterprise.name')->searchable()->sortable(),
             TextColumn::make('version')->sortable(),
             TextColumn::make('status')->badge(),
-        ])->recordActions([
+        ])->filters([
+            SelectFilter::make('status')
+                ->options([
+                    Competitor::STATUS_ACTIVE => 'Active',
+                    Competitor::STATUS_ARCHIVED => 'Archived',
+                ])
+                ->default(Competitor::STATUS_ACTIVE),
+        ])->groups([
+            Group::make('enterprise_id')
+                ->label('Enterprise')
+                ->getKeyFromRecordUsing(fn (Competitor $record): int|string => $record->enterprise_id ?? 'ungrouped')
+                ->getTitleFromRecordUsing(fn (Competitor $record): string => $record->enterprise->name ?? 'Ungrouped')
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+        ])->defaultGroup('enterprise_id')->recordActions([
             ViewAction::make(),
             EditAction::make()->visible(fn (Competitor $record): bool => Gate::allows('update', $record)),
             Action::make('archive')
@@ -176,7 +192,9 @@ class CompetitorResource extends Resource
 
     public static function getEloquentQuery(): EloquentBuilder
     {
-        return parent::getEloquentQuery()->whereHas('enterprise', fn (EloquentBuilder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
+        return parent::getEloquentQuery()
+            ->with('enterprise')
+            ->whereHas('enterprise', fn (EloquentBuilder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
     }
 
     public static function canViewAny(): bool
