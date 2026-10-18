@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'content_item_id', 'asset_id', 'type', 'parameters', 'status', 'idempotency_key', 'correlation_id', 'external_request_id', 'failure_code', 'failure_reason'])]
+#[Fillable(['enterprise_id', 'content_item_id', 'asset_id', 'template_version_id', 'type', 'parameters', 'status', 'idempotency_key', 'correlation_id', 'external_request_id', 'failure_code', 'failure_reason'])]
 class GenerationRequest extends Model
 {
     /** @use HasFactory<GenerationRequestFactory> */
@@ -38,7 +38,21 @@ class GenerationRequest extends Model
                 if ($i === null || (int) $i->enterprise_id !== (int) $r->enterprise_id) {
                     throw new LogicException('Generation content item must belong to its enterprise.');
                 }
-            }if ($r->asset_id !== null) {
+            }
+            if ($r->template_version_id !== null) {
+                $templateVersion = TemplateVersion::query()->with('template')->find($r->template_version_id);
+                if ($templateVersion === null) {
+                    throw new LogicException('Generation request template version does not exist.');
+                }
+                $isNewSelection = ! $r->exists || (int) $r->getRawOriginal('template_version_id') !== (int) $r->template_version_id;
+                if ($isNewSelection && ($templateVersion->status !== TemplateVersion::STATUS_PUBLISHED || $templateVersion->template?->status !== Template::STATUS_PUBLISHED)) {
+                    throw new LogicException('Generation requests may only select a currently published template version.');
+                }
+            }
+            if ($r->exists && $r->isDirty('template_version_id')) {
+                throw new LogicException('Generation request template version identity is immutable.');
+            }
+            if ($r->asset_id !== null) {
                 $a = Asset::query()->find($r->asset_id);
                 if ($a === null || (int) $a->enterprise_id !== (int) $r->enterprise_id) {
                     throw new LogicException('Generation asset must belong to its enterprise.');
@@ -57,6 +71,12 @@ class GenerationRequest extends Model
     public function contentItem(): BelongsTo
     {
         return $this->belongsTo(ContentItem::class);
+    }
+
+    /** @return BelongsTo<TemplateVersion, $this> */
+    public function templateVersion(): BelongsTo
+    {
+        return $this->belongsTo(TemplateVersion::class, 'template_version_id');
     }
 
     /** @return BelongsTo<Enterprise, $this> */

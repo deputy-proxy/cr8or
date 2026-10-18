@@ -13,6 +13,8 @@ use App\Filament\Resources\RenderJobs\RenderJobResource;
 use App\Filament\Resources\RenderOutputs\RenderOutputResource;
 use App\Filament\Resources\RenderRequests\RenderRequestResource;
 use App\Filament\Resources\SocialAccounts\SocialAccountResource;
+use App\Filament\Resources\Templates\TemplateResource;
+use App\Filament\Resources\TemplateVersions\TemplateVersionResource;
 use App\Filament\Resources\Transformations\TransformationResource;
 use App\Models\Asset;
 use App\Models\Channel;
@@ -57,6 +59,11 @@ it('scopes media and publishing resources to the authenticated organizations', f
         ->and(GenerationRequestResource::getEloquentQuery()->pluck('id')->all())->toContain($generationRequest->id)->not->toContain($foreignGenerationRequest->id)
         ->and(RenderRequestResource::getEloquentQuery()->pluck('id')->all())->toContain($renderRequest->id)->not->toContain($foreignRenderRequest->id)
         ->and(SocialAccountResource::getEloquentQuery()->pluck('id')->all())->toContain($socialAccount->id)->not->toContain($foreignSocialAccount->id)
+        ->and(TemplateResource::canViewAny())->toBeTrue()
+        ->and(TemplateResource::getNavigationGroup())->toBe('Media Production & Publishing')
+        ->and(TemplateResource::canCreate())->toBeFalse()
+        ->and(TemplateVersionResource::canViewAny())->toBeTrue()
+        ->and(TemplateVersionResource::canCreate())->toBeFalse()
         ->and(AssetVersionResource::canViewAny())->toBeTrue()
         ->and(GenerationRequestResource::canViewAny())->toBeTrue()
         ->and(RenderRequestResource::canViewAny())->toBeTrue()

@@ -16,7 +16,7 @@ class GenerationRequestFactory extends Factory
     {
         $a = Asset::factory();
 
-        return ['enterprise_id' => null, 'content_item_id' => null, 'asset_id' => $a, 'type' => 'image', 'parameters' => ['prompt' => 'test'], 'status' => GenerationRequest::STATUS_PENDING, 'idempotency_key' => (string) Str::uuid(), 'correlation_id' => (string) Str::uuid(), 'external_request_id' => null, 'failure_code' => null, 'failure_reason' => null];
+        return ['enterprise_id' => null, 'content_item_id' => null, 'asset_id' => $a, 'template_version_id' => null, 'type' => 'image', 'parameters' => ['prompt' => 'test'], 'status' => GenerationRequest::STATUS_PENDING, 'idempotency_key' => (string) Str::uuid(), 'correlation_id' => (string) Str::uuid(), 'external_request_id' => null, 'failure_code' => null, 'failure_reason' => null];
     }
 
     public function configure(): static
