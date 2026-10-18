@@ -37,3 +37,36 @@ Canva, Cloudflare R2, CR8OR Media and GitHub remain specialized external executi
 ## Integration invariant
 
 Integration webhooks never mutate arbitrary domain models directly. They authenticate, validate, normalize and reconcile through the integration boundary.
+## CR8OR Media project references
+
+CR8OR Media calls its tenant a **Project**. The corresponding authoritative CR8OR domain object is an **Enterprise**; this integration contract does not use CR8OR's separate `Project` model.
+
+The read-only contract is protected by OAuth 2.0 client credentials and the explicit `enterprise:read` scope:
+
+- `GET /api/integrations/project-references` lists only Enterprise records assigned to the calling OAuth client.
+- `POST /api/integrations/project-references/validate` accepts `{"ids":[1,2]}` and returns the matching references only if every ID is assigned to that client.
+- Each reference contains the stable numeric Enterprise `id`, `name` as a display label, and `status`. Names are never identifiers or authorization inputs.
+- Unknown and out-of-scope IDs return the same 404 response so the API cannot be used to probe another tenant's records. The validation request accepts 1–100 distinct positive integer IDs.
+- Only OAuth client-credentials grants are accepted. User-bound tokens, missing/invalid tokens, and tokens without `enterprise:read` are rejected.
+
+### Provisioning a client
+
+Create a dedicated Passport OAuth client with the `client_credentials` grant, then persist one `integration_enterprise_access` row for each Enterprise that client may read (`oauth_client_id`, `enterprise_id`, `active=true`). Access is explicitly assigned per client and Enterprise; an authenticated client has no default access to any Enterprise. Set `active=false` to revoke a single mapping without revoking the OAuth client. Revoke the OAuth client/token separately when the integration itself must be disabled.
+
+Example request:
+
+```http
+GET /api/integrations/project-references
+Authorization: Bearer <client-credentials-token-with-enterprise:read>
+Accept: application/json
+```
+
+```json
+{
+  "data": [
+    {"id": 42, "name": "Example Enterprise", "status": "active"}
+  ]
+}
+```
+
+The `id` is the stable CR8OR Enterprise ID that CR8OR Media stores as its project reference. Do not resolve references by Enterprise name or slug.
