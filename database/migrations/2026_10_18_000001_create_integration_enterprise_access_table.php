@@ -14,7 +14,10 @@ return new class extends Migration
             $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
             $table->boolean('active')->default(true);
             $table->timestamps();
-            $table->unique(['oauth_client_id', 'enterprise_id']);
+            $table->unique(
+                ['oauth_client_id', 'enterprise_id'],
+                'integration_enterprise_client_enterprise_unique',
+            );
             $table->index(['oauth_client_id', 'active']);
         });
     }
