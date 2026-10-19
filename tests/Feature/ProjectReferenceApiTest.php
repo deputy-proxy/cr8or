@@ -14,11 +14,11 @@ function projectReferenceClient(): Client
     return Client::factory()->asClientCredentials()->create();
 }
 
-function attachProjectReferenceMediaConnection(Client $client, Enterprise $enterprise, string $status = IntegrationConnection::STATUS_ACTIVE): IntegrationConnection
+function attachProjectReferenceMediaConnection(Client $client, Enterprise $enterprise, string $status = IntegrationConnection::STATUS_ACTIVE, string $provider = 'media'): IntegrationConnection
 {
     return IntegrationConnection::query()->create([
         'organization_id' => $enterprise->organization_id,
-        'provider' => 'media',
+        'provider' => $provider,
         'oauth_client_id' => $client->getKey(),
         'credential_reference' => 'media:project-reference-test-'.$enterprise->getKey(),
         'status' => $status,
@@ -152,6 +152,23 @@ it('does not treat another integration provider as an active media connection', 
     Passport::actingAsClient($client, ['enterprise:read']);
 
     $this->getJson('/api/integrations/project-references')->assertForbidden();
+});
+
+
+it('accepts the registered cr8or-media provider key for the project reference API', function (): void {
+    $client = projectReferenceClient();
+    $enterprise = Enterprise::factory()->create();
+    attachProjectReferenceMediaConnection($client, $enterprise, provider: 'cr8or-media');
+    grantProjectReferenceAccess($client, $enterprise);
+    Passport::actingAsClient($client, ['enterprise:read']);
+
+    $this->getJson('/api/integrations/project-references')
+        ->assertOk()
+        ->assertExactJson(['data' => [[
+            'id' => $enterprise->id,
+            'name' => $enterprise->name,
+            'status' => $enterprise->status,
+        ]]]);
 });
 
 it('rejects malformed and duplicate reference IDs', function (): void {
