@@ -154,7 +154,6 @@ it('does not treat another integration provider as an active media connection', 
     $this->getJson('/api/integrations/project-references')->assertForbidden();
 });
 
-
 it('accepts the registered cr8or-media provider key for the project reference API', function (): void {
     $client = projectReferenceClient();
     $enterprise = Enterprise::factory()->create();
