@@ -84,7 +84,7 @@ class IntegrationConnectionResource extends Resource
                 ->helperText('Associating a client does not grant Enterprise access. Manage grants separately.')
                 ->dehydrated(fn (Get $get): bool => app(IntegrationRegistry::class)->isMediaProvider($get('provider'))),
             TextInput::make('external_account_id')->maxLength(255),
-            TextInput::make('credential_reference')->required()->maxLength(255)->helperText('Enter the opaque reference key used by this provider to locate managed credentials. Never enter a token, password, API key, or other secret. The reference must exist in the provider configured credential source to be usable.'),
+            TextInput::make('credential_reference')->required()->maxLength(255)->helperText('Opaque identifier only, never a token, password, API key, or other secret. This field stores the reference but does not resolve credentials itself; a provider-specific credential resolver must be configured separately for it to be usable.'),
             Builder::make('configuration')
                 ->label('Configuration')
                 ->blocks(fn (Get $get): array => static::configurationBlocks((string) $get('provider')))
