@@ -71,7 +71,7 @@ class IntegrationConnection extends Model
             }
 
             if ($connection->oauth_client_id !== null) {
-                if ($connection->provider !== 'media') {
+                if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($connection->provider)) {
                     throw new LogicException('OAuth client associations are only supported for media integration connections.');
                 }
 

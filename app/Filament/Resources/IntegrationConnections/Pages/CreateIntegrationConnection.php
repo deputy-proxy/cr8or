@@ -18,7 +18,7 @@ class CreateIntegrationConnection extends CreateRecord
             $data['configuration'] ?? [],
         );
 
-        if (($data['provider'] ?? null) !== 'media') {
+        if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($data['provider'] ?? null)) {
             $data['oauth_client_id'] = null;
         }
 

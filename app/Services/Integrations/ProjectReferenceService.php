@@ -16,7 +16,7 @@ final class ProjectReferenceService
     {
         $organizationIds = IntegrationConnection::query()
             ->where('oauth_client_id', $clientId)
-            ->where('provider', 'media')
+            ->whereIn('provider', ['cr8or-media', 'media'])
             ->where('status', IntegrationConnection::STATUS_ACTIVE)
             ->whereHas('oauthClient', fn ($query) => $query->where('revoked', false))
             ->distinct()

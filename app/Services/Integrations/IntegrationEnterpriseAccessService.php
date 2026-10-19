@@ -20,7 +20,7 @@ final class IntegrationEnterpriseAccessService
     {
         Gate::forUser($actor)->authorize('update', $connection);
 
-        if ($connection->provider !== 'media') {
+        if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($connection->provider)) {
             throw ValidationException::withMessages(['connection' => 'Enterprise access can only be managed for media connections.']);
         }
 
