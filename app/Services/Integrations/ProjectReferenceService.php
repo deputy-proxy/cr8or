@@ -18,6 +18,7 @@ final class ProjectReferenceService
             ->where('oauth_client_id', $clientId)
             ->where('provider', 'media')
             ->where('status', IntegrationConnection::STATUS_ACTIVE)
+            ->whereHas('oauthClient', fn ($query) => $query->where('revoked', false))
             ->distinct()
             ->pluck('organization_id');
 
