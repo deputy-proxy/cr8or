@@ -80,11 +80,11 @@ class IntegrationConnectionResource extends Resource
                 ->searchable()
                 ->preload()
                 ->nullable()
-                ->visible(fn (Get $get): bool => $get('provider') === 'media')
+                ->visible(fn (Get $get): bool => app(IntegrationRegistry::class)->isMediaProvider($get('provider')))
                 ->helperText('Associating a client does not grant Enterprise access. Manage grants separately.')
-                ->dehydrated(fn (Get $get): bool => $get('provider') === 'media'),
+                ->dehydrated(fn (Get $get): bool => app(IntegrationRegistry::class)->isMediaProvider($get('provider'))),
             TextInput::make('external_account_id')->maxLength(255),
-            TextInput::make('credential_reference')->required()->maxLength(255),
+            TextInput::make('credential_reference')->required()->maxLength(255)->helperText('Enter the opaque reference key used by this provider to locate managed credentials. Never enter a token, password, API key, or other secret. The reference must exist in the provider configured credential source to be usable.'),
             Builder::make('configuration')
                 ->label('Configuration')
                 ->blocks(fn (Get $get): array => static::configurationBlocks((string) $get('provider')))
@@ -127,7 +127,7 @@ class IntegrationConnectionResource extends Resource
             Action::make('manageEnterpriseAccess')
                 ->label('Manage Enterprise access')
                 ->icon(Heroicon::OutlinedShieldCheck)
-                ->visible(fn (IntegrationConnection $record): bool => $record->provider === 'media'
+                ->visible(fn (IntegrationConnection $record): bool => app(IntegrationRegistry::class)->isMediaProvider($record->provider)
                     && $record->oauth_client_id !== null
                     && Gate::allows('update', $record))
                 ->fillForm(fn (IntegrationConnection $record): array => [
