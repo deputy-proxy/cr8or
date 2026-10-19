@@ -3,6 +3,8 @@
 namespace App\Services\Integrations;
 
 use App\Models\Enterprise;
+use App\Models\IntegrationConnection;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -12,7 +14,19 @@ final class ProjectReferenceService
     /** @return Collection<int, Enterprise> */
     public function listForClient(string $clientId): Collection
     {
+        $organizationIds = IntegrationConnection::query()
+            ->where('oauth_client_id', $clientId)
+            ->where('provider', 'media')
+            ->where('status', IntegrationConnection::STATUS_ACTIVE)
+            ->distinct()
+            ->pluck('organization_id');
+
+        if ($organizationIds->isEmpty()) {
+            throw new AuthorizationException('The authenticated OAuth client has no active media integration connection.');
+        }
+
         return Enterprise::query()
+            ->whereIn('organization_id', $organizationIds)
             ->whereIn('id', DB::table('integration_enterprise_access')
                 ->select('enterprise_id')
                 ->where('oauth_client_id', $clientId)
