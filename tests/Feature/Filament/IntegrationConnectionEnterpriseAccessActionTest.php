@@ -45,7 +45,7 @@ it('lets an authorized administrator manage grants from the Integration Connecti
     $clientId = filamentAccessOAuthClient();
     $connection = IntegrationConnection::query()->create([
         'organization_id' => $organization->getKey(),
-        'provider' => 'media',
+        'provider' => 'cr8or-media',
         'oauth_client_id' => $clientId,
         'credential_reference' => 'media:filament-test',
         'status' => IntegrationConnection::STATUS_ACTIVE,
