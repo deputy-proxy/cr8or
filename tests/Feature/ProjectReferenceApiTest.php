@@ -44,6 +44,7 @@ it('requires a valid client-credentials token and explicit read scope', function
     Passport::actingAsClient($client, []);
 
     $this->getJson('/api/integrations/project-references')->assertForbidden();
+
 });
 
 it('rejects user-bound OAuth tokens even when they have the read scope', function (): void {
