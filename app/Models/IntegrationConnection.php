@@ -7,9 +7,10 @@ use App\Services\IntegrationConfigurationService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
-#[Fillable(['organization_id', 'enterprise_id', 'social_identity_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
+#[Fillable(['organization_id', 'enterprise_id', 'oauth_client_id', 'social_identity_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
 class IntegrationConnection extends Model
 {
     private bool $lifecycleTransitionAuthorized = false;
@@ -67,6 +68,21 @@ class IntegrationConnection extends Model
 
             if (trim((string) $connection->credential_reference) === '') {
                 throw new LogicException('Integration connections require a credential reference.');
+            }
+
+            if ($connection->oauth_client_id !== null) {
+                if ($connection->provider !== 'media') {
+                    throw new LogicException('OAuth client associations are only supported for media integration connections.');
+                }
+
+                $client = DB::table('oauth_clients')
+                    ->where('id', $connection->oauth_client_id)
+                    ->where('revoked', false)
+                    ->exists();
+
+                if (! $client) {
+                    throw new LogicException('Media integration connections require an existing, non-revoked OAuth client.');
+                }
             }
 
             if ($connection->enterprise_id !== null) {
@@ -128,6 +144,12 @@ class IntegrationConnection extends Model
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
+    }
+
+    /** @return BelongsTo<\Laravel\Passport\Client, $this> */
+    public function oauthClient(): BelongsTo
+    {
+        return $this->belongsTo(\Laravel\Passport\Client::class, 'oauth_client_id');
     }
 
     /** @return BelongsTo<SocialIdentity, $this> */
