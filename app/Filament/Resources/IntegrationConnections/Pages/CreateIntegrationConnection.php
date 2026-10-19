@@ -18,6 +18,9 @@ class CreateIntegrationConnection extends CreateRecord
             $data['configuration'] ?? [],
         );
 
+        // Status is read-only in the form; initialize new connections on the server.
+        $data['status'] = \App\Models\IntegrationConnection::STATUS_ACTIVE;
+
         if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($data['provider'] ?? null)) {
             $data['oauth_client_id'] = null;
         }
