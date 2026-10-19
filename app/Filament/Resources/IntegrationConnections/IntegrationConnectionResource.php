@@ -12,6 +12,7 @@ use App\Models\Enterprise;
 use App\Models\IntegrationConnection;
 use App\Models\User;
 use App\Services\IntegrationRegistry;
+use App\Services\Integrations\IntegrationEnterpriseAccessService;
 use App\Services\Social\SocialAuthorizationService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -29,6 +30,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class IntegrationConnectionResource extends Resource
@@ -67,6 +69,20 @@ class IntegrationConnectionResource extends Resource
                 ->searchable()
                 ->live()
                 ->required(),
+            Select::make('oauth_client_id')
+                ->label('Media OAuth client')
+                ->options(fn (): array => DB::table('oauth_clients')
+                    ->where('revoked', false)
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                    ->mapWithKeys(fn (object $client): array => [(string) $client->id => $client->name.' ('.$client->id.')'])
+                    ->all())
+                ->searchable()
+                ->preload()
+                ->nullable()
+                ->visible(fn (Get $get): bool => $get('provider') === 'media')
+                ->helperText('Associating a client does not grant Enterprise access. Manage grants separately.')
+                ->dehydrated(fn (Get $get): bool => $get('provider') === 'media'),
             TextInput::make('external_account_id')->maxLength(255),
             TextInput::make('credential_reference')->required()->maxLength(255),
             Builder::make('configuration')
@@ -97,10 +113,62 @@ class IntegrationConnectionResource extends Resource
             TextColumn::make('organization.name')->searchable()->sortable(),
             TextColumn::make('enterprise.name')->searchable()->sortable(),
             TextColumn::make('provider')->badge()->searchable()->sortable(),
+            TextColumn::make('oauthClient.name')->label('OAuth client')->placeholder('Not linked')->toggleable(),
+            TextColumn::make('active_enterprise_access_count')
+                ->label('Authorized Enterprises')
+                ->state(fn (IntegrationConnection $record): int => $record->oauth_client_id === null ? 0 : DB::table('integration_enterprise_access')
+                    ->where('oauth_client_id', $record->oauth_client_id)
+                    ->where('active', true)
+                    ->count()),
             TextColumn::make('external_account_id')->searchable()->sortable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
         ])->recordActions([
             EditAction::make()->visible(fn (IntegrationConnection $record): bool => $record->social_identity_id === null),
+            Action::make('manageEnterpriseAccess')
+                ->label('Manage Enterprise access')
+                ->icon(Heroicon::OutlinedShieldCheck)
+                ->visible(fn (IntegrationConnection $record): bool => $record->provider === 'media'
+                    && $record->oauth_client_id !== null
+                    && Gate::allows('update', $record))
+                ->fillForm(fn (IntegrationConnection $record): array => [
+                    'enterprise_ids' => DB::table('integration_enterprise_access')
+                        ->where('oauth_client_id', $record->oauth_client_id)
+                        ->where('active', true)
+                        ->whereIn('enterprise_id', Enterprise::query()
+                            ->where('organization_id', $record->organization_id)
+                            ->select('id'))
+                        ->pluck('enterprise_id')
+                        ->map(fn ($id): int => (int) $id)
+                        ->all(),
+                ])
+                ->form([
+                    Select::make('enterprise_ids')
+                        ->label('Authorized Enterprises')
+                        ->multiple()
+                        ->searchable()
+                        ->options(fn (IntegrationConnection $record): array => Enterprise::query()
+                            ->where('organization_id', $record->organization_id)
+                            ->orderBy('name')
+                            ->get()
+                            ->filter(fn (Enterprise $enterprise): bool => Gate::allows('update', $enterprise))
+                            ->mapWithKeys(fn (Enterprise $enterprise): array => [(int) $enterprise->id => $enterprise->name])
+                            ->all())
+                        ->helperText('Only selected Enterprises remain authorized. Saving does not affect other organizations.')
+                        ->required(false),
+                ])
+                ->action(function (IntegrationConnection $record, array $data, IntegrationEnterpriseAccessService $access): void {
+                    $actor = auth()->user();
+                    if (! $actor instanceof User) {
+                        throw new AuthorizationException;
+                    }
+
+                    $access->syncForConnection($actor, $record, array_values($data['enterprise_ids'] ?? []));
+
+                    Notification::make()
+                        ->success()
+                        ->title('Enterprise access updated')
+                        ->send();
+                }),
             Action::make('disconnect')
                 ->requiresConfirmation()
                 ->visible(fn (IntegrationConnection $record): bool => $record->social_identity_id !== null && $record->status !== IntegrationConnection::STATUS_REVOKED && Gate::allows('update', $record))

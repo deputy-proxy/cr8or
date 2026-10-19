@@ -27,6 +27,10 @@ class EditIntegrationConnection extends EditRecord
             $data['configuration'] ?? [],
         );
 
+        if (($data['provider'] ?? null) !== 'media') {
+            $data['oauth_client_id'] = null;
+        }
+
         return $data;
     }
 }

@@ -18,6 +18,10 @@ class CreateIntegrationConnection extends CreateRecord
             $data['configuration'] ?? [],
         );
 
+        if (($data['provider'] ?? null) !== 'media') {
+            $data['oauth_client_id'] = null;
+        }
+
         return $data;
     }
 }
