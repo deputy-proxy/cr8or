@@ -103,7 +103,7 @@ class IntegrationConnectionResource extends Resource
                 IntegrationConnection::STATUS_REVOKED => 'Revoked',
                 IntegrationConnection::STATUS_EXPIRED => 'Expired',
                 IntegrationConnection::STATUS_RECONNECT_REQUIRED => 'Reconnect required',
-            ])->required()->disabled(),
+            ])->default(IntegrationConnection::STATUS_ACTIVE)->required()->disabled()->dehydrated(false),
         ]);
     }
 
