@@ -48,6 +48,12 @@ final class IntegrationRegistry
         ];
     }
 
+    /** Whether a provider key belongs to the Media integration, including legacy persisted keys. */
+    public function isMediaProvider(?string $key): bool
+    {
+        return $key === 'media' || ($key !== null && isset($this->providers()[$key]) && $this->providers()[$key]->integration === 'media');
+    }
+
     public function hasProvider(string $key): bool
     {
         return isset($this->providers()[$key]);
