@@ -105,3 +105,37 @@ it('preserves persona, content-item, and product associations when renaming lega
         ]], JSON_THROW_ON_ERROR))
         ->and(DB::table('workflows')->where('id', $workflow->id)->value('execution_policy'))->toBe(json_encode(['target_field' => 'persona_id'], JSON_THROW_ON_ERROR));
 });
+it('resumes the persona migration when the tables were already renamed before failure', function () {
+    expect(Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]))->toBe(0);
+
+    Schema::table('audience_product', function (Illuminate\Database\Schema\Blueprint $table): void {
+        $table->dropForeign(['audience_id']);
+        $table->dropForeign(['product_id']);
+        $table->dropPrimary();
+    });
+    Schema::table('content_items', function (Illuminate\Database\Schema\Blueprint $table): void {
+        $table->dropForeign(['audience_id']);
+    });
+    Schema::rename('audiences', 'personas');
+    Schema::rename('audience_product', 'persona_product');
+
+    expect(Schema::hasTable('personas'))->toBeTrue()
+        ->and(Schema::hasTable('persona_product'))->toBeTrue()
+        ->and(Schema::hasColumn('content_items', 'audience_id'))->toBeTrue()
+        ->and(Schema::hasColumn('persona_product', 'audience_id'))->toBeTrue();
+
+    expect(Artisan::call('migrate', [
+        '--path' => 'database/migrations/2026_10_20_000001_rename_audience_domain_to_persona.php',
+        '--force' => true,
+    ]))->toBe(0);
+
+    expect(Schema::hasTable('audiences'))->toBeFalse()
+        ->and(Schema::hasTable('audience_product'))->toBeFalse()
+        ->and(Schema::hasTable('personas'))->toBeTrue()
+        ->and(Schema::hasTable('persona_product'))->toBeTrue()
+        ->and(Schema::hasColumn('content_items', 'persona_id'))->toBeTrue()
+        ->and(Schema::hasColumn('content_items', 'audience_id'))->toBeFalse()
+        ->and(Schema::hasColumn('persona_product', 'persona_id'))->toBeTrue()
+        ->and(Schema::hasColumn('persona_product', 'audience_id'))->toBeFalse()
+        ->and(Schema::hasIndex('personas', 'personas_enterprise_id_status_index'))->toBeTrue();
+});
