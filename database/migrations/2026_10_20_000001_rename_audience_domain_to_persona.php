@@ -25,63 +25,94 @@ return new class extends Migration
 
     public function up(): void
     {
-        if (Schema::hasTable('audience_product')) {
-            Schema::table('audience_product', function (Blueprint $table): void {
-                $table->dropForeign(['audience_id']);
-                $table->dropForeign(['product_id']);
-                $table->dropPrimary();
-            });
+        $pivotTable = Schema::hasTable('persona_product')
+            ? 'persona_product'
+            : (Schema::hasTable('audience_product') ? 'audience_product' : null);
+
+        if ($pivotTable !== null) {
+            foreach (['audience_id', 'persona_id', 'product_id'] as $column) {
+                if (Schema::hasColumn($pivotTable, $column)) {
+                    $this->dropForeignKeysForColumn($pivotTable, $column);
+                }
+            }
+
+            $this->dropPrimaryKeyIfPresent($pivotTable);
         }
 
-        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'audience_id')) {
-            Schema::table('content_items', function (Blueprint $table): void {
-                $table->dropForeign(['audience_id']);
-            });
+        if (Schema::hasTable('content_items')) {
+            foreach (['audience_id', 'persona_id'] as $column) {
+                if (Schema::hasColumn('content_items', $column)) {
+                    $this->dropForeignKeysForColumn('content_items', $column);
+                }
+            }
         }
 
         if (Schema::hasTable('audiences') && ! Schema::hasTable('personas')) {
             Schema::rename('audiences', 'personas');
         }
 
+        if (Schema::hasTable('audiences') && Schema::hasTable('personas')) {
+            throw new RuntimeException('Both audiences and personas tables exist; refusing to guess which table contains canonical data.');
+        }
+
         if (Schema::hasTable('audience_product') && ! Schema::hasTable('persona_product')) {
             Schema::rename('audience_product', 'persona_product');
         }
 
-        if (Schema::hasTable('personas') && Schema::hasIndex('personas', 'audiences_enterprise_id_status_index')) {
-            Schema::table('personas', function (Blueprint $table): void {
-                $table->dropIndex('audiences_enterprise_id_status_index');
-                $table->index(['enterprise_id', 'status'], 'personas_enterprise_id_status_index');
-            });
+        if (Schema::hasTable('audience_product') && Schema::hasTable('persona_product')) {
+            throw new RuntimeException('Both audience_product and persona_product tables exist; refusing to guess which table contains canonical data.');
         }
 
-        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'audience_id')) {
-            Schema::table('content_items', function (Blueprint $table): void {
-                $table->renameColumn('audience_id', 'persona_id');
-            });
+        if (Schema::hasTable('personas')) {
+            $this->replaceIndexWithoutBreakingForeignKeys(
+                'personas',
+                'audiences_enterprise_id_status_index',
+                'personas_enterprise_id_status_index',
+                ['enterprise_id', 'status'],
+            );
         }
 
-        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'persona_id')) {
-            Schema::table('content_items', function (Blueprint $table): void {
-                $table->index('persona_id', 'content_items_persona_id_index');
-                $table->foreign('persona_id', 'content_items_persona_id_foreign')
-                    ->references('id')->on('personas')->nullOnDelete();
-            });
-        }
+        if (Schema::hasTable('content_items')) {
+            $this->renameColumnIfNeeded('content_items', 'audience_id', 'persona_id');
 
-        if (Schema::hasTable('persona_product') && Schema::hasColumn('persona_product', 'audience_id')) {
-            Schema::table('persona_product', function (Blueprint $table): void {
-                $table->renameColumn('audience_id', 'persona_id');
-            });
+            if (Schema::hasColumn('content_items', 'persona_id')) {
+                if (! Schema::hasIndex('content_items', 'content_items_persona_id_index')) {
+                    Schema::table('content_items', function (Blueprint $table): void {
+                        $table->index('persona_id', 'content_items_persona_id_index');
+                    });
+                }
+
+                if (! $this->hasForeignKeyForColumn('content_items', 'persona_id')) {
+                    Schema::table('content_items', function (Blueprint $table): void {
+                        $table->foreign('persona_id', 'content_items_persona_id_foreign')
+                            ->references('id')->on('personas')->nullOnDelete();
+                    });
+                }
+            }
         }
 
         if (Schema::hasTable('persona_product')) {
-            Schema::table('persona_product', function (Blueprint $table): void {
-                $table->primary(['persona_id', 'product_id'], 'persona_product_persona_id_product_id_primary');
-                $table->foreign('persona_id', 'persona_product_persona_id_foreign')
-                    ->references('id')->on('personas')->cascadeOnDelete();
-                $table->foreign('product_id', 'persona_product_product_id_foreign')
-                    ->references('id')->on('products')->cascadeOnDelete();
-            });
+            $this->renameColumnIfNeeded('persona_product', 'audience_id', 'persona_id');
+
+            if (! $this->hasPrimaryKey('persona_product')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->primary(['persona_id', 'product_id'], 'persona_product_persona_id_product_id_primary');
+                });
+            }
+
+            if (! $this->hasForeignKeyForColumn('persona_product', 'persona_id')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->foreign('persona_id', 'persona_product_persona_id_foreign')
+                        ->references('id')->on('personas')->cascadeOnDelete();
+                });
+            }
+
+            if (! $this->hasForeignKeyForColumn('persona_product', 'product_id')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->foreign('product_id', 'persona_product_product_id_foreign')
+                        ->references('id')->on('products')->cascadeOnDelete();
+                });
+            }
         }
 
         $this->replaceWorkflowReferences(self::RENAMES);
@@ -93,49 +124,58 @@ return new class extends Migration
         $this->replaceWorkflowReferences($reverse);
 
         if (Schema::hasTable('persona_product')) {
-            Schema::table('persona_product', function (Blueprint $table): void {
-                $table->dropForeign(['persona_id']);
-                $table->dropForeign(['product_id']);
-                $table->dropPrimary();
-            });
+            foreach (['persona_id', 'audience_id', 'product_id'] as $column) {
+                if (Schema::hasColumn('persona_product', $column)) {
+                    $this->dropForeignKeysForColumn('persona_product', $column);
+                }
+            }
+            $this->dropPrimaryKeyIfPresent('persona_product');
         }
 
         if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'persona_id')) {
-            Schema::table('content_items', function (Blueprint $table): void {
-                $table->dropForeign(['persona_id']);
-                $table->dropIndex('content_items_persona_id_index');
-            });
-        }
-
-        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'persona_id')) {
-            Schema::table('content_items', function (Blueprint $table): void {
-                $table->renameColumn('persona_id', 'audience_id');
-            });
-        }
-
-        if (Schema::hasTable('persona_product') && Schema::hasColumn('persona_product', 'persona_id')) {
-            Schema::table('persona_product', function (Blueprint $table): void {
-                $table->renameColumn('persona_id', 'audience_id');
-            });
-        }
-
-        if (Schema::hasTable('personas')) {
-            Schema::table('personas', function (Blueprint $table): void {
-                $table->dropIndex('personas_enterprise_id_status_index');
-                $table->index(['enterprise_id', 'status'], 'audiences_enterprise_id_status_index');
-            });
+            $this->dropForeignKeysForColumn('content_items', 'persona_id');
+            if (Schema::hasIndex('content_items', 'content_items_persona_id_index')) {
+                Schema::table('content_items', function (Blueprint $table): void {
+                    $table->dropIndex('content_items_persona_id_index');
+                });
+            }
+            $this->renameColumnIfNeeded('content_items', 'persona_id', 'audience_id');
         }
 
         if (Schema::hasTable('persona_product')) {
-            Schema::table('persona_product', function (Blueprint $table): void {
-                $table->primary(['audience_id', 'product_id']);
-                $table->foreign('audience_id')->references('id')->on('personas')->cascadeOnDelete();
-                $table->foreign('product_id')->references('id')->on('products')->cascadeOnDelete();
-            });
+            $this->renameColumnIfNeeded('persona_product', 'persona_id', 'audience_id');
+        }
+
+        if (Schema::hasTable('personas')) {
+            $this->replaceIndexWithoutBreakingForeignKeys(
+                'personas',
+                'personas_enterprise_id_status_index',
+                'audiences_enterprise_id_status_index',
+                ['enterprise_id', 'status'],
+            );
+        }
+
+        if (Schema::hasTable('persona_product')) {
+            if (! $this->hasPrimaryKey('persona_product')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->primary(['audience_id', 'product_id']);
+                });
+            }
+            if (! $this->hasForeignKeyForColumn('persona_product', 'audience_id')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->foreign('audience_id')->references('id')->on('personas')->cascadeOnDelete();
+                });
+            }
+            if (! $this->hasForeignKeyForColumn('persona_product', 'product_id')) {
+                Schema::table('persona_product', function (Blueprint $table): void {
+                    $table->foreign('product_id')->references('id')->on('products')->cascadeOnDelete();
+                });
+            }
             Schema::rename('persona_product', 'audience_product');
         }
 
-        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'audience_id')) {
+        if (Schema::hasTable('content_items') && Schema::hasColumn('content_items', 'audience_id')
+            && ! $this->hasForeignKeyForColumn('content_items', 'audience_id')) {
             Schema::table('content_items', function (Blueprint $table): void {
                 $table->foreign('audience_id')->references('id')->on('personas')->nullOnDelete();
             });
@@ -144,6 +184,96 @@ return new class extends Migration
         if (Schema::hasTable('personas')) {
             Schema::rename('personas', 'audiences');
         }
+    }
+
+    /** @param array<int, string> $columns */
+    private function replaceIndexWithoutBreakingForeignKeys(
+        string $table,
+        string $oldName,
+        string $newName,
+        array $columns,
+    ): void {
+        $hasOld = Schema::hasIndex($table, $oldName);
+        $hasNew = Schema::hasIndex($table, $newName);
+
+        if (! $hasNew) {
+            Schema::table($table, function (Blueprint $blueprint) use ($columns, $newName): void {
+                $blueprint->index($columns, $newName);
+            });
+        }
+
+        if ($hasOld) {
+            Schema::table($table, function (Blueprint $blueprint) use ($oldName): void {
+                $blueprint->dropIndex($oldName);
+            });
+        }
+    }
+
+    private function renameColumnIfNeeded(string $table, string $oldName, string $newName): void
+    {
+        $hasOld = Schema::hasColumn($table, $oldName);
+        $hasNew = Schema::hasColumn($table, $newName);
+
+        if ($hasOld && $hasNew) {
+            throw new RuntimeException("Both {$table}.{$oldName} and {$table}.{$newName} exist; refusing to risk data loss.");
+        }
+
+        if ($hasOld) {
+            Schema::table($table, function (Blueprint $blueprint) use ($oldName, $newName): void {
+                $blueprint->renameColumn($oldName, $newName);
+            });
+        }
+    }
+
+    private function dropForeignKeysForColumn(string $table, string $column): void
+    {
+        $foreignKeys = array_filter(
+            Schema::getForeignKeys($table),
+            static fn (array $foreignKey): bool => in_array($column, $foreignKey['columns'] ?? [], true),
+        );
+
+        foreach ($foreignKeys as $foreignKey) {
+            Schema::table($table, function (Blueprint $blueprint) use ($foreignKey): void {
+                if (DB::connection()->getDriverName() === 'sqlite') {
+                    $blueprint->dropForeign($foreignKey['columns']);
+
+                    return;
+                }
+
+                $blueprint->dropForeign($foreignKey['name']);
+            });
+        }
+    }
+
+    private function hasForeignKeyForColumn(string $table, string $column): bool
+    {
+        foreach (Schema::getForeignKeys($table) as $foreignKey) {
+            if (in_array($column, $foreignKey['columns'] ?? [], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function dropPrimaryKeyIfPresent(string $table): void
+    {
+        if ($this->hasPrimaryKey($table)) {
+            Schema::table($table, function (Blueprint $blueprint): void {
+                $blueprint->dropPrimary();
+            });
+        }
+    }
+
+    private function hasPrimaryKey(string $table): bool
+    {
+        foreach (Schema::getIndexes($table) as $index) {
+            if (($index['primary'] ?? false) === true || strtolower((string) ($index['type'] ?? '')) === 'primary') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @param array<string, string> $renames */

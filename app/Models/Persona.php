@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
+/** @property int $enterprise_id */
 #[Fillable(['enterprise_id', 'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range', 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'])]
 class Persona extends Model
 {
