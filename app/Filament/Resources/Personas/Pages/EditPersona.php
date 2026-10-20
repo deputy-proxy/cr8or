@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Filament\Resources\Audiences\Pages;
+namespace App\Filament\Resources\Personas\Pages;
 
-use App\Filament\Resources\Audiences\AudienceResource;
 use App\Filament\Resources\Concerns\AuthorizesScopedRecordUpdate;
-use App\Models\Audience;
+use App\Filament\Resources\Personas\PersonaResource;
+use App\Models\Persona;
 use App\Models\User;
 use App\Services\DomainResourceService;
 use Filament\Actions\DeleteAction;
@@ -13,15 +13,15 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\Model;
 
-class EditAudience extends EditRecord
+class EditPersona extends EditRecord
 {
     use AuthorizesScopedRecordUpdate;
 
-    protected static string $resource = AudienceResource::class;
+    protected static string $resource = PersonaResource::class;
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        /** @var Audience $record */
+        /** @var Persona $record */
         $record = $this->record;
         $data['product_ids'] = $record->products()->pluck('products.id')->all();
 
@@ -30,12 +30,12 @@ class EditAudience extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        if (! $record instanceof Audience) {
-            throw new \LogicException('Unexpected audience record.');
+        if (! $record instanceof Persona) {
+            throw new \LogicException('Unexpected persona record.');
         }
 
         if (isset($data['enterprise_id']) && (int) $data['enterprise_id'] !== (int) $record->enterprise_id) {
-            throw new AuthorizationException('Audience enterprise ownership cannot be changed.');
+            throw new AuthorizationException('Persona enterprise ownership cannot be changed.');
         }
 
         $actor = auth()->user();
@@ -46,7 +46,7 @@ class EditAudience extends EditRecord
         $productIds = $data['product_ids'] ?? [];
         unset($data['enterprise_id'], $data['product_ids']);
 
-        return app(DomainResourceService::class)->updateAudience($actor, $record, $data + ['product_ids' => $productIds]);
+        return app(DomainResourceService::class)->updatePersona($actor, $record, $data + ['product_ids' => $productIds]);
     }
 
     protected function getHeaderActions(): array

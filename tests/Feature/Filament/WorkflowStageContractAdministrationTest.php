@@ -122,12 +122,12 @@ it('preserves caller-owned workflow required inputs when editing a persisted sta
     $workflow = app(\App\Services\WorkflowEntryPointService::class)->create($owner, $enterprise, [
         'name' => 'Workflow contract preservation test',
         'stages' => [[
-            'key' => 'audience',
-            'name' => 'Create audience',
-            'instruction' => 'Define the audience precisely from the strategy context.',
+            'key' => 'persona',
+            'name' => 'Create persona',
+            'instruction' => 'Define the persona precisely from the strategy context.',
             'sequence' => 1,
             'expert_slugs' => ['marketing'],
-            'capability_slugs' => ['marketing.audience.create'],
+            'capability_slugs' => ['marketing.persona.create'],
             'input_contract' => [
                 'required' => ['name', 'description'],
                 'defaults' => [],
@@ -141,7 +141,7 @@ it('preserves caller-owned workflow required inputs when editing a persisted sta
     \Livewire\Livewire::test(\App\Filament\Resources\Workflows\Pages\EditWorkflow::class, [
         'record' => $workflow->getKey(),
     ])
-        ->assertSet('data.stages.record-1.instruction', 'Define the audience precisely from the strategy context.')
+        ->assertSet('data.stages.record-1.instruction', 'Define the persona precisely from the strategy context.')
         ->assertSet('data.stages.record-1.input_contract', json_encode([
             'required' => ['name', 'description'],
             'defaults' => [],

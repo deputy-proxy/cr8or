@@ -22,7 +22,7 @@ final class VerifyMarketingGraphTool extends GovernedCapabilityTool
         return [
             'enterprise_id' => $schema->integer()->min(1)->required(),
             'marketing_strategy_id' => $schema->integer()->min(1)->required(),
-            'audience_ids' => $schema->array()->required(),
+            'persona_ids' => $schema->array()->required(),
             'campaign_ids' => $schema->array()->required(),
             'content_series_ids' => $schema->array()->required(),
             'content_item_ids' => $schema->array()->required(),
@@ -39,7 +39,7 @@ final class VerifyMarketingGraphTool extends GovernedCapabilityTool
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'marketing_strategy_id' => ['required', 'integer', 'min:1'],
-                'audience_ids' => ['required', 'array'], 'audience_ids.*' => ['integer', 'min:1'],
+                'persona_ids' => ['required', 'array'], 'persona_ids.*' => ['integer', 'min:1'],
                 'campaign_ids' => ['required', 'array'], 'campaign_ids.*' => ['integer', 'min:1'],
                 'content_series_ids' => ['required', 'array'], 'content_series_ids.*' => ['integer', 'min:1'],
                 'content_item_ids' => ['required', 'array'], 'content_item_ids.*' => ['integer', 'min:1'],

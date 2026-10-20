@@ -1,6 +1,6 @@
 # Product Domain Contract
 
-`Product` represents an offering and its current sellable/commercial configuration. Version one stores one inline commercial configuration on each Product; it does not introduce ProductOffer, SKU, package, or variant models. Product belongs to one Enterprise, and that ownership remains immutable. `Audience` / Persona stays a separate domain and may be associated through the existing same-Enterprise pivot.
+`Product` represents an offering and its current sellable/commercial configuration. Version one stores one inline commercial configuration on each Product; it does not introduce ProductOffer, SKU, package, or variant models. Product belongs to one Enterprise, and that ownership remains immutable. `Persona` / Persona stays a separate domain and may be associated through the existing same-Enterprise pivot.
 
 ## Identity and lifecycle
 
@@ -40,5 +40,5 @@ The result includes the persisted identity, lifecycle, positioning, definition/d
 
 - Enterprise assignment is immutable after creation and is authorized through the Enterprise's Organization.
 - Slug uniqueness remains `(enterprise_id, slug)`.
-- `Product::enterprise()` and `Product::audiences()` are preserved. The Audience pivot continues to reject cross-Enterprise associations.
-- No existing Product association was found on Campaign, ContentItem, Asset, or Workflow, so this issue adds none without a demonstrated use case. Product does not duplicate audience demographics, persona motivations, campaign/content/workflow/asset data, or a new Knowledge/evidence subsystem. Product claims are not marked verified merely by adding a free-text field. CR8OR has Enterprise-scoped KnowledgeItem/KnowledgeSource/KnowledgeReference abstractions, but no authoritative Product-claim-to-evidence relationship or provenance workflow was found. This version adds no `approved_claims` field and does not imply claim verification; a future evidence workflow must define the link and provenance explicitly.
+- `Product::enterprise()` and `Product::personas()` are preserved. The Persona pivot continues to reject cross-Enterprise associations.
+- No existing Product association was found on Campaign, ContentItem, Asset, or Workflow, so this issue adds none without a demonstrated use case. Product does not duplicate persona demographics, persona motivations, campaign/content/workflow/asset data, or a new Knowledge/evidence subsystem. Product claims are not marked verified merely by adding a free-text field. CR8OR has Enterprise-scoped KnowledgeItem/KnowledgeSource/KnowledgeReference abstractions, but no authoritative Product-claim-to-evidence relationship or provenance workflow was found. This version adds no `approved_claims` field and does not imply claim verification; a future evidence workflow must define the link and provenance explicitly.

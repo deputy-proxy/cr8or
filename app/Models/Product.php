@@ -8,7 +8,7 @@ use App\Enums\ProductMonetizationModel;
 use App\Enums\ProductPricingModel;
 use App\Enums\ProductStatus;
 use App\Enums\ProductType;
-use App\Models\Pivots\AudienceProduct;
+use App\Models\Pivots\PersonaProduct;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -231,10 +231,10 @@ class Product extends Model
             && in_array($normalized, self::$validCurrencyCodes, true);
     }
 
-    /** @return BelongsToMany<Audience, $this, AudienceProduct> */
-    public function audiences(): BelongsToMany
+    /** @return BelongsToMany<Persona, $this, PersonaProduct> */
+    public function personas(): BelongsToMany
     {
-        return $this->belongsToMany(Audience::class)->using(AudienceProduct::class)->withTimestamps();
+        return $this->belongsToMany(Persona::class)->using(PersonaProduct::class)->withTimestamps();
     }
 
     /** @return BelongsTo<Enterprise, $this> */

@@ -1,13 +1,12 @@
 <?php
 
-use App\Filament\Resources\Audiences\AudienceResource;
 use App\Filament\Resources\Campaigns\CampaignResource;
 use App\Filament\Resources\Channels\ChannelResource;
 use App\Filament\Resources\ContentItems\ContentItemResource;
 use App\Filament\Resources\ContentSeries\ContentSeriesResource;
 use App\Filament\Resources\MarketingStrategies\MarketingStrategyResource;
+use App\Filament\Resources\Personas\PersonaResource;
 use App\Filament\Resources\Scripts\ScriptResource;
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
@@ -16,6 +15,7 @@ use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Persona;
 use App\Models\User;
 
 it('scopes marketing resources to the authenticated users organizations', function () {
@@ -38,10 +38,10 @@ it('scopes marketing resources to the authenticated users organizations', functi
     $foreignSeries = ContentSeries::factory()->create(['campaign_id' => $foreignCampaign]);
     $channel = Channel::factory()->create(['enterprise_id' => $enterprise]);
     $foreignChannel = Channel::factory()->create(['enterprise_id' => $foreignEnterprise]);
-    $audience = Audience::factory()->create(['enterprise_id' => $enterprise]);
-    $foreignAudience = Audience::factory()->create(['enterprise_id' => $foreignEnterprise]);
-    $item = ContentItem::factory()->forSeries($series)->forChannel($channel)->forAudience($audience)->create();
-    $foreignItem = ContentItem::factory()->forSeries($foreignSeries)->forChannel($foreignChannel)->forAudience($foreignAudience)->create();
+    $persona = Persona::factory()->create(['enterprise_id' => $enterprise]);
+    $foreignPersona = Persona::factory()->create(['enterprise_id' => $foreignEnterprise]);
+    $item = ContentItem::factory()->forSeries($series)->forChannel($channel)->forPersona($persona)->create();
+    $foreignItem = ContentItem::factory()->forSeries($foreignSeries)->forChannel($foreignChannel)->forPersona($foreignPersona)->create();
 
     $this->actingAs($user);
 
@@ -50,7 +50,7 @@ it('scopes marketing resources to the authenticated users organizations', functi
         ->and(ContentSeriesResource::getEloquentQuery()->pluck('id')->all())->toContain($series->id)->not->toContain($foreignSeries->id)
         ->and(ContentItemResource::getEloquentQuery()->pluck('id')->all())->toContain($item->id)->not->toContain($foreignItem->id)
         ->and(ChannelResource::getEloquentQuery()->pluck('id')->all())->toContain($channel->id)->not->toContain($foreignChannel->id)
-        ->and(AudienceResource::getEloquentQuery()->pluck('id')->all())->toContain($audience->id)->not->toContain($foreignAudience->id);
+        ->and(PersonaResource::getEloquentQuery()->pluck('id')->all())->toContain($persona->id)->not->toContain($foreignPersona->id);
 });
 
 it('only allows enterprise managers to create marketing records', function () {
@@ -68,7 +68,7 @@ it('only allows enterprise managers to create marketing records', function () {
         ->and(ScriptResource::canCreate())->toBeTrue()
         ->and(ContentItemResource::canCreate())->toBeTrue()
         ->and(ChannelResource::canCreate())->toBeTrue()
-        ->and(AudienceResource::canCreate())->toBeTrue();
+        ->and(PersonaResource::canCreate())->toBeTrue();
 
     $this->actingAs($member);
     expect(MarketingStrategyResource::canCreate())->toBeFalse()
@@ -77,5 +77,5 @@ it('only allows enterprise managers to create marketing records', function () {
         ->and(ScriptResource::canCreate())->toBeFalse()
         ->and(ContentItemResource::canCreate())->toBeFalse()
         ->and(ChannelResource::canCreate())->toBeFalse()
-        ->and(AudienceResource::canCreate())->toBeFalse();
+        ->and(PersonaResource::canCreate())->toBeFalse();
 });

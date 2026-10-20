@@ -61,8 +61,8 @@ class CanonicalWorkflowSeeder extends Seeder
         $sectionStages = [
             ['enterprise_context', 'Load canonical Enterprise context', 1, [], 'enterprise_context'],
             ['business_market_context', 'Analyze business and market context', 2, ['enterprise_context'], null],
-            ['target_audiences', 'Define target audiences and customer segments', 3, ['business_market_context'], null],
-            ['positioning', 'Define positioning', 4, ['target_audiences'], 'positioning'],
+            ['target_personas', 'Define target personas and customer segments', 3, ['business_market_context'], null],
+            ['positioning', 'Define positioning', 4, ['target_personas'], 'positioning'],
             ['value_proposition', 'Define value proposition', 5, ['positioning'], 'value_proposition'],
             ['competitive_landscape', 'Analyze competitive landscape', 6, ['value_proposition'], 'competitive_landscape'],
             ['product_service_strategy', 'Define product/service strategy', 7, ['competitive_landscape'], 'product_service_strategy'],
@@ -91,7 +91,7 @@ class CanonicalWorkflowSeeder extends Seeder
                 'sequence' => $sequence,
                 'dependencies' => $dependencies,
                 'expert_slugs' => ['marketing'],
-                'capability_slugs' => [$sequence === 2 ? 'marketing.plan' : ($sequence === 3 ? 'marketing.audience.create' : 'marketing.strategy.section.define')],
+                'capability_slugs' => [$sequence === 2 ? 'marketing.plan' : ($sequence === 3 ? 'marketing.persona.create' : 'marketing.strategy.section.define')],
                 'input_contract' => [],
                 'output_contract' => [],
             ];
@@ -108,8 +108,8 @@ class CanonicalWorkflowSeeder extends Seeder
                 $stage['input_contract'] = [
                     'required' => ['name', 'description'],
                     'defaults' => [
-                        'name' => 'Primary target audience',
-                        'description' => 'Primary audience defined from the authorized enterprise context.',
+                        'name' => 'Primary target persona',
+                        'description' => 'Primary persona defined from the authorized enterprise context.',
                     ],
                 ];
                 $stage['output_contract'] = ['required' => ['id']];

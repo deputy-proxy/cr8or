@@ -14,7 +14,7 @@ final class CopywritingExpert extends Expert
                 'refine content language',
                 'identify content clarity issues',
             ],
-            methodology: 'Audience-aware messaging analysis grounded in authorized knowledge and marketing context.',
+            methodology: 'Persona-aware messaging analysis grounded in authorized knowledge and marketing context.',
             requiredContext: ['enterprise', 'knowledge'],
             capabilities: ['marketing.content.create', 'marketing.content.update', 'marketing.content.review', 'marketing.script.create', 'marketing.asset.create'],
         );

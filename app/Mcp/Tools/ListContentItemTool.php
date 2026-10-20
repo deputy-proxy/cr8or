@@ -24,7 +24,7 @@ class ListContentItemTool extends DiscoveryListTool
             'campaign_id' => 'Campaign id.',
             'content_series_id' => 'Content series id.',
             'channel_id' => 'Channel id.',
-            'audience_id' => 'Audience id.',
+            'persona_id' => 'Persona id.',
         ];
     }
 
@@ -36,7 +36,7 @@ class ListContentItemTool extends DiscoveryListTool
             'campaign_id' => 'campaign_id',
             'content_series_id' => 'content_series_id',
             'channel_id' => 'channel_id',
-            'audience_id' => 'audience_id',
+            'persona_id' => 'persona_id',
             'title' => 'title',
             'status' => 'status',
             'created_at' => 'created_at',

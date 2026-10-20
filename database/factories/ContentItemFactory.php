@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
 use App\Models\ContentSeries;
 use App\Models\Enterprise;
+use App\Models\Persona;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /** @extends Factory<ContentItem> */
@@ -27,7 +27,7 @@ class ContentItemFactory extends Factory
             'campaign_id' => Campaign::factory(),
             'content_series_id' => null,
             'channel_id' => null,
-            'audience_id' => null,
+            'persona_id' => null,
             'title' => fake()->sentence(5),
             'body' => fake()->paragraphs(2, true),
             'status' => 'draft',
@@ -49,8 +49,8 @@ class ContentItemFactory extends Factory
         return $this->state(fn () => ['enterprise_id' => $channel->enterprise_id, 'channel_id' => $channel->id]);
     }
 
-    public function forAudience(Audience $audience): static
+    public function forPersona(Persona $persona): static
     {
-        return $this->state(fn () => ['enterprise_id' => $audience->enterprise_id, 'audience_id' => $audience->id]);
+        return $this->state(fn () => ['enterprise_id' => $persona->enterprise_id, 'persona_id' => $persona->id]);
     }
 }

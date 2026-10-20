@@ -50,7 +50,7 @@ it('auto-selects the full marketing workflow and completes the governed graph wi
 
             return [];
         };
-        $audience = $resultFor($previous, 'marketing.audience.create');
+        $persona = $resultFor($previous, 'marketing.persona.create');
         $strategy = $resultFor($previous, 'marketing.strategy.create');
         $campaign = $resultFor($previous, 'marketing.campaign.create');
         $series = $resultFor($previous, 'marketing.content-series.create');
@@ -59,16 +59,16 @@ it('auto-selects the full marketing workflow and completes the governed graph wi
 
         $payload = match ($stage) {
             'enterprise-analysis' => ['capability' => 'marketing.plan', 'expert_slug' => 'marketing'],
-            'audiences' => ['capability' => 'marketing.audience.create', 'expert_slug' => 'marketing', 'input_payload' => ['name' => 'Design-conscious founders', 'description' => 'Founders evaluating brand and product design.']],
+            'personas' => ['capability' => 'marketing.persona.create', 'expert_slug' => 'marketing', 'input_payload' => ['name' => 'Design-conscious founders', 'description' => 'Founders evaluating brand and product design.']],
             'strategy' => ['capability' => 'marketing.strategy.create', 'expert_slug' => 'marketing', 'input_payload' => ['name' => 'Blckdsgn Growth Strategy', 'description' => 'A governed strategy for design-led growth.']],
             'campaigns' => ['capability' => 'marketing.campaign.create', 'expert_slug' => 'marketing', 'input_payload' => ['marketing_strategy_id' => $strategy['id'], 'name' => 'Design-led growth campaign']],
             'content-series' => ['capability' => 'marketing.content-series.create', 'expert_slug' => 'marketing', 'input_payload' => ['campaign_id' => $campaign['id'], 'name' => 'Design principles series']],
-            'content-items' => ['capability' => 'marketing.content.create', 'expert_slug' => 'copywriting', 'input_payload' => ['campaign_id' => $campaign['id'], 'content_series_id' => $series['id'], 'audience_id' => $audience['id'], 'title' => 'Why design changes growth', 'body' => 'Draft educational content.']],
+            'content-items' => ['capability' => 'marketing.content.create', 'expert_slug' => 'copywriting', 'input_payload' => ['campaign_id' => $campaign['id'], 'content_series_id' => $series['id'], 'persona_id' => $persona['id'], 'title' => 'Why design changes growth', 'body' => 'Draft educational content.']],
             'scripts' => ['capability' => 'marketing.script.create', 'expert_slug' => 'copywriting', 'input_payload' => ['content_item_id' => $item['id'], 'title' => 'Design growth reel', 'body' => 'Script draft.', 'asset_requirements' => [['type' => 'video', 'purpose' => 'social launch reel', 'channel' => 'social', 'platform' => 'instagram', 'format' => 'reel', 'dimensions' => ['width' => 1080, 'height' => 1920, 'aspect_ratio' => '9:16'], 'duration_seconds' => 30, 'creative_brief' => 'Vertical educational launch reel.']]]],
             'assets' => ['capability' => 'marketing.asset.create', 'expert_slug' => 'copywriting', 'input_payload' => ['script_id' => $script['id'], 'name' => 'Design growth reel', 'type' => 'video', 'purpose' => 'social launch reel', 'channel' => 'social', 'platform' => 'instagram', 'format' => 'reel', 'width' => 1080, 'height' => 1920, 'aspect_ratio' => '9:16', 'duration_seconds' => 30, 'creative_brief' => 'Vertical educational launch reel.']],
             'verification' => ['capability' => 'marketing.graph.verify', 'expert_slug' => 'marketing', 'input_payload' => [
                 'marketing_strategy_id' => $strategy['id'],
-                'audience_ids' => [$audience['id']],
+                'persona_ids' => [$persona['id']],
                 'campaign_ids' => [$campaign['id']],
                 'content_series_ids' => [$series['id']],
                 'content_item_ids' => [$item['id']],

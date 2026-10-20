@@ -59,7 +59,7 @@ class ContentItemResource extends Resource
             Select::make('campaign_id')->relationship('campaign', 'name')->searchable()->preload()->required(),
             Select::make('content_series_id')->relationship('contentSeries', 'name')->searchable()->preload(),
             Select::make('channel_id')->relationship('channel', 'name')->searchable()->preload(),
-            Select::make('audience_id')->relationship('audience', 'name')->searchable()->preload(),
+            Select::make('persona_id')->relationship('persona', 'name')->searchable()->preload(),
             TextInput::make('title')->required()->maxLength(255),
             Textarea::make('body')->rows(10),
             Section::make('Threads metadata')

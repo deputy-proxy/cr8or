@@ -26,7 +26,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 |---|---|---|---|---|---|
 | analyze-business-context | `AnalyzeBusinessContextTool` | `GovernedCapabilityTool` | `business.analysis` | `AnalyzeBusinessContext` | CapabilityInvocationService + operation/domain policy |
 | approve-content-item | `ApproveContentItemTool` | `GovernedCapabilityTool` | `marketing.content.approve` | `ApproveContentItem` | CapabilityInvocationService + workflow approval match + ContentItem policy/lifecycle |
-| archive-audience | `ArchiveAudienceTool` | `DomainMutationTool` | `marketing.audience.archive` | `MarketingAudienceArchive` | human target policy + DomainResourceService policy |
+| archive-persona | `ArchivePersonaTool` | `DomainMutationTool` | `marketing.persona.archive` | `MarketingPersonaArchive` | human target policy + DomainResourceService policy |
 | archive-channel | `ArchiveChannelTool` | `DomainMutationTool` | `marketing.channel.archive` | `MarketingChannelArchive` | human target policy + DomainResourceService policy |
 | archive-knowledge-unit | `ArchiveKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` | Operation/domain service; governed when registry-mapped |
 | archive-marketing-strategy | `ArchiveMarketingStrategyTool` | `DomainMutationTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` | human target policy + DomainResourceService policy |
@@ -36,7 +36,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-agent-assignment | `CreateAgentAssignmentTool` | `AgentAssignmentResourceTool` | `agent.assignment.create` | `CreateAgentAssignment` | AgentAssignmentService scope + policy |
 | create-agent-execution | `CreateAgentExecutionTool` | `AgentExecutionResourceTool` | — | `CreateAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
 | create-asset | `CreateAssetTool` | `DomainMutationTool` | `marketing.asset.create` | `CreatePlannedAsset` | human target policy + DomainResourceService policy |
-| create-audience | `CreateAudienceTool` | `DomainMutationTool` | `marketing.audience.create` | `MarketingAudienceCreate` | human target policy + DomainResourceService policy |
+| create-persona | `CreatePersonaTool` | `DomainMutationTool` | `marketing.persona.create` | `MarketingPersonaCreate` | human target policy + DomainResourceService policy |
 | create-campaign | `CreateCampaignTool` | `DomainMutationTool` | `marketing.campaign.create` | `MarketingCampaignCreate` | human target policy + DomainResourceService policy |
 | create-channel | `CreateChannelTool` | `DomainMutationTool` | `marketing.channel.create` | `MarketingChannelCreate` | human target policy + DomainResourceService policy |
 | create-competitor | `CreateCompetitorTool` | `GovernedCapabilityTool` | `marketing.competitor.create_and_report` | `CreateCompetitorAndGenerateReport` | McpCapabilityAuthorizer + CompetitorPolicy::createForEnterprise + Enterprise view policy + atomic competitor/report transaction |
@@ -69,7 +69,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | get-agent-delegation | `GetAgentDelegationTool` | `AgentAssignmentResourceTool` | — | `GetAgentDelegation` | AgentAssignmentService scope + policy |
 | get-agent-execution | `GetExecutionTool` | `AgentExecutionResourceTool` | — | `GetAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
 | get-approval-request | `GetApprovalRequestTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\ApprovalRequest` | organization-scoped lookup + `Gate::view` |
-| get-audience | `GetAudienceTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Audience` | organization-scoped lookup + `Gate::view` |
+| get-persona | `GetPersonaTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Persona` | organization-scoped lookup + `Gate::view` |
 | get-campaign | `GetCampaignTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Campaign` | organization-scoped lookup + `Gate::view` |
 | get-capability | `GetCapabilityTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
 | get-channel | `GetChannelTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Channel` | organization-scoped lookup + `Gate::view` |
@@ -98,7 +98,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-agent-executions | `ListExecutionTool` | `AgentExecutionResourceTool` | — | `ListAgentExecutions` | AgentExecutionResourceService / runtime scope + policy |
 | list-agents | `ListAgentDescriptorTool` | `DiscoveryListTool` | — | scoped query: `App\Models\AgentDescriptor` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-approval-requests | `ListApprovalRequestTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ApprovalRequest` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-audiences | `ListAudienceTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Audience` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-personas | `ListPersonaTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Persona` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-campaigns | `ListCampaignTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Campaign` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-capabilities | `ListCapabilitiesTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
 | list-channels | `ListChannelTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Channel` | concrete `scopeQuery` + optional enterprise/filter scope |
@@ -140,7 +140,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | transition-campaign | `TransitionCampaignTool` | `DomainTransitionTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` | target policy + lifecycle service |
 | transition-content-series | `TransitionContentSeriesTool` | `DomainTransitionTool` | `marketing.content-series.lifecycle` | `ContentSeriesLifecycle` | target policy + lifecycle service |
 | update-agent-assignment | `UpdateAgentAssignmentTool` | `AgentAssignmentResourceTool` | `agent.assignment.update` | `UpdateAgentAssignment` | AgentAssignmentService scope + policy |
-| update-audience | `UpdateAudienceTool` | `DomainMutationTool` | `marketing.audience.update` | `MarketingAudienceUpdate` | human target policy + DomainResourceService policy |
+| update-persona | `UpdatePersonaTool` | `DomainMutationTool` | `marketing.persona.update` | `MarketingPersonaUpdate` | human target policy + DomainResourceService policy |
 | update-campaign | `UpdateCampaignTool` | `DomainMutationTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` | human target policy + DomainResourceService policy |
 | update-channel | `UpdateChannelTool` | `DomainMutationTool` | `marketing.channel.update` | `MarketingChannelUpdate` | human target policy + DomainResourceService policy |
 | update-content-item | `UpdateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.update` | `UpdateContentItem` | CapabilityInvocationService + operation/domain policy |

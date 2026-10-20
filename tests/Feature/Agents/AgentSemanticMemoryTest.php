@@ -119,11 +119,11 @@ it('marks conflicting memories as disputed while preserving both statements and 
     $agent = AgentDescriptor::query()->findOrFail($executionA->agent_descriptor_id);
 
     $service = app(AgentSemanticMemoryService::class);
-    $first = $service->remember($user, $enterprise, $agent, 'The audience prefers long-form content.', 0.8, [
+    $first = $service->remember($user, $enterprise, $agent, 'The persona prefers long-form content.', 0.8, [
         'source_type' => AgentExecution::class,
         'source_id' => $executionA->getKey(),
     ]);
-    $second = $service->remember($user, $enterprise, $agent, 'The audience prefers short-form content.', 0.8, [
+    $second = $service->remember($user, $enterprise, $agent, 'The persona prefers short-form content.', 0.8, [
         'source_type' => AgentExecution::class,
         'source_id' => $executionB->getKey(),
     ]);
@@ -134,8 +134,8 @@ it('marks conflicting memories as disputed while preserving both statements and 
 
     expect($first->status)->toBe(AgentSemanticMemory::STATUS_DISPUTED)
         ->and($second->status)->toBe(AgentSemanticMemory::STATUS_DISPUTED)
-        ->and($first->statement)->toBe('The audience prefers long-form content.')
-        ->and($second->statement)->toBe('The audience prefers short-form content.')
+        ->and($first->statement)->toBe('The persona prefers long-form content.')
+        ->and($second->statement)->toBe('The persona prefers short-form content.')
         ->and($first->conflict_memory_ids)->toContain($second->getKey())
         ->and($second->conflict_memory_ids)->toContain($first->getKey())
         ->and($first->versions()->count())->toBe(2)

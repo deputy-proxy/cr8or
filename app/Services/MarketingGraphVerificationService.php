@@ -3,12 +3,12 @@
 namespace App\Services;
 
 use App\Models\Asset;
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\ContentItem;
 use App\Models\ContentSeries;
 use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
+use App\Models\Persona;
 use App\Models\Script;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,7 +22,7 @@ final class MarketingGraphVerificationService
         Gate::forUser($actor)->authorize('view', $enterprise);
 
         $checks = [
-            'audience_ids' => fn (array $ids): int => Audience::query()->where('enterprise_id', $enterprise->getKey())->whereIn('id', $ids)->count(),
+            'persona_ids' => fn (array $ids): int => Persona::query()->where('enterprise_id', $enterprise->getKey())->whereIn('id', $ids)->count(),
             'campaign_ids' => fn (array $ids): int => Campaign::query()->where('enterprise_id', $enterprise->getKey())->whereIn('id', $ids)->count(),
             'content_series_ids' => fn (array $ids): int => ContentSeries::query()->whereHas('campaign', fn ($q) => $q->where('enterprise_id', $enterprise->getKey()))->whereIn('id', $ids)->count(),
             'content_item_ids' => fn (array $ids): int => ContentItem::query()->where('enterprise_id', $enterprise->getKey())->whereIn('id', $ids)->count(),

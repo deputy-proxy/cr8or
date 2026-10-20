@@ -26,7 +26,7 @@ it('exposes authoritative runtime metadata and coordinates experts', function ()
                 name: 'Copywriting',
                 description: 'Creates copy.',
                 responsibilities: ['write copy'],
-                methodology: 'Audience-first copywriting.',
+                methodology: 'Persona-first copywriting.',
                 requiredContext: ['brand'],
                 capabilities: ['copy.draft'],
             );

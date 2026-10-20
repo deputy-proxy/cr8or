@@ -14,7 +14,6 @@ use App\Enums\ProductType;
 use App\Models\AgentAssignment;
 use App\Models\AgentExecution;
 use App\Models\Asset;
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
@@ -28,6 +27,7 @@ use App\Models\Kpi;
 use App\Models\MarketingStrategy;
 use App\Models\Objective;
 use App\Models\Organization;
+use App\Models\Persona;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Project;
@@ -427,39 +427,39 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
-    public function createAudience(User $actor, Enterprise $enterprise, array $attributes): Audience
+    public function createPersona(User $actor, Enterprise $enterprise, array $attributes): Persona
     {
-        Gate::forUser($actor)->authorize('createForEnterprise', [Audience::class, $enterprise]);
+        Gate::forUser($actor)->authorize('createForEnterprise', [Persona::class, $enterprise]);
         if (! isset($attributes['name']) || ! is_string($attributes['name']) || trim($attributes['name']) === '') {
             throw \Illuminate\Validation\ValidationException::withMessages(['name' => 'A persona name is required.']);
         }
-        $this->validateAudiencePersonaAttributes($attributes, $enterprise);
+        $this->validatePersonaAttributes($attributes, $enterprise);
 
-        return DB::transaction(function () use ($enterprise, $attributes): Audience {
-            $audience = $enterprise->audiences()->create(array_intersect_key($attributes, array_flip([
+        return DB::transaction(function () use ($enterprise, $attributes): Persona {
+            $persona = $enterprise->personas()->create(array_intersect_key($attributes, array_flip([
                 'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range',
                 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at',
                 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior',
-            ])) + ['status' => Audience::STATUS_ACTIVE]);
+            ])) + ['status' => Persona::STATUS_ACTIVE]);
 
             if (array_key_exists('product_ids', $attributes)) {
-                $audience->products()->sync($attributes['product_ids'] ?? []);
+                $persona->products()->sync($attributes['product_ids'] ?? []);
             }
 
-            return $audience->load('products');
+            return $persona->load('products');
         });
     }
 
     /** @param array<string, mixed> $attributes */
-    public function updateAudience(User $actor, Audience $audience, array $attributes): Audience
+    public function updatePersona(User $actor, Persona $persona, array $attributes): Persona
     {
-        Gate::forUser($actor)->authorize('update', $audience);
-        $this->validateAudiencePersonaAttributes($attributes, $audience->enterprise);
+        Gate::forUser($actor)->authorize('update', $persona);
+        $this->validatePersonaAttributes($attributes, $persona->enterprise);
 
-        return DB::transaction(function () use ($audience, $attributes): Audience {
+        return DB::transaction(function () use ($persona, $attributes): Persona {
             foreach (['psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'] as $group) {
                 if (array_key_exists($group, $attributes) && is_array($attributes[$group])) {
-                    $existingGroup = json_decode((string) ($audience->getRawOriginal($group) ?? '{}'), true);
+                    $existingGroup = json_decode((string) ($persona->getRawOriginal($group) ?? '{}'), true);
                     $attributes[$group] = array_replace(is_array($existingGroup) ? $existingGroup : [], $attributes[$group]);
                 }
             }
@@ -467,24 +467,24 @@ final class DomainResourceService
             $mutable = ['name', 'description', 'persona_type', 'age_range', 'location', 'job_title', 'income_range',
                 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at',
                 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'];
-            $audience->update(array_intersect_key($attributes, array_flip($mutable)));
+            $persona->update(array_intersect_key($attributes, array_flip($mutable)));
             if (isset($attributes['status'])) {
-                if (! in_array($attributes['status'], [Audience::STATUS_ACTIVE, Audience::STATUS_ARCHIVED], true)) {
-                    throw new LogicException('Invalid audience status.');
+                if (! in_array($attributes['status'], [Persona::STATUS_ACTIVE, Persona::STATUS_ARCHIVED], true)) {
+                    throw new LogicException('Invalid persona status.');
                 }
-                $audience->status = $attributes['status'];
-                $audience->save();
+                $persona->status = $attributes['status'];
+                $persona->save();
             }
             if (array_key_exists('product_ids', $attributes)) {
-                $audience->products()->sync($attributes['product_ids'] ?? []);
+                $persona->products()->sync($attributes['product_ids'] ?? []);
             }
 
-            return $audience->load('products')->refresh();
+            return $persona->load('products')->refresh();
         });
     }
 
     /** @param array<string, mixed> $attributes */
-    private function validateAudiencePersonaAttributes(array $attributes, Enterprise $enterprise): void
+    private function validatePersonaAttributes(array $attributes, Enterprise $enterprise): void
     {
         $rules = [
             'name' => ['sometimes', 'required', 'string', 'min:1', 'max:255'],
@@ -538,18 +538,18 @@ final class DomainResourceService
         }
     }
 
-    public function archiveAudience(User $actor, Audience $audience): Audience
+    public function archivePersona(User $actor, Persona $persona): Persona
     {
-        Gate::forUser($actor)->authorize('update', $audience);
+        Gate::forUser($actor)->authorize('update', $persona);
 
-        if ($audience->status === Audience::STATUS_ARCHIVED) {
-            return $audience;
+        if ($persona->status === Persona::STATUS_ARCHIVED) {
+            return $persona;
         }
 
-        $audience->status = Audience::STATUS_ARCHIVED;
-        $audience->save();
+        $persona->status = Persona::STATUS_ARCHIVED;
+        $persona->save();
 
-        return $audience->refresh();
+        return $persona->refresh();
     }
 
     /** @param array<string, mixed> $attributes */

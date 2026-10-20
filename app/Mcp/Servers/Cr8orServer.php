@@ -8,17 +8,16 @@ use App\Mcp\Resources\StrategyContextResource;
 use App\Mcp\Resources\WorkContextResource;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ApproveContentItemTool;
-use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveKnowledgeUnitTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
 use App\Mcp\Tools\ArchiveMemoryTool;
+use App\Mcp\Tools\ArchivePersonaTool;
 use App\Mcp\Tools\CancelAgentExecutionTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateAgentAssignmentTool;
 use App\Mcp\Tools\CreateAgentExecutionTool;
 use App\Mcp\Tools\CreateAssetTool;
-use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
 use App\Mcp\Tools\CreateCompetitorRecordTool;
@@ -33,6 +32,7 @@ use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
 use App\Mcp\Tools\CreateObjectiveTool;
+use App\Mcp\Tools\CreatePersonaTool;
 use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
@@ -50,7 +50,6 @@ use App\Mcp\Tools\GetAgentAssignmentTool;
 use App\Mcp\Tools\GetAgentDelegationTool;
 use App\Mcp\Tools\GetAgentDescriptorTool;
 use App\Mcp\Tools\GetApprovalRequestTool;
-use App\Mcp\Tools\GetAudienceTool;
 use App\Mcp\Tools\GetCampaignTool;
 use App\Mcp\Tools\GetCapabilityTool;
 use App\Mcp\Tools\GetChannelTool;
@@ -67,6 +66,7 @@ use App\Mcp\Tools\GetKpiTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
 use App\Mcp\Tools\GetMemoryTool;
 use App\Mcp\Tools\GetObjectiveTool;
+use App\Mcp\Tools\GetPersonaTool;
 use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetPublicationTool;
@@ -79,7 +79,6 @@ use App\Mcp\Tools\ListAgentAssignmentsTool;
 use App\Mcp\Tools\ListAgentDelegationsTool;
 use App\Mcp\Tools\ListAgentDescriptorTool;
 use App\Mcp\Tools\ListApprovalRequestTool;
-use App\Mcp\Tools\ListAudienceTool;
 use App\Mcp\Tools\ListCampaignTool;
 use App\Mcp\Tools\ListCapabilitiesTool;
 use App\Mcp\Tools\ListChannelTool;
@@ -96,6 +95,7 @@ use App\Mcp\Tools\ListKpiTool;
 use App\Mcp\Tools\ListMarketingStrategyTool;
 use App\Mcp\Tools\ListMemoryTool;
 use App\Mcp\Tools\ListObjectiveTool;
+use App\Mcp\Tools\ListPersonaTool;
 use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProjectTool;
 use App\Mcp\Tools\ListPublicationResultsTool;
@@ -122,7 +122,6 @@ use App\Mcp\Tools\TransitionAgentAssignmentTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
 use App\Mcp\Tools\UpdateAgentAssignmentTool;
-use App\Mcp\Tools\UpdateAudienceTool;
 use App\Mcp\Tools\UpdateCampaignTool;
 use App\Mcp\Tools\UpdateChannelTool;
 use App\Mcp\Tools\UpdateContentItemTool;
@@ -132,6 +131,7 @@ use App\Mcp\Tools\UpdateKnowledgeIndexTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
+use App\Mcp\Tools\UpdatePersonaTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
@@ -174,8 +174,8 @@ class Cr8orServer extends Server
         GetContentSeriesTool::class,
         ListContentItemTool::class,
         GetContentItemTool::class,
-        ListAudienceTool::class,
-        GetAudienceTool::class,
+        ListPersonaTool::class,
+        GetPersonaTool::class,
         ListChannelTool::class,
         GetChannelTool::class,
         ListSocialAccountTool::class,
@@ -249,9 +249,9 @@ class Cr8orServer extends Server
         UpdateEnterpriseContextTool::class,
         UpdateContentSeriesTool::class,
         TransitionContentSeriesTool::class,
-        CreateAudienceTool::class,
-        UpdateAudienceTool::class,
-        ArchiveAudienceTool::class,
+        CreatePersonaTool::class,
+        UpdatePersonaTool::class,
+        ArchivePersonaTool::class,
         CreateChannelTool::class,
         UpdateChannelTool::class,
         ArchiveChannelTool::class,

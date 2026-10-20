@@ -163,10 +163,10 @@ it('allows deterministic graph verification without Agent assignment or executio
     $enterprise = Enterprise::factory()->create();
     $actor = definitionActor($enterprise);
     $strategy = \App\Models\MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
-    $audience = \App\Models\Audience::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $persona = \App\Models\Persona::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     $campaign = \App\Models\Campaign::factory()->create(['enterprise_id' => $enterprise->getKey(), 'marketing_strategy_id' => $strategy->getKey()]);
     $series = \App\Models\ContentSeries::factory()->create(['campaign_id' => $campaign->getKey()]);
-    $item = \App\Models\ContentItem::factory()->forSeries($series)->create(['audience_id' => $audience->getKey()]);
+    $item = \App\Models\ContentItem::factory()->forSeries($series)->create(['persona_id' => $persona->getKey()]);
     $agentDescriptor = \App\Models\AgentDescriptor::factory()->forRuntimeClass(\App\Agents\MarketingAgent::class)->create(['slug' => 'marketing']);
     $assignment = \App\Models\AgentAssignment::factory()->forEnterprise($enterprise)->create(['agent_descriptor_id' => $agentDescriptor->getKey()]);
     $agentExecution = \App\Models\AgentExecution::factory()->forAssignment($assignment)->forEnterprise($enterprise)->create();
@@ -180,7 +180,7 @@ it('allows deterministic graph verification without Agent assignment or executio
         'capability_slugs' => ['marketing.graph.verify'],
         'input_contract' => [
             'required' => [
-                'marketing_strategy_id', 'audience_ids', 'campaign_ids', 'content_series_ids',
+                'marketing_strategy_id', 'persona_ids', 'campaign_ids', 'content_series_ids',
                 'content_item_ids', 'script_ids', 'asset_ids',
             ],
         ],
@@ -194,7 +194,7 @@ it('allows deterministic graph verification without Agent assignment or executio
         $version,
         [
             'marketing_strategy_id' => $strategy->getKey(),
-            'audience_ids' => [$audience->getKey()],
+            'persona_ids' => [$persona->getKey()],
             'campaign_ids' => [$campaign->getKey()],
             'content_series_ids' => [$series->getKey()],
             'content_item_ids' => [$item->getKey()],

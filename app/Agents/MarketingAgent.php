@@ -20,7 +20,7 @@ final class MarketingAgent extends Agent
             requiredContext: ['enterprise', 'strategy', 'work', 'knowledge', 'decisions', 'execution_history'],
             decisionBoundaries: [
                 'The Agent orchestrates Experts but does not perform their specialized reasoning as an Expert.',
-                'The Marketing Expert owns audience, positioning and campaign opportunity analysis.',
+                'The Marketing Expert owns persona, positioning and campaign opportunity analysis.',
                 'The Strategy Expert owns strategy alignment and strategic trade-off analysis.',
                 'The Copywriting Expert owns messaging and content-language recommendations.',
                 'The SEO Expert owns search-intent and discoverability analysis.',

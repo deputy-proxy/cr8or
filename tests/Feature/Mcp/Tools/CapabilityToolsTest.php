@@ -373,7 +373,7 @@ it('registers the foundational discovery tool surface', function () {
         \App\Mcp\Tools\ListCampaignTool::class, \App\Mcp\Tools\GetCampaignTool::class,
         \App\Mcp\Tools\ListContentSeriesTool::class, \App\Mcp\Tools\GetContentSeriesTool::class,
         \App\Mcp\Tools\ListContentItemTool::class, \App\Mcp\Tools\GetContentItemTool::class,
-        \App\Mcp\Tools\ListAudienceTool::class, \App\Mcp\Tools\GetAudienceTool::class,
+        \App\Mcp\Tools\ListPersonaTool::class, \App\Mcp\Tools\GetPersonaTool::class,
         \App\Mcp\Tools\ListChannelTool::class, \App\Mcp\Tools\GetChannelTool::class,
         \App\Mcp\Tools\ListExecutionTool::class, \App\Mcp\Tools\GetExecutionTool::class,
         \App\Mcp\Tools\ListApprovalRequestTool::class, \App\Mcp\Tools\GetApprovalRequestTool::class,

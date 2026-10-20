@@ -26,7 +26,7 @@ class GetContentItemTool extends DiscoveryGetTool
             'campaign_id' => 'campaign_id',
             'content_series_id' => 'content_series_id',
             'channel_id' => 'channel_id',
-            'audience_id' => 'audience_id',
+            'persona_id' => 'persona_id',
             'title' => 'title',
             'metadata' => 'metadata',
             'status' => 'status',

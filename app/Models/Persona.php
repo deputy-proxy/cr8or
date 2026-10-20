@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Pivots\AudienceProduct;
-use Database\Factories\AudienceFactory;
+use App\Models\Pivots\PersonaProduct;
+use Database\Factories\PersonaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,9 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
 #[Fillable(['enterprise_id', 'name', 'description', 'status', 'persona_type', 'age_range', 'location', 'job_title', 'income_range', 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior'])]
-class Audience extends Model
+class Persona extends Model
 {
-    /** @use HasFactory<AudienceFactory> */
+    /** @use HasFactory<PersonaFactory> */
     use HasFactory;
 
     public const STATUS_ACTIVE = 'active';
@@ -38,13 +38,13 @@ class Audience extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (Audience $audience): void {
-            if (! in_array($audience->status, [self::STATUS_ACTIVE, self::STATUS_ARCHIVED], true)) {
-                throw new LogicException("Invalid audience status [{$audience->status}].");
+        static::saving(function (Persona $persona): void {
+            if (! in_array($persona->status, [self::STATUS_ACTIVE, self::STATUS_ARCHIVED], true)) {
+                throw new LogicException("Invalid persona status [{$persona->status}].");
             }
 
-            if ($audience->exists && $audience->isDirty('enterprise_id')) {
-                throw new LogicException('Audience enterprise ownership cannot be changed.');
+            if ($persona->exists && $persona->isDirty('enterprise_id')) {
+                throw new LogicException('Persona enterprise ownership cannot be changed.');
             }
         });
     }
@@ -55,10 +55,10 @@ class Audience extends Model
         return $this->belongsTo(Enterprise::class);
     }
 
-    /** @return BelongsToMany<Product, $this, AudienceProduct> */
+    /** @return BelongsToMany<Product, $this, PersonaProduct> */
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class)->using(AudienceProduct::class)->withTimestamps();
+        return $this->belongsToMany(Product::class)->using(PersonaProduct::class)->withTimestamps();
     }
 
     /** @return HasMany<ContentItem, $this> */

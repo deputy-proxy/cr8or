@@ -16,7 +16,7 @@ A Tool does not grant authority. A Capability declaration does not grant permiss
 
 The full per-tool authorization and tenancy mapping is maintained in [`mcp-authorization.md`](mcp-authorization.md). It records the shared boundary family, capability/operation mapping where present, and the concrete tenant/policy enforcement path for every public tool.
 
-The canonical structured persona schema, product-association rules, update semantics, privacy boundaries, and examples for `create-audience` / `update-audience` are documented in [`client-personas.md`](client-personas.md). These tools retain the existing `marketing.audience.create` / `marketing.audience.update` capability-operation path; persona fields do not create a parallel MCP business layer.
+The canonical structured persona schema, product-association rules, update semantics, privacy boundaries, and examples for `create-persona` / `update-persona` are documented in [`client-personas.md`](client-personas.md). These tools retain the existing `marketing.persona.create` / `marketing.persona.update` capability-operation path; persona fields do not create a parallel MCP business layer.
 
 The complete Product field contract, controlled values, commercial invariants, backward-compatible defaults, and `create-product` response shape are documented in [`product-domain.md`](product-domain.md). The tool remains a thin entry point through `product.create` → `ProductCreate` → `DomainResourceService`; schema and capability contract changes must stay aligned.
 
@@ -59,7 +59,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | Public Tool identifier | Tool class | Capability | Operation |
 | --- | --- | --- | --- |
 | `analyze-business-context` | `AnalyzeBusinessContextTool` | `business.analysis` | `AnalyzeBusinessContext` |
-| `archive-audience` | `ArchiveAudienceTool` | `marketing.audience.archive` | `MarketingAudienceArchive` |
+| `archive-persona` | `ArchivePersonaTool` | `marketing.persona.archive` | `MarketingPersonaArchive` |
 | `archive-channel` | `ArchiveChannelTool` | `marketing.channel.archive` | `MarketingChannelArchive` |
 | `archive-knowledge-unit` | `ArchiveKnowledgeUnitTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` |
 | `archive-marketing-strategy` | `ArchiveMarketingStrategyTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` |
@@ -69,7 +69,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-agent-assignment` | `CreateAgentAssignmentTool` | `agent.assignment.create` | `CreateAgentAssignment` |
 | `create-agent-execution` | `CreateAgentExecutionTool` | Lifecycle (outside governed registry) | N/A |
 | `create-asset` | `CreateAssetTool` | `marketing.asset.create` | `CreatePlannedAsset` |
-| `create-audience` | `CreateAudienceTool` | `marketing.audience.create` | `MarketingAudienceCreate` |
+| `create-persona` | `CreatePersonaTool` | `marketing.persona.create` | `MarketingPersonaCreate` |
 | `create-campaign` | `CreateCampaignTool` | `marketing.campaign.create` | `MarketingCampaignCreate` |
 | `create-channel` | `CreateChannelTool` | `marketing.channel.create` | `MarketingChannelCreate` |
 | `create-competitor` | `CreateCompetitorTool` | `marketing.competitor.create_and_report` | `CreateCompetitorAndGenerateReport` |
@@ -103,7 +103,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-agent-delegation` | `GetAgentDelegationTool` | Unregistered read/discovery/resource | N/A |
 | `get-agent-execution` | `GetExecutionTool` | Unregistered read/discovery/resource | N/A |
 | `get-approval-request` | `GetApprovalRequestTool` | Unregistered read/discovery/resource | N/A |
-| `get-audience` | `GetAudienceTool` | Unregistered read/discovery/resource | N/A |
+| `get-persona` | `GetPersonaTool` | Unregistered read/discovery/resource | N/A |
 | `get-campaign` | `GetCampaignTool` | Unregistered read/discovery/resource | N/A |
 | `get-capability` | `GetCapabilityTool` | Unregistered read/discovery/resource | N/A |
 | `get-channel` | `GetChannelTool` | Unregistered read/discovery/resource | N/A |
@@ -132,7 +132,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-agent-executions` | `ListExecutionTool` | Unregistered read/discovery/resource | N/A |
 | `list-agents` | `ListAgentDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `list-approval-requests` | `ListApprovalRequestTool` | Unregistered read/discovery/resource | N/A |
-| `list-audiences` | `ListAudienceTool` | Unregistered read/discovery/resource | N/A |
+| `list-personas` | `ListPersonaTool` | Unregistered read/discovery/resource | N/A |
 | `list-campaigns` | `ListCampaignTool` | Unregistered read/discovery/resource | N/A |
 | `list-capabilities` | `ListCapabilitiesTool` | Unregistered read/discovery/resource | N/A |
 | `list-channels` | `ListChannelTool` | Unregistered read/discovery/resource | N/A |
@@ -174,7 +174,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `transition-campaign` | `TransitionCampaignTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` |
 | `transition-content-series` | `TransitionContentSeriesTool` | `marketing.content-series.lifecycle` | `ContentSeriesLifecycle` |
 | `update-agent-assignment` | `UpdateAgentAssignmentTool` | `agent.assignment.update` | `UpdateAgentAssignment` |
-| `update-audience` | `UpdateAudienceTool` | `marketing.audience.update` | `MarketingAudienceUpdate` |
+| `update-persona` | `UpdatePersonaTool` | `marketing.persona.update` | `MarketingPersonaUpdate` |
 | `update-campaign` | `UpdateCampaignTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` |
 | `update-channel` | `UpdateChannelTool` | `marketing.channel.update` | `MarketingChannelUpdate` |
 | `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
@@ -305,7 +305,7 @@ The foundational read/discovery layer exposes bounded, authorization-aware list/
 | Strategy | `list-objectives`, `get-objective`, `list-strategies`, `get-strategy` |
 | Work | `list-tasks`, `get-task` |
 | Intelligence | `list-agents`, `get-agent`, `list-experts`, `get-expert-descriptor`, `list-capabilities`, `get-capability` |
-| Content | `list-campaigns`, `get-campaign`, `list-content-series`, `get-content-series`, `list-content-items`, `get-content-item`, `list-audiences`, `get-audience`, `list-channels`, `get-channel` |
+| Content | `list-campaigns`, `get-campaign`, `list-content-series`, `get-content-series`, `list-content-items`, `get-content-item`, `list-personas`, `get-persona`, `list-channels`, `get-channel` |
 | Operations | `list-agent-executions`, `get-agent-execution`, `list-approval-requests`, `get-approval-request` |
 
 List tools return `result.items` plus a bounded `pagination` object containing `page`, `per_page`, `total`, and `last_page`. They accept `per_page` (1-50), `page`, and, where applicable, enterprise, status, parent-resource, and name/title/slug search filters. All list queries are scoped to organizations accessible to the authenticated actor before pagination.
@@ -339,7 +339,7 @@ The governed mutation surface now covers the core planning, content, work, and i
 | Planning | `create-objective`, `update-objective`, existing `create-strategy`, `update-strategy` |
 | Campaigns | `create-campaign`, `update-campaign`, `transition-campaign` |
 | Content series | `create-content-series`, `update-content-series`, `transition-content-series` |
-| Audiences | `create-audience`, `update-audience`, `archive-audience` |
+| Personas | `create-persona`, `update-persona`, `archive-persona` |
 | Channels | `create-channel`, `update-channel`, `archive-channel` |
 | Social accounts | `list-social-accounts`, `get-social-account`, `update-social-account`, `disable-social-account` |
 | Projects | `list-projects`, `get-project`, `create-project`, `update-project` |

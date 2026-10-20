@@ -5,7 +5,6 @@ use App\Filament\Pages\EnterprisePortfolioDashboard;
 use App\Filament\Pages\WorkOverview;
 use App\Filament\Resources\AgentDescriptors\AgentDescriptorResource;
 use App\Filament\Resources\ApprovalRequests\ApprovalRequestResource;
-use App\Filament\Resources\Audiences\AudienceResource;
 use App\Filament\Resources\Campaigns\CampaignResource;
 use App\Filament\Resources\Channels\ChannelResource;
 use App\Filament\Resources\ContentItems\ContentItemResource;
@@ -20,6 +19,7 @@ use App\Filament\Resources\Initiatives\InitiativeResource;
 use App\Filament\Resources\Issues\IssueResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Organizations\OrganizationResource;
+use App\Filament\Resources\Personas\PersonaResource;
 use App\Filament\Resources\Strategies\StrategyResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use Filament\Facades\Filament;
@@ -29,7 +29,7 @@ function expectedNavigation(): array
 {
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships'],
-        'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products', 'Audiences'],
+        'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products', 'Personas'],
         'Strategy & Execution Planning' => ['Strategies', 'Goals', 'Objectives', 'Kpis', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'Issues'],
         'Agent Governance & Operations' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentDelegations', 'AgentDecisions', 'ApprovalRequests', 'ApprovalPolicies', 'ApprovalDecisions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions'],
         'Media Production & Publishing' => ['Assets', 'Templates', 'TemplateVersions', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
@@ -127,7 +127,7 @@ it('preserves agreed labels for primary navigation resources', function () {
         ->and(CampaignResource::getNavigationLabel())->toBe('Campaigns')
         ->and(ContentSeriesResource::getNavigationLabel())->toBe('Content Series')
         ->and(ContentItemResource::getNavigationLabel())->toBe('Content Items')
-        ->and(AudienceResource::getNavigationLabel())->toBe('Personas')
+        ->and(PersonaResource::getNavigationLabel())->toBe('Personas')
         ->and(ChannelResource::getNavigationLabel())->toBe('Channels')
         ->and(ApprovalRequestResource::getNavigationLabel())->toBe('Approval Requests')
         ->and(EventResource::getNavigationLabel())->toBe('Events')

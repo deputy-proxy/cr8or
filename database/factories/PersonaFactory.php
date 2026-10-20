@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\Audience;
 use App\Models\Enterprise;
+use App\Models\Persona;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/** @extends Factory<Audience> */
-class AudienceFactory extends Factory
+/** @extends Factory<Persona> */
+class PersonaFactory extends Factory
 {
     public function definition(): array
     {

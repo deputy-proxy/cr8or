@@ -6,7 +6,6 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\AgentExecution;
 use App\Models\Asset;
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\ContentItem;
 use App\Models\ContentSeries;
@@ -14,6 +13,7 @@ use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Persona;
 use App\Models\Script;
 use App\Models\User;
 
@@ -31,13 +31,13 @@ it('verifies a marketing graph through the capability without Agent context', fu
     $execution = AgentExecution::factory()->forAssignment($assignment)->create(['actor_id' => $actor->getKey(), 'actor_name' => $actor->name]);
 
     $strategy = MarketingStrategy::factory()->create(['enterprise_id' => $enterprise->getKey()]);
-    $audience = Audience::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+    $persona = Persona::factory()->create(['enterprise_id' => $enterprise->getKey()]);
     $campaign = Campaign::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
         'marketing_strategy_id' => $strategy->getKey(),
     ]);
     $series = ContentSeries::factory()->create(['campaign_id' => $campaign->getKey()]);
-    $item = ContentItem::factory()->forSeries($series)->create(['audience_id' => $audience->getKey()]);
+    $item = ContentItem::factory()->forSeries($series)->create(['persona_id' => $persona->getKey()]);
     $script = Script::factory()->create(['content_item_id' => $item->getKey(), 'agent_assignment_id' => $assignment->getKey(), 'agent_execution_id' => $execution->getKey()]);
     $asset = Asset::factory()->create([
         'enterprise_id' => $enterprise->getKey(),
@@ -52,7 +52,7 @@ it('verifies a marketing graph through the capability without Agent context', fu
         ->tool(VerifyMarketingGraphTool::class, [
             'enterprise_id' => $enterprise->getKey(),
             'marketing_strategy_id' => $strategy->getKey(),
-            'audience_ids' => [$audience->getKey()],
+            'persona_ids' => [$persona->getKey()],
             'campaign_ids' => [$campaign->getKey()],
             'content_series_ids' => [$series->getKey()],
             'content_item_ids' => [$item->getKey()],

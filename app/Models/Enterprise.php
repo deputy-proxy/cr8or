@@ -164,10 +164,10 @@ class Enterprise extends Model
         return $this->hasMany(Channel::class);
     }
 
-    /** @return HasMany<Audience, $this> */
-    public function audiences(): HasMany
+    /** @return HasMany<Persona, $this> */
+    public function personas(): HasMany
     {
-        return $this->hasMany(Audience::class);
+        return $this->hasMany(Persona::class);
     }
 
     /** @return HasMany<Product, $this> */

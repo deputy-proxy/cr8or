@@ -68,9 +68,9 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | work.task.update | UpdateTask | update-task | UpdateTaskTool | business | yes | yes | CapabilityInvocationService | McpCapabilityAuthorizer::authorizeMutation + Task policy | none | no | no | standard |
 | enterprise.create | EnterpriseCreate | create-enterprise | CreateEnterpriseTool | business | yes | yes | Operation direct | none | none | no | no | standard |
 | approval.request | ApprovalRequestCreate | mcp_agent_approval_request | RequestApprovalTool | business | yes | yes | Operation direct | assignment authorization | required | no | no | standard |
-| marketing.audience.create | MarketingAudienceCreate | create-audience | CreateAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
-| marketing.audience.update | MarketingAudienceUpdate | update-audience | UpdateAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
-| marketing.audience.archive | MarketingAudienceArchive | archive-audience | ArchiveAudienceTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Audience policy | none | no | no | standard |
+| marketing.persona.create | MarketingPersonaCreate | create-persona | CreatePersonaTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Persona policy | none | no | no | standard |
+| marketing.persona.update | MarketingPersonaUpdate | update-persona | UpdatePersonaTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Persona policy | none | no | no | standard |
+| marketing.persona.archive | MarketingPersonaArchive | archive-persona | ArchivePersonaTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Persona policy | none | no | no | standard |
 | marketing.campaign.create | MarketingCampaignCreate | create-campaign | CreateCampaignTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Campaign policy | none | no | no | standard |
 | marketing.campaign.update | MarketingCampaignUpdate | update-campaign | UpdateCampaignTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Campaign policy | none | no | no | standard |
 | marketing.campaign.lifecycle | CampaignLifecycle | transition-campaign | TransitionCampaignTool | business | yes | yes | Operation direct | McpCapabilityAuthorizer::authorizeMutation + Campaign policy | none | no | no | standard |
@@ -107,7 +107,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | Tool class | Parent | Classification | Registry | Execution path |
 |---|---|---|---|---|
 | AnalyzeBusinessContextTool | GovernedCapabilityTool | governed business | business.analysis | CapabilityInvocationService |
-| ArchiveAudienceTool | DomainMutationTool | governed business | marketing.audience.archive | Operation direct |
+| ArchivePersonaTool | DomainMutationTool | governed business | marketing.persona.archive | Operation direct |
 | ArchiveChannelTool | DomainMutationTool | governed business | marketing.channel.archive | Operation direct |
 | ArchiveKnowledgeUnitTool | KnowledgeResourceTool | invalid/incomplete mapping | - | Operation direct |
 | ArchiveMarketingStrategyTool | DomainMutationTool | governed business | marketing.strategy.archive | Operation direct |
@@ -118,7 +118,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | CreateAgentAssignmentTool | AgentAssignmentResourceTool | lifecycle | agent.assignment.create | Operation direct |
 | CreateAgentExecutionTool | AgentExecutionResourceTool | lifecycle | - | Operation direct |
 | CreateAssetTool | DomainMutationTool | governed business | marketing.asset.create | Operation direct |
-| CreateAudienceTool | DomainMutationTool | governed business | marketing.audience.create | Operation direct |
+| CreatePersonaTool | DomainMutationTool | governed business | marketing.persona.create | Operation direct |
 | CreateCampaignTool | DomainMutationTool | governed business | marketing.campaign.create | Operation direct |
 | CreateChannelTool | DomainMutationTool | governed business | marketing.channel.create | Operation direct |
 | CreateConnectionTool | DomainMutationTool | governed business | integration.connection.create | Operation direct |
@@ -150,7 +150,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | GetAgentDelegationTool | AgentAssignmentResourceTool | read/query | - | Operation direct |
 | GetAgentDescriptorTool | DiscoveryGetTool | read/query | - | n/a |
 | GetApprovalRequestTool | DiscoveryGetTool | read/query | - | n/a |
-| GetAudienceTool | DiscoveryGetTool | read/query | - | n/a |
+| GetPersonaTool | DiscoveryGetTool | read/query | - | n/a |
 | GetCampaignTool | DiscoveryGetTool | read/query | - | n/a |
 | GetCapabilityTool | AuthorizedTool | read/query | - | n/a |
 | GetChannelTool | DiscoveryGetTool | read/query | - | n/a |
@@ -177,7 +177,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | ListAgentDelegationsTool | AgentAssignmentResourceTool | read/query | - | Operation direct |
 | ListAgentDescriptorTool | DiscoveryListTool | read/query | - | n/a |
 | ListApprovalRequestTool | DiscoveryListTool | read/query | - | n/a |
-| ListAudienceTool | DiscoveryListTool | read/query | - | n/a |
+| ListPersonaTool | DiscoveryListTool | read/query | - | n/a |
 | ListCampaignTool | DiscoveryListTool | read/query | - | n/a |
 | ListCapabilitiesTool | AuthorizedTool | read/query | - | n/a |
 | ListChannelTool | DiscoveryListTool | read/query | - | n/a |
@@ -217,7 +217,7 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | TransitionCampaignTool | DomainTransitionTool | governed business | marketing.campaign.lifecycle | Operation direct |
 | TransitionContentSeriesTool | DomainTransitionTool | governed business | marketing.content-series.lifecycle | Operation direct |
 | UpdateAgentAssignmentTool | AgentAssignmentResourceTool | lifecycle | agent.assignment.update | Operation direct |
-| UpdateAudienceTool | DomainMutationTool | governed business | marketing.audience.update | Operation direct |
+| UpdatePersonaTool | DomainMutationTool | governed business | marketing.persona.update | Operation direct |
 | UpdateCampaignTool | DomainMutationTool | governed business | marketing.campaign.update | Operation direct |
 | UpdateChannelTool | DomainMutationTool | governed business | marketing.channel.update | Operation direct |
 | UpdateContentItemTool | GovernedCapabilityTool | governed business | marketing.content.update | CapabilityInvocationService |
@@ -310,9 +310,9 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | ListKnowledgeUnits | - | - | internal/read operation |
 | ListMemory | - | - | internal/read operation |
 | MarkContentPublicationReady | marketing.content.publication-ready | mark-content-publication-ready | governed |
-| MarketingAudienceArchive | marketing.audience.archive | archive-audience | governed |
-| MarketingAudienceCreate | marketing.audience.create | create-audience | governed |
-| MarketingAudienceUpdate | marketing.audience.update | update-audience | governed |
+| MarketingPersonaArchive | marketing.persona.archive | archive-persona | governed |
+| MarketingPersonaCreate | marketing.persona.create | create-persona | governed |
+| MarketingPersonaUpdate | marketing.persona.update | update-persona | governed |
 | MarketingCampaignCreate | marketing.campaign.create | create-campaign | governed |
 | MarketingCampaignUpdate | marketing.campaign.update | update-campaign | governed |
 | MarketingChannelArchive | marketing.channel.archive | archive-channel | governed |

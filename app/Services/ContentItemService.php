@@ -47,7 +47,7 @@ final class ContentItemService
             'campaign_id' => $campaign->getKey(),
             'content_series_id' => $seriesId,
             'channel_id' => $attributes['channel_id'] ?? null,
-            'audience_id' => $attributes['audience_id'] ?? null,
+            'persona_id' => $attributes['persona_id'] ?? null,
             'title' => $attributes['title'],
             'body' => $attributes['body'] ?? null,
             'metadata' => $attributes['metadata'] ?? null,

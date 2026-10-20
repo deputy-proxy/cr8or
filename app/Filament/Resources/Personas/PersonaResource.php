@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\Audiences;
+namespace App\Filament\Resources\Personas;
 
-use App\Filament\Resources\Audiences\Pages\CreateAudience;
-use App\Filament\Resources\Audiences\Pages\EditAudience;
-use App\Filament\Resources\Audiences\Pages\ListAudiences;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
-use App\Models\Audience;
+use App\Filament\Resources\Personas\Pages\CreatePersona;
+use App\Filament\Resources\Personas\Pages\EditPersona;
+use App\Filament\Resources\Personas\Pages\ListPersonas;
+use App\Models\Persona;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -25,11 +25,11 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class AudienceResource extends Resource
+class PersonaResource extends Resource
 {
     use ScopesAuthorizedRecords;
 
-    protected static ?string $model = Audience::class;
+    protected static ?string $model = Persona::class;
 
     protected static ?string $modelLabel = 'Persona';
 
@@ -117,6 +117,6 @@ class AudienceResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListAudiences::route('/'), 'create' => CreateAudience::route('/create'), 'edit' => EditAudience::route('/{record}/edit')];
+        return ['index' => ListPersonas::route('/'), 'create' => CreatePersona::route('/create'), 'edit' => EditPersona::route('/{record}/edit')];
     }
 }

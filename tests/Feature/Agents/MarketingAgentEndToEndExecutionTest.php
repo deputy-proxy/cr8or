@@ -90,10 +90,10 @@ it('completes a governed Marketing Agent execution through the full strategy hie
             ],
             2 => [
                 json_encode([
-                    'capability' => 'marketing.audience.create',
+                    'capability' => 'marketing.persona.create',
                     'expert_slug' => 'marketing',
                     'target_context' => ['enterprise_id' => $enterprise->getKey()],
-                    'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Primary audience'],
+                    'input_payload' => ['enterprise_id' => $enterprise->getKey(), 'name' => 'Primary persona'],
                 ], JSON_THROW_ON_ERROR),
                 json_encode([
                     'capability' => 'marketing.campaign.create',
@@ -155,16 +155,16 @@ it('completes a governed Marketing Agent execution through the full strategy hie
     $second = marketingEndToEndService($provider)->execute(new AgentExecutionRequest(
         actor: $actor,
         assignment: $assignment,
-        prompt: 'Create the audience and campaign from the strategy result.',
+        prompt: 'Create the persona and campaign from the strategy result.',
         expertSlugs: ['marketing'],
         correlationId: 'marketing-hierarchy-2',
     ));
 
-    $audienceRequest = $second->capabilityRequests[0];
-    $audienceResult = app(CapabilityRegistry::class)
-        ->operation($audienceRequest->capability)
+    $personaRequest = $second->capabilityRequests[0];
+    $personaResult = app(CapabilityRegistry::class)
+        ->operation($personaRequest->capability)
         ->execute($actor, [
-            ...$audienceRequest->inputPayload,
+            ...$personaRequest->inputPayload,
             'agent_assignment_id' => $assignment->getKey(),
             'agent_execution_id' => $second->execution->getKey(),
         ]);
@@ -200,7 +200,7 @@ it('completes a governed Marketing Agent execution through the full strategy hie
         ->and($second->succeeded())->toBeTrue()
         ->and($third->succeeded())->toBeTrue()
         ->and($strategyResult->enterprise_id)->toBe($enterprise->getKey())
-        ->and($audienceResult->enterprise_id)->toBe($enterprise->getKey())
+        ->and($personaResult->enterprise_id)->toBe($enterprise->getKey())
         ->and($campaignResult->marketing_strategy_id)->toBe($strategyId)
         ->and($seriesResult->campaign_id)->toBe($campaignId)
         ->and($phase)->toBe(3);

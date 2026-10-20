@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
@@ -9,6 +8,7 @@ use App\Models\Enterprise;
 use App\Models\MarketingStrategy;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Persona;
 use App\Models\Script;
 use App\Models\User;
 use App\Services\ContentItemService;
@@ -22,8 +22,8 @@ it('builds the marketing hierarchy without duplicating relationship state', func
     $campaign = Campaign::factory()->create(['enterprise_id' => $enterprise, 'marketing_strategy_id' => $strategy]);
     $series = ContentSeries::factory()->create(['campaign_id' => $campaign]);
     $channel = Channel::factory()->create(['enterprise_id' => $enterprise]);
-    $audience = Audience::factory()->create(['enterprise_id' => $enterprise]);
-    $item = ContentItem::factory()->forSeries($series)->forChannel($channel)->forAudience($audience)->create();
+    $persona = Persona::factory()->create(['enterprise_id' => $enterprise]);
+    $item = ContentItem::factory()->forSeries($series)->forChannel($channel)->forPersona($persona)->create();
     $script = Script::factory()->create(['content_item_id' => $item]);
 
     expect($campaign->marketingStrategy->is($strategy))->toBeTrue()
@@ -33,7 +33,7 @@ it('builds the marketing hierarchy without duplicating relationship state', func
         ->and($item->campaign->is($campaign))->toBeTrue()
         ->and($item->contentSeries->is($series))->toBeTrue()
         ->and($item->channel->is($channel))->toBeTrue()
-        ->and($item->audience->is($audience))->toBeTrue()
+        ->and($item->persona->is($persona))->toBeTrue()
         ->and($item->scripts->contains($script))->toBeTrue();
 });
 
