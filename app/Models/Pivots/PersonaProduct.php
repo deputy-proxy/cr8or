@@ -7,6 +7,9 @@ use App\Models\Product;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use LogicException;
 
+/** @property int $persona_id
+ * @property int $product_id
+ */
 class PersonaProduct extends Pivot
 {
     protected $table = 'persona_product';

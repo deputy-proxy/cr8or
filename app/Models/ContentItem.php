@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
+/** @property int|null $channel_id
+ * @property int|null $persona_id
+ */
 #[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'persona_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'metadata', 'status'])]
 class ContentItem extends Model
 {
