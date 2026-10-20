@@ -164,7 +164,7 @@ Workflow scope is selected at creation and is immutable through the Filament edi
 
 ### Marketing
 
-Marketing strategy, content, audiences, channels, assets, media generation, and publishing state.
+Marketing strategy, content, personas, channels, assets, media generation, and publishing state.
 
 | Resource | Filament class location |
 | --- | --- |
@@ -173,7 +173,7 @@ Marketing strategy, content, audiences, channels, assets, media generation, and 
 | ContentSeries | app/Filament/Resources/ContentSeries/*Resource.php |
 | ContentItems | app/Filament/Resources/ContentItems/*Resource.php |
 | Scripts | app/Filament/Resources/Scripts/*Resource.php |
-| Audiences | app/Filament/Resources/Audiences/*Resource.php |
+| Personas | app/Filament/Resources/Personas/*Resource.php |
 | Channels | app/Filament/Resources/Channels/*Resource.php |
 | SocialAccounts | app/Filament/Resources/SocialAccounts/*Resource.php |
 | Publications | app/Filament/Resources/Publications/*Resource.php |
@@ -260,7 +260,7 @@ Within each navigation group, the resource tables above are the canonical logica
 - Agent resources follow **Agent → Expert → runtime policy → assignment → execution → delegation/decision → memory → approval**.
 - Workflow resources follow **definition → version → stage → execution**; stage dependencies remain internal to the workflow definition contract.
 - Knowledge resources follow **context/source → document/item → version/specification/reference → index → embedding**.
-- Marketing follows **strategy → campaign/content planning → audience/channel/account → content/script → asset/media/generation/rendering → publication/publishing/result**.
+- Marketing follows **strategy → campaign/content planning → persona/channel/account → content/script → asset/media/generation/rendering → publication/publishing/result**.
 - Finance follows **financial context → counterparties/activity → planning/statements/invoices → reporting/health**.
 - Integrations follow **connection → external resource → job → result → delivery**.
 - New resources must be assigned an intentional position and sort value. They must not inherit alphabetical or incidental registration order.

@@ -34,7 +34,7 @@ it('provisions the generic platform-owned marketing system workflow with a publi
         ->and($workflow->publishedVersion->status)->toBe(WorkflowVersion::STATUS_PUBLISHED)
         ->and($workflow->stages()->pluck('key')->all())->toBe([
             'strategy',
-            'audience',
+            'persona',
             'campaign',
             'content_series',
             'content',
@@ -75,7 +75,7 @@ it('executes the generic marketing system workflow end to end for an authorized 
     $callerInput = [
         'stages' => [
             'strategy' => ['name' => 'Generic Growth Strategy', 'description' => 'Caller-supplied strategy.'],
-            'audience' => ['name' => 'Primary Growth Audience', 'description' => 'Caller-supplied audience.'],
+            'persona' => ['name' => 'Primary Growth Persona', 'description' => 'Caller-supplied persona.'],
             'campaign' => ['name' => 'Primary Growth Campaign', 'description' => 'Caller-supplied campaign.'],
             'content_series' => ['name' => 'Primary Growth Series', 'description' => 'Caller-supplied series.'],
             'content' => ['title' => 'Primary Growth Content', 'body' => 'Caller-supplied content body.'],
@@ -116,7 +116,7 @@ it('executes the generic marketing system workflow end to end for an authorized 
     expect($execution->status)->toBe(WorkflowExecution::STATUS_COMPLETED)
         ->and($execution->outputs)->toHaveKeys([
             'strategy',
-            'audience',
+            'persona',
             'campaign',
             'content_series',
             'content',
@@ -137,13 +137,13 @@ it('executes the generic marketing system workflow end to end for an authorized 
         ->and($execution->context['stage_input_resolutions']['content']['sources'])->toMatchArray([
             'campaign_id' => 'mapped',
             'content_series_id' => 'mapped',
-            'audience_id' => 'mapped',
+            'persona_id' => 'mapped',
             'title' => 'explicit',
             'body' => 'explicit',
         ])
         ->and($execution->context['stage_input_resolutions']['verification']['sources'])->toMatchArray([
             'marketing_strategy_id' => 'mapped',
-            'audience_ids' => 'mapped',
+            'persona_ids' => 'mapped',
             'campaign_ids' => 'mapped',
             'content_series_ids' => 'mapped',
             'content_item_ids' => 'mapped',

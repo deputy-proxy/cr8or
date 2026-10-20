@@ -2,11 +2,10 @@
 
 use App\Capabilities\CapabilityRegistry;
 use App\Mcp\Servers\Cr8orServer;
-use App\Mcp\Tools\ArchiveAudienceTool;
 use App\Mcp\Tools\ArchiveChannelTool;
 use App\Mcp\Tools\ArchiveMarketingStrategyTool;
+use App\Mcp\Tools\ArchivePersonaTool;
 use App\Mcp\Tools\CreateAssetTool;
-use App\Mcp\Tools\CreateAudienceTool;
 use App\Mcp\Tools\CreateCampaignTool;
 use App\Mcp\Tools\CreateChannelTool;
 use App\Mcp\Tools\CreateCompetitorRecordTool;
@@ -15,6 +14,7 @@ use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
 use App\Mcp\Tools\CreateObjectiveTool;
+use App\Mcp\Tools\CreatePersonaTool;
 use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateScriptTool;
@@ -24,12 +24,12 @@ use App\Mcp\Tools\ReconcilePublicationStatusTool;
 use App\Mcp\Tools\RequestApprovalTool;
 use App\Mcp\Tools\TransitionCampaignTool;
 use App\Mcp\Tools\TransitionContentSeriesTool;
-use App\Mcp\Tools\UpdateAudienceTool;
 use App\Mcp\Tools\UpdateCampaignTool;
 use App\Mcp\Tools\UpdateChannelTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
+use App\Mcp\Tools\UpdatePersonaTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Models\AgentAssignment;
@@ -68,10 +68,10 @@ it('maps every state-changing MCP tool to one explicit capability and one operat
         UpdateContentSeriesTool::class,
         TransitionContentSeriesTool::class,
         CreateAssetTool::class,
-        CreateAudienceTool::class,
+        CreatePersonaTool::class,
         CreateProductTool::class,
-        UpdateAudienceTool::class,
-        ArchiveAudienceTool::class,
+        UpdatePersonaTool::class,
+        ArchivePersonaTool::class,
         CreateChannelTool::class,
         UpdateChannelTool::class,
         ArchiveChannelTool::class,

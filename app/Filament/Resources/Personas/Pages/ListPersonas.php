@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\Audiences\Pages;
+namespace App\Filament\Resources\Personas\Pages;
 
-use App\Filament\Resources\Audiences\AudienceResource;
+use App\Filament\Resources\Personas\PersonaResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
-class ListAudiences extends ListRecords
+class ListPersonas extends ListRecords
 {
-    protected static string $resource = AudienceResource::class;
+    protected static string $resource = PersonaResource::class;
 
     protected function getHeaderActions(): array
     {

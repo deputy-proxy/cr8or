@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Filament\Resources\Audiences\Pages;
+namespace App\Filament\Resources\Personas\Pages;
 
-use App\Filament\Resources\Audiences\AudienceResource;
 use App\Filament\Resources\Concerns\AuthorizesScopedRecordCreation;
+use App\Filament\Resources\Personas\PersonaResource;
 use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\DomainResourceService;
@@ -11,11 +11,11 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\Model;
 
-class CreateAudience extends CreateRecord
+class CreatePersona extends CreateRecord
 {
     use AuthorizesScopedRecordCreation;
 
-    protected static string $resource = AudienceResource::class;
+    protected static string $resource = PersonaResource::class;
 
     protected function handleRecordCreation(array $data): Model
     {
@@ -28,6 +28,6 @@ class CreateAudience extends CreateRecord
         $productIds = $data['product_ids'] ?? [];
         unset($data['enterprise_id'], $data['product_ids']);
 
-        return app(DomainResourceService::class)->createAudience($actor, $enterprise, $data + ['product_ids' => $productIds]);
+        return app(DomainResourceService::class)->createPersona($actor, $enterprise, $data + ['product_ids' => $productIds]);
     }
 }

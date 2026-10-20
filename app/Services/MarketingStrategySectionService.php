@@ -28,8 +28,8 @@ final class MarketingStrategySectionService
                     'description', 'mission', 'vision', 'values', 'industry', 'business_model', 'target_market', 'geography', 'additional_context',
                 ]) ?? [],
             ],
-            'target_audiences' => [
-                'audiences' => $enterprise->audiences()->orderBy('id')->get(['id', 'name', 'description', 'status'])->toArray(),
+            'target_personas' => [
+                'personas' => $enterprise->personas()->orderBy('id')->get(['id', 'name', 'description', 'status'])->toArray(),
                 'target_market' => $enterpriseContext?->target_market,
             ],
             'positioning' => [
@@ -59,11 +59,11 @@ final class MarketingStrategySectionService
                 'channel_rule' => 'Use existing authorized channels; identify gaps as assumptions rather than silently inventing records.',
             ],
             'content_strategy' => [
-                'principles' => ['strategy-aligned', 'audience-specific', 'evidence-grounded', 'measurable'],
+                'principles' => ['strategy-aligned', 'persona-specific', 'evidence-grounded', 'measurable'],
             ],
             'seo_strategy' => [
                 'principles' => [
-                    'align search intent to documented audience problems',
+                    'align search intent to documented persona problems',
                     'build topical authority from enterprise knowledge',
                     'measure qualified organic acquisition',
                 ],
@@ -100,7 +100,7 @@ final class MarketingStrategySectionService
             ],
             'completeness_validation' => [
                 'required_sections' => [
-                    'business_market_context', 'target_audiences', 'positioning', 'value_proposition',
+                    'business_market_context', 'target_personas', 'positioning', 'value_proposition',
                     'competitive_landscape', 'product_service_strategy', 'marketing_objectives',
                     'acquisition_channels', 'content_strategy', 'seo_strategy', 'social_strategy',
                     'conversion_strategy', 'retention_strategy', 'measurement_kpis', 'roadmap_90_days',

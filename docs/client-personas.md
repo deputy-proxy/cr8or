@@ -1,6 +1,6 @@
-# Client personas (Audience domain)
+# Client personas (Persona domain)
 
-CR8OR represents a reusable client persona with the existing `App\Models\Audience` model and `audiences` table. The UI calls these records **Personas**; IDs, foreign keys, policies, domain services, MCP tools, and `ContentItem.audience_id` remain compatible. A persona is an archetype, not a real customer record. Do not store names, contact details, exact birth dates, or sensitive personal data about identifiable individuals.
+CR8OR represents a reusable client persona with the existing `App\Models\Persona` model and `personas` table. The UI calls these records **Personas**; IDs, foreign keys, policies, domain services, MCP tools, and `ContentItem.persona_id` remain compatible. A persona is an archetype, not a real customer record. Do not store names, contact details, exact birth dates, or sensitive personal data about identifiable individuals.
 
 ## Canonical fields
 
@@ -29,23 +29,23 @@ Treat the attributes as a mixture of research and assumptions. `research_confide
 
 ## Product relevance
 
-`Audience.products()` and `Product.audiences()` use the `audience_product` pivot with timestamps and a unique composite key on `(audience_id, product_id)`. A persona and associated product must share the same `enterprise_id`. Domain writes validate product IDs against the authorized enterprise; the custom pivot rejects invalid cross-enterprise pairs, including relationship writes from the UI. Both foreign keys cascade on deletion.
+`Persona.products()` and `Product.personas()` use the `persona_product` pivot with timestamps and a unique composite key on `(persona_id, product_id)`. A persona and associated product must share the same `enterprise_id`. Domain writes validate product IDs against the authorized enterprise; the custom pivot rejects invalid cross-enterprise pairs, including relationship writes from the UI. Both foreign keys cascade on deletion.
 
-`product_ids` is an optional list of product IDs on the `create-audience` and `update-audience` MCP contracts. On create, an omitted list creates no associations. On update, omission preserves current associations; an explicit empty list removes all associations. Product IDs must be distinct, positive integers and belong to the persona's enterprise. A normal foreign key alone cannot enforce matching `enterprise_id` values, so application validation and pivot-model validation are both used.
+`product_ids` is an optional list of product IDs on the `create-persona` and `update-persona` MCP contracts. On create, an omitted list creates no associations. On update, omission preserves current associations; an explicit empty list removes all associations. Product IDs must be distinct, positive integers and belong to the persona's enterprise. A normal foreign key alone cannot enforce matching `enterprise_id` values, so application validation and pivot-model validation are both used.
 
 Product relevance is reusable persona data. It is not campaign-level targeting and does not mean that a particular `ContentItem` promotes a particular product. No `product_id` was added to `ContentItem`.
 
 ## Authorization and entry points
 
-- Filament keeps the existing Audience resource and policy, presents it as Personas, scopes enterprise and product selectors to authorized organizations and the selected enterprise, and uses the standard relationship lifecycle.
-- The canonical domain write path remains `DomainResourceService::createAudience` / `updateAudience`, reached through `MarketingAudienceCreate` / `MarketingAudienceUpdate`. The service authorizes against the existing Audience policy and validates product tenancy before synchronizing associations.
-- `create-audience` and `update-audience` remain thin `DomainMutationTool` adapters. Their capability IDs and operations are unchanged; no business rules are implemented in MCP. The authenticated actor and authorized enterprise are resolved by the existing capability execution path.
-- Existing minimal payloads using `enterprise_id`, `name`, `description`, or `audience_id` remain valid. Audience enterprise ownership is immutable. Existing content items keep referencing the same audience IDs.
-- Existing generic marketing workflow stage continues to use `marketing.audience.create`; its request contract now advertises optional persona fields and product IDs. No duplicate workflow or hardcoded runtime mapping is introduced.
+- Filament keeps the existing Persona resource and policy, presents it as Personas, scopes enterprise and product selectors to authorized organizations and the selected enterprise, and uses the standard relationship lifecycle.
+- The canonical domain write path remains `DomainResourceService::createPersona` / `updatePersona`, reached through `MarketingPersonaCreate` / `MarketingPersonaUpdate`. The service authorizes against the existing Persona policy and validates product tenancy before synchronizing associations.
+- `create-persona` and `update-persona` remain thin `DomainMutationTool` adapters. Their capability IDs and operation names use the canonical Persona terminology; no business rules are implemented in MCP. The authenticated actor and authorized enterprise are resolved by the existing capability execution path.
+- Existing minimal payloads using `enterprise_id`, `name`, `description`, or `persona_id` remain valid. Persona enterprise ownership is immutable. Existing content items keep referencing the same persona IDs.
+- Existing generic marketing workflow stage continues to use `marketing.persona.create`; its request contract now advertises optional persona fields and product IDs. No duplicate workflow or hardcoded runtime mapping is introduced.
 
 ## Migration and rollback
 
-Two additive, reversible migrations add nullable persona fields and create the pivot. Existing audience rows and content references are unchanged. Rolling back the persona-field migration necessarily removes any values written to those new columns; rolling back the pivot removes persona/product associations. Back up data before rollback in an environment where those values must be retained.
+Two additive, reversible migrations add nullable persona fields and create the pivot. Existing persona rows and content references are unchanged. Rolling back the persona-field migration necessarily removes any values written to those new columns; rolling back the pivot removes persona/product associations. Back up data before rollback in an environment where those values must be retained.
 
 ## Examples
 
@@ -73,4 +73,4 @@ Create or update with structured persona data:
 }
 ```
 
-For updates, use `audience_id` instead of `enterprise_id`; do not include `enterprise_id`. Omit `product_ids` to preserve associations or provide `[]` to clear them.
+For updates, use `persona_id` instead of `enterprise_id`; do not include `enterprise_id`. Omit `product_ids` to preserve associations or provide `[]` to clear them.

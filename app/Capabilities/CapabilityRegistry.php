@@ -70,9 +70,6 @@ use App\Operations\GenerateFinancialReport;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
 use App\Operations\MarkContentPublicationReady;
-use App\Operations\MarketingAudienceArchive;
-use App\Operations\MarketingAudienceCreate;
-use App\Operations\MarketingAudienceUpdate;
 use App\Operations\MarketingCampaignCreate;
 use App\Operations\MarketingCampaignUpdate;
 use App\Operations\MarketingChannelArchive;
@@ -80,6 +77,9 @@ use App\Operations\MarketingChannelCreate;
 use App\Operations\MarketingChannelUpdate;
 use App\Operations\MarketingContentSeriesCreate;
 use App\Operations\MarketingContentSeriesUpdate;
+use App\Operations\MarketingPersonaArchive;
+use App\Operations\MarketingPersonaCreate;
+use App\Operations\MarketingPersonaUpdate;
 use App\Operations\MarketingStrategyArchive;
 use App\Operations\ObjectiveCreate;
 use App\Operations\ObjectiveUpdate;
@@ -442,7 +442,7 @@ final class CapabilityRegistry
                 'marketing.content.create',
                 CreateContentItem::class,
                 CreateContentItemTool::class,
-                ['enterprise_id' => 'integer|required', 'campaign_id' => 'integer|required', 'content_series_id' => 'integer|nullable', 'channel_id' => 'integer|nullable', 'audience_id' => 'integer|nullable', 'title' => 'string|required', 'body' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['enterprise_id' => 'integer|required', 'campaign_id' => 'integer|required', 'content_series_id' => 'integer|nullable', 'channel_id' => 'integer|nullable', 'persona_id' => 'integer|nullable', 'title' => 'string|required', 'body' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'content-item'],
                 'McpCapabilityAuthorizer::authorizeMutation + ContentItem policy',
                 'none',
@@ -460,7 +460,7 @@ final class CapabilityRegistry
                 'marketing.graph.verify',
                 \App\Operations\VerifyMarketingGraph::class,
                 \App\Mcp\Tools\VerifyMarketingGraphTool::class,
-                ['enterprise_id' => 'integer|required', 'marketing_strategy_id' => 'integer|required', 'audience_ids' => 'array|required', 'campaign_ids' => 'array|required', 'content_series_ids' => 'array|required', 'content_item_ids' => 'array|required', 'script_ids' => 'array|required', 'asset_ids' => 'array|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
+                ['enterprise_id' => 'integer|required', 'marketing_strategy_id' => 'integer|required', 'persona_ids' => 'array|required', 'campaign_ids' => 'array|required', 'content_series_ids' => 'array|required', 'content_item_ids' => 'array|required', 'script_ids' => 'array|required', 'asset_ids' => 'array|required', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'McpCapabilityAuthorizer::authorizeMutation + Enterprise view policy',
                 'none',
@@ -639,30 +639,30 @@ final class CapabilityRegistry
                 'create-product',
             ),
             $this->definition(
-                'marketing.audience.create',
-                MarketingAudienceCreate::class,
-                \App\Mcp\Tools\CreateAudienceTool::class,
+                'marketing.persona.create',
+                MarketingPersonaCreate::class,
+                \App\Mcp\Tools\CreatePersonaTool::class,
                 ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'McpCapabilityAuthorizer::authorizeMutation + Persona policy',
                 'none',
             ),
             $this->definition(
-                'marketing.audience.update',
-                MarketingAudienceUpdate::class,
-                \App\Mcp\Tools\UpdateAudienceTool::class,
+                'marketing.persona.update',
+                MarketingPersonaUpdate::class,
+                \App\Mcp\Tools\UpdatePersonaTool::class,
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'McpCapabilityAuthorizer::authorizeMutation + Persona policy',
                 'none',
             ),
             $this->definition(
-                'marketing.audience.archive',
-                MarketingAudienceArchive::class,
-                \App\Mcp\Tools\ArchiveAudienceTool::class,
+                'marketing.persona.archive',
+                MarketingPersonaArchive::class,
+                \App\Mcp\Tools\ArchivePersonaTool::class,
                 ['input' => 'object'],
                 ['success' => 'boolean', 'result' => 'object'],
-                'McpCapabilityAuthorizer::authorizeMutation + Audience policy',
+                'McpCapabilityAuthorizer::authorizeMutation + Persona policy',
                 'none',
             ),
             $this->definition(

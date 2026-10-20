@@ -1262,7 +1262,7 @@ Examples include:
 
 - marketing strategies;
 - campaigns;
-- audiences;
+- personas;
 - channels;
 - content series;
 - content items;

@@ -2,10 +2,10 @@
 
 namespace App\Mcp\Tools\Concerns;
 
-use App\Models\Audience;
+use App\Models\Persona;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 
-trait DefinesAudiencePersonaSchema
+trait DefinesPersonaSchema
 {
     /** @return array<string, mixed> */
     protected static function personaSchemaFields(JsonSchema $schema): array
@@ -124,7 +124,7 @@ trait DefinesAudiencePersonaSchema
     }
 
     /** @return array<string, mixed> */
-    protected static function personaResult(Audience $record): array
+    protected static function personaResult(Persona $record): array
     {
         $lastReviewedAt = $record->getRawOriginal('last_reviewed_at');
 

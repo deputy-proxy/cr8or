@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Audience;
 use App\Models\Enterprise;
 use App\Models\Membership;
 use App\Models\Organization;
+use App\Models\Persona;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -87,12 +87,12 @@ it('defines the complete product domain schema without dropping legacy identity 
     ]);
 });
 
-it('applies conservative defaults while preserving existing Product and Audience identity', function () {
+it('applies conservative defaults while preserving existing Product and Persona identity', function () {
     $enterprise = Enterprise::factory()->create();
-    $audience = Audience::factory()->create(['enterprise_id' => $enterprise->id]);
+    $persona = Persona::factory()->create(['enterprise_id' => $enterprise->id]);
     $product = Product::factory()->create(['enterprise_id' => $enterprise->id]);
     $productId = $product->id;
-    $product->audiences()->attach($audience->id);
+    $product->personas()->attach($persona->id);
 
     expect($product->refresh())
         ->product_type->toBe('other')
@@ -100,11 +100,11 @@ it('applies conservative defaults while preserving existing Product and Audience
         ->monetization_model->toBe('other')
         ->pricing_model->toBe('other')
         ->is_commercially_available->toBeFalse()
-        ->and($product->audiences->modelKeys())->toBe([$audience->id]);
+        ->and($product->personas->modelKeys())->toBe([$persona->id]);
 
     $product->update(['tagline' => 'Clear outcomes', 'features' => ['Reporting', 'Automation']]);
 
-    expect(Product::query()->findOrFail($productId)->audiences->modelKeys())->toBe([$audience->id])
+    expect(Product::query()->findOrFail($productId)->personas->modelKeys())->toBe([$persona->id])
         ->and(Product::query()->findOrFail($productId)->features)->toBe(['Reporting', 'Automation']);
 });
 

@@ -54,9 +54,9 @@ Workflow definition publication rejects a Capability that does not support `work
 | work.task.update | ✓ | ✓ | ✓ |
 | enterprise.create | ✓ | ✓ | |
 | approval.request | ✓ | ✓ | |
-| marketing.audience.create | ✓ | ✓ | ✓ |
-| marketing.audience.update | ✓ | ✓ | ✓ |
-| marketing.audience.archive | ✓ | ✓ | ✓ |
+| marketing.persona.create | ✓ | ✓ | ✓ |
+| marketing.persona.update | ✓ | ✓ | ✓ |
+| marketing.persona.archive | ✓ | ✓ | ✓ |
 | marketing.campaign.create | ✓ | ✓ | ✓ |
 | marketing.campaign.update | ✓ | ✓ | ✓ |
 | marketing.campaign.lifecycle | ✓ | ✓ | ✓ |

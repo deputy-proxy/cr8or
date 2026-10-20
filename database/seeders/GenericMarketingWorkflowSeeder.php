@@ -41,7 +41,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                     'completion_criteria' => [
                         'required_stage_keys' => [
                             'strategy',
-                            'audience',
+                            'persona',
                             'campaign',
                             'content_series',
                             'content',
@@ -84,7 +84,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             'completion_criteria' => [
                 'required_stage_keys' => [
                     'strategy',
-                    'audience',
+                    'persona',
                     'campaign',
                     'content_series',
                     'content',
@@ -139,7 +139,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
     {
         return in_array($stageKey, [
             'strategy',
-            'audience',
+            'persona',
             'campaign',
             'content_series',
             'content',
@@ -171,13 +171,13 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                 ],
             ],
             [
-                'key' => 'audience',
-                'name' => 'Create Target Audience',
+                'key' => 'persona',
+                'name' => 'Create Target Persona',
                 'instruction' => 'Define a reusable client persona for the marketing system from the Enterprise context and strategy context. Request semantic persona fields where supported, keep assumptions distinct from researched facts, and never model an identifiable individual customer.',
                 'sequence' => 2,
                 'dependencies' => ['strategy'],
                 'expert_slugs' => ['marketing'],
-                'capability_slugs' => ['marketing.audience.create'],
+                'capability_slugs' => ['marketing.persona.create'],
                 'input_contract' => [
                     'required' => ['name', 'description'],
                     'requested' => ['name', 'description', 'persona_type', 'age_range', 'location', 'job_title', 'income_range', 'education_level', 'family_status', 'research_confidence', 'last_reviewed_at', 'psychographics', 'goals_and_motivations', 'pain_points', 'buying_behavior', 'product_ids'],
@@ -191,9 +191,9 @@ final class GenericMarketingWorkflowSeeder extends Seeder
             [
                 'key' => 'campaign',
                 'name' => 'Create Campaign',
-                'instruction' => 'Create the primary campaign aligned with the caller-supplied marketing strategy and audience. The strategy identifier is deterministic and must never be generated.',
+                'instruction' => 'Create the primary campaign aligned with the caller-supplied marketing strategy and persona. The strategy identifier is deterministic and must never be generated.',
                 'sequence' => 3,
-                'dependencies' => ['strategy', 'audience'],
+                'dependencies' => ['strategy', 'persona'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.campaign.create'],
                 'input_contract' => [
@@ -235,16 +235,16 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                 'name' => 'Create Content Item',
                 'instruction' => 'Create the primary content item for the campaign and series. Request the title and body from the caller using the upstream marketing context. Preserve all upstream identifiers exactly.',
                 'sequence' => 5,
-                'dependencies' => ['campaign', 'content_series', 'audience'],
+                'dependencies' => ['campaign', 'content_series', 'persona'],
                 'expert_slugs' => ['copywriting'],
                 'capability_slugs' => ['marketing.content.create'],
                 'input_contract' => [
-                    'required' => ['campaign_id', 'content_series_id', 'audience_id', 'title', 'body'],
+                    'required' => ['campaign_id', 'content_series_id', 'persona_id', 'title', 'body'],
                     'requested' => ['title', 'body'],
                     'mappings' => [
                         'campaign_id' => 'stages.campaign.id',
                         'content_series_id' => 'stages.content_series.id',
-                        'audience_id' => 'stages.audience.id',
+                        'persona_id' => 'stages.persona.id',
                     ],
                 ],
                 'output_contract' => ['required' => ['id']],
@@ -317,13 +317,13 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                 'name' => 'Verify Marketing System Graph',
                 'instruction' => 'Verify that the complete Enterprise-scoped marketing graph exists and that the planned asset remains pending. All graph identifiers must come from completed upstream stages.',
                 'sequence' => 8,
-                'dependencies' => ['strategy', 'audience', 'campaign', 'content_series', 'content', 'script', 'asset'],
+                'dependencies' => ['strategy', 'persona', 'campaign', 'content_series', 'content', 'script', 'asset'],
                 'expert_slugs' => ['marketing'],
                 'capability_slugs' => ['marketing.graph.verify'],
                 'input_contract' => [
                     'required' => [
                         'marketing_strategy_id',
-                        'audience_ids',
+                        'persona_ids',
                         'campaign_ids',
                         'content_series_ids',
                         'content_item_ids',
@@ -332,7 +332,7 @@ final class GenericMarketingWorkflowSeeder extends Seeder
                     ],
                     'mappings' => [
                         'marketing_strategy_id' => 'stages.strategy.id',
-                        'audience_ids' => 'stages.audience.id[]',
+                        'persona_ids' => 'stages.persona.id[]',
                         'campaign_ids' => 'stages.campaign.id[]',
                         'content_series_ids' => 'stages.content_series.id[]',
                         'content_item_ids' => 'stages.content.id[]',

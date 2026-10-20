@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
-#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'metadata', 'status'])]
+#[Fillable(['enterprise_id', 'campaign_id', 'content_series_id', 'channel_id', 'persona_id', 'agent_execution_id', 'agent_decision_id', 'title', 'body', 'metadata', 'status'])]
 class ContentItem extends Model
 {
     /** @use HasFactory<ContentItemFactory> */
@@ -59,7 +59,7 @@ class ContentItem extends Model
                 }
             }
 
-            foreach (['channel_id' => Channel::class, 'audience_id' => Audience::class] as $field => $model) {
+            foreach (['channel_id' => Channel::class, 'persona_id' => Persona::class] as $field => $model) {
                 $id = $item->{$field};
                 if ($id === null) {
                     continue;
@@ -84,7 +84,7 @@ class ContentItem extends Model
             }
 
             if ($item->exists && in_array($item->getOriginal('status'), [self::STATUS_APPROVED, self::STATUS_PUBLICATION_READY], true)) {
-                foreach (['campaign_id', 'content_series_id', 'channel_id', 'audience_id', 'title', 'body', 'metadata'] as $field) {
+                foreach (['campaign_id', 'content_series_id', 'channel_id', 'persona_id', 'title', 'body', 'metadata'] as $field) {
                     if ($item->isDirty($field)) {
                         throw new LogicException("Approved content item {$field} cannot be silently changed.");
                     }
@@ -125,10 +125,10 @@ class ContentItem extends Model
         return $this->belongsTo(Channel::class);
     }
 
-    /** @return BelongsTo<Audience, $this> */
-    public function audience(): BelongsTo
+    /** @return BelongsTo<Persona, $this> */
+    public function persona(): BelongsTo
     {
-        return $this->belongsTo(Audience::class);
+        return $this->belongsTo(Persona::class);
     }
 
     /** @return BelongsTo<AgentExecution, $this> */

@@ -32,7 +32,7 @@ The canonical generic Marketing System Creation Workflow is `marketing.system.cr
 ```
 Strategy
   ↓
-Audience
+Persona
   ↓
 Campaign
   ↓

@@ -2,18 +2,18 @@
 
 namespace App\Policies;
 
-use App\Models\Audience;
 use App\Models\Enterprise;
+use App\Models\Persona;
 use App\Models\User;
 use App\Policies\Concerns\HasExplicitCrudContract;
 
-class AudiencePolicy
+class PersonaPolicy
 {
     use HasExplicitCrudContract;
 
-    public function view(User $user, Audience $audience): bool
+    public function view(User $user, Persona $persona): bool
     {
-        return (new EnterprisePolicy)->view($user, $audience->enterprise);
+        return (new EnterprisePolicy)->view($user, $persona->enterprise);
     }
 
     public function create(User $user): bool
@@ -26,13 +26,13 @@ class AudiencePolicy
         return (new EnterprisePolicy)->createForOrganization($user, $enterprise->organization);
     }
 
-    public function update(User $user, Audience $audience): bool
+    public function update(User $user, Persona $persona): bool
     {
-        return (new EnterprisePolicy)->update($user, $audience->enterprise);
+        return (new EnterprisePolicy)->update($user, $persona->enterprise);
     }
 
-    public function delete(User $user, Audience $audience): bool
+    public function delete(User $user, Persona $persona): bool
     {
-        return (new EnterprisePolicy)->delete($user, $audience->enterprise);
+        return (new EnterprisePolicy)->delete($user, $persona->enterprise);
     }
 }
