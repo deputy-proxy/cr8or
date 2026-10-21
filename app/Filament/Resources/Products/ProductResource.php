@@ -186,7 +186,7 @@ class ProductResource extends Resource
         ])->groups([
             Group::make('enterprise_id')
                 ->label('Enterprise')
-                ->getKeyFromRecordUsing(fn (Product $record): int|string => $record->enterprise_id)
+                ->getKeyFromRecordUsing(fn (Product $record): int => $record->enterprise_id)
                 ->getTitleFromRecordUsing(fn (Product $record): string => $record->enterprise->name)
                 ->titlePrefixedWithLabel(false)
                 ->collapsible(),
