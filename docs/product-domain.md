@@ -36,6 +36,12 @@ The same controlled values and cross-field rules are enforced by the governed `p
 
 The result includes the persisted identity, lifecycle, positioning, definition/delivery, commercial, and governance fields. Dates are returned as ISO 8601 strings. Existing minimal callers remain supported.
 
+## Product discovery
+
+The list-products tool is the read-only product.list Capability, implemented by ListProducts and exposed through ListProductsTool. It requires an explicit Enterprise context, authorizes access through the governed Capability boundary, and scopes every query to that Enterprise. It supports bounded pagination (1–50 items per page), lifecycle status, and name/slug search. Results include only product identity, ownership, lifecycle/type, and commercial availability fields needed for discovery and safe persona association; internal commercial notes and other detailed fields are not exposed by the list operation.
+
+Product IDs returned by this tool can be passed to persona creation or update. Persona association validation remains responsible for enforcing same-Enterprise relationships.
+
 ## Ownership and relationships
 
 - Enterprise assignment is immutable after creation and is authorized through the Enterprise's Organization.
