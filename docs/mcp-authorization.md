@@ -99,6 +99,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-agents | `ListAgentDescriptorTool` | `DiscoveryListTool` | — | scoped query: `App\Models\AgentDescriptor` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-approval-requests | `ListApprovalRequestTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ApprovalRequest` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-personas | `ListPersonaTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Persona` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-products | `ListProductsTool` | `GovernedCapabilityTool` | `product.list` | `ListProducts` | `CapabilityInvocationService` + Enterprise view policy; query constrained to authorized enterprise_id |
 | list-campaigns | `ListCampaignTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Campaign` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-capabilities | `ListCapabilitiesTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
 | list-channels | `ListChannelTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Channel` | concrete `scopeQuery` + optional enterprise/filter scope |

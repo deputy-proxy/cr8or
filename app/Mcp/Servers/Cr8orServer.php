@@ -97,6 +97,7 @@ use App\Mcp\Tools\ListMemoryTool;
 use App\Mcp\Tools\ListObjectiveTool;
 use App\Mcp\Tools\ListPersonaTool;
 use App\Mcp\Tools\ListPlanTool;
+use App\Mcp\Tools\ListProductsTool;
 use App\Mcp\Tools\ListProjectTool;
 use App\Mcp\Tools\ListPublicationResultsTool;
 use App\Mcp\Tools\ListPublicationTool;
@@ -233,6 +234,7 @@ class Cr8orServer extends Server
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
         CreateProductTool::class,
+        ListProductsTool::class,
         CreateMarketingStrategyTool::class,
         DefineMarketingStrategySectionTool::class,
         UpdateStrategyTool::class,

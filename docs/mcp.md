@@ -133,6 +133,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-agents` | `ListAgentDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `list-approval-requests` | `ListApprovalRequestTool` | Unregistered read/discovery/resource | N/A |
 | `list-personas` | `ListPersonaTool` | Unregistered read/discovery/resource | N/A |
+| `list-products` | `ListProductsTool` | `product.list` | `ListProducts` |
 | `list-campaigns` | `ListCampaignTool` | Unregistered read/discovery/resource | N/A |
 | `list-capabilities` | `ListCapabilitiesTool` | Unregistered read/discovery/resource | N/A |
 | `list-channels` | `ListChannelTool` | Unregistered read/discovery/resource | N/A |

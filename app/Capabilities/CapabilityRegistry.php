@@ -22,6 +22,7 @@ use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
+use App\Mcp\Tools\ListProductsTool;
 use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
@@ -69,6 +70,7 @@ use App\Operations\GenerateCompetitiveAnalysisReport;
 use App\Operations\GenerateFinancialReport;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
+use App\Operations\ListProducts;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingCampaignCreate;
 use App\Operations\MarketingCampaignUpdate;
@@ -637,6 +639,26 @@ final class CapabilityRegistry
                 'none',
                 'business',
                 'create-product',
+            ),
+            $this->definition(
+                'product.list',
+                ListProducts::class,
+                ListProductsTool::class,
+                [
+                    'enterprise_id' => 'integer|required',
+                    'status' => 'enum:draft,active,archived,discontinued|nullable',
+                    'search' => 'string|nullable|max:255; matches product name or slug',
+                    'per_page' => 'integer|nullable|min:1|max:50',
+                    'page' => 'integer|nullable|min:1',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'agent_execution_id' => 'integer|nullable',
+                    'approval_request_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'product-list'],
+                'Enterprise view authorization + enterprise-scoped Product query',
+                'none',
+                'read',
+                'list-products',
             ),
             $this->definition(
                 'marketing.persona.create',

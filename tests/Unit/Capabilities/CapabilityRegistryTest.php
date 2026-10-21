@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(74);
+    expect($registry->all())->toHaveCount(75);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
