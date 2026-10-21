@@ -27,6 +27,8 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
@@ -141,7 +143,57 @@ class ProductResource extends Resource
             TextColumn::make('price_amount')->label('Price')->placeholder('Unspecified')->sortable(),
             TextColumn::make('currency')->placeholder('—'),
             TextColumn::make('is_commercially_available')->label('Commercially available')->formatStateUsing(fn (mixed $state): string => $state ? 'Yes' : 'No')->badge(),
-        ])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
+        ])->filters([
+            SelectFilter::make('product_type')
+                ->options(self::enumOptions(ProductType::cases())),
+            SelectFilter::make('status')
+                ->options(self::enumOptions(ProductStatus::cases())),
+            SelectFilter::make('pricing')
+                ->label('Pricing')
+                ->options([
+                    'free' => 'Free',
+                    'paid' => 'Paid / monetized',
+                    'unconfigured' => 'No pricing configured',
+                ])
+                ->query(static function (Builder $query, array $data): Builder {
+                    return match ($data['value'] ?? null) {
+                        'free' => $query->where(function (Builder $query): void {
+                            $query->where('pricing_model', ProductPricingModel::FREE->value)
+                                ->orWhere('monetization_model', ProductMonetizationModel::FREE->value);
+                        }),
+                        'paid' => $query->where(function (Builder $query): void {
+                            $query->whereIn('pricing_model', [
+                                ProductPricingModel::FIXED->value,
+                                ProductPricingModel::USAGE_BASED->value,
+                                ProductPricingModel::SUBSCRIPTION->value,
+                                ProductPricingModel::QUOTE_BASED->value,
+                            ])->orWhereIn('monetization_model', [
+                                ProductMonetizationModel::ONE_TIME_PURCHASE->value,
+                                ProductMonetizationModel::SUBSCRIPTION->value,
+                                ProductMonetizationModel::SERVICE_FEE->value,
+                                ProductMonetizationModel::AFFILIATE_SUPPORTED->value,
+                                ProductMonetizationModel::HYBRID->value,
+                                ProductMonetizationModel::QUOTE_BASED->value,
+                            ])->orWhere('price_amount', '>', 0);
+                        })->where('pricing_model', '!=', ProductPricingModel::FREE->value)
+                            ->where('monetization_model', '!=', ProductMonetizationModel::FREE->value),
+                        'unconfigured' => $query->whereNull('price_amount')
+                            ->where('pricing_model', ProductPricingModel::OTHER->value)
+                            ->where('monetization_model', ProductMonetizationModel::OTHER->value),
+                        default => $query,
+                    };
+                }),
+        ])->groups([
+            Group::make('enterprise_id')
+                ->label('Enterprise')
+                ->getKeyFromRecordUsing(fn (Product $record): int|string => $record->enterprise_id)
+                ->getTitleFromRecordUsing(fn (Product $record): string => $record->enterprise->name)
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+        ])->defaultGroup('enterprise_id')->recordActions([
+            \Filament\Actions\EditAction::make(),
+            \Filament\Actions\DeleteAction::make(),
+        ]);
     }
 
     public static function getEloquentQuery(): Builder
