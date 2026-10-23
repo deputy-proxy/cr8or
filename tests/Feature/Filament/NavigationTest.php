@@ -89,10 +89,10 @@ it('orders resources by user workflow within each navigation group', function ()
     }
 });
 
-it('places Work Overview within Strategy & Execution Planning after Decisions and before Issues', function () {
+it('places Overview within Strategy & Execution Planning after Decisions and before Issues', function () {
     expect(WorkOverview::getNavigationGroup())->toBe('Strategy & Execution Planning')
         ->and(WorkOverview::getNavigationSort())->toBe(125)
-        ->and(WorkOverview::getNavigationLabel())->toBe('Work Overview')
+        ->and(WorkOverview::getNavigationLabel())->toBe('Overview')
         ->and(DecisionResource::getNavigationSort())->toBeLessThan(WorkOverview::getNavigationSort())
         ->and(WorkOverview::getNavigationSort())->toBeLessThan(IssueResource::getNavigationSort())
         ->and(Route::has('filament.admin.pages.work-overview'))->toBeTrue();

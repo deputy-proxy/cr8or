@@ -249,7 +249,7 @@ The forward-only migration 2026_10_12_000000_consolidate_work_items_into_tasks.p
 
 Because the migration contracts and drops persisted data structures, it is intentionally forward-only. Production deployment requires a verified pre-migration backup and the normal migration rehearsal/restore plan; automatic rollback is not supported.
 
-The resulting Work Management navigation contains one Tasks resource after Project and Milestone. Work Overview counts and renders one Tasks group, with migrated records included in the canonical Task tree.
+The resulting Work Management navigation contains one Tasks resource after Project and Milestone. The Overview dashboard presents enterprise-scoped strategy counts and compact execution lists; its historical activity chart remains explicitly unavailable until reliable lifecycle/snapshot history is retained.
 
 ### Resource ordering rules
 
