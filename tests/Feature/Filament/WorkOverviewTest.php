@@ -106,7 +106,8 @@ it('uses calendar dates and Monday week boundaries for actionable task panels', 
         $data = app(\App\Services\Dashboard\OverviewDashboardData::class)->forEnterprise($enterprise);
         $panels = collect($data['activityPanels'])->keyBy('label');
 
-        expect(collect($panels['Late tasks']['items'])->pluck('title'))->toContain('Late actionable task')->not->toContain('Completed historical task', 'Other enterprise task')
+        expect($data['chartHistoryAvailable'])->toBeFalse()
+            ->and(collect($panels['Late tasks']['items'])->pluck('title'))->toContain('Late actionable task')->not->toContain('Completed historical task', 'Other enterprise task')
             ->and(collect($panels['Tasks due this week']['items'])->pluck('title'))->toContain('This week task')
             ->and(collect($panels['Tasks due next week']['items'])->pluck('title'))->toContain('Next week task');
     } finally {
