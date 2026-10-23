@@ -84,3 +84,32 @@ it('renders the four dashboard rows and explicitly marks historical chart data u
         ->assertSee('Tasks due this week')
         ->assertSee('Tasks due next week');
 });
+
+it('uses calendar dates and Monday week boundaries for actionable task panels', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $otherEnterprise = Enterprise::factory()->create(['organization_id' => Organization::factory()->create()]);
+
+    $reference = now()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->addDays(2)->setTime(12, 0);
+    \Illuminate\Support\Carbon::setTestNow($reference);
+
+    try {
+        Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Late actionable task', 'status' => 'todo', 'due_at' => $reference->copy()->subDay()]);
+        Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'This week task', 'status' => 'in_progress', 'due_at' => $reference->copy()->addDay()]);
+        Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Next week task', 'status' => 'todo', 'due_at' => $reference->copy()->startOfWeek(\Illuminate\Support\Carbon::MONDAY)->addWeek()->addDay()]);
+        Task::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Completed historical task', 'status' => 'done', 'due_at' => $reference->copy()->subDay()]);
+        Task::factory()->create(['enterprise_id' => $otherEnterprise, 'name' => 'Other enterprise task', 'status' => 'todo', 'due_at' => $reference->copy()->subDay()]);
+
+        $this->actingAs($user);
+        $data = app(\App\Services\Dashboard\OverviewDashboardData::class)->forEnterprise($enterprise);
+        $panels = collect($data['activityPanels'])->keyBy('label');
+
+        expect(collect($panels['Late tasks']['items'])->pluck('title'))->toContain('Late actionable task')->not->toContain('Completed historical task', 'Other enterprise task')
+            ->and(collect($panels['Tasks due this week']['items'])->pluck('title'))->toContain('This week task')
+            ->and(collect($panels['Tasks due next week']['items'])->pluck('title'))->toContain('Next week task');
+    } finally {
+        \Illuminate\Support\Carbon::setTestNow();
+    }
+});
