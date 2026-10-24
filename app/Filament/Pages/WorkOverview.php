@@ -66,7 +66,7 @@ class WorkOverview extends Page
                 'summaryCards' => [],
                 'listCards' => [],
                 'activityPanels' => [],
-                'chartHistoryAvailable' => false,
+                'lifecycleHistory' => [],
             ];
         }
 

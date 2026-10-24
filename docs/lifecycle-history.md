@@ -32,7 +32,7 @@ A day is available only when both snapshots exist and are complete and the recon
 
 `open_at_end = open_at_start + opened - closed`
 
-If snapshots are missing/incomplete, or reconciliation fails, the service returns an unavailable reason with no points. It never derives history from current state or `created_at`. The Overview dashboard chart remains disabled until the requested range is complete and validated.
+If snapshots are missing/incomplete, or reconciliation fails, the service returns an unavailable reason with no points. It never derives history from current state or `created_at`. The Overview dashboard renders a separate chart per entity type. Each chart displays points only when the requested contiguous range is complete and reconciled; otherwise it displays a collection status.
 
 ## Entity and synchronization semantics
 
@@ -64,7 +64,7 @@ If snapshots are missing/incomplete, or reconciliation fails, the service return
 
 `tests/Feature/LifecycleHistoryTest.php` covers semantic open/closed transitions, Objective status, GitHub Issue sync behavior, start/end boundaries, late captures, idempotent retries, reconciliation, tenant isolation, transaction rollback, and Enterprise view authorization. The migration's schema change is covered by the strategy schema test; model policy and Filament-resource coverage contracts remain enforced.
 
-The full repository validation required for this change is Pint, PHPStan, the complete PHP test suite, Vite production build, and JavaScript tests. No historical chart is enabled by this implementation.
+The full repository validation required for this change is Pint, PHPStan, the complete PHP test suite, Vite production build, and JavaScript tests. The chart UI is enabled, but the data service continues to withhold incomplete or unreconciled points.
 
 ## Non-goals
 
