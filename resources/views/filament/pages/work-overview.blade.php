@@ -63,20 +63,39 @@
                 @endforeach
             </section>
 
-            {{-- Row 3: no historical data is fabricated from current state --}}
+            {{-- Row 3: lifecycle history is rendered from validated snapshots and transitions --}}
             <section aria-label="Daily activity history" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 class="font-medium text-white">Daily activity</h2>
-                        <p class="mt-1 text-sm text-gray-400">Goals, objectives, tasks, milestones and GitHub issues</p>
+                        <p class="mt-1 text-sm text-gray-400">Validated daily lifecycle history for Goals, Objectives, Tasks, Milestones and GitHub Issues</p>
                     </div>
-                    <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">History unavailable</span>
+                    <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">Last 14 complete days</span>
                 </div>
-                <div class="mt-5 flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-gray-800 px-5 py-8 text-center">
-                    <p class="max-w-2xl text-sm font-medium text-gray-200">Reliable historical daily counts are not available yet.</p>
-                    <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-500">CR8OR does not currently retain a complete lifecycle history for all five entity types. Current records cannot establish opening counts or daily opened/closed movements, so no historical values are inferred or fabricated. The chart will remain unavailable until an auditable snapshot/event source is implemented.</p>
+                <div class="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    @foreach (['goals' => 'Goals', 'objectives' => 'Objectives', 'tasks' => 'Tasks', 'milestones' => 'Milestones', 'issues' => 'GitHub Issues'] as $entityType => $entityLabel)
+                        @php($history = $lifecycleHistory[$entityType] ?? ['available' => false, 'reason' => 'history_not_loaded', 'history_available_from' => null, 'points' => []])
+                        <article class="min-w-0 rounded-lg border border-gray-800 bg-black/30 p-4 {{ $entityType === 'issues' ? 'xl:col-span-2' : '' }}" data-lifecycle-history-chart>
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-200">{{ $entityLabel }}</h3>
+                                    @if ($history['history_available_from'])
+                                        <p class="mt-1 text-xs text-gray-500">History from {{ $history['history_available_from'] }}</p>
+                                    @endif
+                                </div>
+                                <span class="text-xs {{ $history['available'] ? 'text-emerald-400' : 'text-gray-500' }}" data-lifecycle-history-status>
+                                    {{ $history['available'] ? 'Validated' : 'Collecting history' }}
+                                </span>
+                            </div>
+                            <div class="mt-3 h-64 w-full" data-lifecycle-history-plot @if (!$history['available']) hidden @endif></div>
+                            <div class="flex min-h-36 flex-col items-center justify-center px-4 py-6 text-center" data-lifecycle-history-empty @if ($history['available']) hidden @endif>
+                                <p class="text-sm text-gray-300">{{ $entityType === 'issues' ? 'GitHub transition coverage is not yet verifiable.' : 'Waiting for complete start/end snapshots and reconciled lifecycle events.' }}</p>
+                                <p class="mt-2 max-w-xl text-xs leading-5 text-gray-500">{{ $entityType === 'issues' ? 'Current-state synchronization cannot prove that intermediate close/reopen transitions were not missed.' : 'Values will appear automatically once daily boundary snapshots and recorded transitions reconcile. No history is inferred from current state or creation dates.' }}</p>
+                            </div>
+                            <script type="application/json" data-lifecycle-history-source>{!! json_encode($history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
+                        </article>
+                    @endforeach
                 </div>
-                <p class="mt-3 text-xs text-gray-600">Required series per entity: open at start of day, open at end of day, closed during day, and opened during day. GitHub issue counts are additionally limited by the available synchronization history.</p>
             </section>
 
             {{-- Row 4: recent activity and actionable task panels --}}

@@ -60,7 +60,7 @@ it('denies Overview access when the user has no organization membership', functi
     expect(WorkOverview::canAccess())->toBeFalse();
 });
 
-it('renders the four dashboard rows and explicitly marks historical chart data unavailable', function () {
+it('renders the four dashboard rows and the lifecycle history charts', function () {
     $organization = Organization::factory()->create();
     $user = User::factory()->create();
     Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
@@ -78,7 +78,10 @@ it('renders the four dashboard rows and explicitly marks historical chart data u
         ->assertSee('Projects')
         ->assertSee('Milestones')
         ->assertSee('Daily activity')
-        ->assertSee('History unavailable')
+        ->assertSee('Last 14 complete days')
+        ->assertSee('data-lifecycle-history-chart', false)
+        ->assertSee('GitHub transition coverage is not yet verifiable.')
+        ->assertDontSee('History unavailable')
         ->assertSee('Recent activity')
         ->assertSee('Late tasks')
         ->assertSee('Tasks due this week')
@@ -106,7 +109,7 @@ it('uses calendar dates and Monday week boundaries for actionable task panels', 
         $data = app(\App\Services\Dashboard\OverviewDashboardData::class)->forEnterprise($enterprise);
         $panels = collect($data['activityPanels'])->keyBy('label');
 
-        expect($data['chartHistoryAvailable'])->toBeFalse()
+        expect($data['lifecycleHistory']['goals']['available'])->toBeFalse()
             ->and(collect($panels['Late tasks']['items'])->pluck('title'))->toContain('Late actionable task')->not->toContain('Completed historical task', 'Other enterprise task')
             ->and(collect($panels['Tasks due this week']['items'])->pluck('title'))->toContain('This week task')
             ->and(collect($panels['Tasks due next week']['items'])->pluck('title'))->toContain('Next week task');

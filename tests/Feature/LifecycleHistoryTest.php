@@ -228,6 +228,20 @@ it('returns a daily series only when boundary counts reconcile with transition o
                 'closed' => 1,
             ]],
         ]);
+
+    $this->travelTo($day->addDays(2));
+    expect(app(LifecycleHistoryService::class)->recentDailySeries($user, $enterprise, 'goals', 14))
+        ->toMatchArray([
+            'available' => true,
+            'history_available_from' => '2026-10-22',
+            'points' => [[
+                'date' => '2026-10-22',
+                'open_at_start' => 2,
+                'open_at_end' => 2,
+                'opened' => 1,
+                'closed' => 1,
+            ]],
+        ]);
 });
 
 it('requires enterprise view authorization before returning lifecycle history', function () {

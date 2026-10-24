@@ -17,6 +17,8 @@ use App\Models\Initiative;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\User;
+use App\Services\Lifecycle\LifecycleHistoryService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
@@ -26,7 +28,7 @@ use Illuminate\Support\Carbon;
  */
 class OverviewDashboardData
 {
-    /** @return array{summaryCards: array<int, array{label: string, count: int|null, url: string|null}>, listCards: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, activityPanels: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, chartHistoryAvailable: false} */
+    /** @return array{summaryCards: array<int, array{label: string, count: int|null, url: string|null}>, listCards: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, activityPanels: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, lifecycleHistory: array<string, array{available: bool, reason: string|null, history_available_from: string|null, points: list<array{date: string, open_at_start: int, open_at_end: int, opened: int, closed: int}>}>} */
     public function forEnterprise(Enterprise $enterprise): array
     {
         $enterpriseId = (int) $enterprise->id;
@@ -62,6 +64,15 @@ class OverviewDashboardData
         $thisWeekTasks = (clone $actionableTasks)->whereNotNull('due_at')->where('due_at', '>=', $startOfWeek)->where('due_at', '<', $startOfNextWeek)->orderBy('due_at')->limit(8)->get();
         $nextWeekTasks = (clone $actionableTasks)->whereNotNull('due_at')->where('due_at', '>=', $startOfNextWeek)->where('due_at', '<', $startOfFollowingWeek)->orderBy('due_at')->limit(8)->get();
 
+        $actor = auth()->user();
+        $lifecycleHistory = [];
+        if ($actor instanceof User) {
+            $historyService = app(LifecycleHistoryService::class);
+            foreach (['goals', 'objectives', 'tasks', 'milestones', 'issues'] as $entityType) {
+                $lifecycleHistory[$entityType] = $historyService->recentDailySeries($actor, $enterprise, $entityType);
+            }
+        }
+
         return [
             'summaryCards' => $this->summaryCards($enterprise),
             'listCards' => $listCards,
@@ -71,8 +82,7 @@ class OverviewDashboardData
                 ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
             ],
-            // Do not infer historical movements from current state.
-            'chartHistoryAvailable' => false,
+            'lifecycleHistory' => $lifecycleHistory,
         ];
     }
 
