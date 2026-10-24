@@ -13,3 +13,4 @@ Artisan::command('inspire', function () {
 
 \Illuminate\Support\Facades\Schedule::command('social-accounts:sync-facebook-follower-counts')->everySixHours()->withoutOverlapping();
 \Illuminate\Support\Facades\Schedule::command('social-accounts:sync-instagram-follower-counts')->everySixHours()->withoutOverlapping();
+\Illuminate\Support\Facades\Schedule::command('lifecycle:capture-daily-snapshots')->dailyAt('00:00')->timezone((string) config('app.timezone'))->withoutOverlapping()->onOneServer();

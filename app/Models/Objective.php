@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['enterprise_id', 'goal_id', 'kpi_id', 'name', 'description'])]
+#[Fillable(['enterprise_id', 'goal_id', 'kpi_id', 'name', 'description', 'status'])]
 class Objective extends Model
 {
     /** @use HasFactory<ObjectiveFactory> */
