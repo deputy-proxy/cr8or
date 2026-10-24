@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Task extends Model
 {
+    protected $attributes = ['status' => 'todo'];
+
     /** @use HasFactory<TaskFactory> */
     use HasFactory;
 

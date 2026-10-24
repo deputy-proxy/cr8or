@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['enterprise_id', 'goal_id', 'kpi_id', 'name', 'description', 'status'])]
 class Objective extends Model
 {
+    protected $attributes = ['status' => 'active'];
+
     /** @use HasFactory<ObjectiveFactory> */
     use HasFactory;
 

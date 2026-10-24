@@ -35,6 +35,16 @@ it('records only semantic open and closed transitions for lifecycle entities', f
     expect($transitions)->toBe(['open', 'closed', 'open']);
 });
 
+it('records initial open events when internal models use their model-level default statuses', function () {
+    $enterprise = Enterprise::factory()->create();
+    $goal = Goal::query()->create(['enterprise_id' => $enterprise->id, 'name' => 'Default status goal']);
+    $objective = Objective::query()->create(['enterprise_id' => $enterprise->id, 'name' => 'Default status objective']);
+
+    expect($goal->status)->toBe('active')
+        ->and($objective->status)->toBe('active')
+        ->and(Event::query()->where('enterprise_id', $enterprise->id)->whereIn('subject_type', [$goal->getMorphClass(), $objective->getMorphClass()])->where('event_type', 'open')->count())->toBe(2);
+});
+
 it('tracks Objective lifecycle using its explicit status field', function () {
     $enterprise = Enterprise::factory()->create();
     $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'active']);
