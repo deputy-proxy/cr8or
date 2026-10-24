@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['enterprise_id', 'project_id', 'name', 'description', 'due_at', 'status'])]
 class Milestone extends Model
 {
+    protected $attributes = ['status' => 'planned'];
+
     /** @use HasFactory<MilestoneFactory> */
     use HasFactory;
 

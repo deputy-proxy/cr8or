@@ -19,6 +19,7 @@ class ObjectiveFactory extends Factory
             'kpi_id' => null,
             'name' => fake()->sentence(4),
             'description' => fake()->optional()->paragraph(),
+            'status' => 'active',
         ];
     }
 

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 it('preserves persona, content-item, and product associations when renaming legacy persistence', function () {
-    $rollback = Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]);
+    $rollback = Artisan::call('migrate:rollback', ['--step' => DB::table('migrations')->where('migration', '>', '2026_10_20_000001_rename_audience_domain_to_persona')->count() + 1, '--force' => true]);
     expect($rollback)->toBe(0)
         ->and(Schema::hasTable('audiences'))->toBeTrue()
         ->and(Schema::hasTable('audience_product'))->toBeTrue()
@@ -106,7 +106,7 @@ it('preserves persona, content-item, and product associations when renaming lega
         ->and(DB::table('workflows')->where('id', $workflow->id)->value('execution_policy'))->toBe(json_encode(['target_field' => 'persona_id'], JSON_THROW_ON_ERROR));
 });
 it('resumes the persona migration when the tables were already renamed before failure', function () {
-    expect(Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]))->toBe(0);
+    expect(Artisan::call('migrate:rollback', ['--step' => DB::table('migrations')->where('migration', '>', '2026_10_20_000001_rename_audience_domain_to_persona')->count() + 1, '--force' => true]))->toBe(0);
 
     Schema::table('audience_product', function (Illuminate\Database\Schema\Blueprint $table): void {
         $table->dropForeign(['audience_id']);

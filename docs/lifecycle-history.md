@@ -1,97 +1,71 @@
-# Reliable lifecycle history
+# Lifecycle history and daily snapshots
 
-**Status:** Planned in [issue #624](https://github.com/deputy-proxy/cr8or/issues/624). The Overview dashboard must keep historical charts unavailable until the requested range has complete, reconciled history.
+Issue: [#624](https://github.com/deputy-proxy/cr8or/issues/624)
 
-## Purpose
+**Implementation status:** lifecycle events, boundary snapshots, and the read service are implemented. The Overview dashboard chart remains unavailable until a requested range has complete, reconciled history.
 
-Provide auditable daily counts for Goals, Objectives, Tasks, Milestones, and GitHub Issues without inventing historical facts from current state. Reuse the existing immutable Enterprise `Event` model and `EnterpriseActivityObserver`. The only new snapshot logic is a start-of-day boundary and an end-of-day boundary.
+## Data contract
 
-## Data model and responsibilities
+Lifecycle transitions reuse the immutable `events` table and `EnterpriseEventRecorder`; there is no parallel event store. `event_type` is `open` or `closed`; `subject_type` and `subject_id` identify the entity; `organization_id` and `enterprise_id` are derived from its persisted Enterprise relationship. The bounded, sanitized payload contains entity type/id, prior and resulting state, and a payload source field (`cr8or` or `github_sync`). `occurred_at` is the source transition time when reliable; `received_at` remains ingestion time.
 
-### Lifecycle events
+The existing Event model only permits `cr8or` and `gtm` in its source column, so GitHub-originated lifecycle transitions retain the supported `cr8or` source and identify `github_sync` in the sanitized payload. Events are written on the same connection as the model mutation, so a surrounding transaction rollback also rolls back its event.
 
-Use the existing `events` table/model. Do not introduce a parallel event store.
+A lifecycle event is emitted only when an entity crosses the open/closed boundary. New internal Goals, Objectives, Tasks, and Milestones in an open state emit an initial `open` event. A new synchronized GitHub Issue does **not** emit a transition because its previous state is unknown. Subsequent observed `open`/`closed` changes are recorded; repeated syncs and ordinary edits do not produce another lifecycle transition. Reopening emits `open`.
 
-Record normalized `open` and `closed` lifecycle transitions, with the tracked entity identified using the existing subject fields. Retain organization/enterprise scope, occurrence time, source, actor where known, and a minimal sanitized payload. Keep the Event model's immutability and payload sanitizer/size limit.
+The closed state mapping is case-insensitive: `closed`, `complete`, `completed`, `done`, `cancelled`, `canceled`, `archived`, `deleted`, and `rejected`. Other non-empty states are open. Objectives now have an explicit `status` field, defaulting to `active`, because the previous schema had no objective lifecycle state to observe. The Filament resource exposes Active, Completed, Cancelled, and Archived.
 
-An event represents an actual semantic transition, not a model save. Reopening is a new `open` transition after a previous `closed` transition. Ordinary edits must not emit lifecycle transitions. Event writes must be transactionally consistent and idempotent under retries and synchronization replays.
+## Snapshot contract
 
-### Daily boundary snapshots
+`lifecycle_snapshots` is the only snapshot store. The only allowed boundaries are `start` and `end`. The daily command runs at local midnight and captures both the start of the new day and the end of the previous day. The boundary timestamp is midnight; `captured_at` records when the job actually observed the data. A capture more than 120 seconds after the boundary is incomplete. The unique key `(enterprise_id, snapshot_date, boundary, entity_type)` prevents duplicate snapshots. Organization ID is stored and checked alongside enterprise scope.
 
-Add one durable snapshot mechanism with exactly two boundary values:
+For the midnight boundary, a database transaction reads the observed open count and reverses recorded lifecycle events whose occurrence time is between the boundary and capture time. This reconstructs the boundary count rather than treating the later observation time as the boundary. Negative results are marked incomplete. Complete snapshots are not downgraded by later retries. Duplicate concurrent inserts resolve to the existing unique snapshot. There are no hourly, arbitrary-interval, or per-transition snapshots.
 
-- `start`: open-entity count at the beginning of a configured local calendar day.
-- `end`: open-entity count at the end of that day.
+GitHub Issue snapshots are deliberately always marked incomplete in this implementation. The current repository sync is scheduled daily at 02:15, and a current-state sync cannot prove that no close/reopen transitions were missed between observations even if a boundary sync is fresh. Metadata records `sync_fresh_at_boundary`, `last_sync_observed_at`, `transition_coverage_verified: false`, and `completeness_reason: github_transition_coverage_unverified`. Do not enable issue history until a retained source (for example, verified webhook/event coverage) can prove transition completeness; changing the sync cadence alone is insufficient.
 
-Do not add hourly or arbitrary-interval snapshots, and do not snapshot each transition. Lifecycle events remain the transition history; snapshots anchor and reconcile daily counts.
+## Daily series and availability
 
-Each snapshot must identify the organization/enterprise scope, entity type, local date, boundary, count, completeness/accuracy metadata, and audit timestamps. Enforce uniqueness over scope + entity type + date + boundary. Scheduled capture must be retry-safe and concurrency-safe. A delayed capture must not be presented as an exact boundary count unless that accuracy can be established.
+`LifecycleHistoryService::dailySeries()` requires an authenticated User argument and authorizes `view` on the Enterprise before reading data. It returns opening count, closing count, `open` transition occurrences, and `closed` transition occurrences for one entity type and inclusive date range. Day windows use the configured application timezone and half-open intervals `[start_of_day, next_start_of_day)`.
 
-## Counting semantics
+Transition counts are occurrences, not unique entity counts, so close-and-reopen sequences can contribute multiple events during a day. Boundary counts represent entities open at that boundary. The service returns `history_available_from`, derived from the earliest complete start snapshot for that Enterprise/entity type, rather than using model `created_at`.
 
-For each entity type and local day, expose:
+A day is available only when both snapshots exist and are complete and the reconciliation invariant holds:
 
-- **Open at start:** the start boundary snapshot.
-- **Open at end:** the end boundary snapshot.
-- **Opened during day:** number of observed `open` transition occurrences in the half-open interval `[start_of_day, next_start_of_day)`.
-- **Closed during day:** number of observed `closed` transition occurrences in that same interval.
+`open_at_end = open_at_start + opened - closed`
 
-Transition counts are occurrences, not unique entity counts. This supports close-and-reopen sequences within a day. Boundary counts are distinct entities open at the boundary. Validate the reconciliation invariant:
+If snapshots are missing/incomplete, or reconciliation fails, the service returns an unavailable reason with no points. It never derives history from current state or `created_at`. The Overview dashboard chart remains disabled until the requested range is complete and validated.
 
-`open_at_end = open_at_start + opened_during_day - closed_during_day`
+## Entity and synchronization semantics
 
-If entity semantics (deletion, correction, merge, terminal states) make the invariant not applicable, document the explicit adjustment/exception rather than silently altering values. Do not count an unknown or unobserved transition.
+- **Goals:** `active` is open; `archived` and other listed terminal states are closed.
+- **Objectives:** the new explicit `status` field is observed; the default is `active`.
+- **Tasks and Milestones:** their persisted `status` fields are observed using the shared terminal-state mapping.
+- **GitHub Issues:** transitions are recorded only when synchronization observes a genuine state change. A new issue's first observed state is a baseline observation, not a known transition. Delayed syncs use source timestamps when available. Gaps remain explicit; current state is not evidence of prior transitions.
 
-Use one configured application timezone and consistent half-open day intervals. Keep event occurrence time separate from event receipt/processing time, especially for delayed GitHub synchronization.
+## Implementation plan and validation
 
-## Entity-specific rules
+1. Audit model status fields, tenancy relationships, observer registration, and GitHub synchronization behavior.
+2. Extend `EnterpriseActivityObserver` and its model registrations to emit semantic lifecycle transitions through `EnterpriseEventRecorder`.
+3. Add Objective status because the previous schema could not represent Objective lifecycle transitions.
+4. Add the unique, tenant-scoped snapshot table/model and the midnight capture command. Schedule it at `00:00` in the configured application timezone with overlap prevention and single-server locking.
+5. Add the authorized read service, boundary reconciliation, `history_available_from`, and explicit unavailable reasons.
+6. Keep the dashboard chart disabled until source coverage and reconciled history prove the range complete.
+7. Do not fabricate historical backfill from current state or `created_at`. The first complete start snapshot is the earliest boundary anchor; for GitHub Issues, current sync cadence prevents reliable midnight snapshots.
 
-Before implementation, inspect actual status fields, relationships, deletion semantics, and sync paths. Define a documented mapping from each entity's persisted states to open/closed. Do not assume that every model uses the same status vocabulary.
+## Reliability and security
 
-- **Goals and Objectives:** map the real domain lifecycle states after inspecting their models and update paths.
-- **Tasks and Milestones:** map their actual status enums/values; distinguish completion/cancellation from ordinary updates.
-- **GitHub Issues:** record transitions only when the synchronization process observes a genuine state change. Replayed payloads must be idempotent. Record synchronization gaps and establish the earliest reliable history date. Current GitHub state is not evidence of prior transitions.
+- Snapshot and event reads filter by organization and Enterprise; entity counts are constrained to the selected Enterprise.
+- Event payloads contain bounded identifiers/state/source fields and pass through `PlatformEventSanitizer`; raw GitHub payloads and secrets are never stored.
+- Model changes made inside a database transaction roll back their lifecycle events with that transaction.
+- Unique snapshot keys, complete-snapshot preservation, duplicate-insert recovery, `withoutOverlapping`, and `onOneServer` make scheduled retries and concurrent scheduled invocations safe.
+- Missing history is an explicit data-quality state, never a zero count. Late captures are incomplete, and reconciliation failures prevent points from being returned.
+- Recovery must inspect snapshot metadata and sync freshness. Do not manually mark gaps complete without reliable evidence.
 
-The observer must validate ownership and use the existing Event invariants. Do not put raw GitHub payloads, secrets, or unrelated model attributes in event payloads.
+## Tests
 
-## Implementation plan
+`tests/Feature/LifecycleHistoryTest.php` covers semantic open/closed transitions, Objective status, GitHub Issue sync behavior, start/end boundaries, late captures, idempotent retries, reconciliation, tenant isolation, transaction rollback, and Enterprise view authorization. The migration's schema change is covered by the strategy schema test; model policy and Filament-resource coverage contracts remain enforced.
 
-1. Audit tracked models, status fields, tenancy relationships, deletion/reopen semantics, observer registration, and GitHub synchronization behavior.
-2. Define stable lifecycle event types, subject identity, source, occurrence time, minimal payload, and idempotency strategy using the existing Event model.
-3. Extend `EnterpriseActivityObserver`, model registration, and the GitHub synchronization path to emit only real open/closed transitions. Ensure rollback safety and deduplication.
-4. Add the snapshot table/model and a scheduled operation that captures only start/end boundaries, with tenant isolation, uniqueness, concurrency protection, and explicit incomplete/late status.
-5. Implement a testable read service that derives the four series, applies timezone boundaries, reconciles counts, and returns unavailable/incomplete states for gaps.
-6. Add authorization-aware dashboard integration. Do not enable a chart for ranges that lack complete boundary snapshots or trustworthy event history.
-7. Define `history_available_from` per entity/source. Do not fabricate a backfill from `created_at`, current state, or the latest GitHub snapshot.
-8. Observe captured boundaries and event completeness for a defined validation period; enable charting only after reconciliation passes.
-9. Document recovery procedures and surface late/missing snapshots, source gaps, duplicate attempts, and reconciliation failures without exposing sensitive payloads.
-
-## Reliability and security requirements
-
-- Tenant and enterprise scope must be validated on write and read.
-- Event creation must follow transaction boundaries; rolled-back changes must not leave committed lifecycle events.
-- Retries and duplicate sync payloads must not create duplicate transition events or snapshots.
-- Snapshot uniqueness and locking must prevent concurrent duplicate captures.
-- Missing history is an explicit data-quality state, never a zero count.
-- No chart values should be shown for an incomplete range.
-- Keep the current dashboard history-unavailable state until the new source proves completeness.
-
-## Required tests
-
-- State mapping for each entity, including reopen, terminal-state changes, deletion, and multiple transitions in one day.
-- No lifecycle event on unrelated edits; no duplicates on repeated saves or sync retries.
-- Transaction rollback, tenant isolation, authorization, and Event sanitization/immutability.
-- Start/end boundary capture, uniqueness, concurrent execution, retries, delayed capture, timezone and daylight-saving boundaries.
-- Reconciliation with close/reopen sequences and multiple transitions.
-- GitHub replay, delayed observations, missing issues, and history gaps.
-- Dashboard behavior for complete versus incomplete ranges.
-- Full repository CI, PHPStan, frontend build, and JavaScript tests.
+The full repository validation required for this change is Pint, PHPStan, the complete PHP test suite, Vite production build, and JavaScript tests. No historical chart is enabled by this implementation.
 
 ## Non-goals
 
-- No new event store.
-- No hourly or arbitrary interval snapshots.
-- No per-transition snapshots.
-- No fabricated historical backfill.
-- No chart activation before completeness and reconciliation checks pass.
-- No unrelated dashboard redesign.
+No new event store, hourly/arbitrary interval snapshots, per-transition snapshots, fabricated historical backfill, automatic chart enablement, or unrelated dashboard redesign.

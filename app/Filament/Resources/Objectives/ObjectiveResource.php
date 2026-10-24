@@ -44,6 +44,7 @@ class ObjectiveResource extends Resource
             Select::make('kpi_id')->relationship('kpi', 'name')->searchable()->preload(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
+            Select::make('status')->options(['active' => 'Active', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'archived' => 'Archived'])->default('active')->required(),
         ]);
     }
 
@@ -51,6 +52,7 @@ class ObjectiveResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('status')->badge(),
             TextColumn::make('enterprise.name')->searchable()->sortable(),
             TextColumn::make('goal.name')->label('Goal')->searchable(),
             TextColumn::make('kpi.name')->label('KPI')->searchable(),
