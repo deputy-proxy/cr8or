@@ -178,9 +178,13 @@ final class LifecycleHistoryService
                         ? CarbonImmutable::instance($lastSyncValue)
                         : (is_string($lastSyncValue) ? CarbonImmutable::parse($lastSyncValue) : null);
                     $freshEnough = $lastSync !== null && $lastSync->greaterThanOrEqualTo($boundaryAt->subMinutes(5));
-                    $isComplete = $isComplete && $freshEnough;
                     $metadata['sync_fresh_at_boundary'] = $freshEnough;
                     $metadata['last_sync_observed_at'] = $lastSync?->toIso8601String();
+                    $metadata['transition_coverage_verified'] = false;
+                    $metadata['completeness_reason'] = 'github_transition_coverage_unverified';
+
+                    // A current-state sync cannot prove that no close/reopen transitions were missed between observations.
+                    $isComplete = false;
                 }
 
                 $transitionsAfterBoundary = Event::query()

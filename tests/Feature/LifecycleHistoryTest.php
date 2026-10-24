@@ -228,3 +228,19 @@ it('requires enterprise view authorization before returning lifecycle history', 
     expect(fn () => app(LifecycleHistoryService::class)->dailySeries($unrelatedUser, $enterprise, 'goals', $day, $day))
         ->toThrow(AuthorizationException::class);
 });
+
+it('keeps GitHub Issue snapshots incomplete while transition coverage is unverified', function () {
+    $capturedAt = CarbonImmutable::parse('2026-10-24 00:00:30', config('app.timezone'));
+    $this->travelTo(CarbonImmutable::parse('2026-10-23 23:59:00', config('app.timezone')));
+    $enterprise = Enterprise::factory()->create(['github_issues_synced_at' => now()]);
+    Issue::factory()->create(['enterprise_id' => $enterprise->id, 'state' => 'open']);
+    $this->travelTo($capturedAt);
+
+    app(LifecycleHistoryService::class)->captureMidnight($capturedAt);
+
+    $snapshot = LifecycleSnapshot::query()->where('enterprise_id', $enterprise->id)->where('entity_type', 'issues')->where('boundary', 'start')->firstOrFail();
+
+    expect($snapshot->is_complete)->toBeFalse()
+        ->and($snapshot->metadata['transition_coverage_verified'])->toBeFalse()
+        ->and($snapshot->metadata['completeness_reason'])->toBe('github_transition_coverage_unverified');
+});
