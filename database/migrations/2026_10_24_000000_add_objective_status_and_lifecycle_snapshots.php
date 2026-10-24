@@ -27,7 +27,7 @@ return new class extends Migration
             $table->timestamp('captured_at');
             $table->timestamps();
             $table->unique(['enterprise_id', 'snapshot_date', 'boundary', 'entity_type'], 'lifecycle_snapshots_scope_boundary_unique');
-            $table->index(['organization_id', 'enterprise_id', 'snapshot_date']);
+            $table->index(['organization_id', 'enterprise_id', 'snapshot_date'], 'lifecycle_snapshots_org_ent_date_idx');
         });
     }
 
