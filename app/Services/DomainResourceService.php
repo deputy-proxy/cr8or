@@ -381,6 +381,52 @@ final class DomainResourceService
         ]));
     }
 
+    /** @param array<string, mixed> $attributes */
+    public function updateProduct(User $actor, Product $product, array $attributes): Product
+    {
+        Gate::forUser($actor)->authorize('update', $product);
+
+        $mutable = array_merge([
+            'name', 'slug', 'status', 'product_type', 'tagline', 'summary', 'description', 'problem_statement',
+            'value_proposition', 'primary_outcome', 'positioning', 'delivery_model', 'fulfillment_method',
+            'support_model', 'monetization_model', 'pricing_model', 'price_amount', 'currency', 'billing_interval',
+            'commercial_terms', 'commercial_notes', 'is_commercially_available', 'availability_start_at', 'availability_end_at',
+        ], Product::STRUCTURED_LIST_FIELDS);
+        $attributes = array_intersect_key($attributes, array_flip($mutable));
+
+        if ($attributes === []) {
+            throw ValidationException::withMessages(['product_id' => 'At least one mutable product field must be supplied.']);
+        }
+
+        $existing = array_intersect_key($product->attributesToArray(), array_flip($mutable));
+        $validated = $this->validateProductInput(array_merge($existing, $attributes));
+        $updated = array_intersect_key($validated, array_flip(array_keys($attributes)));
+
+        if (array_key_exists('name', $updated)) {
+            $updated['name'] = trim((string) $updated['name']);
+            if ($updated['name'] === '') {
+                throw ValidationException::withMessages(['name' => 'A product name between 1 and 255 characters is required.']);
+            }
+        }
+
+        if (array_key_exists('slug', $updated)) {
+            $slug = trim((string) ($updated['slug'] ?? ''));
+            if ($slug === '' || mb_strlen($slug) > 255 || preg_match('/^[A-Za-z0-9_-]+$/', $slug) !== 1) {
+                throw ValidationException::withMessages(['slug' => 'The product slug must contain only letters, numbers, dashes, and underscores.']);
+            }
+            $updated['slug'] = $slug;
+        }
+
+        if (isset($updated['slug']) && $product->enterprise->products()
+            ->where('slug', $updated['slug'])->where('id', '<>', $product->getKey())->exists()) {
+            throw ValidationException::withMessages(['slug' => 'This slug is already used by a product in the enterprise.']);
+        }
+
+        $product->update($updated);
+
+        return $product->refresh();
+    }
+
     /** @param array<string, mixed> $attributes
      * @return array<string, mixed>
      */

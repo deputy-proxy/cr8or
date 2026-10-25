@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(75);
+    expect($registry->all())->toHaveCount(76);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
@@ -66,7 +66,7 @@ it('uses canonical kebab-case identifiers for lifecycle MCP Tools', function () 
 it('enforces the Capability boundary for every business MCP Tool', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->business())->toHaveCount(54);
+    expect($registry->business())->toHaveCount(55);
 
     $registry->assertBusinessToolSurface();
 

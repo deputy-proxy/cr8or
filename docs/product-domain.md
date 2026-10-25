@@ -36,6 +36,8 @@ The same controlled values and cross-field rules are enforced by the governed `p
 
 The result includes the persisted identity, lifecycle, positioning, definition/delivery, commercial, and governance fields. Dates are returned as ISO 8601 strings. Existing minimal callers remain supported.
 
+`update-product` requires `product_id` and at least one mutable field. It delegates through `product.update` → `UpdateProduct` → `DomainResourceService::updateProduct`. The existing product determines its Enterprise context; callers cannot change product identity or ownership. Omitted fields are preserved, explicit nullable fields may be cleared, and slug uniqueness and the complete product commercial invariants are revalidated before persistence. Updates require the authenticated actor to pass the Product update policy for the owning Enterprise.
+
 ## Product discovery
 
 The list-products tool is the read-only product.list Capability, implemented by ListProducts and exposed through ListProductsTool. It requires an explicit Enterprise context, authorizes access through the governed Capability boundary, and scopes every query to that Enterprise. It supports bounded pagination (1–50 items per page), lifecycle status, and name/slug search. Results include only product identity, ownership, lifecycle/type, and commercial availability fields needed for discovery and safe persona association; internal commercial notes and other detailed fields are not exposed by the list operation.

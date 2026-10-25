@@ -37,6 +37,7 @@ use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
+use App\Mcp\Tools\UpdateProductTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Mcp\Tools\UpdateWorkflowTool;
@@ -103,6 +104,7 @@ use App\Operations\SubmitContentForReview;
 use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
+use App\Operations\UpdateProduct;
 use App\Operations\UpdateStrategy;
 use App\Operations\UpdateTask;
 use App\Operations\UpdateWorkflow;
@@ -639,6 +641,28 @@ final class CapabilityRegistry
                 'none',
                 'business',
                 'create-product',
+            ),
+            $this->definition(
+                'product.update',
+                UpdateProduct::class,
+                UpdateProductTool::class,
+                [
+                    'product_id' => 'integer|required',
+                    'name' => 'string|nullable|max:255',
+                    'slug' => 'string|optional|max:255|alpha_dash; unique within enterprise',
+                    'status' => 'enum:draft,active,archived,discontinued|optional',
+                    'product_type' => 'enum:service,digital_product,subscription,course,editorial,physical_product,other|optional',
+                    'description' => 'string|nullable|max:50000',
+                    'mutable_product_fields' => 'all other product.create fields are optional; omitted fields are preserved',
+                    'agent_assignment_id' => 'integer|nullable',
+                    'agent_execution_id' => 'integer|nullable',
+                    'approval_request_id' => 'integer|nullable',
+                ],
+                ['success' => 'boolean', 'result' => 'product'],
+                'McpCapabilityAuthorizer::authorizeMutation + ProductPolicy::update + DomainResourceService',
+                'none',
+                'business',
+                'update-product',
             ),
             $this->definition(
                 'product.list',

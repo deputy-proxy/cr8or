@@ -69,6 +69,7 @@ An application invocation may be human-scoped to an Enterprise or Agent-backed w
 
 | Capability | Operation | MCP adapter | Purpose |
 |---|---|---|---|
+| product.update | UpdateProduct | update-product | Update supplied mutable fields on an existing Enterprise-owned product while preserving omitted fields and immutable ownership. |
 | product.list | ListProducts | list-products | Discover products within an authorized Enterprise with bounded pagination and optional status/name/slug filters. |
 
 The listing operation always constrains the query to the authorized Enterprise context. The MCP tool is an adapter to the Capability invocation boundary and does not query persistence directly.
