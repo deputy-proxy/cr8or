@@ -133,6 +133,7 @@ use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
 use App\Mcp\Tools\UpdatePersonaTool;
+use App\Mcp\Tools\UpdateProductTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateSocialAccountTool;
 use App\Mcp\Tools\UpdateStrategyTool;
@@ -234,6 +235,7 @@ class Cr8orServer extends Server
         UpdateObjectiveTool::class,
         CreateStrategyTool::class,
         CreateProductTool::class,
+        UpdateProductTool::class,
         ListProductsTool::class,
         CreateMarketingStrategyTool::class,
         DefineMarketingStrategySectionTool::class,

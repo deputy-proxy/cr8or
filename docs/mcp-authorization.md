@@ -153,6 +153,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-objective | `UpdateObjectiveTool` | `DomainMutationTool` | `marketing.objective.update` | `ObjectiveUpdate` | human target policy + DomainResourceService policy |
 | update-project | `UpdateProjectTool` | `DomainMutationTool` | `marketing.project.update` | `ProjectUpdate` | human target policy + DomainResourceService policy |
 | update-social-account | `UpdateSocialAccountTool` | `GovernedCapabilityTool` | `marketing.social-account.update` | `SocialAccountUpdate` | CapabilityInvocationService + `SocialAccountPolicy::update` + DomainResourceService; approval required for Agent execution |
+| update-product | `UpdateProductTool` | `DomainMutationTool` | `product.update` | `UpdateProduct` | human target policy + DomainResourceService policy; target product determines enterprise scope |
 | update-strategy | `UpdateStrategyTool` | `GovernedCapabilityTool` | `strategy.update` | `UpdateStrategy` | CapabilityInvocationService + operation/domain policy |
 | update-task | `UpdateTaskTool` | `GovernedCapabilityTool` | `work.task.update` | `UpdateTask` | CapabilityInvocationService + operation/domain policy |
 | update-workflow | `UpdateWorkflowTool` | `GovernedCapabilityTool` | `workflow.update` | `UpdateWorkflow` | CapabilityInvocationService + operation/domain policy |
