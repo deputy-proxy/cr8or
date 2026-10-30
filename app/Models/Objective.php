@@ -17,6 +17,11 @@ class Objective extends Model
     /** @use HasFactory<ObjectiveFactory> */
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return ['closed_at' => 'immutable_datetime'];
+    }
+
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {

@@ -16,6 +16,11 @@ class Milestone extends Model
     /** @use HasFactory<MilestoneFactory> */
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return ['closed_at' => 'immutable_datetime'];
+    }
+
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {

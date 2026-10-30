@@ -26,7 +26,7 @@ class Task extends Model
 
     protected function casts(): array
     {
-        return ['due_at' => 'datetime'];
+        return ['due_at' => 'datetime', 'closed_at' => 'immutable_datetime'];
     }
 
     protected static function booted(): void

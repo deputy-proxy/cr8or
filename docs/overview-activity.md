@@ -38,6 +38,14 @@ The observer emits only tracked-field updates, so no-op saves and irrelevant tec
 
 The recorder enforces uniqueness for source event identities, preserves immutable Event records, and applies payload sanitization and size limits. Domain events and synchronized GitHub lifecycle transitions retain stable source identities; Eloquent model-mutation callbacks receive unique event identities so multiple legitimate updates in the same database timestamp interval are not collapsed. Model events are written on the same database connection and transaction as the underlying mutation, so a rolled-back transaction also rolls back its activity.
 
+## Lifecycle timestamps for daily reporting
+
+Goals, Objectives, Tasks, and Milestones persist a nullable `closed_at` timestamp maintained by `LifecycleTimestampObserver`, independently of activity-feed recording. A transition from an open status to a terminal status sets the timestamp; ordinary saves while closed preserve it; reopening clears it; a later close records the next close time. Creating a record directly in a terminal status records its creation-time close timestamp.
+
+GitHub Issues use the provider-owned `github_created_at` and `github_closed_at` values populated by `GitHubIssueSyncService`. These are not replaced with local synchronization timestamps.
+
+The migration does not infer closure times for records that were already closed before `closed_at` existed. Their `closed_at` remains null because `updated_at` cannot prove when the status changed. Historical chart queries must treat those records as lacking a reliable close date rather than fabricate one. The agreed single-timestamp model also cannot reconstruct prior close intervals after an item is reopened and its `closed_at` is cleared.
+
 ## Snapshot history retirement
 
 A repository-wide consumer audit found that LifecycleHistoryService, LifecycleSnapshot, and the midnight capture command were only used by the former Overview charts and their dedicated tests/documentation. The Overview no longer has any runtime dependency on those components, and the scheduler registration and chart code have been removed.

@@ -54,6 +54,6 @@ it('enforces goal authorization through the enterprise organization', function (
 
 it('keeps the goal schema limited to supported fields', function () {
     expect(Schema::getColumnListing('goals'))->toBe([
-        'id', 'enterprise_id', 'name', 'description', 'status', 'created_at', 'updated_at',
+        'id', 'enterprise_id', 'name', 'description', 'status', 'created_at', 'updated_at', 'closed_at',
     ]);
 });
