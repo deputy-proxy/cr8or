@@ -18,9 +18,10 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Services\Lifecycle\LifecycleHistoryService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Authorization-aware read model for the enterprise Overview page.
@@ -28,8 +29,17 @@ use Illuminate\Support\Carbon;
  */
 class OverviewDashboardData
 {
-    /** @return array{summaryCards: array<int, array{label: string, count: int|null, url: string|null}>, listCards: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, activityPanels: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>, lifecycleHistory: array<string, array{available: bool, reason: string|null, history_available_from: string|null, points: list<array{date: string, open_at_start: int, open_at_end: int, opened: int, closed: int}>}>} */
-    public function forEnterprise(Enterprise $enterprise): array
+    /**
+     * @return array{
+     *   summaryCards: array<int, array{label: string, count: int|null, url: string|null}>,
+     *   listCards: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>,
+     *   activityPanels: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>,
+     *   activityAvailable: bool,
+     *   activityRangeLabel: string,
+     *   activityDays: array<int, array{date: string, events: array<int, array{description: string, type: string, actor: string, time: string}>}>
+     * }
+     */
+    public function forEnterprise(Enterprise $enterprise, string $activityRange = '14_days'): array
     {
         $enterpriseId = (int) $enterprise->id;
         /** @var Builder<Task> $tasks */
@@ -55,34 +65,62 @@ class OverviewDashboardData
             ['label' => 'Tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => (clone $actionableTasks)->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
         ];
 
-        /** @var Builder<Event> $eventQuery */
-        $eventQuery = EventResource::canViewAny()
-            ? EventResource::getEloquentQuery()
-            : Event::query()->whereRaw('1 = 0');
-        $recentActivity = $eventQuery->where('enterprise_id', $enterpriseId)->orderByDesc('occurred_at')->limit(8)->get();
+        $activityAvailable = EventResource::canViewAny();
+        $activityDays = [];
+        if ($activityAvailable) {
+            $timezone = (string) config('app.timezone');
+            $now = Carbon::now($timezone);
+            $activityRange = $activityRange === 'today' ? 'today' : '14_days';
+            $start = $now->copy()->startOfDay()->subDays($activityRange === 'today' ? 0 : 13);
+
+            /** @var Builder<Event> $eventQuery */
+            $eventQuery = EventResource::getEloquentQuery();
+            $events = $eventQuery
+                ->where('events.enterprise_id', $enterpriseId)
+                ->where('events.occurred_at', '>=', $start->utc())
+                ->where('events.occurred_at', '<=', $now->utc())
+                ->with(['actor' => fn ($actorQuery) => $actorQuery->whereHas('memberships', fn (Builder $membershipQuery) => $membershipQuery->where('organization_id', $enterprise->organization_id))])
+                ->orderByDesc('events.occurred_at')
+                ->orderByDesc('events.id')
+                ->limit(100)
+                ->get();
+
+            $activityDays = $events
+                ->groupBy(fn (Event $event): string => Carbon::parse($event->occurred_at)->timezone($timezone)->toDateString())
+                ->map(function (Collection $dayEvents, string $date) use ($timezone): array {
+                    return [
+                        'date' => Carbon::parse($date, $timezone)->translatedFormat('l, j F'),
+                        'events' => $dayEvents->map(function (Event $event) use ($timezone): array {
+                            $actor = $event->getRelation('actor');
+
+                            return [
+                                'description' => $event->description,
+                                'type' => Str::headline(str_replace('.', ' ', $event->event_type)),
+                                'actor' => $actor instanceof User ? $actor->name : 'System',
+                                'time' => Carbon::parse($event->occurred_at)->timezone($timezone)->format('H:i'),
+                            ];
+                        })->values()->all(),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         $lateTasks = (clone $actionableTasks)->whereNotNull('due_at')->whereDate('due_at', '<', now()->toDateString())->orderBy('due_at')->limit(8)->get();
         $thisWeekTasks = (clone $actionableTasks)->whereNotNull('due_at')->where('due_at', '>=', $startOfWeek)->where('due_at', '<', $startOfNextWeek)->orderBy('due_at')->limit(8)->get();
         $nextWeekTasks = (clone $actionableTasks)->whereNotNull('due_at')->where('due_at', '>=', $startOfNextWeek)->where('due_at', '<', $startOfFollowingWeek)->orderBy('due_at')->limit(8)->get();
 
-        $actor = auth()->user();
-        $lifecycleHistory = [];
-        if ($actor instanceof User) {
-            $historyService = app(LifecycleHistoryService::class);
-            foreach (['goals', 'objectives', 'tasks', 'milestones', 'issues'] as $entityType) {
-                $lifecycleHistory[$entityType] = $historyService->recentDailySeries($actor, $enterprise, $entityType);
-            }
-        }
-
         return [
             'summaryCards' => $this->summaryCards($enterprise),
             'listCards' => $listCards,
+            'activityAvailable' => $activityAvailable,
+            'activityRangeLabel' => $activityRange === 'today' ? 'Today' : 'Last 14 days',
+            'activityDays' => $activityDays,
             'activityPanels' => [
-                ['label' => 'Recent activity', 'url' => EventResource::canViewAny() ? EventResource::getUrl() : null, 'items' => $recentActivity->map(fn (Event $e): array => ['title' => $e->description, 'status' => null, 'due' => Carbon::parse($e->occurred_at)->toDateTimeString()])->all()],
                 ['label' => 'Late tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $lateTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
             ],
-            'lifecycleHistory' => $lifecycleHistory,
         ];
     }
 

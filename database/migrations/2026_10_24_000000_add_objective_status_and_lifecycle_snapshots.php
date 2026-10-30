@@ -20,41 +20,14 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('lifecycle_snapshots')) {
-            Schema::create('lifecycle_snapshots', function (Blueprint $table): void {
-                $table->id();
-                $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-                $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
-                $table->date('snapshot_date');
-                $table->string('boundary', 8);
-                $table->string('entity_type', 32);
-                $table->unsignedBigInteger('open_count');
-                $table->boolean('is_complete')->default(false);
-                $table->json('metadata')->nullable();
-                $table->timestamp('boundary_at');
-                $table->timestamp('captured_at');
-                $table->timestamps();
-                $table->unique(['enterprise_id', 'snapshot_date', 'boundary', 'entity_type'], 'lifecycle_snapshots_scope_boundary_unique');
-                $table->index(['organization_id', 'enterprise_id', 'snapshot_date'], 'lifecycle_snapshots_org_ent_date_idx');
-            });
-        } else {
-            if (! Schema::hasIndex('lifecycle_snapshots', 'lifecycle_snapshots_scope_boundary_unique')) {
-                Schema::table('lifecycle_snapshots', function (Blueprint $table): void {
-                    $table->unique(['enterprise_id', 'snapshot_date', 'boundary', 'entity_type'], 'lifecycle_snapshots_scope_boundary_unique');
-                });
-            }
+        // Lifecycle snapshots were retired from the application. Existing installations
+        // retain their historical table and rows; fresh installations do not create it.
 
-            if (! Schema::hasIndex('lifecycle_snapshots', 'lifecycle_snapshots_org_ent_date_idx')) {
-                Schema::table('lifecycle_snapshots', function (Blueprint $table): void {
-                    $table->index(['organization_id', 'enterprise_id', 'snapshot_date'], 'lifecycle_snapshots_org_ent_date_idx');
-                });
-            }
-        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('lifecycle_snapshots');
+        // Deliberately preserve any legacy lifecycle_snapshots table and its historical data.
 
         if (Schema::hasIndex('objectives', 'objectives_enterprise_id_status_index')) {
             Schema::table('objectives', function (Blueprint $table): void {

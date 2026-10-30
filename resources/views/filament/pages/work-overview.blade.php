@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-6 bg-black text-white">
+    <div class="space-y-6 bg-black text-white" wire:poll.30s.visible="refreshDashboard">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight text-white">Overview</h1>
@@ -21,10 +21,9 @@
                 <p class="mt-2 text-sm text-gray-400">You do not currently have access to an enterprise to display here.</p>
             </section>
         @else
-            {{-- Row 1: headline counts --}}
             <section aria-label="Strategy summary" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 @foreach ($summaryCards as $card)
-                    <article class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
+                    <article aria-label="{{ $card['label'] }}: {{ $card['count'] === null ? 'Unavailable' : number_format($card['count']) }}" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
                         <div class="text-sm text-gray-400">{{ $card['label'] }}</div>
                         @if ($card['count'] !== null)
                             @if ($card['url'])
@@ -40,7 +39,6 @@
                 @endforeach
             </section>
 
-            {{-- Row 2: compact work lists --}}
             <section aria-label="Current work" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                 @foreach ($listCards as $card)
                     <article class="min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
@@ -63,43 +61,54 @@
                 @endforeach
             </section>
 
-            {{-- Row 3: lifecycle history is rendered from validated snapshots and transitions --}}
-            <section aria-label="Daily activity history" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
+            <section aria-label="Daily activity" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <h2 class="font-medium text-white">Daily activity</h2>
-                        <p class="mt-1 text-sm text-gray-400">Validated daily lifecycle history for Goals, Objectives, Tasks, Milestones and GitHub Issues</p>
+                        <p class="mt-1 text-sm text-gray-400">Recorded activity · {{ $activityRangeLabel }}</p>
                     </div>
-                    <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">Last 14 complete days</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label for="overview-activity-range" class="sr-only">Activity date range</label>
+                        <select id="overview-activity-range" wire:change="setActivityRange($event.target.value)" class="rounded-md border border-gray-700 bg-zinc-900 px-2 py-1 text-xs text-gray-300">
+                            <option value="today" @selected($this->activityRange === 'today')>Today</option>
+                            <option value="14_days" @selected($this->activityRange === '14_days')>Last 14 days</option>
+                        </select>
+                        <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">Live · refreshes every 30 seconds</span>
+                    </div>
                 </div>
-                <div class="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
-                    @foreach (['goals' => 'Goals', 'objectives' => 'Objectives', 'tasks' => 'Tasks', 'milestones' => 'Milestones', 'issues' => 'GitHub Issues'] as $entityType => $entityLabel)
-                        @php($history = $lifecycleHistory[$entityType] ?? ['available' => false, 'reason' => 'history_not_loaded', 'history_available_from' => null, 'points' => []])
-                        <article class="min-w-0 rounded-lg border border-gray-800 bg-black/30 p-4 {{ $entityType === 'issues' ? 'xl:col-span-2' : '' }}" data-lifecycle-history-chart>
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="text-sm font-medium text-gray-200">{{ $entityLabel }}</h3>
-                                    @if ($history['history_available_from'])
-                                        <p class="mt-1 text-xs text-gray-500">History from {{ $history['history_available_from'] }}</p>
-                                    @endif
-                                </div>
-                                <span class="text-xs {{ $history['available'] ? 'text-emerald-400' : 'text-gray-500' }}" data-lifecycle-history-status>
-                                    {{ $history['available'] ? 'Validated' : 'Collecting history' }}
-                                </span>
+
+                @if (!$activityAvailable)
+                    <p class="mt-5 rounded-lg border border-gray-800 bg-black/30 px-4 py-6 text-center text-sm text-gray-400">Activity is not available to your account.</p>
+                @elseif (count($activityDays) === 0)
+                    <p class="mt-5 rounded-lg border border-gray-800 bg-black/30 px-4 py-6 text-center text-sm text-gray-400">No activity has been recorded for this enterprise {{ $activityRangeLabel === 'Today' ? 'today' : 'in the last 14 days' }}.</p>
+                @else
+                    <div class="mt-5 space-y-6">
+                        @foreach ($activityDays as $day)
+                            <div>
+                                <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $day['date'] }}</h3>
+                                <ol class="space-y-0 border-l border-gray-700 pl-4">
+                                    @foreach ($day['events'] as $event)
+                                        <li class="relative border-b border-gray-800 py-3 last:border-0">
+                                            <span class="absolute -left-[21px] top-4 h-2 w-2 rounded-full bg-gray-500"></span>
+                                            <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                                                <p class="min-w-0 flex-1 break-words text-sm text-gray-200">{{ $event['description'] }}</p>
+                                                <time class="shrink-0 text-xs tabular-nums text-gray-500">{{ $event['time'] }}</time>
+                                            </div>
+                                            <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                                                <span>{{ $event['type'] }}</span>
+                                                <span>{{ $event['actor'] }}</span>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ol>
                             </div>
-                            <div class="mt-3 h-64 w-full" data-lifecycle-history-plot @if (!$history['available']) hidden @endif></div>
-                            <div class="flex min-h-36 flex-col items-center justify-center px-4 py-6 text-center" data-lifecycle-history-empty @if ($history['available']) hidden @endif>
-                                <p class="text-sm text-gray-300">{{ $entityType === 'issues' ? 'GitHub transition coverage is not yet verifiable.' : 'Waiting for complete start/end snapshots and reconciled lifecycle events.' }}</p>
-                                <p class="mt-2 max-w-xl text-xs leading-5 text-gray-500">{{ $entityType === 'issues' ? 'Current-state synchronization cannot prove that intermediate close/reopen transitions were not missed.' : 'Values will appear automatically once daily boundary snapshots and recorded transitions reconcile. No history is inferred from current state or creation dates.' }}</p>
-                            </div>
-                            <script type="application/json" data-lifecycle-history-source>{!! json_encode($history, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!}</script>
-                        </article>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-4 text-right text-xs text-gray-600">Showing up to 100 most recent events.</p>
+                @endif
             </section>
 
-            {{-- Row 4: recent activity and actionable task panels --}}
-            <section aria-label="Activity and upcoming work" class="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
+            <section aria-label="Upcoming work" class="grid grid-cols-1 gap-3 md:grid-cols-3">
                 @foreach ($activityPanels as $panel)
                     <article class="min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
                         <div class="mb-4 flex items-center justify-between gap-2">
@@ -111,7 +120,7 @@
                                 <div class="break-words text-sm text-gray-200">{{ $item['title'] }}</div>
                                 <div class="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
                                     @if ($item['status']) <span>{{ str($item['status'])->replace('_', ' ')->headline() }}</span> @endif
-                                    @if ($item['due']) <span>{{ $panel['label'] === 'Recent activity' ? $item['due'] : 'Due '.$item['due'] }}</span> @endif
+                                    @if ($item['due']) <span>Due {{ $item['due'] }}</span> @endif
                                 </div>
                             </div>
                         @empty
