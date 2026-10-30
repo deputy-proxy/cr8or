@@ -27,10 +27,9 @@ class WorkOverview extends Page
 
     protected string $view = 'filament.pages.work-overview';
 
-    /** @var array<int, array{label: string, count: int, url: string}> */
-    public array $overview = [];
-
     public ?int $selectedEnterpriseId = null;
+
+    public string $activityRange = '14_days';
 
     public function mount(): void
     {
@@ -41,7 +40,6 @@ class WorkOverview extends Page
         }
 
         $this->selectedEnterpriseId = $this->authorizedEnterprises()->orderBy('name')->value('id');
-        $this->refreshDashboardData();
     }
 
     public function selectEnterprise(int $enterpriseId): void
@@ -51,7 +49,23 @@ class WorkOverview extends Page
         }
 
         $this->selectedEnterpriseId = $enterpriseId;
-        $this->refreshDashboardData();
+    }
+
+    public function setActivityRange(string $range): void
+    {
+        if (! in_array($range, ['today', '14_days'], true)) {
+            abort(422);
+        }
+
+        $this->activityRange = $range;
+        $this->refreshDashboard();
+    }
+
+    public function refreshDashboard(): void
+    {
+        if ($this->selectedEnterpriseId !== null && ! $this->authorizedEnterprises()->whereKey($this->selectedEnterpriseId)->exists()) {
+            $this->selectedEnterpriseId = $this->authorizedEnterprises()->orderBy('name')->value('id');
+        }
     }
 
     protected function getViewData(): array
@@ -65,30 +79,17 @@ class WorkOverview extends Page
                 'selectedEnterprise' => null,
                 'summaryCards' => [],
                 'listCards' => [],
+                'activityAvailable' => false,
+                'activityRangeLabel' => $this->activityRange === 'today' ? 'Today' : 'Last 14 days',
+                'activityDays' => [],
                 'activityPanels' => [],
-                'lifecycleHistory' => [],
             ];
         }
 
-        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise), [
+        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise, $this->activityRange), [
             'enterprises' => $enterprises,
             'selectedEnterprise' => $enterprise,
         ]);
-    }
-
-    private function refreshDashboardData(): void
-    {
-        $enterprise = $this->selectedEnterprise();
-        $this->overview = $enterprise === null
-            ? []
-            : array_map(
-                static fn (array $card): array => [
-                    'label' => $card['label'],
-                    'count' => $card['count'] ?? 0,
-                    'url' => $card['url'] ?? '#',
-                ],
-                app(OverviewDashboardData::class)->summaryCards($enterprise),
-            );
     }
 
     private function selectedEnterprise(): ?Enterprise
