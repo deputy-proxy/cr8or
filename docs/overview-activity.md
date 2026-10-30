@@ -1,6 +1,6 @@
 # Strategy & Execution Overview activity
 
-Issue: [#632](https://github.com/deputy-proxy/cr8or/issues/632)
+Issues: [#632](https://github.com/deputy-proxy/cr8or/issues/632), [#634](https://github.com/deputy-proxy/cr8or/issues/634), [#636](https://github.com/deputy-proxy/cr8or/issues/636)
 
 The Strategy & Execution Overview is a live read model. It does not read lifecycle snapshots and does not depend on a scheduled capture command.
 
@@ -45,6 +45,16 @@ Goals, Objectives, Tasks, and Milestones persist a nullable `closed_at` timestam
 GitHub Issues use the provider-owned `github_created_at` and `github_closed_at` values populated by `GitHubIssueSyncService`. These are not replaced with local synchronization timestamps.
 
 The migration does not infer closure times for records that were already closed before `closed_at` existed. Their `closed_at` remains null because `updated_at` cannot prove when the status changed. Historical chart queries must treat those records as lacking a reliable close date rather than fabricate one. The agreed single-timestamp model also cannot reconstruct prior close intervals after an item is reopened and its `closed_at` is cleared.
+
+## Query-driven lifecycle chart
+
+The Overview lifecycle chart is a separate timestamp-backed read model and does not replace the Daily activity timeline. It supports Today and Last 14 days and can show all accessible entity types together or one entity type at a time. The chart displays open-at-start, open-at-end, created-during-day, and closed-during-day counts for Goals, Objectives, Tasks, Milestones, and GitHub Issues.
+
+Daily boundaries use the configured application timezone and half-open local intervals `[start_of_day, next_start_of_day)`, converted to UTC for database comparisons. Today is partial: created/closed counts run only through the current time, and its end-of-day open count is withheld until the day has ended. Each entity type is queried through its authorized Filament resource base query and narrowed to the selected Enterprise. Aggregation is bounded to the selected one- or fourteen-day range and does not load individual entity records.
+
+Legacy closed records with a null close timestamp make that entity type's open and closed metrics unavailable rather than being counted as open or assigned a guessed close date. GitHub Issues with missing provider timestamps are handled similarly. Reopening events are checked through the authorized Event resource; when a reopen is observed, open/closed history for that entity type is withheld because the single `closed_at` value cannot reconstruct prior lifecycle intervals. If event visibility is unavailable, the chart also withholds those metrics rather than assuming there were no reopenings. Created counts remain available when their creation timestamps are reliable. Limitations are shown beside the chart.
+
+The existing 30-second visible-page Livewire poll refreshes the chart along with current summary metrics and activity. No snapshot tables, scheduled capture, or event-derived inferred counts are used.
 
 ## Snapshot history retirement
 

@@ -31,6 +31,8 @@ class WorkOverview extends Page
 
     public string $activityRange = '14_days';
 
+    public string $lifecycleEntityType = 'all';
+
     public function mount(): void
     {
         $user = static::currentUser();
@@ -61,6 +63,15 @@ class WorkOverview extends Page
         $this->refreshDashboard();
     }
 
+    public function setLifecycleEntityType(string $entityType): void
+    {
+        if (! in_array($entityType, ['all', 'goals', 'objectives', 'tasks', 'milestones', 'issues'], true)) {
+            abort(422);
+        }
+
+        $this->lifecycleEntityType = $entityType;
+    }
+
     public function refreshDashboard(): void
     {
         if ($this->selectedEnterpriseId !== null && ! $this->authorizedEnterprises()->whereKey($this->selectedEnterpriseId)->exists()) {
@@ -82,11 +93,12 @@ class WorkOverview extends Page
                 'activityAvailable' => false,
                 'activityRangeLabel' => $this->activityRange === 'today' ? 'Today' : 'Last 14 days',
                 'activityDays' => [],
+                'lifecycleChart' => ['available' => false, 'selectedType' => 'all', 'entityOptions' => ['all' => 'All work'], 'days' => [], 'series' => [], 'limitations' => [], 'rangeLabel' => 'Last 14 days'],
                 'activityPanels' => [],
             ];
         }
 
-        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise, $this->activityRange), [
+        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise, $this->activityRange, $this->lifecycleEntityType), [
             'enterprises' => $enterprises,
             'selectedEnterprise' => $enterprise,
         ]);

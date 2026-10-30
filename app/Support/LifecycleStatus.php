@@ -17,6 +17,12 @@ final class LifecycleStatus
         'rejected',
     ];
 
+    /** @return list<string> */
+    public static function closedStatuses(): array
+    {
+        return self::CLOSED_STATES;
+    }
+
     public static function isClosed(mixed $status): bool
     {
         return is_string($status)
