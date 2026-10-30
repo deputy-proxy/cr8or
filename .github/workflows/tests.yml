@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true
         with:
           path: public/build
-          key: ${{ runner.os }}-vite-build-${{ hashFiles('package-lock.json', 'vite.config.*', 'resources/**') }}
+          key: ${{ runner.os }}-vite-build-${{ hashFiles('composer.lock', 'package-lock.json', 'vite.config.*', 'resources/**') }}
 
       - name: Build frontend
         run: npm run build
@@ -68,7 +68,7 @@ jobs:
         continue-on-error: true
         with:
           path: public/build
-          key: ${{ runner.os }}-vite-build-${{ hashFiles('package-lock.json', 'vite.config.*', 'resources/**') }}
+          key: ${{ runner.os }}-vite-build-${{ hashFiles('composer.lock', 'package-lock.json', 'vite.config.*', 'resources/**') }}
 
   php:
     needs: frontend-build
@@ -112,7 +112,7 @@ jobs:
         continue-on-error: true
         with:
           path: public/build
-          key: ${{ runner.os }}-vite-build-${{ hashFiles('package-lock.json', 'vite.config.*', 'resources/**') }}
+          key: ${{ runner.os }}-vite-build-${{ hashFiles('composer.lock', 'package-lock.json', 'vite.config.*', 'resources/**') }}
 
       - name: Setup Node for fallback frontend build
         if: steps.frontend-build-cache.outputs.cache-hit != 'true'
