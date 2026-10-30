@@ -11,7 +11,7 @@ it('uses Task as the only canonical actionable work model', function () {
     expect(class_exists(\App\Models\WorkItem::class, false))->toBeFalse()
         ->and(Schema::hasTable('tasks'))->toBeTrue()
         ->and(Schema::hasTable('work_items'))->toBeFalse()
-        ->and(Schema::getColumnListing('tasks'))->toContain('parent_task_id', 'priority', 'due_at')
+        ->and(Schema::getColumnListing('tasks'))->toContain('parent_task_id', 'priority', 'due_at', 'closed_at')
         ->and(Schema::hasColumn('workflows', 'task_id'))->toBeTrue()
         ->and(Schema::hasColumn('workflows', 'work_item_id'))->toBeFalse()
         ->and(Schema::hasColumn('decisions', 'task_id'))->toBeTrue()

@@ -28,6 +28,7 @@ use App\Models\Strategy;
 use App\Models\Task;
 use App\Models\WorkflowExecution;
 use App\Services\EnterpriseEventRecorder;
+use App\Support\LifecycleStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -134,7 +135,7 @@ final class EnterpriseActivityObserver
             return false;
         }
 
-        return ! in_array(strtolower(trim($state)), ['closed', 'complete', 'completed', 'done', 'cancelled', 'canceled', 'archived', 'deleted', 'rejected'], true);
+        return ! LifecycleStatus::isClosed($state);
     }
 
     private function recordLifecycle(Model $model, string $transition, ?string $fromState, ?string $toState): void

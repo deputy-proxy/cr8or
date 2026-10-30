@@ -396,12 +396,12 @@ it('synchronizes GitHub issue snapshots idempotently and excludes pull requests'
         'id' => 800001,
         'number' => 12,
         'title' => 'Track portfolio dashboard',
-        'state' => 'open',
+        'state' => 'closed',
         'labels' => [['name' => 'enhancement']],
         'user' => ['login' => 'maintainer'],
         'created_at' => '2026-10-01T10:00:00Z',
-        'updated_at' => '2026-10-10T10:00:00Z',
-        'closed_at' => null,
+        'updated_at' => '2026-10-12T15:35:00Z',
+        'closed_at' => '2026-10-12T15:30:00Z',
         'html_url' => 'https://github.com/owner/repository/issues/12',
     ];
     $pullRequest = [
@@ -419,6 +419,8 @@ it('synchronizes GitHub issue snapshots idempotently and excludes pull requests'
         ->and($sync->sync($enterprise->fresh()))->toBe(1)
         ->and(Issue::query()->where('enterprise_id', $enterprise->id)->count())->toBe(1)
         ->and(Issue::query()->where('enterprise_id', $enterprise->id)->first()?->labels)->toBe(['enhancement'])
+        ->and(Issue::query()->where('enterprise_id', $enterprise->id)->first()?->github_created_at?->toIso8601String())->toBe('2026-10-01T10:00:00+00:00')
+        ->and(Issue::query()->where('enterprise_id', $enterprise->id)->first()?->github_closed_at?->toIso8601String())->toBe('2026-10-12T15:30:00+00:00')
         ->and($enterprise->fresh()->github_issues_sync_status)->toBe('succeeded');
 });
 

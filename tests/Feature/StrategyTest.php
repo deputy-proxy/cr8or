@@ -114,7 +114,7 @@ it('enforces the enterprise organization boundary through each strategic policy'
 
 it('keeps the strategy domain schema explicit and non-polymorphic', function () {
     expect(Schema::getColumnListing('objectives'))->toBe([
-        'id', 'enterprise_id', 'goal_id', 'kpi_id', 'name', 'description', 'created_at', 'updated_at', 'status',
+        'id', 'enterprise_id', 'goal_id', 'kpi_id', 'name', 'description', 'created_at', 'updated_at', 'status', 'closed_at',
     ])->and(Schema::getColumnListing('strategies'))->toBe([
         'id', 'objective_id', 'name', 'description', 'created_at', 'updated_at',
     ])->and(Schema::getColumnListing('plans'))->toBe([

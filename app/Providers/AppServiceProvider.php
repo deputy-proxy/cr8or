@@ -21,10 +21,12 @@ use App\Models\Competitor;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
+use App\Models\Goal;
 use App\Models\IntegrationConnection;
 use App\Models\IntegrationJob;
 use App\Models\IntegrationResult;
 use App\Models\Milestone;
+use App\Models\Objective;
 use App\Models\Project;
 use App\Models\Publication;
 use App\Models\PublicationResult;
@@ -33,6 +35,7 @@ use App\Models\Task;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
 use App\Observers\EnterpriseActivityObserver;
+use App\Observers\LifecycleTimestampObserver;
 use App\Policies\CompetitorPolicy;
 use App\Policies\SocialAuthorizationAttemptPolicy;
 use App\Policies\SocialAuthorizationAuditPolicy;
@@ -141,6 +144,9 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(\App\Events\WorkflowApprovalGranted::class, [\App\Listeners\QueueWorkflowContinuationAfterDomainEvent::class, 'handle']);
         foreach ([Enterprise::class, EnterpriseContext::class, \App\Models\Strategy::class, \App\Models\Plan::class, \App\Models\Initiative::class, Project::class, \App\Models\Goal::class, \App\Models\Objective::class, \App\Models\Kpi::class, \App\Models\Decision::class, \App\Models\EnterpriseDecision::class, \App\Models\Dependency::class, \App\Models\Assignment::class, Task::class, Milestone::class, \App\Models\Issue::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
             $model::observe(EnterpriseActivityObserver::class);
+        }
+        foreach ([Goal::class, Objective::class, Task::class, Milestone::class] as $model) {
+            $model::observe(LifecycleTimestampObserver::class);
         }
         Gate::policy(Competitor::class, CompetitorPolicy::class);
         Gate::policy(\App\Models\SocialAuthorizationAttempt::class, SocialAuthorizationAttemptPolicy::class);
