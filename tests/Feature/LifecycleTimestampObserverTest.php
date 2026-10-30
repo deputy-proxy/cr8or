@@ -102,3 +102,17 @@ it('maintains the close timestamp through the canonical Task service', function 
 
     expect($task->fresh()->closed_at)->not->toBeNull();
 });
+
+it('can roll back and reapply the lifecycle close timestamp migration', function () {
+    $migration = require database_path('migrations/2026_10_30_000001_add_closed_at_to_lifecycle_entities.php');
+
+    $migration->down();
+    foreach (['goals', 'objectives', 'tasks', 'milestones'] as $table) {
+        expect(Schema::hasColumn($table, 'closed_at'))->toBeFalse();
+    }
+
+    $migration->up();
+    foreach (['goals', 'objectives', 'tasks', 'milestones'] as $table) {
+        expect(Schema::hasColumn($table, 'closed_at'))->toBeTrue();
+    }
+});
