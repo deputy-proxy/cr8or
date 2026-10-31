@@ -85,7 +85,6 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | get-marketing-strategy | `GetMarketingStrategyTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\MarketingStrategy` | organization-scoped lookup + `Gate::view` |
 | get-memory | `GetMemoryTool` | `MemoryResourceTool` | — | `GetMemory` | Operation/domain service; governed when registry-mapped |
 | get-objective | `GetObjectiveTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Objective` | organization-scoped lookup + `Gate::view` |
-| get-plan | `GetPlanTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Plan` | organization-scoped lookup + `Gate::view` |
 | get-project | `GetProjectTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Project` | organization-scoped lookup + `Gate::view` |
 | get-publication | `GetPublicationTool` | `DiscoveryGetTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::view`; latest provider result excludes payload |
 | get-social-account | `GetSocialAccountTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\SocialAccount` | organization-scoped lookup + `Gate::view` |
@@ -115,7 +114,6 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-marketing-strategies | `ListMarketingStrategyTool` | `DiscoveryListTool` | — | scoped query: `App\Models\MarketingStrategy` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-memories | `ListMemoryTool` | `MemoryResourceTool` | — | `ListMemory` | Operation/domain service; governed when registry-mapped |
 | list-objectives | `ListObjectiveTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Objective` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-plans | `ListPlanTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Plan` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-projects | `ListProjectTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Project` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-publication-results | `ListPublicationResultsTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\PublicationResult` | enterprise membership query + `Gate::viewAny`; provider payload excluded |
 | list-publications | `ListPublicationTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::viewAny` |

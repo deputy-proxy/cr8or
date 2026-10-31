@@ -20,7 +20,7 @@ class GetInitiativeTool extends DiscoveryGetTool
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'plan_id' => 'plan_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     /** @param Builder<Model> $query */
@@ -29,6 +29,6 @@ class GetInitiativeTool extends DiscoveryGetTool
     {
         $organizationIds = $actor->memberships()->pluck('organization_id');
 
-        return $query->whereHas('plan.strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
+        return $query->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }

@@ -8,15 +8,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['plan_id', 'name', 'description'])]
+#[Fillable(['strategy_id', 'name', 'description'])]
 class Initiative extends Model
 {
     /** @use HasFactory<InitiativeFactory> */
     use HasFactory;
 
-    /** @return BelongsTo<Plan, $this> */
-    public function plan(): BelongsTo
+    /** @return BelongsTo<Strategy, $this> */
+    public function strategy(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(Strategy::class);
     }
 }

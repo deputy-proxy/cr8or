@@ -20,7 +20,7 @@ class GetProjectTool extends DiscoveryGetTool
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'plan_id' => 'plan_id', 'initiative_id' => 'initiative_id', 'name' => 'name', 'description' => 'description', 'status' => 'status', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'initiative_id' => 'initiative_id', 'name' => 'name', 'description' => 'description', 'status' => 'status', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     /** @param Builder<Model> $query */

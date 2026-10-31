@@ -41,7 +41,6 @@ class ProjectResource extends Resource
         return $schema->components([
             Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
             Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload(),
-            Select::make('plan_id')->relationship('plan', 'name')->searchable()->preload(),
             Select::make('initiative_id')->relationship('initiative', 'name')->searchable()->preload(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),

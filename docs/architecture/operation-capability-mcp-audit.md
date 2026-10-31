@@ -167,7 +167,6 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | GetMarketingStrategyTool | DiscoveryGetTool | read/query | - | n/a |
 | GetMemoryTool | MemoryResourceTool | read/query | - | Operation direct |
 | GetObjectiveTool | DiscoveryGetTool | read/query | - | n/a |
-| GetPlanTool | DiscoveryGetTool | read/query | - | n/a |
 | GetProjectTool | DiscoveryGetTool | read/query | - | n/a |
 | GetSocialAccountTool | DiscoveryGetTool | read/query | - | n/a |
 | GetStrategyTool | DiscoveryGetTool | read/query | - | n/a |
@@ -194,7 +193,6 @@ The post-#383 execution path for these mapped resource mutations is `MCP Tool â†
 | ListMarketingStrategyTool | DiscoveryListTool | read/query | - | n/a |
 | ListMemoryTool | MemoryResourceTool | read/query | - | Operation direct |
 | ListObjectiveTool | DiscoveryListTool | read/query | - | n/a |
-| ListPlanTool | DiscoveryListTool | read/query | - | n/a |
 | ListProjectTool | DiscoveryListTool | read/query | - | n/a |
 | ListSocialAccountTool | DiscoveryListTool | read/query | - | n/a |
 | ListStrategyTool | DiscoveryListTool | read/query | - | n/a |

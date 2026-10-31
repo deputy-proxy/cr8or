@@ -30,7 +30,7 @@ function expectedNavigation(): array
     return [
         'Organization & Access' => ['Organizations', 'Users', 'Memberships'],
         'Enterprises & Products' => ['Enterprises', 'EnterpriseContexts', 'EnterpriseGroups', 'EnterpriseCategories', 'EnterpriseDecisions', 'Competitors', 'Products', 'Personas'],
-        'Strategy & Execution Planning' => ['Strategies', 'Goals', 'Objectives', 'Kpis', 'Plans', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'Issues'],
+        'Strategy & Execution Planning' => ['Strategies', 'Goals', 'Objectives', 'Kpis', 'Initiatives', 'Projects', 'Milestones', 'Tasks', 'Dependencies', 'Assignments', 'Decisions', 'Issues'],
         'Agent Governance & Operations' => ['AgentDescriptors', 'ExpertDescriptors', 'AgentRuntimePolicies', 'AgentAssignments', 'AgentExecutions', 'AgentDelegations', 'AgentDecisions', 'ApprovalRequests', 'ApprovalPolicies', 'ApprovalDecisions', 'AgentExecutionSteps', 'AgentExecutionEventRecords', 'AgentEpisodicMemories', 'AgentSemanticMemories', 'AgentSemanticMemoryVersions'],
         'Media Production & Publishing' => ['Assets', 'Templates', 'TemplateVersions', 'GenerationRequests', 'GenerationJobs', 'RenderRequests', 'RenderJobs', 'RenderOutputs', 'Transformations', 'MediaMetadata', 'AssetVersions', 'Publications', 'PublicationSchedules', 'PublishingJobs', 'PublicationResults'],
         'Knowledge & Documentation' => ['KnowledgeContexts', 'KnowledgeSources', 'KnowledgeDocuments', 'KnowledgeItems', 'KnowledgeVersions', 'KnowledgeSpecifications', 'KnowledgeReferences', 'KnowledgeIndexRecords', 'KnowledgeIndexUnits', 'KnowledgeEmbeddings'],
@@ -56,7 +56,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
     $expectedDirectories = array_merge(...array_values($expectedGroups));
     sort($expectedDirectories);
 
-    expect($directories)->toBe($expectedDirectories)->toHaveCount(99);
+    expect($directories)->toBe($expectedDirectories)->toHaveCount(98);
 
     foreach ($expectedGroups as $group => $resources) {
         foreach ($resources as $resource) {
@@ -73,7 +73,7 @@ it('maps every discovered Filament resource to exactly one approved navigation g
 
 it('orders resources by user workflow within each navigation group', function () {
     foreach (expectedNavigation() as $group => $resources) {
-        $sortOverrides = ['Templates' => 15, 'TemplateVersions' => 16, 'GenerationRequests' => 20, 'GenerationJobs' => 30, 'RenderRequests' => 40, 'RenderJobs' => 50, 'RenderOutputs' => 60, 'Transformations' => 70, 'MediaMetadata' => 80, 'AssetVersions' => 90, 'Publications' => 100, 'PublicationSchedules' => 110, 'PublishingJobs' => 120, 'PublicationResults' => 130, 'Channels' => 50, 'SocialAccounts' => 60, 'ContentItems' => 70, 'Scripts' => 80];
+        $sortOverrides = ['Templates' => 15, 'TemplateVersions' => 16, 'GenerationRequests' => 20, 'GenerationJobs' => 30, 'RenderRequests' => 40, 'RenderJobs' => 50, 'RenderOutputs' => 60, 'Transformations' => 70, 'MediaMetadata' => 80, 'AssetVersions' => 90, 'Publications' => 100, 'PublicationSchedules' => 110, 'PublishingJobs' => 120, 'PublicationResults' => 130, 'Strategies' => 10, 'Goals' => 20, 'Objectives' => 30, 'Kpis' => 40, 'Initiatives' => 60, 'Projects' => 70, 'Milestones' => 80, 'Tasks' => 90, 'Dependencies' => 100, 'Assignments' => 110, 'Decisions' => 120, 'Issues' => 130, 'Channels' => 50, 'SocialAccounts' => 60, 'ContentItems' => 70, 'Scripts' => 80];
 
         foreach ($resources as $position => $resource) {
             $files = glob(app_path("Filament/Resources/{$resource}/*Resource.php"));

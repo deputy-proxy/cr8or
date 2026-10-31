@@ -42,7 +42,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | ContentItems | ContentItem | Content Items | Content Item | Content Items | Marketing | 70 | enterprise_id, campaign_id, content_series_id, channel_id, persona_id, title, body, title, enterprise.name, campaign.name, contentSeries.name, status, submit_for_review, approve |
 | ContentSeries | ContentSeries | Content Series | Content Series | Content Series | Marketing | 30 | campaign_id, name, description, status, name, campaign.name, status, transition, status |
 | Customers | Customer | Customers | Customer | Customers | Finance | 40 | enterprise_id, name |
-| Decisions | Decision | Decisions | Decision | Decisions | Work Management | 70 | enterprise_id, type, actor_id, objective_id, strategy_id, plan_id, initiative_id, project_id, task_id, title, summary, rationale, decided_at, title, type, enterprise.name, actor_name, decided_at |
+| Decisions | Decision | Decisions | Decision | Decisions | Work Management | 70 | enterprise_id, type, actor_id, objective_id, strategy_id, initiative_id, project_id, task_id, title, summary, rationale, decided_at, title, type, enterprise.name, actor_name, decided_at |
 | Dependencies | Dependency | Dependencies | Dependency | Dependencies | Work Management | 50 | predecessor.name, successor.name, type, project.name, enterprise.name |
 | EnterpriseContexts | EnterpriseContext | Enterprise Contexts | Enterprise Context | Enterprise Contexts | Enterprise Context | 10 | enterprise_id, enterprise.name |
 | EnterpriseDecisions | EnterpriseDecision | Enterprise Decisions | Enterprise Decision | Enterprise Decisions | Work Management | 80 | enterprise_id, title |
@@ -57,7 +57,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | GenerationJobs | GenerationJob | Generation Jobs | Generation Job | Generation Jobs | Marketing | 130 | request.id, workflowJob.id, execution.id, external_job_id, status, failure_reason |
 | GenerationRequests | GenerationRequest | Generation Requests | Generation Request | Generation Requests | Marketing | 120 | enterprise.name, contentItem.title, asset.name, type, status, correlation_id, external_request_id, failure_code |
 | Goals | Goal | Goals | Goal | Goals | Enterprise Context | 20 | enterprise_id, name |
-| Initiatives | Initiative | Initiatives | Initiative | Initiatives | Enterprise Context | 100 | plan_id, name, description, name, plan.name |
+| Initiatives | Initiative | Initiatives | Initiative | Initiatives | Enterprise Context | 100 | strategy_id, name, description, name, strategy.name |
 | IntegrationConnections | IntegrationConnection | Integration Connections | Integration Connection | Integration Connections | Integrations & External Systems | 10 | organization_id, enterprise_id, provider, external_account_id, credential_reference, configuration, status, organization.name, enterprise.name, provider, external_account_id, credential_reference, status |
 | IntegrationJobs | IntegrationJob | Integration Jobs | Integration Job | Integration Jobs | Integrations & External Systems | 30 | connection.id, organization.name, enterprise.name, contentItem.title, asset.name, provider, operation, idempotency_key |
 | IntegrationResults | IntegrationResult | Integration Results | Integration Result | Integration Results | Integrations & External Systems | 40 | integration_job_id, integration_connection_id, provider, operation, status, processing_status, occurred_at, processed_at |
@@ -84,7 +84,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | Partners | Partner | Partners | Partner | Partners | Finance | 50 | enterprise_id, name |
 | Plans | Plan | Plans | Plan | Plans | Enterprise Context | 60 | strategy_id, name, description, name, strategy.name |
 | Products | Product | Products | Product | Products | Enterprise Context | 80 | enterprise_id, name |
-| Projects | Project | Projects | Project | Projects | Work Management | 20 | enterprise_id, strategy_id, plan_id, initiative_id, name, description, status, name, enterprise.name, status |
+| Projects | Project | Projects | Project | Projects | Work Management | 20 | enterprise_id, strategy_id, initiative_id, name, description, status, name, enterprise.name, status |
 | PublicationResults | PublicationResult | Publication Results | Publication Result | Publication Results | Marketing | 210 | enterprise.name, publication.id, publishingJob.id, provider, provider_status, external_id, external_url, correlation_id |
 | PublicationSchedules | PublicationSchedule | Publication Schedules | Publication Schedule | Publication Schedules | Marketing | 190 | enterprise.name, publication.id, scheduled_at, status |
 | Publications | Publication | Publications | Publication | Publications | Marketing | 180 | enterprise.name, contentItem.title, channel.name, socialAccount.name, approvalRequest.id, status, external_id, external_url |

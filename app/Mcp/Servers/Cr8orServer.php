@@ -67,7 +67,6 @@ use App\Mcp\Tools\GetMarketingStrategyTool;
 use App\Mcp\Tools\GetMemoryTool;
 use App\Mcp\Tools\GetObjectiveTool;
 use App\Mcp\Tools\GetPersonaTool;
-use App\Mcp\Tools\GetPlanTool;
 use App\Mcp\Tools\GetProjectTool;
 use App\Mcp\Tools\GetPublicationTool;
 use App\Mcp\Tools\GetSocialAccountTool;
@@ -96,7 +95,6 @@ use App\Mcp\Tools\ListMarketingStrategyTool;
 use App\Mcp\Tools\ListMemoryTool;
 use App\Mcp\Tools\ListObjectiveTool;
 use App\Mcp\Tools\ListPersonaTool;
-use App\Mcp\Tools\ListPlanTool;
 use App\Mcp\Tools\ListProductsTool;
 use App\Mcp\Tools\ListProjectTool;
 use App\Mcp\Tools\ListPublicationResultsTool;
@@ -165,8 +163,6 @@ class Cr8orServer extends Server
         GetGoalTool::class,
         ListKpiTool::class,
         GetKpiTool::class,
-        ListPlanTool::class,
-        GetPlanTool::class,
         ListInitiativeTool::class,
         GetInitiativeTool::class,
         GetMarketingStrategyTool::class,

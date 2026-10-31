@@ -12,7 +12,6 @@ use App\Models\Issue;
 use App\Models\Kpi;
 use App\Models\Milestone;
 use App\Models\Objective;
-use App\Models\Plan;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
@@ -68,21 +67,18 @@ it('records Task and Milestone lifecycle transitions using their persisted statu
         ->toBe(['closed']);
 });
 
-it('records Strategy, Plan, and Initiative activity through their Objective ownership chain', function () {
+it('records Strategy and Initiative activity through their Objective ownership chain', function () {
     $enterprise = Enterprise::factory()->create();
     $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective->id, 'name' => 'Strategy One']);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy->id, 'name' => 'Plan One']);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan->id, 'name' => 'Initiative One']);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy->id, 'name' => 'Initiative One']);
 
     $strategy->update(['description' => 'Updated strategic direction']);
-    $plan->update(['name' => 'Plan One Revised']);
     $initiative->update(['description' => 'Updated initiative details']);
 
     $events = Event::query()->where('enterprise_id', $enterprise->id)->get();
 
     expect($events->where('subject_type', $strategy->getMorphClass())->pluck('event_type')->all())->toContain('strategy.created', 'strategy.updated')
-        ->and($events->where('subject_type', $plan->getMorphClass())->pluck('event_type')->all())->toContain('plan.created', 'plan.updated')
         ->and($events->where('subject_type', $initiative->getMorphClass())->pluck('event_type')->all())->toContain('initiative.created', 'initiative.updated');
 });
 

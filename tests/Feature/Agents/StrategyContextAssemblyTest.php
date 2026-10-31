@@ -7,7 +7,6 @@ use App\Models\Kpi;
 use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
-use App\Models\Plan;
 use App\Models\Strategy;
 use App\Models\User;
 use App\Services\McpContextAssembler;
@@ -48,13 +47,8 @@ it('assembles the complete authorized strategic hierarchy for an Agent', functio
         'name' => 'Customer retention strategy',
     ]);
 
-    $plan = Plan::factory()->create([
-        'strategy_id' => $strategy->getKey(),
-        'name' => 'Retention plan',
-    ]);
-
     $initiative = Initiative::factory()->create([
-        'plan_id' => $plan->getKey(),
+        'strategy_id' => $strategy->getKey(),
         'name' => 'Customer success outreach',
     ]);
 
@@ -115,12 +109,7 @@ it('assembles the complete authorized strategic hierarchy for an Agent', functio
             'name' => 'Customer retention strategy',
             'description' => $strategy->description,
         ])
-        ->and($data['objectives'][0]['strategies'][0]['plans'][0])->toMatchArray([
-            'id' => $plan->getKey(),
-            'name' => 'Retention plan',
-            'description' => $plan->description,
-        ])
-        ->and($data['objectives'][0]['strategies'][0]['plans'][0]['initiatives'][0])->toMatchArray([
+        ->and($data['objectives'][0]['strategies'][0]['initiatives'][0])->toMatchArray([
             'id' => $initiative->getKey(),
             'name' => 'Customer success outreach',
             'description' => $initiative->description,
@@ -158,7 +147,7 @@ it('preserves missing strategic relationships without failing context assembly',
         ->and($data['objectives'][0]['goal'])->toBeNull()
         ->and($data['objectives'][0]['kpi'])->toBeNull()
         ->and($data['objectives'][0]['strategies'][0]['id'])->toBe($strategy->getKey())
-        ->and($data['objectives'][0]['strategies'][0]['plans'])->toBe([]);
+        ->and($data['objectives'][0]['strategies'][0]['initiatives'])->toBe([]);
 });
 
 it('excludes strategic records from another Enterprise even within the same organization', function () {

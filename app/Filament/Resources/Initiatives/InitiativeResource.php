@@ -39,7 +39,7 @@ class InitiativeResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('plan_id')->relationship('plan', 'name')->searchable()->preload()->required(),
+            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);
@@ -49,7 +49,7 @@ class InitiativeResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
-            TextColumn::make('plan.name')->label('Plan')->searchable()->sortable(),
+            TextColumn::make('strategy.name')->label('Strategy')->searchable()->sortable(),
         ])->recordActions([
             \Filament\Actions\EditAction::make(),
             \Filament\Actions\DeleteAction::make(),
@@ -58,7 +58,7 @@ class InitiativeResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('plan.strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
+        return parent::getEloquentQuery()->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
     }
 
     public static function canViewAny(): bool

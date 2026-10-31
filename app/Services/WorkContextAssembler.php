@@ -34,7 +34,6 @@ class WorkContextAssembler
                 'description',
                 'status',
                 'strategy_id',
-                'plan_id',
                 'initiative_id',
             ])
             ->orderByDesc('updated_at')
@@ -87,7 +86,6 @@ class WorkContextAssembler
                 'description' => $project->description,
                 'status' => $project->status,
                 'strategy_id' => $project->strategy_id,
-                'plan_id' => $project->plan_id,
                 'initiative_id' => $project->initiative_id,
             ])->all(),
             'tasks' => $tasks->map(fn (Task $task) => [

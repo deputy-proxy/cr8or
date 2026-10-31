@@ -20,12 +20,12 @@ class ListInitiativeTool extends DiscoveryListTool
 
     protected static function filters(): array
     {
-        return [];
+        return ['strategy_id' => 'Strategy id.'];
     }
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'plan_id' => 'plan_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     protected static function searchableColumns(): array
@@ -39,6 +39,6 @@ class ListInitiativeTool extends DiscoveryListTool
     {
         $organizationIds = $actor->memberships()->pluck('organization_id');
 
-        return $query->whereHas('plan.strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
+        return $query->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }

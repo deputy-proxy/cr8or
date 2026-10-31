@@ -10,7 +10,6 @@ use App\Models\Decision;
 use App\Models\Enterprise;
 use App\Models\Initiative;
 use App\Models\Objective;
-use App\Models\Plan;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
@@ -82,14 +81,9 @@ class DecisionResource extends Resource
                     ? Strategy::query()->whereHas('objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
                     : [])
                 ->searchable(),
-            Select::make('plan_id')
-                ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Plan::query()->whereHas('strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
-                    : [])
-                ->searchable(),
             Select::make('initiative_id')
                 ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Initiative::query()->whereHas('plan.strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                    ? Initiative::query()->whereHas('strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
                     : [])
                 ->searchable(),
             Select::make('project_id')

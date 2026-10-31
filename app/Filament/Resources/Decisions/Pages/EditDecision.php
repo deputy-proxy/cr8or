@@ -24,7 +24,6 @@ class EditDecision extends EditRecord
         $data['actor_name'] = $record->actor_name;
         $data['objective_id'] = $record->objective_id;
         $data['strategy_id'] = $record->strategy_id;
-        $data['plan_id'] = $record->plan_id;
         $data['initiative_id'] = $record->initiative_id;
         $data['project_id'] = $record->project_id;
         $data['task_id'] = $record->task_id;

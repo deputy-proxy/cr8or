@@ -31,7 +31,6 @@ it('keeps parent context in explicit custom authorization methods', function () 
         ->and(method_exists(App\Policies\AgentAssignmentPolicy::class, 'createForAgentAssignment'))->toBeTrue()
         ->and(method_exists(App\Policies\ContentSeriesPolicy::class, 'createForCampaign'))->toBeTrue()
         ->and(method_exists(App\Policies\StrategyPolicy::class, 'createForObjective'))->toBeTrue()
-        ->and(method_exists(App\Policies\PlanPolicy::class, 'createForStrategy'))->toBeTrue()
-        ->and(method_exists(App\Policies\InitiativePolicy::class, 'createForPlan'))->toBeTrue()
+        ->and(method_exists(App\Policies\InitiativePolicy::class, 'createForStrategy'))->toBeTrue()
         ->and(method_exists(App\Policies\ScriptPolicy::class, 'createForContentItem'))->toBeTrue();
 });
