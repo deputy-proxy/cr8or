@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,7 +12,7 @@ return new class extends Migration
         Schema::table('enterprise_contexts', function (Blueprint $table): void {
             $table->text('mission')->nullable();
             $table->text('vision')->nullable();
-            $table->json('values')->default('[]');
+            $table->json('values')->default(DB::raw('(JSON_ARRAY())'));
         });
 
         Schema::dropIfExists('missions');

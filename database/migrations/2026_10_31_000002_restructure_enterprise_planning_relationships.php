@@ -169,10 +169,19 @@ return new class extends Migration
             throw new RuntimeException('Cannot roll back planning relationships while a Task has a new Initiative association that did not exist before this migration.');
         }
 
-        if (DB::getDriverName() === 'mysql' || DB::getDriverName() === 'mariadb') {
-            DB::statement('ALTER TABLE tasks DROP CHECK tasks_at_most_one_parent');
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            $checkExists = DB::table('information_schema.table_constraints')
+                ->where('constraint_schema', DB::getDatabaseName())
+                ->where('table_name', 'tasks')
+                ->where('constraint_name', 'tasks_at_most_one_parent')
+                ->where('constraint_type', 'CHECK')
+                ->exists();
+
+            if ($checkExists) {
+                DB::statement('ALTER TABLE tasks DROP CHECK tasks_at_most_one_parent');
+            }
         } elseif (DB::getDriverName() === 'pgsql') {
-            DB::statement('ALTER TABLE tasks DROP CONSTRAINT tasks_at_most_one_parent');
+            DB::statement('ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_at_most_one_parent');
         }
 
         Schema::table('tasks', function (Blueprint $table): void {
@@ -389,7 +398,7 @@ return new class extends Migration
         return Schema::hasColumn('initiatives', 'enterprise_id')
             && ! Schema::hasColumn('projects', 'initiative_id')
             && Schema::hasColumn('milestones', 'target_date')
-            && ! Schema::hasColumn('tasks', 'initiative_id');
+            && Schema::hasColumn('tasks', 'project_id');
     }
 
     /**
@@ -413,14 +422,14 @@ return new class extends Migration
         }
 
         if (Schema::hasColumn('projects', 'initiative_id')
-            || Schema::hasColumn('tasks', 'initiative_id')
             || DB::table('initiatives')->whereNull('enterprise_id')->exists()) {
             throw new RuntimeException('The planning migration archive is non-empty, but the schema does not match the known milestone-contraction interruption point. Refusing automatic recovery.');
         }
 
         if (! $this->hasForeignKeyOnColumns('milestones', ['enterprise_id'])
             || ! $this->hasForeignKeyOnColumns('initiatives', ['enterprise_id'])
-            || ! $this->hasForeignKeyOnColumns('initiatives', ['strategy_id'])) {
+            || ! $this->hasForeignKeyOnColumns('initiatives', ['strategy_id'])
+            || (Schema::hasColumn('tasks', 'initiative_id') && ! $this->hasForeignKeyOnColumns('tasks', ['initiative_id']))) {
             throw new RuntimeException('The interrupted planning migration state is missing an expected Initiative or Milestone foreign key. Refusing automatic recovery.');
         }
 
@@ -619,15 +628,31 @@ return new class extends Migration
         $driver = DB::getDriverName();
         $condition = '(project_id IS NULL OR initiative_id IS NULL)';
 
-        if ($driver === 'sqlite') {
-            // SQLite cannot add a CHECK constraint without rebuilding the table. Model and service
-            // invariants remain enforced here; avoid triggers because later SQLite table rebuilds
-            // can leave trigger definitions bound to temporary tables.
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            // MySQL rejects CHECK expressions that reference columns used by
+            // ON DELETE SET NULL foreign keys (error 1901). Triggers are not
+            // portable to shared-hosting MySQL installations because binary
+            // logging can require SUPER/log_bin_trust_function_creators. The
+            // Task model and TaskService enforce this invariant for all
+            // application writes without changing existing FK delete behavior.
             return;
         }
 
-        if (in_array($driver, ['mysql', 'mariadb', 'pgsql'], true)) {
-            DB::statement("ALTER TABLE tasks ADD CONSTRAINT tasks_at_most_one_parent CHECK ({$condition})");
+        if ($driver === 'sqlite') {
+            // SQLite cannot add a CHECK constraint without rebuilding the table.
+            // Model and service invariants remain enforced for application writes.
+            return;
+        }
+
+        if ($driver === 'pgsql') {
+            $constraintExists = DB::table('pg_constraint')
+                ->where('conname', 'tasks_at_most_one_parent')
+                ->where('conrelid', DB::raw("'tasks'::regclass"))
+                ->exists();
+
+            if (! $constraintExists) {
+                DB::statement("ALTER TABLE tasks ADD CONSTRAINT tasks_at_most_one_parent CHECK ({$condition})");
+            }
         }
     }
 };

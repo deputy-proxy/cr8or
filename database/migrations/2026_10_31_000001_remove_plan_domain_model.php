@@ -9,11 +9,28 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('initiatives', function (Blueprint $table): void {
-            $table->foreignId('strategy_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
-        });
+        if (! Schema::hasColumn('initiatives', 'strategy_id')) {
+            Schema::table('initiatives', function (Blueprint $table): void {
+                $table->foreignId('strategy_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
+            });
+        } elseif (! collect(Schema::getForeignKeys('initiatives'))->contains(
+            fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === ['strategy_id']
+                && ($foreignKey['foreign_table'] ?? null) === 'strategies',
+        )) {
+            Schema::table('initiatives', function (Blueprint $table): void {
+                $table->foreign('strategy_id')->references('id')->on('strategies')->cascadeOnDelete();
+            });
+        }
 
         foreach (['projects', 'decisions'] as $table) {
+            if (! Schema::hasColumn($table, 'plan_id')) {
+                continue;
+            }
+
+            if (! Schema::hasTable('plans')) {
+                throw new RuntimeException('Cannot resume Plan removal: '.$table.'.plan_id still exists but the plans table is missing. Inspect the partial migration before retrying.');
+            }
+
             DB::table($table)->select(['id', 'strategy_id', 'plan_id'])->whereNotNull('plan_id')->orderBy('id')->each(function (object $record) use ($table): void {
                 $planStrategyId = DB::table('plans')->where('id', $record->plan_id)->value('strategy_id');
 
@@ -31,34 +48,72 @@ return new class extends Migration
             });
         }
 
-        DB::table('initiatives')->select(['id', 'plan_id'])->orderBy('id')->each(function (object $initiative): void {
-            $strategyId = DB::table('plans')->where('id', $initiative->plan_id)->value('strategy_id');
-
-            if ($strategyId !== null) {
-                DB::table('initiatives')->where('id', $initiative->id)->update(['strategy_id' => $strategyId]);
+        if (Schema::hasColumn('initiatives', 'plan_id')) {
+            if (! Schema::hasTable('plans')) {
+                throw new RuntimeException('Cannot resume Plan removal: initiatives.plan_id still exists but the plans table is missing. Inspect the partial migration before retrying.');
             }
-        });
+
+            DB::table('initiatives')->select(['id', 'plan_id'])->whereNotNull('plan_id')->orderBy('id')->each(function (object $initiative): void {
+                $strategyId = DB::table('plans')->where('id', $initiative->plan_id)->value('strategy_id');
+
+                if ($strategyId !== null) {
+                    DB::table('initiatives')->where('id', $initiative->id)->update(['strategy_id' => $strategyId]);
+                }
+            });
+        }
 
         if (DB::table('initiatives')->whereNull('strategy_id')->exists()) {
             throw new RuntimeException('Cannot remove Plans: one or more Initiatives have no resolvable Strategy.');
         }
 
-        Schema::table('initiatives', function (Blueprint $table): void {
-            $table->foreignId('strategy_id')->nullable(false)->change();
-            $table->dropForeign(['plan_id']);
-            $table->dropIndex('initiatives_plan_id_index');
-            $table->dropColumn('plan_id');
-        });
+        if (Schema::hasColumn('initiatives', 'plan_id')) {
+            $hasPlanForeignKey = collect(Schema::getForeignKeys('initiatives'))->contains(
+                fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === ['plan_id'],
+            );
+            $hasPlanIndex = Schema::hasIndex('initiatives', 'initiatives_plan_id_index');
 
-        Schema::table('projects', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('plan_id');
-        });
+            Schema::table('initiatives', function (Blueprint $table) use ($hasPlanForeignKey, $hasPlanIndex): void {
+                $table->foreignId('strategy_id')->nullable(false)->change();
+                if ($hasPlanForeignKey) {
+                    $table->dropForeign(['plan_id']);
+                }
+                if ($hasPlanIndex) {
+                    $table->dropIndex('initiatives_plan_id_index');
+                }
+                $table->dropColumn('plan_id');
+            });
+        }
 
-        Schema::table('decisions', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('plan_id');
-        });
+        foreach (['projects', 'decisions'] as $tableName) {
+            if (! Schema::hasColumn($tableName, 'plan_id')) {
+                continue;
+            }
 
-        Schema::drop('plans');
+            $hasPlanForeignKey = collect(Schema::getForeignKeys($tableName))->contains(
+                fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === ['plan_id'],
+            );
+
+            if ($hasPlanForeignKey) {
+                Schema::table($tableName, function (Blueprint $table): void {
+                    $table->dropForeign(['plan_id']);
+                });
+            }
+
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->dropColumn('plan_id');
+            });
+        }
+
+        if (Schema::hasTable('plans')) {
+            $remainingPlanReferences = collect(['initiatives', 'projects', 'decisions'])
+                ->contains(fn (string $tableName): bool => Schema::hasColumn($tableName, 'plan_id'));
+
+            if ($remainingPlanReferences) {
+                throw new RuntimeException('Cannot finish Plan removal while legacy plan_id columns remain. Inspect the partial migration before retrying.');
+            }
+
+            Schema::drop('plans');
+        }
     }
 
     public function down(): void
@@ -72,12 +127,25 @@ return new class extends Migration
         });
 
         Schema::table('initiatives', function (Blueprint $table): void {
-            $table->foreignId('plan_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('plan_id')->nullable();
+            $table->index('plan_id', 'initiatives_plan_id_index');
+            $table->foreign('plan_id')->references('id')->on('plans')->cascadeOnDelete();
+        });
+
+        Schema::table('projects', function (Blueprint $table): void {
+            $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
+        });
+
+        Schema::table('decisions', function (Blueprint $table): void {
+            $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
         });
 
         DB::table('strategies')->orderBy('id')->each(function (object $strategy): void {
-            $initiativeIds = DB::table('initiatives')->where('strategy_id', $strategy->id)->pluck('id');
-            if ($initiativeIds->isEmpty()) {
+            $hasInitiatives = DB::table('initiatives')->where('strategy_id', $strategy->id)->exists();
+            $hasProjects = DB::table('projects')->where('strategy_id', $strategy->id)->exists();
+            $hasDecisions = DB::table('decisions')->where('strategy_id', $strategy->id)->exists();
+
+            if (! $hasInitiatives && ! $hasProjects && ! $hasDecisions) {
                 return;
             }
 
@@ -89,19 +157,25 @@ return new class extends Migration
                 'updated_at' => now(),
             ]);
 
-            DB::table('initiatives')->whereIn('id', $initiativeIds)->update(['plan_id' => $planId]);
+            DB::table('initiatives')->where('strategy_id', $strategy->id)->update(['plan_id' => $planId]);
+            DB::table('projects')->where('strategy_id', $strategy->id)->update(['plan_id' => $planId]);
+            DB::table('decisions')->where('strategy_id', $strategy->id)->update(['plan_id' => $planId]);
         });
 
-        Schema::table('projects', function (Blueprint $table): void {
-            $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
-        });
+        $hasStrategyForeignKey = collect(Schema::getForeignKeys('initiatives'))->contains(
+            fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === ['strategy_id'],
+        );
 
-        Schema::table('decisions', function (Blueprint $table): void {
-            $table->foreignId('plan_id')->nullable()->constrained()->nullOnDelete();
-        });
+        if ($hasStrategyForeignKey) {
+            Schema::table('initiatives', function (Blueprint $table): void {
+                $table->dropForeign(['strategy_id']);
+            });
+        }
 
-        Schema::table('initiatives', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('strategy_id');
-        });
+        if (Schema::hasColumn('initiatives', 'strategy_id')) {
+            Schema::table('initiatives', function (Blueprint $table): void {
+                $table->dropColumn('strategy_id');
+            });
+        }
     }
 };
