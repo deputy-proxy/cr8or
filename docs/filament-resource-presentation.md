@@ -57,7 +57,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | GenerationJobs | GenerationJob | Generation Jobs | Generation Job | Generation Jobs | Marketing | 130 | request.id, workflowJob.id, execution.id, external_job_id, status, failure_reason |
 | GenerationRequests | GenerationRequest | Generation Requests | Generation Request | Generation Requests | Marketing | 120 | enterprise.name, contentItem.title, asset.name, type, status, correlation_id, external_request_id, failure_code |
 | Goals | Goal | Goals | Goal | Goals | Enterprise Context | 20 | enterprise_id, name |
-| Initiatives | Initiative | Initiatives | Initiative | Initiatives | Enterprise Context | 100 | strategy_id, name, description, name, strategy.name |
+| Initiatives | Initiative | Initiatives | Initiative | Initiatives | Strategy & Execution Planning | 60 | enterprise_id, strategy_id, name, description, name, enterprise.name, strategy.name, tasks_count |
 | IntegrationConnections | IntegrationConnection | Integration Connections | Integration Connection | Integration Connections | Integrations & External Systems | 10 | organization_id, enterprise_id, provider, external_account_id, credential_reference, configuration, status, organization.name, enterprise.name, provider, external_account_id, credential_reference, status |
 | IntegrationJobs | IntegrationJob | Integration Jobs | Integration Job | Integration Jobs | Integrations & External Systems | 30 | connection.id, organization.name, enterprise.name, contentItem.title, asset.name, provider, operation, idempotency_key |
 | IntegrationResults | IntegrationResult | Integration Results | Integration Result | Integration Results | Integrations & External Systems | 40 | integration_job_id, integration_connection_id, provider, operation, status, processing_status, occurred_at, processed_at |
@@ -78,13 +78,13 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | MediaMetadata | MediaMetadata | Media Metadata | Media Metadata | Media Metadata | Marketing | 110 | assetVersion.version, width, height, duration_seconds, codec, frame_rate |
 | Memberships | Membership | Memberships | Membership | Memberships | Organization & Enterprise Scope | 30 | user_id, user.name |
 | MetricDefinitions | MetricDefinition | Metric Definitions | Metric Definition | Metric Definitions | Enterprise Context | 70 | key, name, unit, status, description |
-| Milestones | Milestone | Milestones | Milestone | Milestones | Work Management | 30 | enterprise_id, project_id, name, status, name |
+| Milestones | Milestone | Milestones | Milestone | Milestones | Work Management | 30 | enterprise_id, name, target_date, status, name |
 | Objectives | Objective | Objectives | Objective | Objectives | Enterprise Context | 30 | enterprise_id, goal_id, kpi_id, name, description, name, enterprise.name, goal.name, kpi.name |
 | Organizations | Organization | Organizations | Organization | Organizations | Organization & Enterprise Scope | 10 | name, name |
 | Partners | Partner | Partners | Partner | Partners | Finance | 50 | enterprise_id, name |
 | Plans | Plan | Plans | Plan | Plans | Enterprise Context | 60 | strategy_id, name, description, name, strategy.name |
 | Products | Product | Products | Product | Products | Enterprise Context | 80 | enterprise_id, name |
-| Projects | Project | Projects | Project | Projects | Work Management | 20 | enterprise_id, strategy_id, initiative_id, name, description, status, name, enterprise.name, status |
+| Projects | Project | Projects | Project | Projects | Work Management | 20 | enterprise_id, strategy_id, name, description, status, name, enterprise.name, status |
 | PublicationResults | PublicationResult | Publication Results | Publication Result | Publication Results | Marketing | 210 | enterprise.name, publication.id, publishingJob.id, provider, provider_status, external_id, external_url, correlation_id |
 | PublicationSchedules | PublicationSchedule | Publication Schedules | Publication Schedule | Publication Schedules | Marketing | 190 | enterprise.name, publication.id, scheduled_at, status |
 | Publications | Publication | Publications | Publication | Publications | Marketing | 180 | enterprise.name, contentItem.title, channel.name, socialAccount.name, approvalRequest.id, status, external_id, external_url |
@@ -101,7 +101,7 @@ This inventory is generated from the current app/Filament/Resources surface and 
 | StatementEntries | StatementEntry | Statement Entries | Statement Entry | Statement Entries | Finance | 110 | organization_id, enterprise_id, statement_id, financial_account_id, transaction_id, source, source_reference, amount, entry_date, description, reference, metadata, organization_id, enterprise_id, statement_id, financial_account_id, transaction_id, source, source_reference, amount, entry_date, description, reference |
 | Statements | Statement | Statements | Statement | Statements | Finance | 100 | organization_id, enterprise_id, financial_account_id, source, source_reference, statement_date, period_start, period_end, metadata, organization_id, enterprise_id, financial_account_id, source, source_reference, statement_date, period_start, period_end, metadata |
 | Strategies | Strategy | Strategies | Strategie | Strategies | Enterprise Context | 50 | objective_id, name, description, name, objective.name |
-| Tasks | Task | Tasks | Task | Tasks | Work Management | 40 | enterprise_id, project_id, parent_task_id, name, description, status, priority, due_at, name, enterprise.name, project.name, parent.name, status, priority, due_at |
+| Tasks | Task | Tasks | Task | Tasks | Work Management | 40 | enterprise_id, project_id, initiative_id, parent_task_id, name, description, status, priority, due_at, name, enterprise.name, project.name, initiative.name, parent.name, status, priority, due_at |
 | TransactionCategories | TransactionCategory | Transaction Categories | Transaction Category | Transaction Categories | Finance | 30 | enterprise_id, name, enterprise_id, name |
 | Transactions | Transaction | Transactions | Transaction | Transactions | Finance | 80 | enterprise_id, financial_account_id, transaction_category_id, financial_period_id, amount, transaction_date, description, reference, enterprise_id, financial_account_id, transaction_category_id, financial_period_id, amount, transaction_date, description, reference |
 | Transformations | Transformation | Transformations | Transformation | Transformations | Marketing | 170 | asset.name, sourceVersion.version, outputVersion.version, type |

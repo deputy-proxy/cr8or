@@ -7,6 +7,7 @@ use App\Filament\Resources\Tasks\Pages\CreateTask;
 use App\Filament\Resources\Tasks\Pages\EditTask;
 use App\Filament\Resources\Tasks\Pages\ListTasks;
 use App\Models\Enterprise;
+use App\Models\Initiative;
 use App\Models\Project;
 use App\Models\Task;
 use BackedEnum;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -52,7 +54,12 @@ class TaskResource extends Resource
                     ->all())
                 ->searchable()
                 ->required()
-                ->live(),
+                ->live()
+                ->afterStateUpdated(function (Set $set): void {
+                    $set('project_id', null);
+                    $set('initiative_id', null);
+                    $set('parent_task_id', null);
+                }),
             Select::make('project_id')
                 ->options(fn (Get $get): array => $get('enterprise_id')
                     ? Project::query()
@@ -62,6 +69,29 @@ class TaskResource extends Resource
                         ->pluck('name', 'id')
                         ->all()
                     : [])
+                ->afterStateUpdated(function (Set $set, mixed $state): void {
+                    if (filled($state)) {
+                        $set('initiative_id', null);
+                    }
+                    $set('parent_task_id', null);
+                })
+                ->searchable()
+                ->live(),
+            Select::make('initiative_id')
+                ->options(fn (Get $get): array => $get('enterprise_id')
+                    ? Initiative::query()
+                        ->where('enterprise_id', $get('enterprise_id'))
+                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all()
+                    : [])
+                ->afterStateUpdated(function (Set $set, mixed $state): void {
+                    if (filled($state)) {
+                        $set('project_id', null);
+                    }
+                    $set('parent_task_id', null);
+                })
                 ->searchable()
                 ->live(),
             Select::make('parent_task_id')
@@ -69,7 +99,9 @@ class TaskResource extends Resource
                     ? Task::query()
                         ->where('enterprise_id', $get('enterprise_id'))
                         ->whereIn('enterprise_id', static::manageableEnterpriseIds())
-                        ->when($get('project_id') === null || $get('project_id') === '', fn (Builder $query) => $query->whereNull('project_id'), fn (Builder $query) => $query->where('project_id', $get('project_id')))
+                        ->when(filled($get('project_id')), fn (Builder $query) => $query->where('project_id', $get('project_id')))
+                        ->when(filled($get('initiative_id')), fn (Builder $query) => $query->where('initiative_id', $get('initiative_id')))
+                        ->when(blank($get('project_id')) && blank($get('initiative_id')), fn (Builder $query) => $query->whereNull('project_id')->whereNull('initiative_id'))
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all()
@@ -97,6 +129,7 @@ class TaskResource extends Resource
             TextColumn::make('name')->searchable()->sortable(),
             TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
             TextColumn::make('project.name')->label('Project')->searchable()->sortable(),
+            TextColumn::make('initiative.name')->label('Initiative')->searchable()->sortable(),
             TextColumn::make('parent.name')->label('Parent Task')->toggleable(),
             TextColumn::make('status')->badge(),
             TextColumn::make('priority')->badge(),

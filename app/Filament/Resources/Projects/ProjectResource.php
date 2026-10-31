@@ -6,12 +6,16 @@ use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Projects\Pages\CreateProject;
 use App\Filament\Resources\Projects\Pages\EditProject;
 use App\Filament\Resources\Projects\Pages\ListProjects;
+use App\Models\Enterprise;
 use App\Models\Project;
+use App\Models\Strategy;
 use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -39,9 +43,27 @@ class ProjectResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')->relationship('enterprise', 'name')->searchable()->preload()->required(),
-            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload(),
-            Select::make('initiative_id')->relationship('initiative', 'name')->searchable()->preload(),
+            Select::make('enterprise_id')
+                ->options(fn (): array => Enterprise::query()
+                    ->whereIn('id', static::manageableEnterpriseIds())
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all())
+                ->searchable()
+                ->required()
+                ->live()
+                ->afterStateUpdated(fn (Set $set) => $set('strategy_id', null)),
+            Select::make('strategy_id')
+                ->options(fn (Get $get): array => filled($get('enterprise_id'))
+                    ? Strategy::query()
+                        ->whereHas('objective', fn (Builder $query) => $query
+                            ->where('enterprise_id', $get('enterprise_id'))
+                            ->whereIn('enterprise_id', static::manageableEnterpriseIds()))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all()
+                    : [])
+                ->searchable(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
             Select::make('status')->options(['planned' => 'Planned', 'active' => 'Active', 'completed' => 'Completed'])->required(),

@@ -46,7 +46,8 @@ it('assembles bounded authorized work context with coherent relationships and ex
         'project_id' => $project->getKey(),
         'name' => 'Work item',
     ]);
-    $milestone = Milestone::factory()->forProject($project)->create([
+    $milestone = Milestone::factory()->create([
+        'enterprise_id' => $enterprise->getKey(),
         'name' => 'Launch milestone',
     ]);
 
@@ -193,9 +194,9 @@ it('bounds each work context collection', function () {
     Task::factory()->count(101)->create([
         'enterprise_id' => $enterprise->getKey(),
     ]);
-    Milestone::factory()->count(101)->forProject(
-        Project::factory()->create(['enterprise_id' => $enterprise->getKey()]),
-    )->create();
+    Milestone::factory()->count(101)->create([
+        'enterprise_id' => $enterprise->getKey(),
+    ]);
 
     $data = app(WorkContextAssembler::class)->assemble($user, $enterprise);
 

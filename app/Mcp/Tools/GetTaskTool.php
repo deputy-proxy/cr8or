@@ -24,6 +24,7 @@ class GetTaskTool extends DiscoveryGetTool
             'id' => 'id',
             'enterprise_id' => 'enterprise_id',
             'project_id' => 'project_id',
+            'initiative_id' => 'initiative_id',
             'name' => 'name',
             'description' => 'description',
             'status' => 'status',

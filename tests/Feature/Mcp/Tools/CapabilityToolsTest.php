@@ -23,6 +23,7 @@ use App\Models\AgentExecution;
 use App\Models\ApprovalRequest;
 use App\Models\Enterprise;
 use App\Models\ExpertDescriptor;
+use App\Models\Initiative;
 use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
@@ -178,6 +179,36 @@ it('allows an authorized human to create and update a task', function () {
         ->and($workItem->priority)->toBe('low')
         ->and($workItem->due_at->toDateString())->toBe('2026-12-01')
         ->and(Task::query()->where('id', $workItem->getKey())->count())->toBe(1);
+
+    $initiative = Initiative::factory()->create(['enterprise_id' => $enterprise->getKey()]);
+
+    $server->tool(CreateTaskTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'initiative_id' => $initiative->getKey(),
+        'name' => 'Initiative work',
+    ])->assertOk();
+
+    $initiativeTask = Task::query()->where('name', 'Initiative work')->firstOrFail();
+    expect($initiativeTask->initiative_id)->toBe($initiative->getKey())
+        ->and($initiativeTask->project_id)->toBeNull();
+
+    $server->tool(UpdateTaskTool::class, [
+        'task_id' => $initiativeTask->getKey(),
+        'project_id' => $project->getKey(),
+        'initiative_id' => null,
+    ])->assertOk();
+
+    expect($initiativeTask->refresh()->project_id)->toBe($project->getKey())
+        ->and($initiativeTask->initiative_id)->toBeNull();
+
+    $server->tool(CreateTaskTool::class, [
+        'enterprise_id' => $enterprise->getKey(),
+        'name' => 'Standalone enterprise task',
+    ])->assertOk();
+
+    $standaloneTask = Task::query()->where('name', 'Standalone enterprise task')->firstOrFail();
+    expect($standaloneTask->project_id)->toBeNull()
+        ->and($standaloneTask->initiative_id)->toBeNull();
 });
 
 it('allows an authorized human to create a marketing strategy', function () {

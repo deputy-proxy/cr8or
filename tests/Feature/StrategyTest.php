@@ -30,7 +30,8 @@ it('builds the strategy hierarchy from an enterprise objective to initiatives', 
         ->and($objective->strategies->contains($strategy))->toBeTrue()
         ->and($strategy->objective->is($objective))->toBeTrue()
         ->and($strategy->initiatives->contains($initiative))->toBeTrue()
-        ->and($initiative->strategy->is($strategy))->toBeTrue();
+        ->and($initiative->strategy->is($strategy))->toBeTrue()
+        ->and($initiative->enterprise->is($enterprise))->toBeTrue();
 });
 
 it('references existing goals and KPIs without duplicating their state', function () {
@@ -95,8 +96,8 @@ it('enforces the enterprise organization boundary through each strategic policy'
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Objective::class, $enterprise]))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('createForObjective', [Strategy::class, $objective]))->toBeTrue()
         ->and(Gate::forUser($member)->allows('createForObjective', [Strategy::class, $objective]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('createForStrategy', [Initiative::class, $strategy]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('createForStrategy', [Initiative::class, $strategy]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForEnterprise', [Initiative::class, $enterprise]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForEnterprise', [Initiative::class, $enterprise]))->toBeFalse();
 });
 
 it('keeps the strategy domain schema explicit and non-polymorphic', function () {
@@ -105,6 +106,6 @@ it('keeps the strategy domain schema explicit and non-polymorphic', function () 
     ])->and(Schema::getColumnListing('strategies'))->toBe([
         'id', 'objective_id', 'name', 'description', 'created_at', 'updated_at',
     ])->and(Schema::getColumnListing('initiatives'))->toBe([
-        'id', 'name', 'description', 'created_at', 'updated_at', 'strategy_id',
+        'id', 'name', 'description', 'created_at', 'updated_at', 'strategy_id', 'enterprise_id',
     ]);
 });

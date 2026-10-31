@@ -154,9 +154,9 @@ class Decision extends Model
 
     private function enterpriseIdThroughInitiative(int $initiativeId): ?int
     {
-        $strategyId = Initiative::query()->whereKey($initiativeId)->value('strategy_id');
+        $enterpriseId = Initiative::query()->whereKey($initiativeId)->value('enterprise_id');
 
-        return $strategyId === null ? null : $this->enterpriseIdThroughStrategy((int) $strategyId);
+        return $enterpriseId === null ? null : (int) $enterpriseId;
     }
 
     private function enterpriseIdThroughObjective(int $objectiveId): ?int

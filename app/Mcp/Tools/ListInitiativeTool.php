@@ -10,7 +10,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('list-initiatives')]
-#[Description('Discover authorized initiatives in the strategy hierarchy.')]
+#[Description('Discover authorized initiatives for an Enterprise.')]
 class ListInitiativeTool extends DiscoveryListTool
 {
     protected static function modelClass(): string
@@ -20,12 +20,12 @@ class ListInitiativeTool extends DiscoveryListTool
 
     protected static function filters(): array
     {
-        return ['strategy_id' => 'Strategy id.'];
+        return ['enterprise_id' => 'Enterprise id.', 'strategy_id' => 'Optional Strategy id.'];
     }
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     protected static function searchableColumns(): array
@@ -39,6 +39,6 @@ class ListInitiativeTool extends DiscoveryListTool
     {
         $organizationIds = $actor->memberships()->pluck('organization_id');
 
-        return $query->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
+        return $query->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }

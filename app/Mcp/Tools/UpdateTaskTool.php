@@ -31,7 +31,8 @@ class UpdateTaskTool extends GovernedCapabilityTool
             'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task.'),
             'priority' => $schema->string()->max(50)->description('Task priority.'),
             'due_at' => $schema->string()->description('ISO 8601 due timestamp.'),
-            'project_id' => $schema->integer()->min(1)->description('Replacement project id in the same enterprise.'),
+            'project_id' => $schema->integer()->nullable()->min(1)->description('Replacement project id in the same enterprise. Set to null when moving the Task to an Initiative.'),
+            'initiative_id' => $schema->integer()->nullable()->min(1)->description('Replacement initiative id in the same enterprise. Set to null when moving the Task to a Project.'),
             'agent_assignment_id' => $schema->integer()->min(1)->description('Required with agent_execution_id for an Agent-backed invocation.'),
             'agent_execution_id' => $schema->integer()->min(1)->description('Required with agent_assignment_id for an Agent-backed invocation.'),
             'approval_request_id' => $schema->integer()->min(1)->description('Approved request required when the Agent capability requires approval.'),
@@ -50,6 +51,7 @@ class UpdateTaskTool extends GovernedCapabilityTool
                 'priority' => ['sometimes', 'string', 'max:50'],
                 'due_at' => ['sometimes', 'nullable', 'date'],
                 'project_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:projects,id'],
+                'initiative_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:initiatives,id'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
                 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
@@ -76,7 +78,7 @@ class UpdateTaskTool extends GovernedCapabilityTool
                 ['update', $task],
             );
 
-            $attributes = array_intersect_key($validated, array_flip(['name', 'description', 'status', 'project_id', 'parent_task_id', 'priority', 'due_at']));
+            $attributes = array_intersect_key($validated, array_flip(['name', 'description', 'status', 'project_id', 'initiative_id', 'parent_task_id', 'priority', 'due_at']));
 
             if ($attributes === []) {
                 throw new LogicException('At least one mutable task field is required.');
@@ -90,6 +92,7 @@ class UpdateTaskTool extends GovernedCapabilityTool
                     'id' => $task->getKey(),
                     'enterprise_id' => $task->enterprise_id,
                     'project_id' => $task->project_id,
+                    'initiative_id' => $task->initiative_id,
                     'name' => $task->name,
                     'description' => $task->description,
                     'status' => $task->status,

@@ -17,12 +17,12 @@ class CreateProjectTool extends DomainMutationTool
 {
     protected static function schemaFields(JsonSchema $schema): array
     {
-        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'strategy_id' => $schema->integer()->min(1), 'initiative_id' => $schema->integer()->min(1), 'name' => $schema->string()->min(1)->max(255)->required(), 'description' => $schema->string()->max(10000), 'status' => $schema->string()->max(100), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
+        return ['enterprise_id' => $schema->integer()->min(1)->required(), 'strategy_id' => $schema->integer()->min(1), 'name' => $schema->string()->min(1)->max(255)->required(), 'description' => $schema->string()->max(10000), 'status' => $schema->string()->max(100), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
     }
 
     protected static function rules(): array
     {
-        return ['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'strategy_id' => ['nullable', 'integer', 'min:1', 'exists:strategies,id'], 'initiative_id' => ['nullable', 'integer', 'min:1', 'exists:initiatives,id'], 'name' => ['required', 'string', 'min:1', 'max:255'], 'description' => ['nullable', 'string', 'max:10000'], 'status' => ['nullable', 'string', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
+        return ['enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'], 'strategy_id' => ['nullable', 'integer', 'min:1', 'exists:strategies,id'], 'name' => ['required', 'string', 'min:1', 'max:255'], 'description' => ['nullable', 'string', 'max:10000'], 'status' => ['nullable', 'string', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
     }
 
     protected static function enterprise(array $validated): Enterprise
@@ -57,6 +57,6 @@ class CreateProjectTool extends DomainMutationTool
             throw new \LogicException('Unexpected project result.');
         }
 
-        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'strategy_id' => $record->strategy_id, 'initiative_id' => $record->initiative_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
+        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'strategy_id' => $record->strategy_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
     }
 }

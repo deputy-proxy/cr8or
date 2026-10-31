@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -26,10 +27,11 @@ class CreateTaskTool extends GovernedCapabilityTool
             'name' => $schema->string()->min(1)->max(255)->description('Task name.')->required(),
             'description' => $schema->string()->max(10000)->description('Optional task description.'),
             'status' => $schema->string()->max(100)->description('Optional task status.'),
-            'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task in the same Project and Enterprise.'),
+            'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task in the same Project or Initiative and Enterprise.'),
             'priority' => $schema->string()->max(50)->description('Optional task priority.'),
             'due_at' => $schema->string()->description('Optional ISO 8601 due timestamp.'),
-            'project_id' => $schema->integer()->min(1)->description('Optional project id in the same enterprise.'),
+            'project_id' => $schema->integer()->min(1)->description('Optional Project id in the same enterprise. Cannot be combined with initiative_id.'),
+            'initiative_id' => $schema->integer()->min(1)->description('Optional Initiative id in the same enterprise. Cannot be combined with project_id.'),
             'agent_assignment_id' => $schema->integer()->min(1)->description('Required with agent_execution_id for an Agent-backed invocation.'),
             'agent_execution_id' => $schema->integer()->min(1)->description('Required with agent_assignment_id for an Agent-backed invocation.'),
             'approval_request_id' => $schema->integer()->min(1)->description('Approved request required when the Agent capability requires approval.'),
@@ -48,10 +50,19 @@ class CreateTaskTool extends GovernedCapabilityTool
                 'priority' => ['nullable', 'string', 'max:50'],
                 'due_at' => ['nullable', 'date'],
                 'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],
+                'initiative_id' => ['nullable', 'integer', 'min:1', 'exists:initiatives,id'],
                 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
                 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
                 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id'],
             ]);
+
+            $projectId = $validated['project_id'] ?? null;
+            $initiativeId = $validated['initiative_id'] ?? null;
+            if ($projectId !== null && $initiativeId !== null) {
+                throw ValidationException::withMessages([
+                    'project_id' => 'A Task can belong to a Project or Initiative, not both.',
+                ]);
+            }
 
             $actor = $request->user();
 
@@ -72,6 +83,7 @@ class CreateTaskTool extends GovernedCapabilityTool
                 [
                     'enterprise_id' => $enterprise->getKey(),
                     'project_id' => $validated['project_id'] ?? null,
+                    'initiative_id' => $validated['initiative_id'] ?? null,
                 ],
                 ['createForEnterprise', [Task::class, $enterprise]],
             );
@@ -84,6 +96,7 @@ class CreateTaskTool extends GovernedCapabilityTool
                     'id' => $task->getKey(),
                     'enterprise_id' => $task->enterprise_id,
                     'project_id' => $task->project_id,
+                    'initiative_id' => $task->initiative_id,
                     'name' => $task->name,
                     'description' => $task->description,
                     'status' => $task->status,

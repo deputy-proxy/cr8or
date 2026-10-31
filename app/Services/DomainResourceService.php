@@ -21,7 +21,6 @@ use App\Models\ContentSeries;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
 use App\Models\Goal;
-use App\Models\Initiative;
 use App\Models\IntegrationConnection;
 use App\Models\Kpi;
 use App\Models\MarketingStrategy;
@@ -708,13 +707,9 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [Project::class, $enterprise]);
         $this->validateProjectReferences($enterprise, $attributes);
-        if (empty($attributes['strategy_id']) && ! empty($attributes['initiative_id'])) {
-            $attributes['strategy_id'] = Initiative::query()->whereKey($attributes['initiative_id'])->value('strategy_id');
-        }
 
         return $enterprise->projects()->create([
             'strategy_id' => $attributes['strategy_id'] ?? null,
-            'initiative_id' => $attributes['initiative_id'] ?? null,
             'name' => $attributes['name'],
             'description' => $attributes['description'] ?? null,
             'status' => $attributes['status'] ?? 'planned',
@@ -726,12 +721,9 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('update', $project);
         $this->validateProjectReferences($project->enterprise, $attributes, $project);
-        if (array_key_exists('initiative_id', $attributes) && ! array_key_exists('strategy_id', $attributes) && $attributes['initiative_id'] !== null) {
-            $attributes['strategy_id'] = Initiative::query()->whereKey($attributes['initiative_id'])->value('strategy_id');
-        }
 
         $project->update(array_intersect_key($attributes, array_flip([
-            'strategy_id', 'initiative_id', 'name', 'description', 'status',
+            'strategy_id', 'name', 'description', 'status',
         ])));
 
         return $project->refresh();
@@ -758,26 +750,9 @@ final class DomainResourceService
     /** @param array<string, mixed> $attributes */
     private function validateProjectReferences(Enterprise $enterprise, array $attributes, ?Project $project = null): void
     {
-        $initiativeId = array_key_exists('initiative_id', $attributes)
-            ? $attributes['initiative_id']
-            : $project?->initiative_id;
         $strategyId = array_key_exists('strategy_id', $attributes)
             ? $attributes['strategy_id']
             : $project?->strategy_id;
-
-        $initiative = null;
-        if ($initiativeId !== null) {
-            $initiative = Initiative::query()->with('strategy.objective')->findOrFail((int) $initiativeId);
-            if ((int) $initiative->strategy->objective->enterprise_id !== (int) $enterprise->getKey()) {
-                throw new LogicException('The initiative must belong to the selected enterprise.');
-            }
-
-            if ($strategyId === null) {
-                $strategyId = $initiative->strategy_id;
-            } elseif ((int) $initiative->strategy_id !== (int) $strategyId) {
-                throw new LogicException('The initiative must belong to the selected strategy.');
-            }
-        }
 
         if ($strategyId !== null) {
             $strategy = Strategy::query()->with('objective')->findOrFail((int) $strategyId);
@@ -785,6 +760,5 @@ final class DomainResourceService
                 throw new LogicException('The strategy must belong to the selected enterprise.');
             }
         }
-
     }
 }

@@ -22,6 +22,7 @@ class ListTaskTool extends DiscoveryListTool
     {
         return [
             'project_id' => 'Project id.',
+            'initiative_id' => 'Initiative id.',
         ];
     }
 
@@ -31,6 +32,7 @@ class ListTaskTool extends DiscoveryListTool
             'id' => 'id',
             'enterprise_id' => 'enterprise_id',
             'project_id' => 'project_id',
+            'initiative_id' => 'initiative_id',
             'name' => 'name',
             'description' => 'description',
             'status' => 'status',

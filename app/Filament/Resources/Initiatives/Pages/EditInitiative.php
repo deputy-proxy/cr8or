@@ -20,7 +20,7 @@ class EditInitiative extends EditRecord
         /** @var Initiative $record */
         $record = $this->record;
 
-        if ((int) $data['strategy_id'] !== $record->strategy_id) {
+        if ((int) $data['enterprise_id'] !== $record->enterprise_id) {
             throw new AuthorizationException('Cannot reassign this record.');
         }
 

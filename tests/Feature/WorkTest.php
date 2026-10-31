@@ -20,14 +20,13 @@ it('persists projects and work hierarchy with planning relationships', function 
     $project = Project::factory()->create([
         'enterprise_id' => $enterprise,
         'strategy_id' => $strategy,
-        'initiative_id' => $initiative,
     ]);
     $task = Task::factory()->forProject($project)->create();
     $workItem = Task::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
 
     expect($project->enterprise->is($enterprise))->toBeTrue()
         ->and($project->strategy->is($strategy))->toBeTrue()
-        ->and($project->initiative->is($initiative))->toBeTrue()
+        ->and($initiative->enterprise->is($enterprise))->toBeTrue()
         ->and($project->tasks->contains($task))->toBeTrue()
         ->and($project->tasks->contains($workItem))->toBeTrue()
         ->and($task->project->is($project))->toBeTrue();
