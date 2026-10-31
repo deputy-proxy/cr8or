@@ -21,8 +21,7 @@ EnterpriseActivityObserver is the existing canonical model lifecycle recording p
 | Entity | Ownership | Recorded activity |
 | --- | --- | --- |
 | Strategy | Objective → Enterprise | Create, name/description updates, delete |
-| Plan | Strategy → Objective → Enterprise | Create, name/description updates, delete |
-| Initiative | Plan → Strategy → Objective → Enterprise | Create, name/description updates, delete |
+| Initiative | Strategy → Objective → Enterprise | Create, name/description updates, delete |
 | Goal / Objective | Direct Enterprise | Create, tracked updates, observed open/closed transitions, delete |
 | KPI | Direct Enterprise | Create, definition/target/current measurement updates, delete |
 | Project | Direct Enterprise | Create, name/status updates, delete |

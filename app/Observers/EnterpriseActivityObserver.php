@@ -19,7 +19,6 @@ use App\Models\Issue;
 use App\Models\Kpi;
 use App\Models\Milestone;
 use App\Models\Objective;
-use App\Models\Plan;
 use App\Models\Project;
 use App\Models\Publication;
 use App\Models\PublicationResult;
@@ -41,7 +40,6 @@ final class EnterpriseActivityObserver
         Enterprise::class => ['name', 'status', 'enterprise_group_id', 'enterprise_category_id'],
         EnterpriseContext::class => ['description', 'industry', 'business_model', 'target_market', 'geography'],
         Strategy::class => ['name', 'description'],
-        Plan::class => ['name', 'description'],
         Initiative::class => ['name', 'description'],
         Goal::class => ['name', 'status'],
         Objective::class => ['name', 'status'],
@@ -232,11 +230,8 @@ final class EnterpriseActivityObserver
 
         $enterpriseId = match (true) {
             $model instanceof Strategy => $model->objective()->value('enterprise_id'),
-            $model instanceof Plan => Objective::query()
-                ->whereHas('strategies', fn ($query) => $query->whereKey($model->strategy_id))
-                ->value('enterprise_id'),
             $model instanceof Initiative => Objective::query()
-                ->whereHas('strategies.plans', fn ($query) => $query->whereKey($model->plan_id))
+                ->whereHas('strategies', fn ($query) => $query->whereKey($model->strategy_id))
                 ->value('enterprise_id'),
             default => null,
         };

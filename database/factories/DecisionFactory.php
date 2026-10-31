@@ -21,7 +21,6 @@ class DecisionFactory extends Factory
             'actor_name' => null,
             'objective_id' => null,
             'strategy_id' => null,
-            'plan_id' => null,
             'initiative_id' => null,
             'project_id' => null,
             'task_id' => null,

@@ -7,7 +7,6 @@ use App\Models\Kpi;
 use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
-use App\Models\Plan;
 use App\Models\Strategy;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
@@ -23,18 +22,15 @@ it('builds the strategy hierarchy from an enterprise objective to initiatives', 
         'name' => 'Reach sustainable growth',
     ]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective]);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy]);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan]);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy]);
 
     expect($objective->enterprise->is($enterprise))->toBeTrue()
         ->and($objective->goal->is($goal))->toBeTrue()
         ->and($objective->kpi->is($kpi))->toBeTrue()
         ->and($objective->strategies->contains($strategy))->toBeTrue()
         ->and($strategy->objective->is($objective))->toBeTrue()
-        ->and($strategy->plans->contains($plan))->toBeTrue()
-        ->and($plan->strategy->is($strategy))->toBeTrue()
-        ->and($plan->initiatives->contains($initiative))->toBeTrue()
-        ->and($initiative->plan->is($plan))->toBeTrue();
+        ->and($strategy->initiatives->contains($initiative))->toBeTrue()
+        ->and($initiative->strategy->is($strategy))->toBeTrue();
 });
 
 it('references existing goals and KPIs without duplicating their state', function () {
@@ -59,18 +55,15 @@ it('preserves ownership when strategic records are updated', function () {
     $enterprise = Enterprise::factory()->create();
     $objective = Objective::factory()->create(['enterprise_id' => $enterprise]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective]);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy]);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan]);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy]);
 
     $objective->update(['name' => 'Updated objective']);
     $strategy->update(['name' => 'Updated strategy']);
-    $plan->update(['name' => 'Updated plan']);
     $initiative->update(['name' => 'Updated initiative']);
 
     expect($objective->refresh()->enterprise->is($enterprise))->toBeTrue()
         ->and($strategy->refresh()->objective->is($objective))->toBeTrue()
-        ->and($plan->refresh()->strategy->is($strategy))->toBeTrue()
-        ->and($initiative->refresh()->plan->is($plan))->toBeTrue();
+        ->and($initiative->refresh()->strategy->is($strategy))->toBeTrue();
 });
 
 it('enforces the enterprise organization boundary through each strategic policy', function () {
@@ -89,27 +82,21 @@ it('enforces the enterprise organization boundary through each strategic policy'
     $foreignObjective = Objective::factory()->create(['enterprise_id' => $foreignEnterprise]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective]);
     $foreignStrategy = Strategy::factory()->create(['objective_id' => $foreignObjective]);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy]);
-    $foreignPlan = Plan::factory()->create(['strategy_id' => $foreignStrategy]);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan]);
-    $foreignInitiative = Initiative::factory()->create(['plan_id' => $foreignPlan]);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy]);
+    $foreignInitiative = Initiative::factory()->create(['strategy_id' => $foreignStrategy]);
 
     expect(Gate::forUser($owner)->allows('view', $objective))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('view', $strategy))->toBeTrue()
-        ->and(Gate::forUser($owner)->allows('view', $plan))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('view', $initiative))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('view', $foreignObjective))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignStrategy))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('view', $foreignPlan))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('view', $foreignInitiative))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('createForEnterprise', [Objective::class, $enterprise]))->toBeTrue()
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Objective::class, $enterprise]))->toBeFalse()
         ->and(Gate::forUser($owner)->allows('createForObjective', [Strategy::class, $objective]))->toBeTrue()
         ->and(Gate::forUser($member)->allows('createForObjective', [Strategy::class, $objective]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('createForStrategy', [Plan::class, $strategy]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('createForStrategy', [Plan::class, $strategy]))->toBeFalse()
-        ->and(Gate::forUser($owner)->allows('createForPlan', [Initiative::class, $plan]))->toBeTrue()
-        ->and(Gate::forUser($member)->allows('createForPlan', [Initiative::class, $plan]))->toBeFalse();
+        ->and(Gate::forUser($owner)->allows('createForStrategy', [Initiative::class, $strategy]))->toBeTrue()
+        ->and(Gate::forUser($member)->allows('createForStrategy', [Initiative::class, $strategy]))->toBeFalse();
 });
 
 it('keeps the strategy domain schema explicit and non-polymorphic', function () {
@@ -117,9 +104,7 @@ it('keeps the strategy domain schema explicit and non-polymorphic', function () 
         'id', 'enterprise_id', 'goal_id', 'kpi_id', 'name', 'description', 'created_at', 'updated_at', 'status', 'closed_at',
     ])->and(Schema::getColumnListing('strategies'))->toBe([
         'id', 'objective_id', 'name', 'description', 'created_at', 'updated_at',
-    ])->and(Schema::getColumnListing('plans'))->toBe([
-        'id', 'strategy_id', 'name', 'description', 'created_at', 'updated_at',
     ])->and(Schema::getColumnListing('initiatives'))->toBe([
-        'id', 'plan_id', 'name', 'description', 'created_at', 'updated_at',
+        'id', 'name', 'description', 'created_at', 'updated_at', 'strategy_id',
     ]);
 });

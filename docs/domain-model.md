@@ -118,19 +118,19 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Purpose:** Represent intended business outcomes and strategic direction.
 
-**Core entities:** Objective, Strategy, Plan, Initiative, KPI, Metric, Strategic Decision.
+**Core entities:** Objective, Strategy, Initiative, KPI, Metric, Strategic Decision.
 
-**Verified Phase 3.5 implementation:** Decision records persist operational or strategic decisions independently of AgentDecision and EnterpriseDecision. Each decision belongs to an Enterprise, may reference explicit Objective/Strategy/Plan/Initiative and Project/Task/Task context, and snapshots actor identity and decision-time context. Historical actor, context, type and decision timestamp cannot be rewritten after creation. Server-side authorization follows the Enterprise organization boundary.
+**Verified Phase 3.5 implementation:** Decision records persist operational or strategic decisions independently of AgentDecision and EnterpriseDecision. Each decision belongs to an Enterprise, may reference explicit Objective/Strategy/Initiative and Project/Task context, and snapshots actor identity and decision-time context. Historical actor, context, type and decision timestamp cannot be rewritten after creation. Server-side authorization follows the Enterprise organization boundary.
 
 **Deferred:** Generalized policy engines, broader decision automation and polymorphic decision context.
 
-**Relationships:** Objectives are pursued through strategies, plans and initiatives and measured through metrics.
+**Relationships:** Objectives are pursued through strategies and initiatives and measured through metrics.
 
 **Ownership:** CR8OR.
 
 **Known invariants:** Strategy remains connected to business and operational context.
 
-**Phase 3.2 implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Plan belongs to Strategy; Initiative belongs to Plan. These relationships are explicit foreign keys and are authorized through the Objective Enterprise organization boundary.
+**Current implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Initiative belongs directly to Strategy. These relationships are explicit foreign keys and are authorized through the Objective Enterprise organization boundary.
 
 **Deferred:** Planning methodology and metric calculation details.
 
@@ -142,7 +142,7 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Canonical Task contract:** Task belongs to an Enterprise and may belong to a Project within that Enterprise. It carries name, description, status, priority, due date, and optional parent Task. Parent/child Tasks must share Enterprise and Project scope, and hierarchy cycles are rejected. Task can be referenced by Workflows, Decisions, Assignments, and Dependencies.
 
-**Relationships:** Projects may reference Strategy, Plan, and Initiative records from the same Enterprise. Milestones belong to a Project and Enterprise. Dependencies are directional relationships between Project, Task, or Milestone endpoints; Enterprise ownership is mandatory, explicit Project scope requires both endpoints to belong to that Project, and duplicate edges, self-links, and cycles are rejected. Assignments belong to an Enterprise and identify a User or existing Agent Assignment; an assignment does not grant authority.
+**Relationships:** Projects may reference a Strategy and an optional Initiative from the same Enterprise. When both are supplied, the Initiative must belong to that Strategy. If only an Initiative is supplied, its Strategy is derived by the domain service. Milestones belong to a Project and Enterprise. Dependencies are directional relationships between Project, Task, or Milestone endpoints; Enterprise ownership is mandatory, explicit Project scope requires both endpoints to belong to that Project, and duplicate edges, self-links, and cycles are rejected. Assignments belong to an Enterprise and identify a User or existing Agent Assignment; an assignment does not grant authority.
 
 **Workflow separation:** Workflow definitions and immutable published WorkflowVersions define orchestration. WorkflowExecution is the authoritative persisted runtime record. A definition's exposed status is derived from its authoritative published WorkflowVersion (`draft`, `published`, or `retired`); legacy Workflow status values are not execution outcomes and are not mutated by execution services. Individual success/failure, timestamps, and failure details remain on execution records. Task state is not Workflow execution state, and a Workflow does not become a Task.
 

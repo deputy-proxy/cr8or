@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $actor_name
  * @property int|null $objective_id
  * @property int|null $strategy_id
- * @property int|null $plan_id
  * @property int|null $initiative_id
  * @property int|null $project_id
  * @property int|null $task_id
@@ -27,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'enterprise_id', 'type', 'actor_id', 'actor_name', 'objective_id',
-    'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id',
+    'strategy_id', 'initiative_id', 'project_id', 'task_id',
     'title', 'summary', 'rationale', 'decided_at',
 ])]
 class Decision extends Model
@@ -38,7 +37,7 @@ class Decision extends Model
     /** @var list<string> */
     private const HISTORICAL_FIELDS = [
         'enterprise_id', 'type', 'actor_id', 'actor_name', 'objective_id',
-        'strategy_id', 'plan_id', 'initiative_id', 'project_id', 'task_id',
+        'strategy_id', 'initiative_id', 'project_id', 'task_id',
         'decided_at',
     ];
 
@@ -85,12 +84,6 @@ class Decision extends Model
         return $this->belongsTo(Strategy::class);
     }
 
-    /** @return BelongsTo<Plan, $this> */
-    public function plan(): BelongsTo
-    {
-        return $this->belongsTo(Plan::class);
-    }
-
     /** @return BelongsTo<Initiative, $this> */
     public function initiative(): BelongsTo
     {
@@ -126,11 +119,18 @@ class Decision extends Model
         $contexts = [
             [$this->objective_id, fn (int $id): mixed => Objective::query()->whereKey($id)->value('enterprise_id')],
             [$this->strategy_id, fn (int $id): mixed => $this->enterpriseIdThroughStrategy($id)],
-            [$this->plan_id, fn (int $id): mixed => $this->enterpriseIdThroughPlan($id)],
             [$this->initiative_id, fn (int $id): mixed => $this->enterpriseIdThroughInitiative($id)],
             [$this->project_id, fn (int $id): mixed => Project::query()->whereKey($id)->value('enterprise_id')],
             [$this->task_id, fn (int $id): mixed => Task::query()->whereKey($id)->value('enterprise_id')],
         ];
+
+        if ($this->strategy_id !== null && $this->initiative_id !== null) {
+            $initiativeStrategyId = Initiative::query()->whereKey($this->initiative_id)->value('strategy_id');
+
+            if ($initiativeStrategyId !== null && (int) $initiativeStrategyId !== (int) $this->strategy_id) {
+                throw new \LogicException('Decision Initiative must belong to its selected Strategy.');
+            }
+        }
 
         foreach ($contexts as [$contextId, $enterpriseIdResolver]) {
             if ($contextId === null) {
@@ -152,18 +152,11 @@ class Decision extends Model
         return $objectiveId === null ? null : $this->enterpriseIdThroughObjective((int) $objectiveId);
     }
 
-    private function enterpriseIdThroughPlan(int $planId): ?int
-    {
-        $strategyId = Plan::query()->whereKey($planId)->value('strategy_id');
-
-        return $strategyId === null ? null : $this->enterpriseIdThroughStrategy((int) $strategyId);
-    }
-
     private function enterpriseIdThroughInitiative(int $initiativeId): ?int
     {
-        $planId = Initiative::query()->whereKey($initiativeId)->value('plan_id');
+        $strategyId = Initiative::query()->whereKey($initiativeId)->value('strategy_id');
 
-        return $planId === null ? null : $this->enterpriseIdThroughPlan((int) $planId);
+        return $strategyId === null ? null : $this->enterpriseIdThroughStrategy((int) $strategyId);
     }
 
     private function enterpriseIdThroughObjective(int $objectiveId): ?int

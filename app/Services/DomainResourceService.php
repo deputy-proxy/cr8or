@@ -28,7 +28,6 @@ use App\Models\MarketingStrategy;
 use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Persona;
-use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Script;
@@ -709,10 +708,12 @@ final class DomainResourceService
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [Project::class, $enterprise]);
         $this->validateProjectReferences($enterprise, $attributes);
+        if (empty($attributes['strategy_id']) && ! empty($attributes['initiative_id'])) {
+            $attributes['strategy_id'] = Initiative::query()->whereKey($attributes['initiative_id'])->value('strategy_id');
+        }
 
         return $enterprise->projects()->create([
             'strategy_id' => $attributes['strategy_id'] ?? null,
-            'plan_id' => $attributes['plan_id'] ?? null,
             'initiative_id' => $attributes['initiative_id'] ?? null,
             'name' => $attributes['name'],
             'description' => $attributes['description'] ?? null,
@@ -724,10 +725,13 @@ final class DomainResourceService
     public function updateProject(User $actor, Project $project, array $attributes): Project
     {
         Gate::forUser($actor)->authorize('update', $project);
-        $this->validateProjectReferences($project->enterprise, $attributes);
+        $this->validateProjectReferences($project->enterprise, $attributes, $project);
+        if (array_key_exists('initiative_id', $attributes) && ! array_key_exists('strategy_id', $attributes) && $attributes['initiative_id'] !== null) {
+            $attributes['strategy_id'] = Initiative::query()->whereKey($attributes['initiative_id'])->value('strategy_id');
+        }
 
         $project->update(array_intersect_key($attributes, array_flip([
-            'strategy_id', 'plan_id', 'initiative_id', 'name', 'description', 'status',
+            'strategy_id', 'initiative_id', 'name', 'description', 'status',
         ])));
 
         return $project->refresh();
@@ -752,27 +756,35 @@ final class DomainResourceService
     }
 
     /** @param array<string, mixed> $attributes */
-    private function validateProjectReferences(Enterprise $enterprise, array $attributes): void
+    private function validateProjectReferences(Enterprise $enterprise, array $attributes, ?Project $project = null): void
     {
-        if (isset($attributes['strategy_id'])) {
-            $strategy = Strategy::query()->with('objective')->findOrFail((int) $attributes['strategy_id']);
+        $initiativeId = array_key_exists('initiative_id', $attributes)
+            ? $attributes['initiative_id']
+            : $project?->initiative_id;
+        $strategyId = array_key_exists('strategy_id', $attributes)
+            ? $attributes['strategy_id']
+            : $project?->strategy_id;
+
+        $initiative = null;
+        if ($initiativeId !== null) {
+            $initiative = Initiative::query()->with('strategy.objective')->findOrFail((int) $initiativeId);
+            if ((int) $initiative->strategy->objective->enterprise_id !== (int) $enterprise->getKey()) {
+                throw new LogicException('The initiative must belong to the selected enterprise.');
+            }
+
+            if ($strategyId === null) {
+                $strategyId = $initiative->strategy_id;
+            } elseif ((int) $initiative->strategy_id !== (int) $strategyId) {
+                throw new LogicException('The initiative must belong to the selected strategy.');
+            }
+        }
+
+        if ($strategyId !== null) {
+            $strategy = Strategy::query()->with('objective')->findOrFail((int) $strategyId);
             if ((int) $strategy->objective->enterprise_id !== (int) $enterprise->getKey()) {
                 throw new LogicException('The strategy must belong to the selected enterprise.');
             }
         }
 
-        if (isset($attributes['plan_id'])) {
-            $plan = Plan::query()->with('strategy.objective')->findOrFail((int) $attributes['plan_id']);
-            if ((int) $plan->strategy->objective->enterprise_id !== (int) $enterprise->getKey()) {
-                throw new LogicException('The plan must belong to the selected enterprise.');
-            }
-        }
-
-        if (isset($attributes['initiative_id'])) {
-            $initiative = Initiative::query()->with('plan.strategy.objective')->findOrFail((int) $attributes['initiative_id']);
-            if ((int) $initiative->plan->strategy->objective->enterprise_id !== (int) $enterprise->getKey()) {
-                throw new LogicException('The initiative must belong to the selected enterprise.');
-            }
-        }
     }
 }

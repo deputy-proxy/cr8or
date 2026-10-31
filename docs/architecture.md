@@ -63,7 +63,7 @@ Organization identity, membership, enterprise boundaries, and authorization scop
 
 ### Enterprise Context
 
-Enterprise goals, strategy, plans, work, decisions, and business context.
+Enterprise goals, strategy, initiatives, work, decisions, and business context.
 
 | Resource | Filament class location |
 | --- | --- |

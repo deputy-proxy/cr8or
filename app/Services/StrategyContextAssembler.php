@@ -65,24 +65,14 @@ final class StrategyContextAssembler
                             'id' => $strategy->getKey(),
                             'name' => $strategy->name,
                             'description' => $strategy->description,
-                            'plans' => $strategy->plans()
+                            'initiatives' => $strategy->initiatives()
                                 ->orderBy('id')
                                 ->limit(self::CONTEXT_LIMIT)
                                 ->get()
-                                ->map(fn ($plan) => [
-                                    'id' => $plan->getKey(),
-                                    'name' => $plan->name,
-                                    'description' => $plan->description,
-                                    'initiatives' => $plan->initiatives()
-                                        ->orderBy('id')
-                                        ->limit(self::CONTEXT_LIMIT)
-                                        ->get()
-                                        ->map(fn ($initiative) => [
-                                            'id' => $initiative->getKey(),
-                                            'name' => $initiative->name,
-                                            'description' => $initiative->description,
-                                        ])
-                                        ->all(),
+                                ->map(fn ($initiative) => [
+                                    'id' => $initiative->getKey(),
+                                    'name' => $initiative->name,
+                                    'description' => $initiative->description,
                                 ])
                                 ->all(),
                         ])

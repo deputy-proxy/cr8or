@@ -17,12 +17,12 @@ class UpdateProjectTool extends DomainMutationTool
 {
     protected static function schemaFields(JsonSchema $schema): array
     {
-        return ['project_id' => $schema->integer()->min(1)->required(), 'strategy_id' => $schema->integer()->min(1), 'plan_id' => $schema->integer()->min(1), 'initiative_id' => $schema->integer()->min(1), 'name' => $schema->string()->min(1)->max(255), 'description' => $schema->string()->max(10000), 'status' => $schema->string()->max(100), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
+        return ['project_id' => $schema->integer()->min(1)->required(), 'strategy_id' => $schema->integer()->min(1), 'initiative_id' => $schema->integer()->min(1), 'name' => $schema->string()->min(1)->max(255), 'description' => $schema->string()->max(10000), 'status' => $schema->string()->max(100), 'agent_assignment_id' => $schema->integer()->min(1), 'agent_execution_id' => $schema->integer()->min(1), 'approval_request_id' => $schema->integer()->min(1)];
     }
 
     protected static function rules(): array
     {
-        return ['project_id' => ['required', 'integer', 'min:1', 'exists:projects,id'], 'strategy_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:strategies,id'], 'plan_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:plans,id'], 'initiative_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:initiatives,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'description' => ['sometimes', 'nullable', 'string', 'max:10000'], 'status' => ['sometimes', 'string', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
+        return ['project_id' => ['required', 'integer', 'min:1', 'exists:projects,id'], 'strategy_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:strategies,id'], 'initiative_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:initiatives,id'], 'name' => ['sometimes', 'string', 'min:1', 'max:255'], 'description' => ['sometimes', 'nullable', 'string', 'max:10000'], 'status' => ['sometimes', 'string', 'max:100'], 'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'], 'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'], 'approval_request_id' => ['nullable', 'integer', 'min:1', 'exists:approval_requests,id']];
     }
 
     /** @param array<string, mixed> $validated */
@@ -61,7 +61,7 @@ class UpdateProjectTool extends DomainMutationTool
     {
         if (! $target instanceof Project) {
             throw new \LogicException('Unexpected project target.');
-        } $attributes = array_intersect_key($validated, array_flip(['strategy_id', 'plan_id', 'initiative_id', 'name', 'description', 'status']));
+        } $attributes = array_intersect_key($validated, array_flip(['strategy_id', 'initiative_id', 'name', 'description', 'status']));
         if ($attributes === []) {
             throw new \LogicException('At least one mutable project field is required.');
         }
@@ -75,6 +75,6 @@ class UpdateProjectTool extends DomainMutationTool
             throw new \LogicException('Unexpected project result.');
         }
 
-        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'strategy_id' => $record->strategy_id, 'plan_id' => $record->plan_id, 'initiative_id' => $record->initiative_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
+        return ['id' => $record->id, 'enterprise_id' => $record->enterprise_id, 'strategy_id' => $record->strategy_id, 'initiative_id' => $record->initiative_id, 'name' => $record->name, 'description' => $record->description, 'status' => $record->status];
     }
 }

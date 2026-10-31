@@ -47,7 +47,7 @@ The central architectural rule is simple:
 CR8OR is intended to be the operating layer through which an enterprise can:
 
 - define and preserve enterprise context;
-- manage strategy, objectives and plans;
+- manage strategy, objectives and initiatives;
 - manage projects, work items and operational execution;
 - define Agents and specialized Experts;
 - assign Agents to Enterprises;
@@ -1235,7 +1235,7 @@ Examples include:
 
 - objectives;
 - strategies;
-- plans;
+- initiatives;
 - initiatives;
 - KPIs;
 - strategic decisions.

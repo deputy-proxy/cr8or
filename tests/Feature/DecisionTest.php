@@ -7,7 +7,6 @@ use App\Models\Initiative;
 use App\Models\Membership;
 use App\Models\Objective;
 use App\Models\Organization;
-use App\Models\Plan;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
@@ -20,8 +19,7 @@ it('records a decision with explicit enterprise and strategic/work context', fun
     $enterprise = Enterprise::factory()->create();
     $objective = Objective::factory()->create(['enterprise_id' => $enterprise]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective]);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy]);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan]);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy]);
     $project = Project::factory()->create(['enterprise_id' => $enterprise]);
     $task = Task::factory()->create(['enterprise_id' => $enterprise, 'project_id' => $project]);
     $actor = User::factory()->create(['name' => 'Decision Actor']);
@@ -32,7 +30,6 @@ it('records a decision with explicit enterprise and strategic/work context', fun
         'type' => 'strategic',
         'objective_id' => $objective,
         'strategy_id' => $strategy,
-        'plan_id' => $plan,
         'initiative_id' => $initiative,
         'project_id' => $project,
         'task_id' => $task,
@@ -44,7 +41,6 @@ it('records a decision with explicit enterprise and strategic/work context', fun
     expect($decision->enterprise->is($enterprise))->toBeTrue()
         ->and($decision->objective->is($objective))->toBeTrue()
         ->and($decision->strategy->is($strategy))->toBeTrue()
-        ->and($decision->plan->is($plan))->toBeTrue()
         ->and($decision->initiative->is($initiative))->toBeTrue()
         ->and($decision->project->is($project))->toBeTrue()
         ->and($decision->task->is($task))->toBeTrue()
@@ -155,7 +151,7 @@ it('hides decision administration from users without organization membership', f
 it('keeps decision schema distinct from existing decision records', function () {
     expect(Schema::getColumnListing('decisions'))->toBe([
         'id', 'enterprise_id', 'type', 'actor_id', 'actor_name',
-        'objective_id', 'strategy_id', 'plan_id', 'initiative_id',
+        'objective_id', 'strategy_id', 'initiative_id',
         'project_id', 'task_id',
         'title', 'summary', 'rationale', 'decided_at', 'created_at', 'updated_at',
     ]);

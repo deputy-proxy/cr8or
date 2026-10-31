@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['enterprise_id', 'strategy_id', 'plan_id', 'initiative_id', 'name', 'description', 'status'])]
+#[Fillable(['enterprise_id', 'strategy_id', 'initiative_id', 'name', 'description', 'status'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
@@ -25,12 +25,6 @@ class Project extends Model
     public function strategy(): BelongsTo
     {
         return $this->belongsTo(Strategy::class);
-    }
-
-    /** @return BelongsTo<Plan, $this> */
-    public function plan(): BelongsTo
-    {
-        return $this->belongsTo(Plan::class);
     }
 
     /** @return BelongsTo<Initiative, $this> */

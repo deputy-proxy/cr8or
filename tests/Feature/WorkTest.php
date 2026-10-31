@@ -4,7 +4,6 @@ use App\Models\Enterprise;
 use App\Models\Initiative;
 use App\Models\Membership;
 use App\Models\Organization;
-use App\Models\Plan;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
@@ -16,13 +15,11 @@ it('persists projects and work hierarchy with planning relationships', function 
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
     $objective = \App\Models\Objective::factory()->create(['enterprise_id' => $enterprise]);
     $strategy = Strategy::factory()->create(['objective_id' => $objective]);
-    $plan = Plan::factory()->create(['strategy_id' => $strategy]);
-    $initiative = Initiative::factory()->create(['plan_id' => $plan]);
+    $initiative = Initiative::factory()->create(['strategy_id' => $strategy]);
 
     $project = Project::factory()->create([
         'enterprise_id' => $enterprise,
         'strategy_id' => $strategy,
-        'plan_id' => $plan,
         'initiative_id' => $initiative,
     ]);
     $task = Task::factory()->forProject($project)->create();
@@ -30,7 +27,6 @@ it('persists projects and work hierarchy with planning relationships', function 
 
     expect($project->enterprise->is($enterprise))->toBeTrue()
         ->and($project->strategy->is($strategy))->toBeTrue()
-        ->and($project->plan->is($plan))->toBeTrue()
         ->and($project->initiative->is($initiative))->toBeTrue()
         ->and($project->tasks->contains($task))->toBeTrue()
         ->and($project->tasks->contains($workItem))->toBeTrue()

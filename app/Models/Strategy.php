@@ -21,9 +21,9 @@ class Strategy extends Model
         return $this->belongsTo(Objective::class);
     }
 
-    /** @return HasMany<Plan, $this> */
-    public function plans(): HasMany
+    /** @return HasMany<Initiative, $this> */
+    public function initiatives(): HasMany
     {
-        return $this->hasMany(Plan::class);
+        return $this->hasMany(Initiative::class);
     }
 }

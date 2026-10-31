@@ -120,7 +120,6 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-marketing-strategy` | `GetMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `get-memory` | `GetMemoryTool` | Unregistered read/discovery/resource | N/A |
 | `get-objective` | `GetObjectiveTool` | Unregistered read/discovery/resource | N/A |
-| `get-plan` | `GetPlanTool` | Unregistered read/discovery/resource | N/A |
 | `get-project` | `GetProjectTool` | Unregistered read/discovery/resource | N/A |
 | `get-publication` | `GetPublicationTool` | Unregistered read/discovery/resource | N/A |
 | `get-social-account` | `GetSocialAccountTool` | Unregistered read/discovery/resource | N/A |
@@ -150,7 +149,6 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-marketing-strategies` | `ListMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `list-memories` | `ListMemoryTool` | Unregistered read/discovery/resource | N/A |
 | `list-objectives` | `ListObjectiveTool` | Unregistered read/discovery/resource | N/A |
-| `list-plans` | `ListPlanTool` | Unregistered read/discovery/resource | N/A |
 | `list-projects` | `ListProjectTool` | Unregistered read/discovery/resource | N/A |
 | `list-publication-results` | `ListPublicationResultsTool` | Unregistered read/discovery/resource | N/A |
 | `list-publications` | `ListPublicationTool` | Unregistered read/discovery/resource | N/A |
@@ -350,7 +348,7 @@ The governed mutation surface now covers the core planning, content, work, and i
 
 Campaign creation is intentionally bound to the existing `MarketingStrategy` relationship in the current domain model. Marketing strategies are therefore discoverable through `list-marketing-strategies` and `get-marketing-strategy`; the MCP layer does not invent a second strategy persistence model.
 
-Project and objective relationships remain discoverable through `list/get` Tools for goals, KPIs, plans, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
+Project and objective relationships remain discoverable through `list/get` Tools for goals, KPIs, and initiatives. Cross-enterprise relationship references are rejected in the domain service before persistence.
 
 Social-account discovery returns provider metadata and external identifiers only. Generic account creation and generic connection CRUD are not exposed through MCP. OAuth initiation, callback validation, destination discovery/attachment, token refresh, and provider revocation remain in the authenticated web lifecycle backed by `SocialAuthorizationService`. `update-social-account` changes only display metadata/channel assignment; `disable-social-account` deactivates the destination inside CR8OR and does not claim to revoke the provider grant. Raw OAuth tokens, credential references, and provider payloads are excluded from ordinary MCP responses. External IDs remain opaque and the `(provider, external_id)` uniqueness constraint remains authoritative.
 
