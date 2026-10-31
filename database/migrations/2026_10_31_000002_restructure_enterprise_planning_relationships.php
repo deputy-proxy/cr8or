@@ -30,6 +30,14 @@ return new class extends Migration
 
     private function applyUp(): void
     {
+        if (Schema::hasTable('planning_relationship_migration_archive')
+            && (DB::table('planning_relationship_migration_archive')->exists() || $this->hasMilestoneContractionPrefix())) {
+            $this->assertRecoverableMilestoneContractionState();
+            $this->continueUpAfterMilestoneContraction();
+
+            return;
+        }
+
         $this->validateLegacyData();
 
         $this->prepareArchiveTable();
@@ -125,58 +133,7 @@ return new class extends Migration
             $table->dropConstrainedForeignId('initiative_id');
         });
 
-        Schema::table('milestones', function (Blueprint $table): void {
-            $table->dropIndex(['enterprise_id', 'project_id']);
-            $table->dropConstrainedForeignId('project_id');
-            $table->dropColumn('due_at');
-        });
-
-        foreach (DB::table('planning_relationship_migration_archive')->where('entity_type', 'milestone_record')->get() as $archive) {
-            $milestone = json_decode($archive->payload, true, 512, JSON_THROW_ON_ERROR);
-            $targetDate = $milestone['due_at'] === null ? null : substr((string) $milestone['due_at'], 0, 10);
-            unset($milestone['project_id'], $milestone['due_at']);
-            $milestone['target_date'] = $targetDate;
-            DB::table('milestones')->updateOrInsert(['id' => $archive->entity_id], $milestone);
-        }
-
-        foreach (DB::table('planning_relationship_migration_archive')->where('entity_type', 'task_project')->get() as $archive) {
-            DB::table('tasks')->where('id', $archive->entity_id)->update(['project_id' => $archive->related_id]);
-        }
-
-        Schema::table('tasks', function (Blueprint $table): void {
-            $table->foreignId('initiative_id')->nullable()->after('project_id')->constrained()->nullOnDelete();
-        });
-
-        foreach (DB::table('tasks')->orderBy('id')->get(['id', 'enterprise_id', 'project_id', 'initiative_id', 'parent_task_id']) as $task) {
-            $hasProject = $task->project_id !== null;
-            $hasInitiative = $task->initiative_id !== null;
-
-            if ($hasProject && $hasInitiative) {
-                throw new RuntimeException("Task {$task->id} cannot belong to both a Project and Initiative.");
-            }
-
-            $parentEnterpriseId = match (true) {
-                $hasProject => DB::table('projects')->where('id', $task->project_id)->value('enterprise_id'),
-                $hasInitiative => DB::table('initiatives')->where('id', $task->initiative_id)->value('enterprise_id'),
-                default => null,
-            };
-
-            if (($hasProject || $hasInitiative) && ($parentEnterpriseId === null || (int) $parentEnterpriseId !== (int) $task->enterprise_id)) {
-                throw new RuntimeException("Task {$task->id} has a Project or Initiative outside its Enterprise.");
-            }
-
-            if ($task->parent_task_id !== null) {
-                $parent = DB::table('tasks')->where('id', $task->parent_task_id)->first(['id', 'enterprise_id', 'project_id', 'initiative_id']);
-                if ($parent === null
-                    || (int) $parent->enterprise_id !== (int) $task->enterprise_id
-                    || $parent->project_id !== $task->project_id
-                    || $parent->initiative_id !== $task->initiative_id) {
-                    throw new RuntimeException("Task {$task->id} has a Parent Task outside its Enterprise and Project or Initiative scope.");
-                }
-            }
-        }
-
-        $this->addTaskParentConstraint();
+        $this->continueUpAfterMilestoneContraction();
     }
 
     public function down(): void
@@ -292,6 +249,12 @@ return new class extends Migration
             $table->index(['enterprise_id', 'project_id']);
         });
 
+        if (Schema::hasIndex('milestones', 'milestones_enterprise_id_idx')) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->dropIndex('milestones_enterprise_id_idx');
+            });
+        }
+
         Schema::table('initiatives', function (Blueprint $table): void {
             $table->dropForeign(['strategy_id']);
             $table->foreignId('strategy_id')->nullable(false)->change();
@@ -304,6 +267,247 @@ return new class extends Migration
         }
 
         Schema::dropIfExists('planning_relationship_migration_archive');
+    }
+
+    private function continueUpAfterMilestoneContraction(): void
+    {
+        $this->removeMilestoneProjectRelationship();
+
+        foreach (DB::table('planning_relationship_migration_archive')->where('entity_type', 'milestone_record')->get() as $archive) {
+            $milestone = json_decode($archive->payload, true, 512, JSON_THROW_ON_ERROR);
+            $targetDate = $milestone['due_at'] === null ? null : substr((string) $milestone['due_at'], 0, 10);
+            unset($milestone['project_id'], $milestone['due_at']);
+            $milestone['target_date'] = $targetDate;
+            DB::table('milestones')->updateOrInsert(['id' => $archive->entity_id], $milestone);
+        }
+
+        foreach (DB::table('planning_relationship_migration_archive')->where('entity_type', 'task_project')->get() as $archive) {
+            DB::table('tasks')->where('id', $archive->entity_id)->update(['project_id' => $archive->related_id]);
+        }
+
+        if (! Schema::hasColumn('tasks', 'initiative_id')) {
+            Schema::table('tasks', function (Blueprint $table): void {
+                $table->foreignId('initiative_id')->nullable()->after('project_id')->constrained()->nullOnDelete();
+            });
+        }
+
+        foreach (DB::table('tasks')->orderBy('id')->get(['id', 'enterprise_id', 'project_id', 'initiative_id', 'parent_task_id']) as $task) {
+            $hasProject = $task->project_id !== null;
+            $hasInitiative = $task->initiative_id !== null;
+
+            if ($hasProject && $hasInitiative) {
+                throw new RuntimeException("Task {$task->id} cannot belong to both a Project and Initiative.");
+            }
+
+            $parentEnterpriseId = match (true) {
+                $hasProject => DB::table('projects')->where('id', $task->project_id)->value('enterprise_id'),
+                $hasInitiative => DB::table('initiatives')->where('id', $task->initiative_id)->value('enterprise_id'),
+                default => null,
+            };
+
+            if (($hasProject || $hasInitiative) && ($parentEnterpriseId === null || (int) $parentEnterpriseId !== (int) $task->enterprise_id)) {
+                throw new RuntimeException("Task {$task->id} has a Project or Initiative outside its Enterprise.");
+            }
+
+            if ($task->parent_task_id !== null) {
+                $parent = DB::table('tasks')->where('id', $task->parent_task_id)->first(['id', 'enterprise_id', 'project_id', 'initiative_id']);
+                if ($parent === null
+                    || (int) $parent->enterprise_id !== (int) $task->enterprise_id
+                    || $parent->project_id !== $task->project_id
+                    || $parent->initiative_id !== $task->initiative_id) {
+                    throw new RuntimeException("Task {$task->id} has a Parent Task outside its Enterprise and Project or Initiative scope.");
+                }
+            }
+        }
+
+        $this->addTaskParentConstraint();
+    }
+
+    /**
+     * Remove the legacy Milestone/Project relationship without dropping the index
+     * that InnoDB may be using to support the Enterprise foreign key.
+     */
+    private function removeMilestoneProjectRelationship(): void
+    {
+        $enterpriseIndexExists = collect(Schema::getIndexes('milestones'))->contains(
+            fn (array $index): bool => ($index['columns'] ?? []) === ['enterprise_id'],
+        );
+
+        if (! $enterpriseIndexExists) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->index('enterprise_id', 'milestones_enterprise_id_idx');
+            });
+        }
+
+        if ($this->hasForeignKeyOnColumns('milestones', ['project_id'])) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->dropForeign(['project_id']);
+            });
+        }
+
+        if (Schema::hasIndex('milestones', ['enterprise_id', 'project_id'])) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->dropIndex(['enterprise_id', 'project_id']);
+            });
+        }
+
+        if (Schema::hasColumn('milestones', 'project_id')) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->dropColumn('project_id');
+            });
+        }
+
+        if (Schema::hasColumn('milestones', 'due_at')) {
+            Schema::table('milestones', function (Blueprint $table): void {
+                $table->dropColumn('due_at');
+            });
+        }
+
+        if (! $this->hasForeignKeyOnColumns('milestones', ['enterprise_id'])) {
+            throw new RuntimeException('Milestone Enterprise foreign key was not preserved while removing the legacy Project relationship.');
+        }
+
+        $enterpriseIndexExists = collect(Schema::getIndexes('milestones'))->contains(
+            fn (array $index): bool => ($index['columns'] ?? []) === ['enterprise_id'],
+        );
+
+        if (! $enterpriseIndexExists) {
+            throw new RuntimeException('Milestones must retain a dedicated Enterprise index after removing the legacy composite index.');
+        }
+    }
+
+    /** @param list<string> $columns */
+    private function hasForeignKeyOnColumns(string $table, array $columns): bool
+    {
+        return collect(Schema::getForeignKeys($table))->contains(
+            fn (array $foreignKey): bool => ($foreignKey['columns'] ?? []) === $columns,
+        );
+    }
+
+    private function hasMilestoneContractionPrefix(): bool
+    {
+        return Schema::hasColumn('initiatives', 'enterprise_id')
+            && ! Schema::hasColumn('projects', 'initiative_id')
+            && Schema::hasColumn('milestones', 'target_date')
+            && ! Schema::hasColumn('tasks', 'initiative_id');
+    }
+
+    /**
+     * Validate the known non-transactional DDL interruption point before resuming.
+     */
+    private function assertRecoverableMilestoneContractionState(): void
+    {
+        $expectedColumns = [
+            'initiatives' => ['enterprise_id', 'strategy_id'],
+            'projects' => ['enterprise_id'],
+            'milestones' => ['enterprise_id', 'target_date'],
+            'tasks' => ['enterprise_id', 'project_id'],
+        ];
+
+        foreach ($expectedColumns as $table => $columns) {
+            foreach ($columns as $column) {
+                if (! Schema::hasColumn($table, $column)) {
+                    throw new RuntimeException("The planning migration archive is non-empty, but the interrupted migration state is not recognized: {$table}.{$column} is missing.");
+                }
+            }
+        }
+
+        if (Schema::hasColumn('projects', 'initiative_id')
+            || Schema::hasColumn('tasks', 'initiative_id')
+            || DB::table('initiatives')->whereNull('enterprise_id')->exists()) {
+            throw new RuntimeException('The planning migration archive is non-empty, but the schema does not match the known milestone-contraction interruption point. Refusing automatic recovery.');
+        }
+
+        if (! $this->hasForeignKeyOnColumns('milestones', ['enterprise_id'])
+            || ! $this->hasForeignKeyOnColumns('initiatives', ['enterprise_id'])
+            || ! $this->hasForeignKeyOnColumns('initiatives', ['strategy_id'])) {
+            throw new RuntimeException('The interrupted planning migration state is missing an expected Initiative or Milestone foreign key. Refusing automatic recovery.');
+        }
+
+        $initiativeColumns = collect(Schema::getColumns('initiatives'))->keyBy('name');
+        if (($initiativeColumns->get('enterprise_id')['nullable'] ?? true)
+            || ! ($initiativeColumns->get('strategy_id')['nullable'] ?? false)) {
+            throw new RuntimeException('The interrupted planning migration state has unexpected Initiative nullability. Refusing automatic recovery.');
+        }
+
+        if (Schema::hasColumn('milestones', 'project_id') && ! Schema::hasColumn('milestones', 'due_at')) {
+            throw new RuntimeException('The interrupted planning migration state has an unexpected Milestone column combination. Refusing automatic recovery.');
+        }
+
+        $allowedTypes = ['project_initiative', 'milestone_record', 'milestone_project', 'task_project'];
+        $actualTypes = DB::table('planning_relationship_migration_archive')->distinct()->pluck('entity_type')->all();
+        $unexpectedTypes = array_values(array_diff($actualTypes, $allowedTypes));
+
+        if ($unexpectedTypes !== []) {
+            throw new RuntimeException('The planning migration archive contains unexpected record types: '.implode(', ', $unexpectedTypes).'. Refusing automatic recovery.');
+        }
+
+        foreach ($allowedTypes as $entityType) {
+            $records = DB::table('planning_relationship_migration_archive')->where('entity_type', $entityType)->get(['entity_id']);
+            if ($records->pluck('entity_id')->unique()->count() !== $records->count()) {
+                throw new RuntimeException("The planning migration archive contains duplicate {$entityType} records. Refusing automatic recovery.");
+            }
+        }
+
+        $milestoneRecords = DB::table('planning_relationship_migration_archive')->where('entity_type', 'milestone_record')->get();
+        $milestoneProjects = DB::table('planning_relationship_migration_archive')->where('entity_type', 'milestone_project')->get();
+        if ($milestoneRecords->count() !== $milestoneProjects->count()
+            || $milestoneRecords->count() !== DB::table('milestones')->count()
+            || $milestoneProjects->pluck('entity_id')->unique()->count() !== $milestoneProjects->count()) {
+            throw new RuntimeException('The planning migration archive does not contain exactly one original record and Project association for every Milestone. Refusing automatic recovery.');
+        }
+
+        $milestoneProjectById = $milestoneProjects->keyBy('entity_id');
+        foreach ($milestoneRecords as $archive) {
+            if (! is_string($archive->payload) || $archive->payload === '') {
+                throw new RuntimeException("The planning migration archive is missing the original Milestone payload for Milestone {$archive->entity_id}. Refusing automatic recovery.");
+            }
+
+            $payload = json_decode($archive->payload, true, 512, JSON_THROW_ON_ERROR);
+            $link = $milestoneProjectById->get($archive->entity_id);
+            $current = DB::table('milestones')->where('id', $archive->entity_id)->first(['id', 'enterprise_id']);
+            $enterpriseId = (int) ($payload['enterprise_id'] ?? 0);
+
+            if (! is_array($payload)
+                || ! array_key_exists('project_id', $payload)
+                || ! array_key_exists('enterprise_id', $payload)
+                || ! array_key_exists('due_at', $payload)
+                || $link === null
+                || $current === null
+                || (int) ($payload['id'] ?? 0) !== (int) $archive->entity_id
+                || (int) ($payload['project_id'] ?? 0) !== (int) $link->related_id
+                || $enterpriseId === 0
+                || (int) $current->enterprise_id !== $enterpriseId
+                || ! DB::table('projects')->where('id', $link->related_id)->where('enterprise_id', $enterpriseId)->exists()) {
+                throw new RuntimeException("The planning migration archive contains an invalid Milestone record or Project association for Milestone {$archive->entity_id}. Refusing automatic recovery.");
+            }
+        }
+
+        $taskProjects = DB::table('planning_relationship_migration_archive')->where('entity_type', 'task_project')->get();
+        if ($taskProjects->count() !== DB::table('tasks')->whereNotNull('project_id')->count()) {
+            throw new RuntimeException('The planning migration archive does not match the current Task/Project associations. Refusing automatic recovery.');
+        }
+
+        foreach ($taskProjects as $archive) {
+            $task = DB::table('tasks')->where('id', $archive->entity_id)->first(['enterprise_id', 'project_id']);
+            $project = DB::table('projects')->where('id', $archive->related_id)->first(['enterprise_id']);
+
+            if ($task === null
+                || $project === null
+                || (int) $task->project_id !== (int) $archive->related_id
+                || (int) $task->enterprise_id !== (int) $project->enterprise_id) {
+                throw new RuntimeException("The planning migration archive contains an invalid Task/Project association for Task {$archive->entity_id}. Refusing automatic recovery.");
+            }
+        }
+
+        foreach (DB::table('planning_relationship_migration_archive')->where('entity_type', 'project_initiative')->get() as $archive) {
+            $project = DB::table('projects')->where('id', $archive->entity_id)->first(['enterprise_id']);
+            $initiative = DB::table('initiatives')->where('id', $archive->related_id)->first(['enterprise_id']);
+
+            if ($project === null || $initiative === null || (int) $project->enterprise_id !== (int) $initiative->enterprise_id) {
+                throw new RuntimeException("The planning migration archive contains an invalid Project/Initiative association for Project {$archive->entity_id}. Refusing automatic recovery.");
+            }
+        }
     }
 
     private function prepareArchiveTable(): void
