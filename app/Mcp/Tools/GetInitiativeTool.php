@@ -10,7 +10,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('get-initiative')]
-#[Description('Get an authorized initiative in the strategy hierarchy.')]
+#[Description('Get an authorized initiative for an Enterprise.')]
 class GetInitiativeTool extends DiscoveryGetTool
 {
     protected static function modelClass(): string
@@ -20,7 +20,7 @@ class GetInitiativeTool extends DiscoveryGetTool
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     /** @param Builder<Model> $query */
@@ -29,6 +29,6 @@ class GetInitiativeTool extends DiscoveryGetTool
     {
         $organizationIds = $actor->memberships()->pluck('organization_id');
 
-        return $query->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
+        return $query->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
     }
 }

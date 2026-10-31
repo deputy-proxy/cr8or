@@ -9,14 +9,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use LogicException;
 
-#[Fillable(['enterprise_id', 'project_id', 'parent_task_id', 'name', 'description', 'status', 'priority', 'due_at'])]
 /**
- * A Task is a hierarchical planning/work-management record.
+ * @property int $enterprise_id
+ * @property int|null $project_id
+ * @property int|null $initiative_id
+ * @property int|null $parent_task_id
  *
- * A Task is the canonical actionable work entity. It owns hierarchy, scheduling,
- * workflow associations, decisions, assignments, and dependency endpoints.
+ * A Task is the canonical actionable work entity, owned by an Enterprise and optionally scoped to one Project or Initiative.
+ * It owns hierarchy, scheduling, workflow associations, decisions, assignments, and dependency endpoints.
  */
+#[Fillable(['enterprise_id', 'project_id', 'initiative_id', 'parent_task_id', 'name', 'description', 'status', 'priority', 'due_at'])]
 class Task extends Model
 {
     protected $attributes = ['status' => 'todo'];
@@ -46,6 +50,12 @@ class Task extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /** @return BelongsTo<Initiative, $this> */
+    public function initiative(): BelongsTo
+    {
+        return $this->belongsTo(Initiative::class);
     }
 
     /** @return BelongsTo<Task, $this> */
@@ -92,19 +102,32 @@ class Task extends Model
 
     private function validateScopeAndHierarchy(): void
     {
-        if ($this->project_id !== null) {
-            $project = Project::query()->find($this->project_id);
-            if ($project === null || (int) $project->enterprise_id !== (int) $this->enterprise_id) {
-                throw new \LogicException('Task Project must belong to the same Enterprise.');
-            }
+        $hasProject = $this->project_id !== null;
+        $hasInitiative = $this->initiative_id !== null;
+
+        if ($hasProject && $hasInitiative) {
+            throw new LogicException('A Task can belong to a Project or Initiative, not both.');
+        }
+
+        $parentEnterpriseId = match (true) {
+            $hasProject => Project::query()->whereKey($this->project_id)->value('enterprise_id'),
+            $hasInitiative => Initiative::query()->whereKey($this->initiative_id)->value('enterprise_id'),
+            default => null,
+        };
+
+        if ($parentEnterpriseId !== null && (int) $parentEnterpriseId !== (int) $this->enterprise_id) {
+            throw new LogicException('Task Project or Initiative must belong to the same Enterprise.');
+        }
+        if (($hasProject || $hasInitiative) && $parentEnterpriseId === null) {
+            throw new LogicException('Task Project or Initiative must exist and belong to the same Enterprise.');
         }
 
         if ($this->exists) {
-            foreach ($this->children()->get(['id', 'enterprise_id', 'project_id']) as $child) {
+            foreach ($this->children()->get(['id', 'enterprise_id', 'project_id', 'initiative_id']) as $child) {
                 if ((int) $child->enterprise_id !== (int) $this->enterprise_id
-                    || (($child->project_id === null) !== ($this->project_id === null))
-                    || ($child->project_id !== null && (int) $child->project_id !== (int) $this->project_id)) {
-                    throw new \LogicException('A Task cannot change Enterprise or Project scope while its children remain in another scope.');
+                    || $child->project_id !== $this->project_id
+                    || $child->initiative_id !== $this->initiative_id) {
+                    throw new LogicException('A Task cannot change Enterprise, Project, or Initiative scope while its children remain in another scope.');
                 }
             }
         }
@@ -114,21 +137,22 @@ class Task extends Model
         }
 
         if ($this->exists && (int) $this->getKey() === (int) $this->parent_task_id) {
-            throw new \LogicException('A Task cannot be its own parent.');
+            throw new LogicException('A Task cannot be its own parent.');
         }
 
         $parent = Task::query()->find($this->parent_task_id);
         if ($parent === null
             || (int) $parent->enterprise_id !== (int) $this->enterprise_id
-            || (($parent->project_id === null) !== ($this->project_id === null)) || ($parent->project_id !== null && (int) $parent->project_id !== (int) $this->project_id)) {
-            throw new \LogicException('Parent Task must belong to the same Enterprise and Project.');
+            || $parent->project_id !== $this->project_id
+            || $parent->initiative_id !== $this->initiative_id) {
+            throw new LogicException('Parent Task must belong to the same Enterprise and Project or Initiative.');
         }
 
         $visited = [];
         while ($parent !== null) {
             $parentId = (int) $parent->getKey();
             if (isset($visited[$parentId]) || ($this->exists && $parentId === (int) $this->getKey())) {
-                throw new \LogicException('Task hierarchy cannot contain cycles.');
+                throw new LogicException('Task hierarchy cannot contain cycles.');
             }
             $visited[$parentId] = true;
             $parent = $parent->parent_task_id === null ? null : Task::query()->find($parent->parent_task_id);

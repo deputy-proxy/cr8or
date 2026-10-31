@@ -83,7 +83,7 @@ class DecisionResource extends Resource
                 ->searchable(),
             Select::make('initiative_id')
                 ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Initiative::query()->whereHas('strategy.objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                    ? Initiative::query()->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds())->orderBy('name')->pluck('name', 'id')->all()
                     : [])
                 ->searchable(),
             Select::make('project_id')

@@ -22,7 +22,7 @@ it('adds nullable close timestamps to every CR8OR-owned lifecycle entity', funct
         Goal::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'archived']),
         Objective::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'completed']),
         Task::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'done']),
-        Milestone::factory()->forProject($project)->create(['status' => 'completed']),
+        Milestone::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'completed']),
     ];
 
     foreach ($records as $record) {
@@ -39,7 +39,7 @@ it('sets, preserves, clears, and resets close timestamps across lifecycle transi
         [Goal::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'active']), 'archived', 'active'],
         [Objective::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'active']), 'completed', 'active'],
         [Task::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'todo']), 'done', 'todo'],
-        [Milestone::factory()->forProject($project)->create(['status' => 'planned']), 'completed', 'active'],
+        [Milestone::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'planned']), 'completed', 'active'],
     ];
 
     foreach ($records as [$record, $closedStatus, $openStatus]) {

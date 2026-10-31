@@ -237,9 +237,9 @@ External resources, integrations, integration execution/results, and command web
 
 Task is the single canonical entity for actionable work. The former parallel WorkItem entity, model, table, policy, service/operation path, Filament resource, factory, and MCP tools have been retired.
 
-- A Task belongs to an Enterprise and may belong to a Project in that same Enterprise.
-- Task retains name, description, status, priority, due_at, and optional parent_task_id.
-- Parent/child Tasks must share the same Enterprise and Project scope; self-parenting and hierarchy cycles are rejected.
+- A Task belongs to an Enterprise and may optionally belong to one Project or Initiative in that same Enterprise, but never both. Standalone Enterprise Tasks remain valid. Parent/child Tasks must share the same Enterprise and parent scope.
+- Initiatives belong directly to Enterprises and may optionally reference a Strategy; Projects have no Initiative relationship. Milestones belong directly to Enterprises and use `target_date` as their target achievement date.
+- Parent/child Tasks must share the same Enterprise and Project/Initiative scope; self-parenting and hierarchy cycles are rejected.
 - Task exposes relationships to Workflows, Decisions, Assignments, and Dependency endpoints. A Workflow remains a separate orchestration definition, and WorkflowExecution remains the authoritative persisted runtime record.
 - A Workflow has at most one canonical task_id. A Decision retains its historical task_id context and immutable decision content. Task and Workflow lifecycles remain independent.
 - Dependency endpoints remain limited to the supported Project, Task, and Milestone types. Enterprise/project scope, duplicate-edge, self-reference, and cycle protections remain enforced.

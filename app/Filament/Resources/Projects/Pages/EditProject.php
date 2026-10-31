@@ -26,7 +26,7 @@ class EditProject extends EditRecord
         return app(DomainResourceService::class)->updateProject(
             auth()->user(),
             $record,
-            array_intersect_key($data, array_flip(['strategy_id', 'initiative_id', 'name', 'description', 'status'])),
+            array_intersect_key($data, array_flip(['strategy_id', 'name', 'description', 'status'])),
         );
     }
 

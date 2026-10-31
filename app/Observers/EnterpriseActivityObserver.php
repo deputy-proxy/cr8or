@@ -46,7 +46,7 @@ final class EnterpriseActivityObserver
         Kpi::class => ['name', 'definition', 'unit', 'target_value', 'current_value', 'status'],
         Project::class => ['name', 'status'],
         Task::class => ['name', 'status', 'priority', 'due_at'],
-        Milestone::class => ['name', 'status', 'due_at'],
+        Milestone::class => ['name', 'status', 'target_date'],
         Decision::class => ['title', 'summary', 'rationale'],
         EnterpriseDecision::class => ['title', 'summary', 'rationale', 'decided_at', 'actor_id', 'actor_name'],
         Dependency::class => ['type', 'project_id', 'predecessor_type', 'predecessor_id', 'successor_type', 'successor_id'],
@@ -230,9 +230,7 @@ final class EnterpriseActivityObserver
 
         $enterpriseId = match (true) {
             $model instanceof Strategy => $model->objective()->value('enterprise_id'),
-            $model instanceof Initiative => Objective::query()
-                ->whereHas('strategies', fn ($query) => $query->whereKey($model->strategy_id))
-                ->value('enterprise_id'),
+            $model instanceof Initiative => $model->enterprise_id,
             default => null,
         };
 

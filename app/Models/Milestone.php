@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['enterprise_id', 'project_id', 'name', 'description', 'due_at', 'status'])]
+/**
+ * @property int $enterprise_id
+ * @property \Carbon\CarbonImmutable|null $target_date
+ */
+#[Fillable(['enterprise_id', 'name', 'description', 'target_date', 'status'])]
 class Milestone extends Model
 {
     protected $attributes = ['status' => 'planned'];
@@ -18,18 +22,12 @@ class Milestone extends Model
 
     protected function casts(): array
     {
-        return ['closed_at' => 'immutable_datetime'];
+        return ['target_date' => 'immutable_date', 'closed_at' => 'immutable_datetime'];
     }
 
     /** @return BelongsTo<Enterprise, $this> */
     public function enterprise(): BelongsTo
     {
         return $this->belongsTo(Enterprise::class);
-    }
-
-    /** @return BelongsTo<Project, $this> */
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
     }
 }

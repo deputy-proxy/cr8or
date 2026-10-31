@@ -21,7 +21,7 @@ final class UpdateTask implements Operation
         return $this->tasks->update(
             $actor,
             $task,
-            $input['attributes'] ?? array_intersect_key($input, array_flip(['name', 'description', 'status', 'project_id', 'parent_task_id', 'priority', 'due_at'])),
+            $input['attributes'] ?? array_intersect_key($input, array_flip(['name', 'description', 'status', 'project_id', 'initiative_id', 'parent_task_id', 'priority', 'due_at'])),
         );
     }
 }

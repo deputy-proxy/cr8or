@@ -6,12 +6,16 @@ use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Initiatives\Pages\CreateInitiative;
 use App\Filament\Resources\Initiatives\Pages\EditInitiative;
 use App\Filament\Resources\Initiatives\Pages\ListInitiatives;
+use App\Models\Enterprise;
 use App\Models\Initiative;
+use App\Models\Strategy;
 use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -39,7 +43,10 @@ class InitiativeResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('strategy_id')->relationship('strategy', 'name')->searchable()->preload()->required(),
+            Select::make('enterprise_id')->options(fn (): array => Enterprise::query()->whereIn('id', static::manageableEnterpriseIds())->orderBy('name')->pluck('name', 'id')->all())->searchable()->required()->live()->afterStateUpdated(fn (Set $set) => $set('strategy_id', null)),
+            Select::make('strategy_id')->options(fn (Get $get): array => filled($get('enterprise_id'))
+                ? Strategy::query()->whereHas('objective', fn (Builder $query) => $query->where('enterprise_id', $get('enterprise_id'))->whereIn('enterprise_id', static::manageableEnterpriseIds()))->orderBy('name')->pluck('name', 'id')->all()
+                : [])->searchable(),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
         ]);
@@ -49,7 +56,9 @@ class InitiativeResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
+            TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
             TextColumn::make('strategy.name')->label('Strategy')->searchable()->sortable(),
+            TextColumn::make('tasks_count')->counts('tasks')->label('Tasks')->sortable(),
         ])->recordActions([
             \Filament\Actions\EditAction::make(),
             \Filament\Actions\DeleteAction::make(),
@@ -58,7 +67,7 @@ class InitiativeResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('strategy.objective.enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
+        return parent::getEloquentQuery()->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', static::authorizedOrganizationIds()));
     }
 
     public static function canViewAny(): bool

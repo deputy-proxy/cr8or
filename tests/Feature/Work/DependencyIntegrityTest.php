@@ -43,7 +43,7 @@ it('accepts Project, Task, Task, and Milestone endpoints', function () {
     $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
     $task = Task::factory()->forProject($project)->create();
     $workItem = Task::factory()->create(['enterprise_id' => $enterprise->id, 'project_id' => $project->id]);
-    $milestone = Milestone::factory()->forProject($project)->create();
+    $milestone = Milestone::factory()->create(['enterprise_id' => $enterprise->id]);
 
     foreach ([
         [$project, $task],
@@ -52,7 +52,7 @@ it('accepts Project, Task, Task, and Milestone endpoints', function () {
     ] as [$predecessor, $successor]) {
         Dependency::factory()->create([
             'enterprise_id' => $enterprise->id,
-            'project_id' => $predecessor instanceof Project ? null : $project->id,
+            'project_id' => $successor instanceof Milestone || $predecessor instanceof Project ? null : $project->id,
             'predecessor_type' => $predecessor->getMorphClass(),
             'predecessor_id' => $predecessor->id,
             'successor_type' => $successor->getMorphClass(),

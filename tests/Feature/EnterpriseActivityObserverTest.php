@@ -54,7 +54,7 @@ it('records Task and Milestone lifecycle transitions using their persisted statu
     $enterprise = Enterprise::factory()->create();
     $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
     $task = Task::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'todo']);
-    $milestone = Milestone::factory()->forProject($project)->create(['status' => 'planned']);
+    $milestone = Milestone::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'planned']);
 
     $task->update(['status' => 'in_progress']);
     $task->update(['status' => 'done']);

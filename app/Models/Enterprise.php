@@ -284,6 +284,12 @@ class Enterprise extends Model
         return $this->hasMany(Project::class);
     }
 
+    /** @return HasMany<Initiative, $this> */
+    public function initiatives(): HasMany
+    {
+        return $this->hasMany(Initiative::class);
+    }
+
     /** @return HasMany<Task, $this> */
     public function tasks(): HasMany
     {

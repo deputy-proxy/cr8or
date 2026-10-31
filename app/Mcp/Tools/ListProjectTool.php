@@ -25,7 +25,7 @@ class ListProjectTool extends DiscoveryListTool
 
     protected static function fields(): array
     {
-        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'initiative_id' => 'initiative_id', 'name' => 'name', 'description' => 'description', 'status' => 'status', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
+        return ['id' => 'id', 'enterprise_id' => 'enterprise_id', 'strategy_id' => 'strategy_id', 'name' => 'name', 'description' => 'description', 'status' => 'status', 'created_at' => 'created_at', 'updated_at' => 'updated_at'];
     }
 
     protected static function searchableColumns(): array

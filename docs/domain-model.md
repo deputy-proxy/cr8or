@@ -130,29 +130,32 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Known invariants:** Strategy remains connected to business and operational context.
 
-**Current implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Initiative belongs directly to Strategy. These relationships are explicit foreign keys and are authorized through the Objective Enterprise organization boundary.
+**Current implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Initiative belongs directly to Enterprise and may optionally reference a Strategy from that same Enterprise. Initiative authorization follows its direct Enterprise ownership boundary.
 
 **Deferred:** Planning methodology and metric calculation details.
 
 ## Work
 
+**Planning ownership:** Projects and Initiatives are independent Enterprise-owned planning units. Milestones belong directly to an Enterprise and use `target_date` as their target achievement date. Tasks remain Enterprise-owned and may optionally belong to one Project or Initiative; standalone Tasks remain valid, and parent Tasks must remain within the same parent scope.
+
+
 **Purpose:** Represent operational activity through one canonical actionable-work entity while keeping planning and workflow orchestration distinct.
 
-**Core entities:** Project, Task, Assignment, Milestone, Dependency, Workflow, WorkflowVersion, WorkflowStage, WorkflowExecution.
+**Core entities:** Project, Initiative, Task, Assignment, Milestone, Dependency, Workflow, WorkflowVersion, WorkflowStage, WorkflowExecution.
 
-**Canonical Task contract:** Task belongs to an Enterprise and may belong to a Project within that Enterprise. It carries name, description, status, priority, due date, and optional parent Task. Parent/child Tasks must share Enterprise and Project scope, and hierarchy cycles are rejected. Task can be referenced by Workflows, Decisions, Assignments, and Dependencies.
+**Canonical Task contract:** Task belongs to an Enterprise and may optionally belong to one Project or Initiative within that Enterprise, but never both. It carries name, description, status, priority, due date, and optional parent Task. Parent/child Tasks must share Enterprise and the same Project or Initiative scope, and hierarchy cycles are rejected. Task can be referenced by Workflows, Decisions, Assignments, and Dependencies.
 
-**Relationships:** Projects may reference a Strategy and an optional Initiative from the same Enterprise. When both are supplied, the Initiative must belong to that Strategy. If only an Initiative is supplied, its Strategy is derived by the domain service. Milestones belong to a Project and Enterprise. Dependencies are directional relationships between Project, Task, or Milestone endpoints; Enterprise ownership is mandatory, explicit Project scope requires both endpoints to belong to that Project, and duplicate edges, self-links, and cycles are rejected. Assignments belong to an Enterprise and identify a User or existing Agent Assignment; an assignment does not grant authority.
+**Relationships:** Projects belong to Enterprises and may reference a Strategy; they have no Initiative relationship. Initiatives belong directly to Enterprises and may optionally reference a Strategy from the same Enterprise. Milestones belong directly to Enterprises and carry an optional target achievement date (`target_date`); they have no Project relationship. Tasks may belong to one Project or one Initiative, or remain standalone Enterprise Tasks; they cannot belong to both. Dependencies are directional relationships between Project, Task, or Milestone endpoints; Enterprise ownership is mandatory, explicit Project scope requires both endpoints to be Project-scoped within that Project, and duplicate edges, self-links, and cycles are rejected. Assignments belong to an Enterprise and identify a User or existing Agent Assignment; an assignment does not grant authority.
 
 **Workflow separation:** Workflow definitions and immutable published WorkflowVersions define orchestration. WorkflowExecution is the authoritative persisted runtime record. A definition's exposed status is derived from its authoritative published WorkflowVersion (`draft`, `published`, or `retired`); legacy Workflow status values are not execution outcomes and are not mutated by execution services. Individual success/failure, timestamps, and failure details remain on execution records. Task state is not Workflow execution state, and a Workflow does not become a Task.
 
 **Data migration:** The forward-only WorkItem consolidation migration maps each former WorkItem ID to a newly created Task ID, remaps Workflow/Decision/legacy Execution references and polymorphic Assignment/Dependency endpoints, preserves legacy execution name snapshots, validates scope and ambiguous references, then drops the legacy table and columns. Existing Task IDs are never overwritten or assumed to share an ID space. Historical decision content and timestamps are preserved. The migration cannot be automatically rolled back; a verified backup is required before production execution.
 
-**Authorization:** Work records inherit the Enterprise organization boundary. Server-side policies and scoped selectors prevent cross-organization access and cross-Enterprise/project relationships.
+**Authorization:** Work records inherit the Enterprise organization boundary. Server-side policies and scoped selectors prevent cross-organization access and cross-Enterprise Project/Initiative relationships. Deleting a Project or Initiative detaches its Tasks, which remain Enterprise-owned standalone Tasks.
 
 **Ownership:** CR8OR for CR8OR-owned work.
 
-**Known invariants:** Parent ownership is preserved when unrelated Task fields change. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
+**Known invariants:** A Task may have no parent or one Project/Initiative parent, but never both. Parent ownership is preserved when unrelated Task fields change, and parent/child Tasks cannot cross Project or Initiative scope. Work relationships remain attributable to their Enterprise. Assignment does not change authorization.
 
 **Current implementation:** WorkflowExecution preserves Workflow, Enterprise, actor, version, correlation, idempotency, stage, output, waiting, failure, and continuation state. AgentExecution is the authoritative Agent runtime record. Laravel Queue jobs remain infrastructure, while GenerationJob, RenderJob, PublishingJob, IntegrationJob, and related specialized job models represent bounded-context records rather than a generic Workflow Job -> Execution hierarchy.
 

@@ -55,14 +55,14 @@ class OverviewDashboardData
         /** @var Builder<Project> $projects */
         $projects = ProjectResource::canViewAny() ? ProjectResource::getEloquentQuery()->where('enterprise_id', $enterpriseId) : Project::query()->whereRaw('1 = 0');
         /** @var Builder<Initiative> $initiatives */
-        $initiatives = InitiativeResource::canViewAny() ? InitiativeResource::getEloquentQuery()->whereHas('strategy.objective', fn (Builder $q) => $q->where('enterprise_id', $enterpriseId)) : Initiative::query()->whereRaw('1 = 0');
+        $initiatives = InitiativeResource::canViewAny() ? InitiativeResource::getEloquentQuery()->where('enterprise_id', $enterpriseId) : Initiative::query()->whereRaw('1 = 0');
         /** @var Builder<Milestone> $milestones */
         $milestones = MilestoneResource::canViewAny() ? MilestoneResource::getEloquentQuery()->where('enterprise_id', $enterpriseId) : Milestone::query()->whereRaw('1 = 0');
 
         $listCards = [
             ['label' => 'Projects', 'url' => ProjectResource::canViewAny() ? ProjectResource::getUrl() : null, 'items' => (clone $projects)->where('status', 'active')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Project $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => null])->all()],
             ['label' => 'Initiatives', 'url' => InitiativeResource::canViewAny() ? InitiativeResource::getUrl() : null, 'items' => (clone $initiatives)->orderByDesc('updated_at')->limit(5)->get()->map(fn (Initiative $r): array => ['title' => $r->name, 'status' => null, 'due' => null])->all()],
-            ['label' => 'Milestones', 'url' => MilestoneResource::canViewAny() ? MilestoneResource::getUrl() : null, 'items' => (clone $milestones)->whereNotNull('due_at')->where('due_at', '>=', now())->whereNotIn('status', ['completed', 'done', 'cancelled', 'canceled'])->orderBy('due_at')->limit(5)->get()->map(fn (Milestone $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
+            ['label' => 'Milestones', 'url' => MilestoneResource::canViewAny() ? MilestoneResource::getUrl() : null, 'items' => (clone $milestones)->whereNotNull('target_date')->whereDate('target_date', '>=', now()->toDateString())->whereNotIn('status', ['completed', 'done', 'cancelled', 'canceled'])->orderBy('target_date')->limit(5)->get()->map(fn (Milestone $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->target_date)])->all()],
             ['label' => 'Tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => (clone $actionableTasks)->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
         ];
 
@@ -135,7 +135,7 @@ class OverviewDashboardData
             ['label' => 'Strategies', 'count' => StrategyResource::canViewAny() ? StrategyResource::getEloquentQuery()->whereHas('objective', fn (Builder $q) => $q->where('enterprise_id', $enterpriseId))->count() : null, 'url' => StrategyResource::canViewAny() ? StrategyResource::getUrl() : null],
             ['label' => 'Goals', 'count' => GoalResource::canViewAny() ? GoalResource::getEloquentQuery()->where('enterprise_id', $enterpriseId)->count() : null, 'url' => GoalResource::canViewAny() ? GoalResource::getUrl() : null],
             ['label' => 'Objectives', 'count' => ObjectiveResource::canViewAny() ? ObjectiveResource::getEloquentQuery()->where('enterprise_id', $enterpriseId)->count() : null, 'url' => ObjectiveResource::canViewAny() ? ObjectiveResource::getUrl() : null],
-            ['label' => 'Initiatives', 'count' => InitiativeResource::canViewAny() ? InitiativeResource::getEloquentQuery()->whereHas('strategy.objective', fn (Builder $q) => $q->where('enterprise_id', $enterpriseId))->count() : null, 'url' => InitiativeResource::canViewAny() ? InitiativeResource::getUrl() : null],
+            ['label' => 'Initiatives', 'count' => InitiativeResource::canViewAny() ? InitiativeResource::getEloquentQuery()->where('enterprise_id', $enterpriseId)->count() : null, 'url' => InitiativeResource::canViewAny() ? InitiativeResource::getUrl() : null],
             ['label' => 'KPIs', 'count' => KpiResource::canViewAny() ? KpiResource::getEloquentQuery()->where('enterprise_id', $enterpriseId)->count() : null, 'url' => KpiResource::canViewAny() ? KpiResource::getUrl() : null],
         ];
     }

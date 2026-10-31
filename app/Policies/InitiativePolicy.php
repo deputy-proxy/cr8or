@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
+use App\Models\Enterprise;
 use App\Models\Initiative;
-use App\Models\Strategy;
 use App\Models\User;
 use App\Policies\Concerns\HasExplicitCrudContract;
 
@@ -13,7 +13,7 @@ class InitiativePolicy
 
     public function view(User $user, Initiative $initiative): bool
     {
-        return (new EnterprisePolicy)->view($user, $initiative->strategy->objective->enterprise);
+        return (new EnterprisePolicy)->view($user, $initiative->enterprise);
     }
 
     public function create(User $user): bool
@@ -21,18 +21,18 @@ class InitiativePolicy
         return (new EnterprisePolicy)->create($user);
     }
 
-    public function createForStrategy(User $user, Strategy $strategy): bool
+    public function createForEnterprise(User $user, Enterprise $enterprise): bool
     {
-        return (new EnterprisePolicy)->createForOrganization($user, $strategy->objective->enterprise->organization);
+        return (new EnterprisePolicy)->createForOrganization($user, $enterprise->organization);
     }
 
     public function update(User $user, Initiative $initiative): bool
     {
-        return (new EnterprisePolicy)->update($user, $initiative->strategy->objective->enterprise);
+        return (new EnterprisePolicy)->update($user, $initiative->enterprise);
     }
 
     public function delete(User $user, Initiative $initiative): bool
     {
-        return (new EnterprisePolicy)->delete($user, $initiative->strategy->objective->enterprise);
+        return (new EnterprisePolicy)->delete($user, $initiative->enterprise);
     }
 }

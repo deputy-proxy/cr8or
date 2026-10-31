@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowExecution;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -34,8 +35,14 @@ class WorkContextAssembler
                 'description',
                 'status',
                 'strategy_id',
-                'initiative_id',
             ])
+            ->orderByDesc('updated_at')
+            ->orderBy('id')
+            ->limit(self::CONTEXT_LIMIT)
+            ->get();
+
+        $initiatives = $enterprise->initiatives()
+            ->select(['id', 'enterprise_id', 'strategy_id', 'name', 'description'])
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
@@ -46,6 +53,7 @@ class WorkContextAssembler
                 'id',
                 'enterprise_id',
                 'project_id',
+                'initiative_id',
                 'parent_task_id',
                 'name',
                 'description',
@@ -63,13 +71,12 @@ class WorkContextAssembler
             ->select([
                 'id',
                 'enterprise_id',
-                'project_id',
                 'name',
                 'description',
-                'due_at',
+                'target_date',
                 'status',
             ])
-            ->orderByRaw('due_at IS NULL, due_at ASC')
+            ->orderByRaw('target_date IS NULL, target_date ASC')
             ->orderByDesc('updated_at')
             ->orderBy('id')
             ->limit(self::CONTEXT_LIMIT)
@@ -80,17 +87,23 @@ class WorkContextAssembler
 
         return [
             'enterprise' => $this->enterpriseIdentity($enterprise),
+            'initiatives' => $initiatives->map(fn ($initiative) => [
+                'id' => $initiative->getKey(),
+                'name' => $initiative->name,
+                'description' => $initiative->description,
+                'strategy_id' => $initiative->strategy_id,
+            ])->all(),
             'projects' => $projects->map(fn (Project $project) => [
                 'id' => $project->getKey(),
                 'name' => $project->name,
                 'description' => $project->description,
                 'status' => $project->status,
                 'strategy_id' => $project->strategy_id,
-                'initiative_id' => $project->initiative_id,
             ])->all(),
             'tasks' => $tasks->map(fn (Task $task) => [
                 'id' => $task->getKey(),
                 'project_id' => $task->project_id,
+                'initiative_id' => $task->initiative_id,
                 'parent_task_id' => $task->parent_task_id,
                 'name' => $task->name,
                 'description' => $task->description,
@@ -102,10 +115,9 @@ class WorkContextAssembler
             ])->all(),
             'milestones' => $milestones->map(fn (Milestone $milestone) => [
                 'id' => $milestone->getKey(),
-                'project_id' => $milestone->project_id,
                 'name' => $milestone->name,
                 'description' => $milestone->description,
-                'due_at' => $this->timestamp($milestone->due_at),
+                'target_date' => $milestone->target_date === null ? null : Carbon::parse($milestone->target_date)->toDateString(),
                 'status' => $milestone->status,
             ])->all(),
             'assignments' => $this->assignments($enterprise, $workReferences),
@@ -132,7 +144,7 @@ class WorkContextAssembler
             : Task::query()
                 ->where('enterprise_id', $enterprise->getKey())
                 ->whereIn('id', $parentIds)
-                ->select(['id', 'enterprise_id', 'project_id', 'name', 'status'])
+                ->select(['id', 'enterprise_id', 'project_id', 'initiative_id', 'name', 'status'])
                 ->get()
                 ->keyBy('id');
 
@@ -164,6 +176,7 @@ class WorkContextAssembler
                 (int) $task->getKey() => [
                     'id' => $parent->getKey(),
                     'project_id' => $parent->project_id,
+                    'initiative_id' => $parent->initiative_id,
                     'name' => $parent->name,
                     'status' => $parent->status,
                 ],
