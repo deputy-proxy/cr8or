@@ -61,78 +61,11 @@
                 @endforeach
             </section>
 
-            <section aria-label="Lifecycle chart" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
+            <section aria-label="Daily lifecycle" class="w-full min-w-0 space-y-4">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h2 class="font-medium text-white">Lifecycle</h2>
-                        <p class="mt-1 text-sm text-gray-400">Open inventory and daily created/closed counts · {{ $lifecycleChart['rangeLabel'] }}</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <label for="overview-lifecycle-entity" class="sr-only">Lifecycle entity type</label>
-                        <select id="overview-lifecycle-entity" wire:change="setLifecycleEntityType($event.target.value)" class="rounded-md border border-gray-700 bg-zinc-900 px-2 py-1 text-xs text-gray-300">
-                            @foreach ($lifecycleChart['entityOptions'] as $value => $label)
-                                <option value="{{ $value }}" @selected($lifecycleChart['selectedType'] === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                @if (!$lifecycleChart['available'])
-                    <p class="mt-5 rounded-lg border border-gray-800 bg-black/30 px-4 py-6 text-center text-sm text-gray-400">Lifecycle metrics are not available to your account.</p>
-                @else
-                    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-                        @foreach ($lifecycleChart['series'] as $series)
-                            <span class="inline-flex items-center gap-2 text-xs text-gray-400">
-                                <span class="h-2 w-2 rounded-full" style="background-color: {{ $series['color'] }}"></span>
-                                {{ $series['label'] }}
-                            </span>
-                        @endforeach
-                    </div>
-                    <div class="mt-3 overflow-x-auto">
-                        <svg viewBox="0 0 900 230" role="img" aria-label="Daily lifecycle metrics chart" class="h-64 min-w-[620px] w-full">
-                            <title>Daily lifecycle metrics for {{ $lifecycleChart['rangeLabel'] }}</title>
-                            @foreach ([18, 74, 130, 186] as $gridY)
-                                <line x1="42" y1="{{ $gridY }}" x2="862" y2="{{ $gridY }}" stroke="#27272a" stroke-width="1" />
-                            @endforeach
-                            @foreach ($lifecycleChart['series'] as $series)
-                                @if ($series['path'] !== '')
-                                    <path d="{{ $series['path'] }}" fill="none" stroke="{{ $series['color'] }}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-                                @endif
-                                @foreach ($series['points'] as $point)
-                                    <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="3.5" fill="{{ $series['color'] }}">
-                                        <title>{{ $series['label'] }}: {{ $point['value'] }} on {{ $lifecycleChart['days'][$point['index']]['date'] }}</title>
-                                    </circle>
-                                @endforeach
-                            @endforeach
-                            @foreach ($lifecycleChart['days'] as $index => $day)
-                                @if ($index === 0 || $index === count($lifecycleChart['days']) - 1 || $index % 2 === 0)
-                                    <text x="{{ count($lifecycleChart['days']) > 1 ? 42 + (820 / (count($lifecycleChart['days']) - 1) * $index) : 452 }}" y="218" text-anchor="middle" fill="#71717a" font-size="11">{{ $day['label'] }}</text>
-                                @endif
-                            @endforeach
-                        </svg>
-                    </div>
-                    @if (count($lifecycleChart['limitations']) > 0)
-                        <div class="mt-3 rounded-lg border border-amber-900/60 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
-                            <p class="font-medium">Some lifecycle history is incomplete</p>
-                            <ul class="mt-1 list-disc space-y-1 pl-4 text-amber-100/80">
-                                @foreach ($lifecycleChart['limitations'] as $limitation)
-                                    <li>{{ $limitation }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    @if ($lifecycleChart['selectedType'] === 'all')
-                        <p class="mt-2 text-xs text-gray-600">All work combines entity types your account can access.</p>
-                    @endif
-                    <p class="mt-2 text-xs text-gray-600">Today’s end-of-day count is not shown until the day has ended. Reopened records cannot be reconstructed before their latest reopening.</p>
-                @endif
-            </section>
-
-            <section aria-label="Daily activity" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h2 class="font-medium text-white">Daily activity</h2>
-                        <p class="mt-1 text-sm text-gray-400">Recorded activity · {{ $activityRangeLabel }}</p>
+                        <h2 class="font-medium text-white">Daily lifecycle</h2>
+                        <p class="mt-1 text-sm text-gray-400">Daily opening balance, items opened and closed, and closing balance · {{ $lifecycleChart['rangeLabel'] }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <label for="overview-activity-range" class="sr-only">Dashboard date range</label>
@@ -142,6 +75,111 @@
                         </select>
                         <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">Live · refreshes every 30 seconds</span>
                     </div>
+                </div>
+
+                @if (!$lifecycleChart['available'])
+                    <p class="rounded-lg border border-gray-800 bg-zinc-950 px-4 py-6 text-center text-sm text-gray-400">Lifecycle metrics are not available to your account.</p>
+                @else
+                    <div aria-label="Lifecycle summary metrics" class="grid grid-cols-1 gap-3 xl:grid-cols-3">
+                        @foreach ($lifecycleChart['entities'] as $entity)
+                            <article class="min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
+                                <h3 class="mb-3 font-medium text-white">{{ $entity['label'] }}</h3>
+                                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
+                                    <div>
+                                        <div class="text-xs text-gray-500">Opening</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-blue-300">{{ $entity['summary']['open_start'] === null ? '—' : number_format($entity['summary']['open_start']) }}</div>
+                                        <div class="text-[11px] text-gray-500">First day · 00:00</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Opened</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-green-400">{{ $entity['summary']['created'] === null ? '—' : number_format($entity['summary']['created']) }}</div>
+                                        <div class="text-[11px] text-gray-500">During range</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Closed</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-red-400">{{ $entity['summary']['closed'] === null ? '—' : number_format($entity['summary']['closed']) }}</div>
+                                        <div class="text-[11px] text-gray-500">During range</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Closing</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-blue-500">{{ $entity['summary']['open_end'] === null ? '—' : number_format($entity['summary']['open_end']) }}</div>
+                                        <div class="text-[11px] text-gray-500">Last complete day · 23:59</div>
+                                    </div>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+
+                    <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-gray-800 bg-zinc-950 px-4 py-3">
+                        @foreach ([
+                            ['label' => 'Open at 00:00', 'color' => '#60a5fa'],
+                            ['label' => 'Opened during day', 'color' => '#22c55e'],
+                            ['label' => 'Closed during day', 'color' => '#ef4444'],
+                            ['label' => 'Open at 23:59', 'color' => '#2563eb'],
+                        ] as $legend)
+                            <span class="inline-flex items-center gap-2 text-xs text-gray-400">
+                                <span class="h-2.5 w-2.5 rounded-sm" style="background-color: {{ $legend['color'] }}"></span>
+                                {{ $legend['label'] }}
+                            </span>
+                        @endforeach
+                    </div>
+
+                    @foreach ($lifecycleChart['entities'] as $entity)
+                        <article aria-label="{{ $entity['label'] }} daily waterfall" class="w-full min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
+                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <h3 class="font-medium text-white">{{ $entity['label'] }}</h3>
+                                <span class="text-xs text-gray-500">Each day starts and ends independently</span>
+                            </div>
+                            <div class="w-full overflow-x-auto">
+                                <svg viewBox="0 0 {{ $entity['chart']['width'] }} {{ $entity['chart']['height'] }}" role="img" aria-label="{{ $entity['label'] }} daily opening, opened, closed and closing counts" class="block h-[250px] w-full min-w-[900px]">
+                                    <title>{{ $entity['label'] }} daily waterfall for {{ $lifecycleChart['rangeLabel'] }}</title>
+                                    @foreach ($entity['chart']['ticks'] as $tick)
+                                        <line x1="24" y1="{{ $tick['y'] }}" x2="{{ $entity['chart']['width'] - 12 }}" y2="{{ $tick['y'] }}" stroke="#27272a" stroke-width="1" />
+                                        <text x="18" y="{{ $tick['y'] + 4 }}" text-anchor="end" fill="#71717a" font-size="10">{{ $tick['value'] }}</text>
+                                    @endforeach
+                                    <line x1="24" y1="{{ $entity['chart']['baseline'] }}" x2="{{ $entity['chart']['width'] - 12 }}" y2="{{ $entity['chart']['baseline'] }}" stroke="#52525b" stroke-width="1.2" />
+                                    @foreach ($entity['chart']['days'] as $dayIndex => $day)
+                                        @foreach ($day['connectors'] as $connector)
+                                            <line x1="{{ $connector['x1'] }}" y1="{{ $connector['y'] }}" x2="{{ $connector['x2'] }}" y2="{{ $connector['y'] }}" stroke="#71717a" stroke-width="1" stroke-dasharray="3 3" />
+                                        @endforeach
+                                        @foreach ($day['bars'] as $bar)
+                                            @php($barLabel = match ($bar['key']) { 'open_start' => 'Open at 00:00', 'created' => 'Opened during day', 'closed' => 'Closed during day', default => 'Open at 23:59' })
+                                            <rect x="{{ $bar['x'] }}" y="{{ $bar['y'] }}" width="{{ $bar['width'] }}" height="{{ $bar['height'] }}" rx="1.5" fill="{{ $bar['color'] }}">
+                                                <title>{{ $barLabel }}: {{ abs($bar['value']) }} on {{ $day['date'] }}</title>
+                                            </rect>
+                                            <text x="{{ $bar['x'] + ($bar['width'] / 2) }}" y="{{ $bar['label_y'] }}" text-anchor="middle" fill="{{ $bar['color'] }}" font-size="10" font-weight="600">{{ $bar['key'] === 'created' ? '+' : '' }}{{ $bar['value'] }}</text>
+                                        @endforeach
+                                        <text x="{{ 32 + ($dayIndex * 84) + 42 }}" y="232" text-anchor="middle" fill="#a1a1aa" font-size="10">{{ $day['label'] }}</text>
+                                        @if ($day['reconciles'] === false)
+                                            <text x="{{ 32 + ($dayIndex * 84) + 42 }}" y="246" text-anchor="middle" fill="#fbbf24" font-size="9">Check</text>
+                                        @endif
+                                    @endforeach
+                                </svg>
+                            </div>
+                        </article>
+                    @endforeach
+
+                    @if (count($lifecycleChart['limitations']) > 0)
+                        <div class="rounded-lg border border-amber-900/60 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
+                            <p class="font-medium">Some lifecycle history is incomplete</p>
+                            <ul class="mt-1 list-disc space-y-1 pl-4 text-amber-100/80">
+                                @foreach ($lifecycleChart['limitations'] as $limitation)
+                                    <li>{{ $limitation }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    <p class="text-xs text-gray-500">The current day’s closing balance is not available until the day ends. A “Check” marker indicates that the historical opening, opened, closed and closing counts do not reconcile.</p>
+                @endif
+            </section>
+
+            <section aria-label="Daily activity" class="rounded-xl border border-gray-800 bg-zinc-950 p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 class="font-medium text-white">Daily activity</h2>
+                        <p class="mt-1 text-sm text-gray-400">Recorded activity · {{ $activityRangeLabel }}</p>
+                    </div>
+                    <span class="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-400">Live · refreshes every 30 seconds</span>
                 </div>
 
                 @if (!$activityAvailable)
