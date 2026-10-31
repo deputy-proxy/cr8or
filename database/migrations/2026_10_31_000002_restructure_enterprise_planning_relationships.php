@@ -32,19 +32,7 @@ return new class extends Migration
     {
         $this->validateLegacyData();
 
-        if (Schema::hasTable('planning_relationship_migration_archive')) {
-            throw new RuntimeException('A previous planning relationship migration attempt left an archive table. Inspect and reconcile that attempt before rerunning.');
-        }
-
-        Schema::create('planning_relationship_migration_archive', function (Blueprint $table): void {
-            $table->id();
-            $table->string('entity_type');
-            $table->unsignedBigInteger('entity_id');
-            $table->unsignedBigInteger('related_id')->nullable();
-            $table->longText('payload')->nullable();
-            $table->timestamps();
-            $table->index(['entity_type', 'entity_id']);
-        });
+        $this->prepareArchiveTable();
 
         foreach (DB::table('projects')->whereNotNull('initiative_id')->orderBy('id')->get(['id', 'enterprise_id', 'initiative_id']) as $project) {
             DB::table('planning_relationship_migration_archive')->insert([
@@ -316,6 +304,58 @@ return new class extends Migration
         }
 
         Schema::dropIfExists('planning_relationship_migration_archive');
+    }
+
+    private function prepareArchiveTable(): void
+    {
+        $tableName = 'planning_relationship_migration_archive';
+        $indexName = 'planning_archive_entity_entity_idx';
+
+        if (! Schema::hasTable($tableName)) {
+            Schema::create($tableName, function (Blueprint $table) use ($indexName): void {
+                $table->id();
+                $table->string('entity_type');
+                $table->unsignedBigInteger('entity_id');
+                $table->unsignedBigInteger('related_id')->nullable();
+                $table->longText('payload')->nullable();
+                $table->timestamps();
+                $table->index(['entity_type', 'entity_id'], $indexName);
+            });
+
+            return;
+        }
+
+        $requiredColumns = ['id', 'entity_type', 'entity_id', 'related_id', 'payload', 'created_at', 'updated_at'];
+        $missingColumns = array_values(array_filter(
+            $requiredColumns,
+            fn (string $column): bool => ! Schema::hasColumn($tableName, $column),
+        ));
+
+        if ($missingColumns !== []) {
+            throw new RuntimeException('A previous planning relationship migration attempt left an incompatible archive table. Missing columns: '.implode(', ', $missingColumns).'. Inspect and reconcile that attempt before rerunning.');
+        }
+
+        if (DB::table($tableName)->exists()) {
+            throw new RuntimeException('A previous planning relationship migration attempt left archive records. Refusing to resume or overwrite a non-empty archive table; inspect and reconcile that attempt before rerunning.');
+        }
+
+        $legacySchemaIsIntact = ! Schema::hasColumn('initiatives', 'enterprise_id')
+            && Schema::hasColumn('projects', 'initiative_id')
+            && Schema::hasColumn('milestones', 'project_id')
+            && Schema::hasColumn('milestones', 'due_at')
+            && ! Schema::hasColumn('milestones', 'target_date')
+            && Schema::hasColumn('tasks', 'project_id')
+            && ! Schema::hasColumn('tasks', 'initiative_id');
+
+        if (! $legacySchemaIsIntact) {
+            throw new RuntimeException('A previous planning relationship migration attempt left an empty archive table after schema changes had begun. Refusing automatic recovery because the database is not in the original pre-migration state. Inspect and reconcile that attempt before rerunning.');
+        }
+
+        if (! Schema::hasIndex($tableName, $indexName)) {
+            Schema::table($tableName, function (Blueprint $table) use ($indexName): void {
+                $table->index(['entity_type', 'entity_id'], $indexName);
+            });
+        }
     }
 
     private function validateLegacyData(): void
