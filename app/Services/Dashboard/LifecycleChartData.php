@@ -3,9 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Filament\Resources\Events\EventResource;
-use App\Filament\Resources\Goals\GoalResource;
 use App\Filament\Resources\Issues\IssueResource;
-use App\Filament\Resources\Milestones\MilestoneResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Enterprise;
@@ -18,25 +16,26 @@ final class LifecycleChartData
 {
     /** @var array<string, array{label: string, resource: class-string, created: string, closed: string, status: string}> */
     private const ENTITIES = [
-        'goals' => ['label' => 'Goals', 'resource' => GoalResource::class, 'created' => 'created_at', 'closed' => 'closed_at', 'status' => 'status'],
         'objectives' => ['label' => 'Objectives', 'resource' => ObjectiveResource::class, 'created' => 'created_at', 'closed' => 'closed_at', 'status' => 'status'],
         'tasks' => ['label' => 'Tasks', 'resource' => TaskResource::class, 'created' => 'created_at', 'closed' => 'closed_at', 'status' => 'status'],
-        'milestones' => ['label' => 'Milestones', 'resource' => MilestoneResource::class, 'created' => 'created_at', 'closed' => 'closed_at', 'status' => 'status'],
-        'issues' => ['label' => 'GitHub Issues', 'resource' => IssueResource::class, 'created' => 'github_created_at', 'closed' => 'github_closed_at', 'status' => 'state'],
+        'issues' => ['label' => 'Issues', 'resource' => IssueResource::class, 'created' => 'github_created_at', 'closed' => 'github_closed_at', 'status' => 'state'],
     ];
 
     /**
      * @return array{
      *   available: bool,
-     *   selectedType: string,
-     *   entityOptions: array<string, string>,
-     *   days: list<array{date: string, label: string, metrics: array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}}>,
-     *   series: list<array{key: string, label: string, color: string, values: list<int|null>, path: string, points: list<array{x: float, y: float, value: int, index: int}>}>,
+     *   entities: list<array{
+     *     key: string,
+     *     label: string,
+     *     days: list<array{date: string, label: string, metrics: array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}, reconciles: bool|null}>,
+     *     summary: array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null},
+     *     chart: array{width: int, height: int, baseline: int, ticks: list<array{value: int, y: float}>, days: list<array{date: string, label: string, bars: list<array{key: string, x: float, y: float, width: int, height: float, value: int, color: string, label_y: float}>, connectors: list<array{x1: float, x2: float, y: float}>, reconciles: bool|null}>}
+     *   }>,
      *   limitations: list<string>,
      *   rangeLabel: string
      * }
      */
-    public function forEnterprise(Enterprise $enterprise, string $range = '14_days', string $selectedType = 'all'): array
+    public function forEnterprise(Enterprise $enterprise, string $range = '14_days'): array
     {
         $timezone = (string) config('app.timezone');
         $now = Carbon::now($timezone);
@@ -48,100 +47,65 @@ final class LifecycleChartData
             $dayStarts[] = $firstDay->copy()->addDays($offset);
         }
 
-        $entityOptions = ['all' => 'All work'];
-        foreach (self::ENTITIES as $key => $entity) {
-            $resource = $entity['resource'];
-            if ($resource::canViewAny()) {
-                $entityOptions[$key] = $entity['label'];
-            }
-        }
-
-        if (! array_key_exists($selectedType, $entityOptions)) {
-            $selectedType = 'all';
-        }
-
-        $visibleTypes = $selectedType === 'all'
-            ? array_intersect(array_keys(self::ENTITIES), array_keys($entityOptions))
-            : [$selectedType];
-        /** @var array<string, array{days: list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}>, limitations: list<string>}> $entityMetrics */
-        $entityMetrics = [];
+        $entities = [];
         $limitations = [];
 
-        foreach ($visibleTypes as $key) {
-            $entity = self::ENTITIES[$key];
-            $resource = $entity['resource'];
+        foreach (self::ENTITIES as $key => $definition) {
+            $resource = $definition['resource'];
+            if (! $resource::canViewAny()) {
+                continue;
+            }
+
             $query = $resource::getEloquentQuery()->where('enterprise_id', $enterprise->id);
-            $entityMetrics[$key] = $this->aggregateEntity($query, $entity, $dayStarts, $now, (int) $enterprise->id);
-        }
+            $result = $this->aggregateEntity($query, $definition, $dayStarts, $now, (int) $enterprise->id);
+            array_push($limitations, ...$result['limitations']);
 
-        foreach ($visibleTypes as $type) {
-            foreach ($entityMetrics[$type]['limitations'] as $limitation) {
-                $limitations[$limitation] = $limitation;
-            }
-        }
-        if ($selectedType === 'all' && count($entityMetrics) < count(self::ENTITIES)) {
-            $limitations[] = 'Some entity types are not included because your account cannot view them.';
-        }
+            $days = [];
+            foreach ($dayStarts as $index => $dayStart) {
+                $metrics = $result['days'][$index];
+                $complete = $metrics['open_start'] !== null
+                    && $metrics['open_end'] !== null
+                    && $metrics['created'] !== null
+                    && $metrics['closed'] !== null;
 
-        $days = [];
-        foreach ($dayStarts as $index => $dayStart) {
-            $values = ['open_start' => 0, 'open_end' => 0, 'created' => 0, 'closed' => 0];
-            $metricComplete = ['open_start' => true, 'open_end' => true, 'created' => true, 'closed' => true];
-
-            foreach ($visibleTypes as $type) {
-                foreach ($values as $metric => $value) {
-                    $entityValue = data_get($entityMetrics, [$type, 'days', $index, $metric]);
-                    if (! is_int($entityValue)) {
-                        $metricComplete[$metric] = false;
-                    } else {
-                        $values[$metric] += $entityValue;
-                    }
-                }
+                $days[] = [
+                    'date' => $dayStart->toDateString(),
+                    'label' => $dayStart->translatedFormat('j M'),
+                    'metrics' => $metrics,
+                    'reconciles' => $complete
+                        ? $metrics['open_end'] === $metrics['open_start'] + $metrics['created'] - $metrics['closed']
+                        : null,
+                ];
             }
 
-            foreach ($values as $metric => $value) {
-                if ($visibleTypes === [] || ! $metricComplete[$metric]) {
-                    $values[$metric] = null;
-                }
-            }
-
-            $days[] = [
-                'date' => $dayStart->toDateString(),
-                'label' => $dayStart->translatedFormat('j M'),
-                'metrics' => $values,
+            $completedDays = array_values(array_filter($days, fn (array $day): bool => $day['metrics']['open_end'] !== null));
+            $lastCompleted = $completedDays === [] ? null : $completedDays[array_key_last($completedDays)];
+            $summary = [
+                'open_start' => $days[0]['metrics']['open_start'] ?? null,
+                'open_end' => $lastCompleted['metrics']['open_end'] ?? null,
+                'created' => $this->sumCompleteMetric($days, 'created'),
+                'closed' => $this->sumCompleteMetric($days, 'closed'),
             ];
-        }
 
-        $series = [];
-        foreach ([
-            'open_start' => ['label' => 'Open at start', 'color' => '#a1a1aa'],
-            'open_end' => ['label' => 'Open at end', 'color' => '#60a5fa'],
-            'created' => ['label' => 'Created', 'color' => '#34d399'],
-            'closed' => ['label' => 'Closed', 'color' => '#f59e0b'],
-        ] as $key => $definition) {
-            $series[] = [
+            $entities[] = [
                 'key' => $key,
                 'label' => $definition['label'],
-                'color' => $definition['color'],
-                'values' => array_map(fn (array $day): ?int => $day['metrics'][$key], $days),
+                'days' => $days,
+                'summary' => $summary,
+                'chart' => $this->buildWaterfallGeometry($days),
             ];
         }
 
-        $series = $this->addChartGeometry($series, count($days));
-
         return [
-            'available' => $visibleTypes !== [],
-            'selectedType' => $selectedType,
-            'entityOptions' => $entityOptions,
-            'days' => $days,
-            'series' => $series,
-            'limitations' => array_values($limitations),
+            'available' => $entities !== [],
+            'entities' => $entities,
+            'limitations' => array_values(array_unique($limitations)),
             'rangeLabel' => $range === 'today' ? 'Today' : 'Last 14 days',
         ];
     }
 
     /**
-     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @param  Builder<Model>  $query
      * @param  array{label: string, resource: class-string, created: string, closed: string, status: string}  $entity
      * @param  list<Carbon>  $dayStarts
      * @return array{days: list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}>, limitations: list<string>}
@@ -157,7 +121,7 @@ final class LifecycleChartData
             $start = $dayStart->copy()->utc()->format('Y-m-d H:i:s');
             $endBoundary = $dayStart->copy()->addDay()->utc()->format('Y-m-d H:i:s');
             $end = ($dayStart->isSameDay($now) ? $now->copy() : $dayStart->copy()->addDay())->utc()->format('Y-m-d H:i:s');
-            $selects[] = "SUM(CASE WHEN {$createdColumn} < ? AND ({$closedColumn} IS NULL OR {$closedColumn} > ?) THEN 1 ELSE 0 END) AS open_start_{$index}";
+            $selects[] = "SUM(CASE WHEN {$createdColumn} < ? AND ({$closedColumn} IS NULL OR {$closedColumn} >= ?) THEN 1 ELSE 0 END) AS open_start_{$index}";
             array_push($bindings, $start, $start);
             $selects[] = "SUM(CASE WHEN {$createdColumn} < ? AND ({$closedColumn} IS NULL OR {$closedColumn} >= ?) THEN 1 ELSE 0 END) AS open_end_{$index}";
             array_push($bindings, $endBoundary, $endBoundary);
@@ -171,11 +135,11 @@ final class LifecycleChartData
         /** @var literal-string $expression */
         $expression = implode(', ', $selects);
         $aggregate = (clone $query)->selectRaw($expression, $bindings)->first();
-        $unknownCloseQuery = (clone $query)
+        $unknownCloseCount = (clone $query)
             ->whereIn($entity['status'], $entity['status'] === 'state' ? ['closed'] : LifecycleStatus::closedStatuses())
-            ->whereNull($closedColumn);
-        $unknownCloseCount = $unknownCloseQuery->count();
-        $unknownCreationCount = $entity['created'] === 'github_created_at'
+            ->whereNull($closedColumn)
+            ->count();
+        $unknownCreationCount = $createdColumn === 'github_created_at'
             ? (clone $query)->whereNull($createdColumn)->count()
             : 0;
 
@@ -223,53 +187,90 @@ final class LifecycleChartData
     }
 
     /**
-     * @param  list<array{key: string, label: string, color: string, values: list<int|null>}>  $series
-     * @return list<array{key: string, label: string, color: string, values: list<int|null>, path: string, points: list<array{x: float, y: float, value: int, index: int}>}>
+     * @param  list<array{date: string, label: string, metrics: array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}, reconciles: bool|null}>  $days
      */
-    private function addChartGeometry(array $series, int $dayCount): array
+    private function sumCompleteMetric(array $days, string $metric): ?int
     {
-        $allValues = array_merge(...array_map(fn (array $item): array => $item['values'], $series));
-        $maxValue = max(array_merge([1], array_filter($allValues, fn (?int $value): bool => $value !== null)));
-        $plotWidth = 820;
-        $plotHeight = 170;
-        $left = $dayCount === 1 ? 452 : 42;
-        $top = 18;
-        $step = $dayCount > 1 ? $plotWidth / ($dayCount - 1) : 0;
-
-        foreach ($series as &$item) {
-            $segments = [];
-            $currentSegment = [];
-            $points = [];
-            foreach ($item['values'] as $index => $value) {
-                if ($value === null) {
-                    if ($currentSegment !== []) {
-                        $segments[] = $currentSegment;
-                        $currentSegment = [];
-                    }
-
-                    continue;
-                }
-                $point = [
-                    'x' => $left + ($step * $index),
-                    'y' => $top + $plotHeight - (($value / $maxValue) * $plotHeight),
-                    'value' => $value,
-                    'index' => $index,
-                ];
-                $currentSegment[] = $point;
-                $points[] = $point;
-            }
-            if ($currentSegment !== []) {
-                $segments[] = $currentSegment;
-            }
-
-            $item['path'] = implode(' ', array_map(
-                fn (array $segment): string => 'M '.implode(' L ', array_map(fn (array $point): string => round($point['x'], 2).' '.round($point['y'], 2), $segment)),
-                $segments,
-            ));
-            $item['points'] = $points;
+        $values = array_map(fn (array $day): ?int => $day['metrics'][$metric], $days);
+        if (in_array(null, $values, true)) {
+            return null;
         }
-        unset($item);
 
-        return $series;
+        return array_sum($values);
+    }
+
+    /**
+     * @param  list<array{date: string, label: string, metrics: array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}, reconciles: bool|null}>  $days
+     * @return array{width: int, height: int, baseline: int, ticks: list<array{value: int, y: float}>, days: list<array{date: string, label: string, bars: list<array{key: string, x: float, y: float, width: int, height: float, value: int, color: string, label_y: float}>, connectors: list<array{x1: float, x2: float, y: float}>, reconciles: bool|null}>}
+     */
+    private function buildWaterfallGeometry(array $days): array
+    {
+        $groupWidth = 84;
+        $width = max(900, count($days) * $groupWidth + 48);
+        $height = 250;
+        $baseline = 204;
+        $plotHeight = 166;
+        $maxValue = 1;
+
+        foreach ($days as $day) {
+            $metrics = $day['metrics'];
+            if ($metrics['open_start'] !== null && $metrics['created'] !== null) {
+                $maxValue = max($maxValue, $metrics['open_start'] + $metrics['created']);
+            }
+            if ($metrics['open_end'] !== null) {
+                $maxValue = max($maxValue, $metrics['open_end']);
+            }
+        }
+
+        $scale = $plotHeight / $maxValue;
+        $tickValues = array_values(array_unique([0, (int) ceil($maxValue / 2), $maxValue]));
+        $ticks = array_map(fn (int $value): array => ['value' => $value, 'y' => $baseline - ($value * $scale)], $tickValues);
+        $chartDays = [];
+
+        foreach ($days as $index => $day) {
+            $metrics = $day['metrics'];
+            $groupX = 32 + ($index * $groupWidth);
+            $barWidth = 12;
+            $positions = ['open_start' => $groupX + 4, 'created' => $groupX + 22, 'closed' => $groupX + 40, 'open_end' => $groupX + 58];
+            $bars = [];
+            $connectors = [];
+            $opening = $metrics['open_start'];
+            $created = $metrics['created'];
+            $closed = $metrics['closed'];
+            $closing = $metrics['open_end'];
+            $openingLevel = $opening === null ? null : $baseline - ($opening * $scale);
+            $afterCreated = $opening === null || $created === null ? null : $opening + $created;
+            $afterCreatedLevel = $afterCreated === null ? null : $baseline - ($afterCreated * $scale);
+            $afterClosed = $afterCreated === null || $closed === null ? null : $afterCreated - $closed;
+            $afterClosedLevel = $afterClosed === null ? null : $baseline - ($afterClosed * $scale);
+
+            if ($opening !== null) {
+                $bars[] = ['key' => 'open_start', 'x' => $positions['open_start'], 'y' => $openingLevel, 'width' => $barWidth, 'height' => max(1, $opening * $scale), 'value' => $opening, 'color' => '#60a5fa', 'label_y' => max(13, $openingLevel - 6)];
+            }
+            if ($openingLevel !== null && $afterCreatedLevel !== null) {
+                $connectors[] = ['x1' => $positions['open_start'] + $barWidth, 'x2' => $positions['created'], 'y' => $openingLevel];
+                $bars[] = ['key' => 'created', 'x' => $positions['created'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $created * $scale), 'value' => $created, 'color' => '#22c55e', 'label_y' => max(13, $afterCreatedLevel - 6)];
+            }
+            if ($afterCreatedLevel !== null && $afterClosedLevel !== null) {
+                $connectors[] = ['x1' => $positions['created'] + $barWidth, 'x2' => $positions['closed'], 'y' => $afterCreatedLevel];
+                $bars[] = ['key' => 'closed', 'x' => $positions['closed'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $closed * $scale), 'value' => -$closed, 'color' => '#ef4444', 'label_y' => min($baseline + 15, $afterClosedLevel + 14)];
+            }
+            if ($afterClosedLevel !== null && $closing !== null) {
+                $connectors[] = ['x1' => $positions['closed'] + $barWidth, 'x2' => $positions['open_end'], 'y' => $afterClosedLevel];
+            }
+            if ($closing !== null) {
+                $bars[] = ['key' => 'open_end', 'x' => $positions['open_end'], 'y' => $baseline - ($closing * $scale), 'width' => $barWidth, 'height' => max(1, $closing * $scale), 'value' => $closing, 'color' => '#2563eb', 'label_y' => max(13, $baseline - ($closing * $scale) - 6)];
+            }
+
+            $chartDays[] = [
+                'date' => $day['date'],
+                'label' => $day['label'],
+                'bars' => $bars,
+                'connectors' => $connectors,
+                'reconciles' => $day['reconciles'],
+            ];
+        }
+
+        return ['width' => $width, 'height' => $height, 'baseline' => $baseline, 'ticks' => $ticks, 'days' => $chartDays];
     }
 }

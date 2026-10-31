@@ -40,7 +40,7 @@ class OverviewDashboardData
      *   lifecycleChart: array<string, mixed>
      * }
      */
-    public function forEnterprise(Enterprise $enterprise, string $activityRange = '14_days', string $lifecycleEntityType = 'all'): array
+    public function forEnterprise(Enterprise $enterprise, string $activityRange = '14_days'): array
     {
         $enterpriseId = (int) $enterprise->id;
         /** @var Builder<Task> $tasks */
@@ -117,7 +117,7 @@ class OverviewDashboardData
             'activityAvailable' => $activityAvailable,
             'activityRangeLabel' => $activityRange === 'today' ? 'Today' : 'Last 14 days',
             'activityDays' => $activityDays,
-            'lifecycleChart' => app(LifecycleChartData::class)->forEnterprise($enterprise, $activityRange, $lifecycleEntityType),
+            'lifecycleChart' => app(LifecycleChartData::class)->forEnterprise($enterprise, $activityRange),
             'activityPanels' => [
                 ['label' => 'Late tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $lateTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],

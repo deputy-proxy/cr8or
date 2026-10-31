@@ -7,6 +7,7 @@ use App\Models\Enterprise;
 use App\Models\User;
 use App\Services\Dashboard\OverviewDashboardData;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
@@ -27,11 +28,11 @@ class WorkOverview extends Page
 
     protected string $view = 'filament.pages.work-overview';
 
+    protected Width|string|null $maxContentWidth = Width::Full;
+
     public ?int $selectedEnterpriseId = null;
 
     public string $activityRange = '14_days';
-
-    public string $lifecycleEntityType = 'all';
 
     public function mount(): void
     {
@@ -63,15 +64,6 @@ class WorkOverview extends Page
         $this->refreshDashboard();
     }
 
-    public function setLifecycleEntityType(string $entityType): void
-    {
-        if (! in_array($entityType, ['all', 'goals', 'objectives', 'tasks', 'milestones', 'issues'], true)) {
-            abort(422);
-        }
-
-        $this->lifecycleEntityType = $entityType;
-    }
-
     public function refreshDashboard(): void
     {
         if ($this->selectedEnterpriseId !== null && ! $this->authorizedEnterprises()->whereKey($this->selectedEnterpriseId)->exists()) {
@@ -93,12 +85,12 @@ class WorkOverview extends Page
                 'activityAvailable' => false,
                 'activityRangeLabel' => $this->activityRange === 'today' ? 'Today' : 'Last 14 days',
                 'activityDays' => [],
-                'lifecycleChart' => ['available' => false, 'selectedType' => 'all', 'entityOptions' => ['all' => 'All work'], 'days' => [], 'series' => [], 'limitations' => [], 'rangeLabel' => 'Last 14 days'],
+                'lifecycleChart' => ['available' => false, 'entities' => [], 'limitations' => [], 'rangeLabel' => 'Last 14 days'],
                 'activityPanels' => [],
             ];
         }
 
-        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise, $this->activityRange, $this->lifecycleEntityType), [
+        return array_merge(app(OverviewDashboardData::class)->forEnterprise($enterprise, $this->activityRange), [
             'enterprises' => $enterprises,
             'selectedEnterprise' => $enterprise,
         ]);

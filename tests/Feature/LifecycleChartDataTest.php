@@ -3,13 +3,10 @@
 use App\Filament\Pages\WorkOverview;
 use App\Models\Enterprise;
 use App\Models\Event;
-use App\Models\Goal;
 use App\Models\Issue;
 use App\Models\Membership;
-use App\Models\Milestone;
 use App\Models\Objective;
 use App\Models\Organization;
-use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\Dashboard\LifecycleChartData;
@@ -35,32 +32,19 @@ function lifecycleChartUserAndEnterprise(): array
     return [$user, $enterprise, $organization];
 }
 
-it('calculates daily lifecycle metrics across all five entity types using local half-open days', function () {
+it('calculates independent daily opening and closing balances for objectives tasks and issues', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
     $yesterdayStart = Carbon::parse('2026-10-29 00:00:00', 'Europe/Bucharest');
-
-    $goal = Goal::factory()->create(['enterprise_id' => $enterprise->id]);
-    DB::table('goals')->where('id', $goal->id)->update([
-        'created_at' => $yesterdayStart->copy()->subDay()->utc(),
-        'closed_at' => $yesterdayStart->copy()->setTime(12, 0)->utc(),
-    ]);
 
     $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id]);
     DB::table('objectives')->where('id', $objective->id)->update([
         'created_at' => $yesterdayStart->copy()->setTime(9, 0)->utc(),
     ]);
 
-    $task = Task::factory()->create(['enterprise_id' => $enterprise->id]);
+    $task = Task::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'done']);
     DB::table('tasks')->where('id', $task->id)->update([
         'created_at' => $yesterdayStart->copy()->subDay()->utc(),
         'closed_at' => $yesterdayStart->copy()->setTime(14, 0)->utc(),
-        'status' => 'done',
-    ]);
-
-    $project = Project::factory()->create(['enterprise_id' => $enterprise->id]);
-    $milestone = Milestone::factory()->forProject($project)->create();
-    DB::table('milestones')->where('id', $milestone->id)->update([
-        'created_at' => $yesterdayStart->copy()->subDay()->utc(),
     ]);
 
     $issue = Issue::factory()->create(['enterprise_id' => $enterprise->id, 'state' => 'closed']);
@@ -71,109 +55,172 @@ it('calculates daily lifecycle metrics across all five entity types using local 
 
     $this->actingAs($user);
     $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
-    $yesterday = collect($data['days'])->firstWhere('date', '2026-10-29');
+    $entities = collect($data['entities'])->keyBy('key');
 
     expect($data['available'])->toBeTrue()
-        ->and($data['entityOptions'])->toHaveKeys(['all', 'goals', 'objectives', 'tasks', 'milestones', 'issues'])
-        ->and($yesterday['metrics'])->toBe([
-            'open_start' => 4,
-            'open_end' => 2,
+        ->and($entities->keys()->all())->toBe(['objectives', 'tasks', 'issues'])
+        ->and(collect($entities['objectives']['days'])->firstWhere('date', '2026-10-29')['metrics'])->toBe([
+            'open_start' => 0,
+            'open_end' => 1,
             'created' => 1,
-            'closed' => 3,
+            'closed' => 0,
         ])
-        ->and($data['days'][13]['metrics']['open_end'])->toBeNull()
-        ->and($data['series'][0]['path'])->not->toBe('');
+        ->and(collect($entities['tasks']['days'])->firstWhere('date', '2026-10-29')['metrics'])->toBe([
+            'open_start' => 1,
+            'open_end' => 0,
+            'created' => 0,
+            'closed' => 1,
+        ])
+        ->and(collect($entities['issues']['days'])->firstWhere('date', '2026-10-29')['metrics'])->toBe([
+            'open_start' => 1,
+            'open_end' => 0,
+            'created' => 0,
+            'closed' => 1,
+        ])
+        ->and(collect($entities['objectives']['days'])->firstWhere('date', '2026-10-29')['reconciles'])->toBeTrue()
+        ->and($entities['objectives']['summary'])->toBe([
+            'open_start' => 0,
+            'open_end' => 1,
+            'created' => 1,
+            'closed' => 0,
+        ])
+        ->and(collect($entities['objectives']['chart']['days'][12]['bars'])->contains(
+            fn (array $bar): bool => $bar['key'] === 'created' && $bar['value'] === 1,
+        ))->toBeTrue()
+        ->and($entities['objectives']['chart']['days'][12]['connectors'])->toHaveCount(3);
+});
+
+it('keeps midnight closures in the opening balance so each daily waterfall reconciles', function () {
+    [$user, $enterprise] = lifecycleChartUserAndEnterprise();
+    $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'completed']);
+    DB::table('objectives')->where('id', $objective->id)->update([
+        'created_at' => Carbon::parse('2026-10-28 09:00:00', 'Europe/Bucharest')->utc(),
+        'closed_at' => Carbon::parse('2026-10-29 00:00:00', 'Europe/Bucharest')->utc(),
+    ]);
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
+    $dayBeforeClosure = collect($objectives['days'])->firstWhere('date', '2026-10-28');
+    $closureDay = collect($objectives['days'])->firstWhere('date', '2026-10-29');
+
+    expect($dayBeforeClosure['metrics'])->toBe([
+        'open_start' => 0,
+        'open_end' => 1,
+        'created' => 1,
+        'closed' => 0,
+    ])
+        ->and($closureDay['metrics'])->toBe([
+            'open_start' => 1,
+            'open_end' => 0,
+            'created' => 0,
+            'closed' => 1,
+        ])
+        ->and($dayBeforeClosure['reconciles'])->toBeTrue()
+        ->and($closureDay['reconciles'])->toBeTrue();
 });
 
 it('marks lifecycle metrics incomplete when legacy closed records have no close timestamp', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
-    $legacyClosed = Goal::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'archived']);
-    DB::table('goals')->where('id', $legacyClosed->id)->update([
+    $legacyClosed = Objective::factory()->create(['enterprise_id' => $enterprise->id, 'status' => 'archived']);
+    DB::table('objectives')->where('id', $legacyClosed->id)->update([
         'created_at' => Carbon::parse('2026-10-20 09:00:00', 'Europe/Bucharest')->utc(),
         'closed_at' => null,
     ]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days', 'goals');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
 
-    expect($data['days'][0]['metrics']['open_start'])->toBeNull()
-        ->and($data['days'][0]['metrics']['open_end'])->toBeNull()
-        ->and($data['days'][0]['metrics']['closed'])->toBeNull()
-        ->and($data['days'][0]['metrics']['created'])->toBe(0)
-        ->and($data['limitations'])->toContain('Goals: 1 currently closed record(s) have no reliable close timestamp; open/closed history is incomplete.');
+    expect($objectives['days'][0]['metrics']['open_start'])->toBeNull()
+        ->and($objectives['days'][0]['metrics']['open_end'])->toBeNull()
+        ->and($objectives['days'][0]['metrics']['closed'])->toBeNull()
+        ->and($objectives['days'][0]['metrics']['created'])->toBe(0)
+        ->and($data['limitations'])->toContain('Objectives: 1 currently closed record(s) have no reliable close timestamp; open/closed history is incomplete.');
 });
 
 it('marks open and close history incomplete when a tracked entity has been reopened', function () {
     [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
-    $goal = Goal::factory()->create(['enterprise_id' => $enterprise->id]);
+    $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id]);
     Event::factory()->create([
         'organization_id' => $organization->id,
         'enterprise_id' => $enterprise->id,
         'event_type' => 'open',
-        'subject_type' => $goal->getMorphClass(),
-        'subject_id' => (string) $goal->id,
+        'subject_type' => $objective->getMorphClass(),
+        'subject_id' => (string) $objective->id,
     ]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days', 'goals');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
 
-    expect($data['days'][0]['metrics']['open_start'])->toBeNull()
-        ->and($data['days'][0]['metrics']['closed'])->toBeNull()
-        ->and($data['days'][0]['metrics']['created'])->toBe(0)
-        ->and($data['limitations'])->toContain('Goals: at least one record was reopened; the single close timestamp cannot reconstruct its earlier lifecycle intervals.');
+    expect($objectives['days'][0]['metrics']['open_start'])->toBeNull()
+        ->and($objectives['days'][0]['metrics']['closed'])->toBeNull()
+        ->and($objectives['days'][0]['metrics']['created'])->toBe(0)
+        ->and($data['limitations'])->toContain('Objectives: at least one record was reopened; the single close timestamp cannot reconstruct its earlier lifecycle intervals.');
 });
 
-it('does not include another enterprise records in lifecycle totals and revalidates the selected entity type', function () {
+it('does not include records from another enterprise in lifecycle totals', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
     $otherEnterprise = Enterprise::factory()->create(['organization_id' => Organization::factory()->create()->id]);
-    Goal::factory()->count(2)->create(['enterprise_id' => $enterprise->id]);
-    Goal::factory()->count(5)->create(['enterprise_id' => $otherEnterprise->id]);
+    Objective::factory()->count(2)->create(['enterprise_id' => $enterprise->id]);
+    Objective::factory()->count(5)->create(['enterprise_id' => $otherEnterprise->id]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today', 'goals');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
 
-    expect($data['days'][0]['metrics']['created'])->toBe(2)
-        ->and(fn () => app(WorkOverview::class)->setLifecycleEntityType('not-a-real-type'))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+    expect($objectives['days'][0]['metrics']['created'])->toBe(2)
+        ->and($data['entities'])->toHaveCount(3);
 });
 
-it('renders the lifecycle chart alongside the live activity timeline and refreshes its entity filter', function () {
+it('renders the daily waterfall charts and summary cards above them on the full content width', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
-    Goal::factory()->create(['enterprise_id' => $enterprise->id]);
+    Objective::factory()->create(['enterprise_id' => $enterprise->id]);
+    Task::factory()->create(['enterprise_id' => $enterprise->id]);
+    Issue::factory()->create(['enterprise_id' => $enterprise->id]);
 
     $this->actingAs($user);
     \Livewire\Livewire::test(WorkOverview::class)
-        ->assertSee('Lifecycle')
-        ->assertSee('Open at start')
-        ->assertSee('Open at end')
-        ->assertSee('Created')
+        ->assertSee('Daily lifecycle')
+        ->assertSee('Objectives daily waterfall')
+        ->assertSee('Tasks daily waterfall')
+        ->assertSee('Issues daily waterfall')
+        ->assertSee('Opening')
+        ->assertSee('Opened')
         ->assertSee('Closed')
+        ->assertSee('Closing')
+        ->assertSee('Each day starts and ends independently')
+        ->assertSee('aria-label="Lifecycle summary metrics"', false)
+        ->assertSee('w-full min-w-0 space-y-4', false)
         ->assertSee('Daily activity')
-        ->call('setLifecycleEntityType', 'goals')
-        ->assertSee('value="goals" selected', false);
+        ->assertDontSee('Lifecycle entity type');
 });
 
-it('uses a twenty-three-hour local day across the daylight-saving transition', function () {
+it('uses local calendar days across the daylight-saving transition', function () {
     config(['app.timezone' => 'America/New_York']);
     Carbon::setTestNow(Carbon::parse('2026-03-09 12:00:00', 'America/New_York'));
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
 
-    $goal = Goal::factory()->create(['enterprise_id' => $enterprise->id]);
-    DB::table('goals')->where('id', $goal->id)->update([
+    $objective = Objective::factory()->create(['enterprise_id' => $enterprise->id]);
+    DB::table('objectives')->where('id', $objective->id)->update([
         'created_at' => Carbon::parse('2026-03-08 00:30:00', 'America/New_York')->utc(),
         'closed_at' => Carbon::parse('2026-03-08 23:30:00', 'America/New_York')->utc(),
+        'status' => 'completed',
     ]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days', 'goals');
-    $transitionDay = collect($data['days'])->firstWhere('date', '2026-03-08');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
+    $transitionDay = collect($objectives['days'])->firstWhere('date', '2026-03-08');
 
     expect($transitionDay['metrics'])->toBe([
         'open_start' => 0,
         'open_end' => 0,
         'created' => 1,
         'closed' => 1,
-    ]);
+    ])
+        ->and($transitionDay['reconciles'])->toBeTrue();
 });
 
 it('does not invent GitHub creation or closure dates when provider timestamps are missing', function () {
@@ -185,42 +232,43 @@ it('does not invent GitHub creation or closure dates when provider timestamps ar
     ]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today', 'issues');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today');
+    $issues = collect($data['entities'])->firstWhere('key', 'issues');
 
-    expect($data['days'][0]['metrics'])->toBe([
+    expect($issues['days'][0]['metrics'])->toBe([
         'open_start' => null,
         'open_end' => null,
         'created' => null,
         'closed' => null,
     ])
-        ->and($data['limitations'])->toContain('GitHub Issues: 1 currently closed record(s) have no reliable close timestamp; open/closed history is incomplete.')
-        ->and($data['limitations'])->toContain('GitHub Issues: 1 record(s) have no provider creation timestamp; opening history is incomplete.');
+        ->and($data['limitations'])->toContain('Issues: 1 currently closed record(s) have no reliable close timestamp; open/closed history is incomplete.')
+        ->and($data['limitations'])->toContain('Issues: 1 record(s) have no provider creation timestamp; opening history is incomplete.');
 });
 
-it('does not count future-timestamped records in the partial current day', function () {
+it('does not show a closing balance for the current incomplete day', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
-    $futureGoal = Goal::factory()->create(['enterprise_id' => $enterprise->id]);
-    DB::table('goals')->where('id', $futureGoal->id)->update([
-        'created_at' => Carbon::parse('2026-10-30 13:00:00', 'Europe/Bucharest')->utc(),
-    ]);
+    Objective::factory()->create(['enterprise_id' => $enterprise->id]);
 
     $this->actingAs($user);
-    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today', 'goals');
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, 'today');
+    $objectives = collect($data['entities'])->firstWhere('key', 'objectives');
 
-    expect($data['days'][0]['metrics']['created'])->toBe(0)
-        ->and($data['days'][0]['metrics']['open_end'])->toBeNull();
+    expect($objectives['days'][0]['metrics']['open_end'])->toBeNull()
+        ->and($objectives['summary']['open_end'])->toBeNull()
+        ->and(collect($objectives['chart']['days'][0]['bars'])->pluck('key'))->not->toContain('open_end');
 });
 
 it('refreshes lifecycle chart values with the existing dashboard polling action', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
-    Goal::factory()->create(['enterprise_id' => $enterprise->id]);
+    Objective::factory()->create(['enterprise_id' => $enterprise->id]);
 
     $this->actingAs($user);
     $component = \Livewire\Livewire::test(WorkOverview::class)
-        ->assertSee('Created: 1 on 2026-10-30');
+        ->assertSee('Objectives')
+        ->assertSee('Opening');
 
-    Goal::factory()->create(['enterprise_id' => $enterprise->id]);
+    Objective::factory()->create(['enterprise_id' => $enterprise->id]);
 
     $component->call('refreshDashboard')
-        ->assertSee('Created: 2 on 2026-10-30');
+        ->assertSee('Objectives');
 });
