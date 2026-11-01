@@ -9,7 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('integration_connections', function (Blueprint $table): void {
-            $table->unsignedBigInteger('github_installation_id')->nullable()->unique();
+            $table->unsignedBigInteger('github_installation_id')->nullable();
+            $table->unique('github_installation_id', 'connections_github_installation_unique');
         });
 
         Schema::create('integration_repositories', function (Blueprint $table): void {
@@ -32,13 +33,14 @@ return new class extends Migration
             $table->timestamp('github_updated_at')->nullable();
             $table->timestamps();
             $table->unique('github_repository_id', 'integration_repositories_github_repository_unique');
-            $table->index(['organization_id', 'enterprise_id', 'status']);
-            $table->index(['integration_connection_id', 'status', 'sync_status']);
+            $table->index(['organization_id', 'enterprise_id', 'status'], 'int_repos_org_ent_status_idx');
+            $table->index(['integration_connection_id', 'status', 'sync_status'], 'int_repos_connection_status_sync_idx');
         });
 
         Schema::create('github_webhook_deliveries', function (Blueprint $table): void {
             $table->id();
-            $table->string('delivery_id', 128)->unique();
+            $table->string('delivery_id', 128);
+            $table->unique('delivery_id', 'gh_webhook_delivery_id_unique');
             $table->string('event_type', 100);
             $table->string('action', 100)->nullable();
             $table->foreignId('organization_id')->nullable()->constrained()->nullOnDelete();
@@ -53,8 +55,8 @@ return new class extends Migration
             $table->timestamp('received_at');
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
-            $table->index(['installation_id', 'event_type', 'received_at']);
-            $table->index(['status', 'received_at']);
+            $table->index(['installation_id', 'event_type', 'received_at'], 'gh_webhook_install_event_received_idx');
+            $table->index(['status', 'received_at'], 'gh_webhook_status_received_idx');
         });
 
         Schema::table('issues', function (Blueprint $table): void {
@@ -63,7 +65,7 @@ return new class extends Migration
             $table->json('assignees')->nullable()->after('labels');
             $table->timestamp('github_deleted_at')->nullable()->after('github_closed_at');
             $table->unique(['integration_repository_id', 'external_id'], 'issues_integration_repository_external_unique');
-            $table->index(['integration_repository_id', 'github_updated_at']);
+            $table->index(['integration_repository_id', 'github_updated_at'], 'issues_repo_updated_idx');
         });
     }
 
@@ -71,14 +73,14 @@ return new class extends Migration
     {
         Schema::table('issues', function (Blueprint $table): void {
             $table->dropUnique('issues_integration_repository_external_unique');
-            $table->dropIndex(['integration_repository_id', 'github_updated_at']);
+            $table->dropIndex('issues_repo_updated_idx');
             $table->dropConstrainedForeignId('integration_repository_id');
             $table->dropColumn(['github_repository_id', 'assignees', 'github_deleted_at']);
         });
         Schema::dropIfExists('github_webhook_deliveries');
         Schema::dropIfExists('integration_repositories');
         Schema::table('integration_connections', function (Blueprint $table): void {
-            $table->dropUnique(['github_installation_id']);
+            $table->dropUnique('connections_github_installation_unique');
             $table->dropColumn('github_installation_id');
         });
     }
