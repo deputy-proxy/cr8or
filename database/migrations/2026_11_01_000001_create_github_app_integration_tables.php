@@ -72,9 +72,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('issues', function (Blueprint $table): void {
+            $table->dropForeign(['integration_repository_id']);
             $table->dropUnique('issues_integration_repository_external_unique');
             $table->dropIndex('issues_repo_updated_idx');
-            $table->dropConstrainedForeignId('integration_repository_id');
+            $table->dropColumn('integration_repository_id');
             $table->dropColumn(['github_repository_id', 'assignees', 'github_deleted_at']);
         });
         Schema::dropIfExists('github_webhook_deliveries');
