@@ -44,9 +44,11 @@ class IssueResource extends Resource
                 TextColumn::make('repository')->searchable()->sortable(),
                 TextColumn::make('state')->badge()->color(fn (string $state): string => $state === 'open' ? 'success' : 'gray')->sortable(),
                 TextColumn::make('labels')->badge()->separator(',')->toggleable(),
+                TextColumn::make('assignees')->badge()->separator(',')->toggleable(),
                 TextColumn::make('author_login')->label('Author')->searchable()->sortable(),
                 TextColumn::make('enterprise.name')->label('Enterprise')->searchable()->sortable(),
                 TextColumn::make('github_updated_at')->label('GitHub Updated')->dateTime()->sortable(),
+                TextColumn::make('github_deleted_at')->label('Deleted on GitHub')->dateTime()->placeholder('Not deleted')->toggleable(),
                 TextColumn::make('last_synced_at')->label('Last Synced')->dateTime()->sortable(),
             ])
             ->filters([

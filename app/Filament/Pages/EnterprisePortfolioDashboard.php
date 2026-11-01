@@ -93,8 +93,18 @@ class EnterprisePortfolioDashboard extends Page
             abort(403);
         }
 
-        if (! is_string($enterprise->github_repository) || $enterprise->github_repository === '') {
-            $this->addError('githubSync', 'Configure a GitHub repository before synchronizing issues.');
+        $hasActiveRepository = $enterprise->integrationRepositories()
+            ->where('status', \App\Models\IntegrationRepository::STATUS_ACTIVE)
+            ->whereHas('connection', fn (Builder $connection) => $connection->where('status', \App\Models\IntegrationConnection::STATUS_ACTIVE))
+            ->exists();
+        $hasRepositoryAssociations = $enterprise->integrationRepositories()->exists();
+        $hasLegacyRepository = is_string($enterprise->github_repository) && $enterprise->github_repository !== '';
+        $legacyRepositoryDiscovered = $hasLegacyRepository && \App\Models\IntegrationRepository::query()
+            ->where('organization_id', $enterprise->organization_id)
+            ->whereRaw('LOWER(full_name) = ?', [strtolower($enterprise->github_repository)])->exists();
+
+        if (! $hasActiveRepository && ($hasRepositoryAssociations || ! $hasLegacyRepository || $legacyRepositoryDiscovered)) {
+            $this->addError('githubSync', 'Discover and assign at least one active GitHub repository before synchronizing issues.');
 
             return;
         }
@@ -108,14 +118,14 @@ class EnterprisePortfolioDashboard extends Page
     {
         $organizationIds = static::authorizedOrganizationIds();
         $query = $this->authorizedEnterprises()
-            ->with(['group', 'category', 'context'])
+            ->with(['group', 'category', 'context', 'integrationRepositories'])
             ->withCount([
                 'projects',
                 'tasks',
                 'milestones',
                 'contentItems',
                 'events',
-                'issues as issues_count' => fn (Builder $builder) => $builder->whereColumn('issues.repository', 'enterprises.github_repository'),
+                'issues as issues_count',
             ])
             ->when(trim($this->search) !== '', function (Builder $builder): void {
                 $term = '%'.addcslashes(trim($this->search), '%_\\').'%';
@@ -123,6 +133,7 @@ class EnterprisePortfolioDashboard extends Page
                     $nested->where('name', 'like', $term)
                         ->orWhere('slug', 'like', $term)
                         ->orWhere('github_repository', 'like', $term)
+                        ->orWhereHas('integrationRepositories', fn (Builder $repositories) => $repositories->where('full_name', 'like', $term))
                         ->orWhere('website_domain', 'like', $term)
                         ->orWhereHas('context', fn (Builder $context) => $context->where('description', 'like', $term)->orWhere('target_market', 'like', $term));
                 });
@@ -211,14 +222,12 @@ class EnterprisePortfolioDashboard extends Page
                 'tasks',
                 'milestones',
                 'contentItems',
-                'issues as issues_count' => fn (Builder $builder) => $builder->whereColumn('issues.repository', 'enterprises.github_repository'),
+                'issues as issues_count',
             ]);
             $selectedEnterprise->setRelation('recentEvents', $selectedEnterprise->events()->orderByDesc('occurred_at')->limit(10)->get());
             $selectedEnterprise->setRelation(
                 'recentIssues',
-                $selectedEnterprise->issues()
-                    ->when(is_string($selectedEnterprise->github_repository) && $selectedEnterprise->github_repository !== '', fn (Builder $builder) => $builder->where('repository', $selectedEnterprise->github_repository), fn (Builder $builder) => $builder->whereRaw('1 = 0'))
-                    ->orderByDesc('github_updated_at')->limit(8)->get(),
+                $selectedEnterprise->issues()->orderByDesc('github_updated_at')->limit(8)->get(),
             );
             $selectedEnterprise->setRelation('recentContent', $selectedEnterprise->contentItems()->orderByDesc('updated_at')->limit(8)->get());
             $selectedEnterprise->setRelation('recentPublications', Publication::query()->with('contentItem')->where('enterprise_id', $selectedEnterprise->id)->orderByDesc('updated_at')->limit(8)->get());
@@ -247,7 +256,7 @@ class EnterprisePortfolioDashboard extends Page
             'description' => (string) ($enterprise->context->description ?? ''),
             'status' => (string) $enterprise->status,
             'website_domain' => (string) ($enterprise->website_domain ?? ''),
-            'github_repository' => (string) ($enterprise->github_repository ?? ''),
+            'github_repository' => $enterprise->integrationRepositories->where('status', \App\Models\IntegrationRepository::STATUS_ACTIVE)->pluck('full_name')->implode(', ') ?: (string) ($enterprise->github_repository ?? ''),
             'projects_count' => (int) ($enterprise->projects_count ?? 0),
             'tasks_count' => (int) ($enterprise->tasks_count ?? 0),
             'content_items_count' => (int) ($enterprise->content_items_count ?? 0),

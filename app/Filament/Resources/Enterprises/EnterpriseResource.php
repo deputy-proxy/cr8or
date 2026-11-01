@@ -51,8 +51,6 @@ class EnterpriseResource extends Resource
             Select::make('status')->options(['active' => 'Active', 'archived' => 'Archived'])->default('active')->required(),
             Select::make('enterprise_group_id')->label('Portfolio Group')->options(fn (Get $get): array => EnterpriseGroup::query()->where('organization_id', (int) $get('organization_id'))->whereIn('organization_id', static::authorizedOrganizationIds())->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all())->searchable()->preload()->nullable(),
             Select::make('enterprise_category_id')->label('Portfolio Category')->options(fn (Get $get): array => EnterpriseCategory::query()->where('organization_id', (int) $get('organization_id'))->whereIn('organization_id', static::authorizedOrganizationIds())->orderBy('sort_order')->orderBy('name')->pluck('name', 'id')->all())->searchable()->preload()->nullable(),
-            TextInput::make('github_repository')->label('GitHub Repository (owner/repo)')->maxLength(255)->nullable()->placeholder('owner/repository'),
-            TextInput::make('github_repository_url')->label('GitHub Repository URL')->url()->maxLength(2048)->nullable()->placeholder('https://github.com/owner/repository'),
             TextInput::make('website_domain')->label('Website Hostname')->maxLength(253)->nullable()->placeholder('example.com')->helperText('Lowercase hostname only. No scheme or path.'),
             Builder::make('connections')
                 ->label('Enterprise Connections')

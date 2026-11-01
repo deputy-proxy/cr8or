@@ -29,7 +29,7 @@ final class SyncEnterpriseGitHubIssues implements ShouldBeUnique, ShouldQueue
     public function handle(GitHubIssueSyncService $sync): void
     {
         $enterprise = Enterprise::query()->find($this->enterpriseId);
-        if ($enterprise === null || ! is_string($enterprise->github_repository) || $enterprise->github_repository === '') {
+        if ($enterprise === null || ((! is_string($enterprise->github_repository) || $enterprise->github_repository === '') && ! $enterprise->integrationRepositories()->whereNotNull('enterprise_id')->exists())) {
             return;
         }
 
