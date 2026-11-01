@@ -17,7 +17,6 @@ class KpiFactory extends Factory
             'definition' => fake()->sentence(),
             'unit' => fake()->optional()->randomElement(['percent', 'count', 'currency', 'days']),
             'target_value' => fake()->optional()->randomFloat(4, 0, 1000),
-            'current_value' => fake()->optional()->randomFloat(4, 0, 1000),
             'status' => 'active',
         ];
     }

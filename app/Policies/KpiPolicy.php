@@ -33,7 +33,8 @@ class KpiPolicy
 
     public function delete(User $user, Kpi $kpi): bool
     {
-        return $this->enterprisePolicy()->delete($user, $kpi->enterprise);
+        return ! $kpi->measurements()->exists()
+            && $this->enterprisePolicy()->delete($user, $kpi->enterprise);
     }
 
     private function enterprisePolicy(): EnterprisePolicy

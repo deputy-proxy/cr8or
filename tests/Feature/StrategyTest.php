@@ -9,6 +9,7 @@ use App\Models\Objective;
 use App\Models\Organization;
 use App\Models\Strategy;
 use App\Models\User;
+use App\Operations\RecordKpiMeasurement;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
@@ -37,16 +38,22 @@ it('builds the strategy hierarchy from an enterprise objective to initiatives', 
 it('references existing goals and KPIs without duplicating their state', function () {
     $enterprise = Enterprise::factory()->create();
     $goal = Goal::factory()->create(['enterprise_id' => $enterprise, 'status' => 'active']);
+    $owner = User::factory()->create();
+    Membership::factory()->owner()->create([
+        'user_id' => $owner,
+        'organization_id' => $enterprise->organization_id,
+    ]);
     $kpi = Kpi::factory()->create([
         'enterprise_id' => $enterprise,
-        'current_value' => 75,
         'target_value' => 100,
     ]);
+    $measurements = app(RecordKpiMeasurement::class);
+    $measurements->execute($owner, ['kpi_id' => $kpi->getKey(), 'value' => 75, 'measured_at' => '2026-01-01']);
 
     $objective = Objective::factory()->forGoal($goal)->forKpi($kpi)->create(['enterprise_id' => $enterprise]);
 
     $goal->update(['status' => 'archived']);
-    $kpi->update(['current_value' => 80]);
+    $measurements->execute($owner, ['kpi_id' => $kpi->getKey(), 'value' => 80, 'measured_at' => '2026-02-01']);
 
     expect($objective->refresh()->goal->status)->toBe('archived')
         ->and($objective->kpi->current_value)->toBe('80.0000');

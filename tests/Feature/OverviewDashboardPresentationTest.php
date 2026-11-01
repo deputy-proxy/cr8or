@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\User;
+use App\Operations\RecordKpiMeasurement;
 use App\Services\Dashboard\OverviewDashboardData;
 
 it('builds enterprise-scoped strategy execution and KPI summary data', function () {
@@ -29,11 +30,15 @@ it('builds enterprise-scoped strategy execution and KPI summary data', function 
 
     Project::factory()->create(['enterprise_id' => $enterprise->id]);
     Initiative::factory()->create(['enterprise_id' => $enterprise->id, 'strategy_id' => $strategy->id]);
-    Kpi::factory()->create([
+    $kpi = Kpi::factory()->create([
         'enterprise_id' => $enterprise->id,
         'name' => 'Renewal rate',
-        'current_value' => 75,
         'target_value' => 100,
+    ]);
+    app(RecordKpiMeasurement::class)->execute($user, [
+        'kpi_id' => $kpi->getKey(),
+        'value' => 75,
+        'measured_at' => '2026-01-01',
     ]);
     Kpi::factory()->create(['enterprise_id' => $otherEnterprise->id]);
 

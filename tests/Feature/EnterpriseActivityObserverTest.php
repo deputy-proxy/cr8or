@@ -10,12 +10,14 @@ use App\Models\Goal;
 use App\Models\Initiative;
 use App\Models\Issue;
 use App\Models\Kpi;
+use App\Models\Membership;
 use App\Models\Milestone;
 use App\Models\Objective;
 use App\Models\Project;
 use App\Models\Strategy;
 use App\Models\Task;
 use App\Models\User;
+use App\Operations\RecordKpiMeasurement;
 use Illuminate\Support\Facades\DB;
 
 it('records semantic open and closed transitions without noisy no-op transitions', function () {
@@ -86,7 +88,13 @@ it('records KPI measurements, immutable decisions, enterprise decisions, depende
     $enterprise = Enterprise::factory()->create();
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $kpi = Kpi::factory()->create(['enterprise_id' => $enterprise->id, 'current_value' => 10]);
+    Membership::factory()->owner()->create([
+        'user_id' => $user->id,
+        'organization_id' => $enterprise->organization_id,
+    ]);
+    $kpi = Kpi::factory()->create(['enterprise_id' => $enterprise->id]);
+    $recordMeasurement = app(RecordKpiMeasurement::class);
+    $recordMeasurement->execute($user, ['kpi_id' => $kpi->getKey(), 'value' => 10, 'measured_at' => '2026-01-01']);
     $decision = Decision::factory()->create(['enterprise_id' => $enterprise->id]);
     $enterpriseDecision = EnterpriseDecision::factory()->create(['enterprise_id' => $enterprise->id]);
     $predecessor = Task::factory()->create(['enterprise_id' => $enterprise->id]);
@@ -105,17 +113,17 @@ it('records KPI measurements, immutable decisions, enterprise decisions, depende
         'user_id' => $user->id,
     ]);
 
-    $kpi->update(['current_value' => 14]);
-    $kpi->update(['current_value' => 13]);
-    $kpi->update(['current_value' => 14]);
+    $recordMeasurement->execute($user, ['kpi_id' => $kpi->getKey(), 'value' => 14, 'measured_at' => '2026-02-01']);
+    $recordMeasurement->execute($user, ['kpi_id' => $kpi->getKey(), 'value' => 13, 'measured_at' => '2026-03-01']);
+    $recordMeasurement->execute($user, ['kpi_id' => $kpi->getKey(), 'value' => 14, 'measured_at' => '2026-04-01']);
     $enterpriseDecision->update(['summary' => 'Updated decision summary']);
     $assignment->update(['user_id' => $otherUser->id]);
     $dependency->delete();
 
     $events = Event::query()->where('enterprise_id', $enterprise->id)->get();
 
-    expect($events->where('subject_type', $kpi->getMorphClass())->pluck('event_type')->all())->toContain('kpi.created')
-        ->and($events->where('subject_type', $kpi->getMorphClass())->where('event_type', 'kpi.updated')->count())->toBe(3)
+    expect($events->where('subject_type', $kpi->getMorphClass())->pluck('event_type')->all())->toContain('kpi.created', 'kpi.measurement_recorded')
+        ->and($events->where('subject_type', $kpi->getMorphClass())->where('event_type', 'kpi.measurement_recorded')->count())->toBe(4)
         ->and($events->where('subject_type', $decision->getMorphClass())->pluck('event_type')->all())->toContain('decision.created')
         ->and($events->firstWhere('subject_type', $decision->getMorphClass())->actor_id)->toBe($decision->actor_id)
         ->and($events->where('subject_type', $enterpriseDecision->getMorphClass())->pluck('event_type')->all())->toContain('enterprise_decision.created', 'enterprise_decision.updated')
@@ -123,7 +131,9 @@ it('records KPI measurements, immutable decisions, enterprise decisions, depende
         ->and($events->where('subject_type', $assignment->getMorphClass())->pluck('event_type')->all())->toContain('assignment.created', 'assignment.updated');
 
     $count = $events->count();
-    $kpi->update(['current_value' => 14]);
+    $kpi->current_value = 14;
+    expect(fn () => $kpi->save())
+        ->toThrow(LogicException::class, 'KPI current_value can only be changed by recording a measurement.');
     expect(Event::query()->where('enterprise_id', $enterprise->id)->count())->toBe($count);
 });
 

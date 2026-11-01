@@ -132,7 +132,9 @@ This document defines the initial bounded domains and known conceptual entities.
 
 **Current implementation:** Objective belongs to an Enterprise and may reference existing Goal and KPI records; Strategy belongs to Objective; Initiative belongs directly to Enterprise and may optionally reference a Strategy from that same Enterprise. Initiative authorization follows its direct Enterprise ownership boundary.
 
-**Deferred:** Planning methodology and metric calculation details.
+**KPI measurement history:** KPI remains the Enterprise-owned definition (name, definition, unit, target, status and optional measurement frequency). Each recorded value is a separate immutable KpiMeasurement owned through its KPI, with a decimal value, measured_at, source, optional notes and optional recorder. RecordKpiMeasurement authorizes against the KPI Enterprise policy, records the measurement transactionally, and synchronizes the KPI current_value cache from the latest measurement ordered by measured_at and then measurement ID; the synchronization method always reads from the measurement relation and cannot accept an arbitrary cached value. The cached column remains for existing dashboard, reporting and context consumers; it is not directly mass assignable or editable. Existing non-null values are backfilled as legacy_migration baseline measurements using the KPI existing update/create timestamp. Measurements are append-only; corrections are new measurements. A KPI with measurement history cannot be deleted and must be archived, preventing ordinary KPI deletion from destroying the historical series. The Filament KPI editor provides manual recording, history and a trend chart. Integration-origin measurements share the same model and operation contract, but automated ingestion is not part of the current implementation.
+
+**Deferred:** Historical target versions, scheduled measurement generation, automated provider ingestion, forecasting and metric calculation details.
 
 ## Work
 

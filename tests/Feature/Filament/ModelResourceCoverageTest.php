@@ -16,6 +16,7 @@ it('provides exactly one Filament resource for every model', function () {
         'SocialAuthorizationAttempt',
         'SocialAuthorizationAudit',
         'WorkflowContinuationOutbox',
+        'KpiMeasurement', // Child records are accessed only through their parent KPI.
     ]));
 
     $resources = [];
