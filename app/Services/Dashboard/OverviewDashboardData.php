@@ -13,9 +13,12 @@ use App\Filament\Resources\Strategies\StrategyResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Enterprise;
 use App\Models\Event;
+use App\Models\Goal;
 use App\Models\Initiative;
+use App\Models\Kpi;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\Strategy;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +35,10 @@ class OverviewDashboardData
     /**
      * @return array{
      *   summaryCards: array<int, array{label: string, count: int|null, url: string|null}>,
+     *   strategyOverview: array{count: int|null, items: array<int, array{name: string, description: string|null, url: string}>},
+     *   goalOverview: array{count: int|null, objective_count: int|null, items: array<int, array{name: string, description: string|null, status: string}>},
+     *   executionOverview: array{projects: int|null, initiatives: int|null},
+     *   kpiOverview: array{count: int|null, items: array<int, array{name: string, definition: string, unit: string|null, current: float|null, target: float|null, url: string}>},
      *   listCards: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>,
      *   activityPanels: array<int, array{label: string, url: string|null, items: array<int, array{title: string, status: string|null, due: string|null}>}>,
      *   activityAvailable: bool,
@@ -113,6 +120,10 @@ class OverviewDashboardData
 
         return [
             'summaryCards' => $this->summaryCards($enterprise),
+            'strategyOverview' => $this->strategyOverview($enterprise),
+            'goalOverview' => $this->goalOverview($enterprise),
+            'executionOverview' => $this->executionOverview($enterprise),
+            'kpiOverview' => $this->kpiOverview($enterprise),
             'listCards' => $listCards,
             'activityAvailable' => $activityAvailable,
             'activityRangeLabel' => $activityRange === 'today' ? 'Today' : 'Last 14 days',
@@ -123,6 +134,97 @@ class OverviewDashboardData
                 ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
             ],
+        ];
+    }
+
+    /** @return array{count: int|null, items: array<int, array{name: string, description: string|null, url: string}>} */
+    private function strategyOverview(Enterprise $enterprise): array
+    {
+        if (! StrategyResource::canViewAny()) {
+            return ['count' => null, 'items' => []];
+        }
+
+        $query = StrategyResource::getEloquentQuery()
+            ->whereHas('objective', fn (Builder $builder) => $builder->where('enterprise_id', $enterprise->id));
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Strategy> $strategies */
+        $strategies = $query->with('objective')->orderByDesc('strategies.updated_at')->limit(3)->get();
+
+        return [
+            'count' => (clone $query)->count(),
+            'items' => $strategies->map(fn (Strategy $strategy): array => [
+                'name' => $strategy->name,
+                'description' => $strategy->description,
+                'url' => StrategyResource::getUrl('edit', ['record' => $strategy]),
+            ])->all(),
+        ];
+    }
+
+    /** @return array{count: int|null, objective_count: int|null, items: array<int, array{name: string, description: string|null, status: string}>} */
+    private function goalOverview(Enterprise $enterprise): array
+    {
+        if (! GoalResource::canViewAny()) {
+            return ['count' => null, 'objective_count' => null, 'items' => []];
+        }
+
+        $goals = GoalResource::getEloquentQuery()->where('enterprise_id', $enterprise->id);
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Goal> $goalItems */
+        $goalItems = (clone $goals)->orderByDesc('updated_at')->limit(3)->get();
+
+        return [
+            'count' => (clone $goals)->count(),
+            'objective_count' => ObjectiveResource::canViewAny()
+                ? ObjectiveResource::getEloquentQuery()->where('enterprise_id', $enterprise->id)->count()
+                : null,
+            'items' => $goalItems->map(fn (Goal $goal): array => [
+                'name' => $goal->name,
+                'description' => $goal->description,
+                'status' => $goal->status,
+            ])->all(),
+        ];
+    }
+
+    /** @return array{projects: int|null, initiatives: int|null} */
+    private function executionOverview(Enterprise $enterprise): array
+    {
+        return [
+            'projects' => ProjectResource::canViewAny()
+                ? ProjectResource::getEloquentQuery()->where('enterprise_id', $enterprise->id)->count()
+                : null,
+            'initiatives' => InitiativeResource::canViewAny()
+                ? InitiativeResource::getEloquentQuery()->where('enterprise_id', $enterprise->id)->count()
+                : null,
+        ];
+    }
+
+    /** @return array{count: int|null, items: array<int, array{name: string, definition: string, unit: string|null, current: float|null, target: float|null, url: string}>} */
+    private function kpiOverview(Enterprise $enterprise): array
+    {
+        if (! KpiResource::canViewAny()) {
+            return ['count' => null, 'items' => []];
+        }
+
+        $query = KpiResource::getEloquentQuery()->where('enterprise_id', $enterprise->id);
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Kpi> $kpis */
+        $kpis = $query->orderByDesc('updated_at')->limit(6)->get();
+
+        return [
+            'count' => (clone $query)->count(),
+            'items' => $kpis->map(function (Kpi $kpi): array {
+                $target = is_numeric($kpi->target_value) ? (float) $kpi->target_value : null;
+                $current = is_numeric($kpi->current_value) ? (float) $kpi->current_value : null;
+
+                return [
+                    'name' => $kpi->name,
+                    'definition' => $kpi->definition,
+                    'unit' => $kpi->unit,
+                    'current' => $current,
+                    'target' => $target,
+                    'url' => KpiResource::getUrl('edit', ['record' => $kpi]),
+                ];
+            })->all(),
         ];
     }
 
