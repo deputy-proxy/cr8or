@@ -17,6 +17,7 @@ use App\Models\IntegrationJob;
 use App\Models\IntegrationResult;
 use App\Models\Issue;
 use App\Models\Kpi;
+use App\Models\KpiMeasurement;
 use App\Models\Milestone;
 use App\Models\Objective;
 use App\Models\Project;
@@ -43,7 +44,7 @@ final class EnterpriseActivityObserver
         Initiative::class => ['name', 'description'],
         Goal::class => ['name', 'status'],
         Objective::class => ['name', 'status'],
-        Kpi::class => ['name', 'definition', 'unit', 'target_value', 'current_value', 'status'],
+        Kpi::class => ['name', 'definition', 'unit', 'target_value', 'status'],
         Project::class => ['name', 'status'],
         Task::class => ['name', 'status', 'priority', 'due_at'],
         Milestone::class => ['name', 'status', 'target_date'],
@@ -65,6 +66,12 @@ final class EnterpriseActivityObserver
 
     public function created(Model $model): void
     {
+        if ($model instanceof KpiMeasurement) {
+            $this->recordKpiMeasurement($model);
+
+            return;
+        }
+
         $this->record($model, 'created');
     }
 
@@ -217,10 +224,46 @@ final class EnterpriseActivityObserver
         );
     }
 
+    private function recordKpiMeasurement(KpiMeasurement $measurement): void
+    {
+        $kpi = $measurement->kpi()->with('enterprise')->first();
+        if ($kpi === null) {
+            return;
+        }
+
+        $measuredAt = Carbon::parse($measurement->measured_at);
+
+        app(EnterpriseEventRecorder::class)->record(
+            organizationId: (int) $kpi->enterprise->organization_id,
+            enterpriseId: (int) $kpi->enterprise_id,
+            source: 'cr8or',
+            eventType: 'kpi.measurement_recorded',
+            description: 'KPI "'.Str::limit($kpi->name, 120, '').'" measurement recorded',
+            occurredAt: $measuredAt,
+            payload: [
+                'entity_type' => 'Kpi',
+                'entity_id' => (int) $kpi->getKey(),
+                'measurement_id' => (int) $measurement->getKey(),
+                'value' => $measurement->value,
+                'unit' => $kpi->unit,
+                'measured_at' => $measuredAt->toIso8601String(),
+                'source' => $measurement->source,
+            ],
+            sourceEventId: 'kpi-measurement:'.$measurement->getKey(),
+            actorId: $measurement->recorded_by === null ? null : (int) $measurement->recorded_by,
+            subjectType: $kpi->getMorphClass(),
+            subjectId: (string) $kpi->getKey(),
+        );
+    }
+
     private function enterpriseFor(Model $model): ?Enterprise
     {
         if ($model instanceof Enterprise) {
             return $model;
+        }
+
+        if ($model instanceof KpiMeasurement) {
+            return $model->kpi()->with('enterprise')->first()?->enterprise;
         }
 
         $enterpriseId = $model->getAttribute('enterprise_id');

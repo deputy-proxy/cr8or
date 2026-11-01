@@ -27,6 +27,7 @@ use App\Models\IntegrationConnection;
 use App\Models\IntegrationJob;
 use App\Models\IntegrationRepository;
 use App\Models\IntegrationResult;
+use App\Models\KpiMeasurement;
 use App\Models\Milestone;
 use App\Models\Objective;
 use App\Models\Project;
@@ -144,7 +145,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(\App\Events\ContentItemApproved::class, [\App\Listeners\QueueWorkflowContinuationAfterDomainEvent::class, 'handle']);
         Event::listen(\App\Events\WorkflowApprovalGranted::class, [RecordEnterpriseActivityEvent::class, 'handleDomain']);
         Event::listen(\App\Events\WorkflowApprovalGranted::class, [\App\Listeners\QueueWorkflowContinuationAfterDomainEvent::class, 'handle']);
-        foreach ([Enterprise::class, EnterpriseContext::class, \App\Models\Strategy::class, \App\Models\Initiative::class, Project::class, \App\Models\Goal::class, \App\Models\Objective::class, \App\Models\Kpi::class, \App\Models\Decision::class, \App\Models\EnterpriseDecision::class, \App\Models\Dependency::class, \App\Models\Assignment::class, Task::class, Milestone::class, \App\Models\Issue::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
+        foreach ([Enterprise::class, EnterpriseContext::class, \App\Models\Strategy::class, \App\Models\Initiative::class, Project::class, \App\Models\Goal::class, \App\Models\Objective::class, \App\Models\Kpi::class, KpiMeasurement::class, \App\Models\Decision::class, \App\Models\EnterpriseDecision::class, \App\Models\Dependency::class, \App\Models\Assignment::class, Task::class, Milestone::class, \App\Models\Issue::class, Campaign::class, ContentItem::class, Publication::class, PublicationResult::class, PublicationSchedule::class, IntegrationConnection::class, IntegrationJob::class, IntegrationResult::class, WorkflowExecution::class] as $model) {
             $model::observe(EnterpriseActivityObserver::class);
         }
         foreach ([Goal::class, Objective::class, Task::class, Milestone::class] as $model) {

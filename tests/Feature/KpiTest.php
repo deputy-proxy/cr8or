@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\KpiMeasurementFrequency;
 use App\Models\Enterprise;
 use App\Models\Kpi;
 use App\Models\Membership;
@@ -8,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
-it('stores a KPI definition and current recorded value without calculation behavior', function () {
+it('stores a KPI definition without inventing a current measurement', function () {
     $enterprise = Enterprise::factory()->create();
     $kpi = Kpi::factory()->create([
         'enterprise_id' => $enterprise,
@@ -16,7 +17,7 @@ it('stores a KPI definition and current recorded value without calculation behav
         'definition' => 'Total recurring subscription revenue recorded for the month.',
         'unit' => 'currency',
         'target_value' => 10000,
-        'current_value' => 7500,
+        'measurement_frequency' => 'monthly',
     ]);
 
     $kpi->refresh();
@@ -24,21 +25,28 @@ it('stores a KPI definition and current recorded value without calculation behav
     expect($kpi->enterprise->is($enterprise))->toBeTrue()
         ->and($enterprise->kpis->contains($kpi))->toBeTrue()
         ->and($kpi->target_value)->toBe('10000.0000')
-        ->and($kpi->current_value)->toBe('7500.0000');
+        ->and($kpi->measurement_frequency)->toBe(KpiMeasurementFrequency::Monthly)
+        ->and($kpi->current_value)->toBeNull()
+        ->and($kpi->measurements)->toBeEmpty();
 });
 
-it('keeps KPI ownership and recorded values when unrelated attributes change', function () {
+it('keeps KPI ownership and cached value when unrelated attributes change', function () {
     $enterprise = Enterprise::factory()->create();
-    $kpi = Kpi::factory()->create([
-        'enterprise_id' => $enterprise,
-        'target_value' => 100,
-        'current_value' => 75,
-    ]);
+    $kpi = Kpi::factory()->create(['enterprise_id' => $enterprise]);
 
     $kpi->update(['name' => 'Updated KPI']);
 
     expect($kpi->refresh()->enterprise->is($enterprise))->toBeTrue()
-        ->and($kpi->current_value)->toBe('75.0000');
+        ->and($kpi->current_value)->toBeNull();
+});
+
+it('does not allow current value to be changed outside measurement recording', function () {
+    $kpi = Kpi::factory()->create();
+
+    $kpi->current_value = 75;
+
+    expect(fn () => $kpi->save())
+        ->toThrow(LogicException::class, 'KPI current_value can only be changed by recording a measurement.');
 });
 
 it('enforces KPI authorization through the enterprise organization', function () {
@@ -65,8 +73,8 @@ it('enforces KPI authorization through the enterprise organization', function ()
         ->and(Gate::forUser($member)->allows('createForEnterprise', [Kpi::class, $enterprise]))->toBeFalse();
 });
 
-it('keeps the KPI schema limited to supported definition and recorded value fields', function () {
+it('adds measurement history and an optional frequency to the KPI schema', function () {
     expect(Schema::getColumnListing('kpis'))->toBe([
-        'id', 'enterprise_id', 'name', 'definition', 'unit', 'target_value', 'current_value', 'status', 'created_at', 'updated_at',
-    ]);
+        'id', 'enterprise_id', 'name', 'definition', 'unit', 'target_value', 'current_value', 'status', 'created_at', 'updated_at', 'measurement_frequency',
+    ])->and(Schema::hasTable('kpi_measurements'))->toBeTrue();
 });
