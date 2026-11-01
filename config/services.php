@@ -39,6 +39,9 @@ return [
     ],
 
     'github' => [
+        'app_id' => env('GITHUB_APP_ID'),
+        'private_key' => env('GITHUB_APP_PRIVATE_KEY'),
+        'webhook_secret' => env('GITHUB_APP_WEBHOOK_SECRET', env('GITHUB_WEBHOOK_SECRET')),
         'timeout' => (int) env('GITHUB_TIMEOUT', 15),
         'credentials' => array_merge(['default' => env('GITHUB_ACCESS_TOKEN')], $githubCredentials),
     ],

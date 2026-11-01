@@ -8,6 +8,7 @@ use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\IntegrationConnections\Pages\CreateIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\EditIntegrationConnection;
 use App\Filament\Resources\IntegrationConnections\Pages\ListIntegrationConnections;
+use App\Jobs\DiscoverGitHubRepositories;
 use App\Models\Enterprise;
 use App\Models\IntegrationConnection;
 use App\Models\User;
@@ -24,6 +25,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -68,6 +70,13 @@ class IntegrationConnectionResource extends Resource
                     ->all())
                 ->searchable()
                 ->live()
+                ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
+                    if ($state === 'github') {
+                        $set('credential_reference', 'github-app-installation');
+                    } elseif ($get('credential_reference') === 'github-app-installation') {
+                        $set('credential_reference', null);
+                    }
+                })
                 ->required(),
             Select::make('oauth_client_id')
                 ->label('Media OAuth client')
@@ -84,7 +93,10 @@ class IntegrationConnectionResource extends Resource
                 ->helperText('Associating a client does not grant Enterprise access. Manage grants separately.')
                 ->dehydrated(fn (Get $get): bool => app(IntegrationRegistry::class)->isMediaProvider($get('provider'))),
             TextInput::make('external_account_id')->maxLength(255),
-            TextInput::make('credential_reference')->required()->maxLength(255)->helperText('Opaque identifier only, never a token, password, API key, or other secret. This field stores the reference but does not resolve credentials itself; a provider-specific credential resolver must be configured separately for it to be usable.'),
+            TextInput::make('github_installation_id')->label('GitHub App Installation ID')->numeric()->rule('integer')->minValue(1)->visible(fn (Get $get): bool => $get('provider') === 'github')->dehydrated(fn (Get $get): bool => $get('provider') === 'github')->disabledOn('edit')->helperText('Install the CR8OR GitHub App on the target GitHub account, then enter its installation ID. The App ID and private key are configured server-side.'),
+            TextInput::make('credential_reference')->required(fn (Get $get): bool => ! ($get('provider') === 'github' && filled($get('github_installation_id'))))->maxLength(255)->helperText(fn (Get $get): string => $get('provider') === 'github'
+                ? 'For GitHub App installations, keep github-app-installation. The installation ID is stored separately; tokens are generated and cached server-side.'
+                : 'Opaque identifier only, never a token, password, API key, or other secret. The provider-specific credential resolver uses this reference.'),
             Builder::make('configuration')
                 ->label('Configuration')
                 ->blocks(fn (Get $get): array => static::configurationBlocks((string) $get('provider')))
@@ -121,9 +133,18 @@ class IntegrationConnectionResource extends Resource
                     ->where('active', true)
                     ->count()),
             TextColumn::make('external_account_id')->searchable()->sortable(),
+            TextColumn::make('github_installation_id')->label('GitHub Installation')->toggleable(),
+            TextColumn::make('github_account_login')->label('GitHub Account')->state(fn (IntegrationConnection $record): ?string => data_get($record->metadata, 'github_account_login'))->toggleable(),
             TextColumn::make('status')->badge()->searchable()->sortable(),
         ])->recordActions([
             EditAction::make()->visible(fn (IntegrationConnection $record): bool => $record->social_identity_id === null),
+            Action::make('discoverGitHubRepositories')->label('Discover GitHub repositories')->icon(Heroicon::OutlinedMagnifyingGlass)
+                ->visible(fn (IntegrationConnection $record): bool => $record->provider === 'github' && $record->github_installation_id !== null && $record->isOperational() && Gate::allows('update', $record))
+                ->requiresConfirmation()
+                ->action(function (IntegrationConnection $record): void {
+                    DiscoverGitHubRepositories::dispatch((int) $record->id);
+                    Notification::make()->success()->title('Repository discovery queued')->send();
+                }),
             Action::make('manageEnterpriseAccess')
                 ->label('Manage Enterprise access')
                 ->icon(Heroicon::OutlinedShieldCheck)

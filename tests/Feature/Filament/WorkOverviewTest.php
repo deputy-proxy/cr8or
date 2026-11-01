@@ -196,36 +196,42 @@ it('refreshes activity and current metrics on the Livewire polling action', func
 });
 
 it('filters activity by today or the last fourteen days without inferring history', function () {
-    $organization = Organization::factory()->create();
-    $user = User::factory()->create();
-    Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
-    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
-    Event::query()->delete();
+    $this->travelTo(now()->startOfDay()->addHours(12));
 
-    Event::factory()->create([
-        'organization_id' => $organization->id,
-        'enterprise_id' => $enterprise->id,
-        'description' => 'Recent historical activity',
-        'occurred_at' => now()->subDays(2),
-    ]);
-    Event::factory()->create([
-        'organization_id' => $organization->id,
-        'enterprise_id' => $enterprise->id,
-        'description' => 'Activity today',
-        'occurred_at' => now()->subHour(),
-    ]);
+    try {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create();
+        Membership::factory()->owner()->create(['user_id' => $user, 'organization_id' => $organization]);
+        $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+        Event::query()->delete();
 
-    $this->actingAs($user);
-    $service = app(\App\Services\Dashboard\OverviewDashboardData::class);
-    $today = $service->forEnterprise($enterprise, 'today');
-    $recent = $service->forEnterprise($enterprise, '14_days');
+        Event::factory()->create([
+            'organization_id' => $organization->id,
+            'enterprise_id' => $enterprise->id,
+            'description' => 'Recent historical activity',
+            'occurred_at' => now()->subDays(2),
+        ]);
+        Event::factory()->create([
+            'organization_id' => $organization->id,
+            'enterprise_id' => $enterprise->id,
+            'description' => 'Activity today',
+            'occurred_at' => now()->subHour(),
+        ]);
 
-    expect($today['activityRangeLabel'])->toBe('Today')
-        ->and(collect($today['activityDays'])->flatMap(fn (array $day): array => $day['events'])->pluck('description')->all())
-        ->toBe(['Activity today'])
-        ->and($recent['activityRangeLabel'])->toBe('Last 14 days')
-        ->and(collect($recent['activityDays'])->flatMap(fn (array $day): array => $day['events'])->pluck('description')->all())
-        ->toContain('Activity today', 'Recent historical activity');
+        $this->actingAs($user);
+        $service = app(\App\Services\Dashboard\OverviewDashboardData::class);
+        $today = $service->forEnterprise($enterprise, 'today');
+        $recent = $service->forEnterprise($enterprise, '14_days');
+
+        expect($today['activityRangeLabel'])->toBe('Today')
+            ->and(collect($today['activityDays'])->flatMap(fn (array $day): array => $day['events'])->pluck('description')->all())
+            ->toBe(['Activity today'])
+            ->and($recent['activityRangeLabel'])->toBe('Last 14 days')
+            ->and(collect($recent['activityDays'])->flatMap(fn (array $day): array => $day['events'])->pluck('description')->all())
+            ->toContain('Activity today', 'Recent historical activity');
+    } finally {
+        $this->travelBack();
+    }
 });
 
 it('groups activity using the configured application timezone', function () {

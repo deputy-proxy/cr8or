@@ -1,11 +1,16 @@
 <?php
 
+use App\Http\Controllers\GitHubWebhookController;
 use App\Http\Controllers\IntegrationWebhookController;
 use App\Http\Controllers\ProjectReferenceController;
 use App\Http\Controllers\WebsiteEventController;
 use App\Http\Middleware\EnsureIntegrationClientCredentials;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Middleware\CheckToken;
+
+Route::post('integrations/webhooks/github', GitHubWebhookController::class)
+    ->middleware(['throttle:120,1'])
+    ->name('integrations.github.webhook');
 
 Route::post('integrations/webhooks/{provider}', IntegrationWebhookController::class)
     ->middleware(['throttle:120,1'])

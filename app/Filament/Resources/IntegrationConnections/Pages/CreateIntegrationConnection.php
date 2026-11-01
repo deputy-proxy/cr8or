@@ -21,6 +21,12 @@ class CreateIntegrationConnection extends CreateRecord
         // Status is read-only in the form; initialize new connections on the server.
         $data['status'] = \App\Models\IntegrationConnection::STATUS_ACTIVE;
 
+        if (($data['provider'] ?? null) === 'github' && filled($data['github_installation_id'] ?? null)) {
+            $data['credential_reference'] = 'github-app-installation';
+        } else {
+            $data['github_installation_id'] = null;
+        }
+
         if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($data['provider'] ?? null)) {
             $data['oauth_client_id'] = null;
         }

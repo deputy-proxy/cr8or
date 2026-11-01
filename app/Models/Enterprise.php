@@ -113,6 +113,12 @@ class Enterprise extends Model
         return $this->hasMany(IntegrationConnection::class);
     }
 
+    /** @return HasMany<IntegrationRepository, $this> */
+    public function integrationRepositories(): HasMany
+    {
+        return $this->hasMany(IntegrationRepository::class);
+    }
+
     /** @return HasMany<Issue, $this> */
     public function issues(): HasMany
     {

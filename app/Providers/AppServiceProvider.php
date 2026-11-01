@@ -21,9 +21,11 @@ use App\Models\Competitor;
 use App\Models\ContentItem;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
+use App\Models\GitHubWebhookDelivery;
 use App\Models\Goal;
 use App\Models\IntegrationConnection;
 use App\Models\IntegrationJob;
+use App\Models\IntegrationRepository;
 use App\Models\IntegrationResult;
 use App\Models\Milestone;
 use App\Models\Objective;
@@ -149,6 +151,8 @@ class AppServiceProvider extends ServiceProvider
             $model::observe(LifecycleTimestampObserver::class);
         }
         Gate::policy(Competitor::class, CompetitorPolicy::class);
+        Gate::policy(IntegrationRepository::class, \App\Policies\IntegrationRepositoryPolicy::class);
+        Gate::policy(GitHubWebhookDelivery::class, \App\Policies\GitHubWebhookDeliveryPolicy::class);
         Gate::policy(\App\Models\SocialAuthorizationAttempt::class, SocialAuthorizationAttemptPolicy::class);
         Gate::policy(\App\Models\SocialAuthorizationAudit::class, SocialAuthorizationAuditPolicy::class);
         Gate::policy(\App\Models\SocialCredential::class, SocialCredentialPolicy::class);

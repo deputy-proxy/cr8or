@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
-#[Fillable(['organization_id', 'enterprise_id', 'oauth_client_id', 'social_identity_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata'])]
+/**
+ * @property array<string, mixed>|null $metadata
+ * @property int|null $github_installation_id
+ */
+#[Fillable(['organization_id', 'enterprise_id', 'oauth_client_id', 'social_identity_id', 'provider', 'external_account_id', 'credential_reference', 'configuration', 'status', 'metadata', 'github_installation_id'])]
 class IntegrationConnection extends Model
 {
     private bool $lifecycleTransitionAuthorized = false;
@@ -70,6 +74,10 @@ class IntegrationConnection extends Model
                 throw new LogicException('Integration connections require a credential reference.');
             }
 
+            if ($connection->github_installation_id !== null && $connection->provider !== 'github') {
+                throw new LogicException('GitHub installation identities can only be attached to GitHub connections.');
+            }
+
             if ($connection->oauth_client_id !== null) {
                 if (! app(\App\Services\IntegrationRegistry::class)->isMediaProvider($connection->provider)) {
                     throw new LogicException('OAuth client associations are only supported for media integration connections.');
@@ -91,6 +99,10 @@ class IntegrationConnection extends Model
                 if ($enterprise === null || (int) $enterprise->organization_id !== (int) $connection->organization_id) {
                     throw new LogicException('Integration connection enterprise must belong to its organization.');
                 }
+            }
+
+            if ($connection->exists && $connection->isDirty('github_installation_id')) {
+                throw new LogicException('GitHub installation identity cannot be changed after a connection is created. Create a new connection for a different installation.');
             }
 
             if ($connection->exists && $connection->isDirty('organization_id')) {
@@ -156,6 +168,18 @@ class IntegrationConnection extends Model
     public function socialIdentity(): BelongsTo
     {
         return $this->belongsTo(SocialIdentity::class);
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<IntegrationRepository, $this> */
+    public function repositories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(IntegrationRepository::class);
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\HasMany<GitHubWebhookDelivery, $this> */
+    public function githubWebhookDeliveries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GitHubWebhookDelivery::class);
     }
 
     public function isOperational(): bool
