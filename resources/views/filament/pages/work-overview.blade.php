@@ -65,7 +65,7 @@
                             <button type="button" x-on:click="open = true" class="rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 hover:border-zinc-500">Info</button>
                             <div x-cloak x-show="open" x-on:click.self="open = false" x-on:keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true">
                                 <div class="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl">
-                                    <p class="text-sm leading-relaxed text-zinc-300">Goals express the outcomes the enterprise intends to achieve. Objectives break those goals into more specific results.</p>
+                                    <p class="text-sm leading-relaxed text-zinc-300">Goals express the outcomes the enterprise intends to achieve.</p>
                                     <div class="mt-5 flex justify-end">
                                         <button type="button" x-on:click="open = false" class="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white">Close</button>
                                     </div>
@@ -78,23 +78,6 @@
                     @else
                         <div aria-label="Goals: Unavailable" class="mt-3 text-4xl font-light tracking-tight tabular-nums text-white">—</div>
                     @endif
-                    <div class="mt-5 border-t border-zinc-800 pt-4">
-                        <div class="flex items-center justify-between gap-3">
-                            <h3 class="text-xs text-zinc-400">Objectives</h3>
-                            <div x-data="{ open: false }">
-                            <button type="button" x-on:click="open = true" class="rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 hover:border-zinc-500">Info</button>
-                            <div x-cloak x-show="open" x-on:click.self="open = false" x-on:keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true">
-                                <div class="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl">
-                                    <p class="text-sm leading-relaxed text-zinc-300">Objectives define measurable results and can be connected to KPIs and strategies.</p>
-                                    <div class="mt-5 flex justify-end">
-                                        <button type="button" x-on:click="open = false" class="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white">Close</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div>
-                        <div class="mt-3 text-4xl font-light tracking-tight tabular-nums text-white">{{ $goalOverview['objective_count'] === null ? '—' : number_format($goalOverview['objective_count']) }}</div>
-                    </div>
                     @if (count($goalOverview['items']))
                         <div class="mt-4 space-y-2 border-t border-zinc-800 pt-3">
                             @foreach ($goalOverview['items'] as $goal)
@@ -170,8 +153,8 @@
                 @if (!$lifecycleChart['available'])
                     <p class="rounded-lg border border-gray-800 bg-zinc-950 px-4 py-6 text-center text-sm text-gray-400">Lifecycle metrics are not available to your account.</p>
                 @else
-                    <div aria-label="Lifecycle summary metrics" class="grid grid-cols-1 gap-3 xl:grid-cols-3">
-                        @foreach ($lifecycleChart['entities'] as $entity)
+                    <div aria-label="Lifecycle summary metrics" class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                        @foreach (collect($lifecycleChart['entities'])->where('key', '!=', 'objectives') as $entity)
                             <article class="min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
                                 <h3 class="mb-3 font-medium text-white">{{ $entity['label'] }}</h3>
                                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
@@ -214,7 +197,7 @@
                         @endforeach
                     </div>
 
-                    @foreach ($lifecycleChart['entities'] as $entity)
+                    @foreach (collect($lifecycleChart['entities'])->where('key', '!=', 'objectives') as $entity)
                         <article aria-label="{{ $entity['label'] }} daily waterfall" class="w-full min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
                             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                                 <h3 class="font-medium text-white">{{ $entity['label'] }}</h3>

@@ -128,13 +128,35 @@ class OverviewDashboardData
             'activityAvailable' => $activityAvailable,
             'activityRangeLabel' => $activityRange === 'today' ? 'Today' : 'Last 14 days',
             'activityDays' => $activityDays,
-            'lifecycleChart' => app(LifecycleChartData::class)->forEnterprise($enterprise, $activityRange),
+            'lifecycleChart' => $this->overviewLifecycleChart($enterprise, $activityRange),
             'activityPanels' => [
                 ['label' => 'Late tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $lateTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
                 ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
             ],
         ];
+    }
+
+    /**
+     * The Overview focuses lifecycle reporting on actionable work and external issues.
+     * Objective lifecycle data remains available from LifecycleChartData for other consumers.
+     *
+     * @return array<string, mixed>
+     */
+    private function overviewLifecycleChart(Enterprise $enterprise, string $activityRange): array
+    {
+        $chart = app(LifecycleChartData::class)->forEnterprise($enterprise, $activityRange);
+        $chart['entities'] = array_values(array_filter(
+            $chart['entities'],
+            fn (array $entity): bool => $entity['key'] !== 'objectives',
+        ));
+        $chart['limitations'] = array_values(array_filter(
+            $chart['limitations'],
+            fn (string $limitation): bool => ! str_starts_with($limitation, 'Objectives:'),
+        ));
+        $chart['available'] = $chart['entities'] !== [];
+
+        return $chart;
     }
 
     /** @return array{count: int|null, items: array<int, array{name: string, description: string|null, url: string}>} */

@@ -183,7 +183,7 @@ it('renders the daily waterfall charts and summary cards above them on the full 
     $this->actingAs($user);
     \Livewire\Livewire::test(WorkOverview::class)
         ->assertSee('Daily lifecycle')
-        ->assertSee('Objectives daily waterfall')
+        ->assertDontSee('Objectives daily waterfall')
         ->assertSee('Tasks daily waterfall')
         ->assertSee('Issues daily waterfall')
         ->assertSee('Opening')
@@ -264,11 +264,15 @@ it('refreshes lifecycle chart values with the existing dashboard polling action'
 
     $this->actingAs($user);
     $component = \Livewire\Livewire::test(WorkOverview::class)
-        ->assertSee('Objectives')
+        ->assertDontSee('Objectives')
+        ->assertSee('Tasks daily waterfall')
+        ->assertSee('Issues daily waterfall')
         ->assertSee('Opening');
 
     Objective::factory()->create(['enterprise_id' => $enterprise->id]);
 
     $component->call('refreshDashboard')
-        ->assertSee('Objectives');
+        ->assertDontSee('Objectives')
+        ->assertSee('Tasks daily waterfall')
+        ->assertSee('Issues daily waterfall');
 });
