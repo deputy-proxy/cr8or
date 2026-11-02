@@ -77,7 +77,7 @@ it('renders the live query-driven dashboard and a truthful activity empty state'
         ->assertSee('Overview')
         ->assertSee('Strategies')
         ->assertSee('Goals')
-        ->assertDontSee('Objectives')
+        ->assertSee('Objectives')
         ->assertSee('Initiatives')
         ->assertSee('KPIs')
         ->assertSee('Projects')
