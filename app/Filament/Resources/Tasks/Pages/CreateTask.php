@@ -9,6 +9,7 @@ use App\Models\Initiative;
 use App\Models\Project;
 use App\Models\Task;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +18,8 @@ class CreateTask extends CreateRecord
     use AuthorizesScopedRecordCreation;
 
     protected static string $resource = TaskResource::class;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
