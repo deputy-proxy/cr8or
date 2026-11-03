@@ -21,6 +21,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
@@ -127,8 +128,18 @@ class TaskResource extends Resource
             TextColumn::make('project.name')->label('Project')->searchable()->sortable(),
             TextColumn::make('initiative.name')->label('Initiative')->searchable()->sortable(),
             TextColumn::make('parent.name')->label('Parent Task')->toggleable(),
-            TextColumn::make('status')->badge()->formatStateUsing(fn (TaskStatus $state): string => $state->label()),
-            TextColumn::make('priority')->badge(),
+            SelectColumn::make('status')
+                ->options(TaskStatus::options())
+                ->rules(['required', 'in:'.implode(',', TaskStatus::values())])
+                ->selectablePlaceholder(false)
+                ->disabled(fn (Task $record): bool => Gate::denies('update', $record))
+                ->beforeStateUpdated(fn (Task $record) => Gate::authorize('update', $record)),
+            SelectColumn::make('priority')
+                ->options(['low' => 'Low', 'normal' => 'Normal', 'high' => 'High'])
+                ->rules(['required', 'in:low,normal,high'])
+                ->selectablePlaceholder(false)
+                ->disabled(fn (Task $record): bool => Gate::denies('update', $record))
+                ->beforeStateUpdated(fn (Task $record) => Gate::authorize('update', $record)),
             TextColumn::make('due_at')->dateTime()->sortable(),
         ])->filters([
             SelectFilter::make('project_id')
