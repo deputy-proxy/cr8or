@@ -232,7 +232,7 @@ it('runs E2E-CAPABILITY-20260928 entirely through the application Capability bou
         [
             'name' => 'E2E Capability Task',
             'description' => 'Work context for the Agent runtime.',
-            'status' => 'planned',
+            'status' => 'todo',
         ],
         $report['capabilities'],
     );

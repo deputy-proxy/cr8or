@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Tasks;
 
+use App\Enums\TaskStatus;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Filament\Resources\Tasks\Pages\CreateTask;
 use App\Filament\Resources\Tasks\Pages\EditTask;
@@ -112,14 +113,7 @@ class TaskResource extends Resource
                 ->placeholder('No parent Task'),
             TextInput::make('name')->required()->maxLength(255),
             Textarea::make('description')->rows(4),
-            Select::make('status')->options(function (?Task $record): array {
-                $options = ['todo' => 'To do', 'in_progress' => 'In progress', 'done' => 'Done'];
-                if ($record !== null && ! array_key_exists($record->status, $options)) {
-                    $options[$record->status] = $record->status;
-                }
-
-                return $options;
-            })->required(),
+            Select::make('status')->options(TaskStatus::options())->required(),
             Select::make('priority')->options(['low' => 'Low', 'normal' => 'Normal', 'high' => 'High'])->required(),
             DateTimePicker::make('due_at'),
         ]);
@@ -133,7 +127,7 @@ class TaskResource extends Resource
             TextColumn::make('project.name')->label('Project')->searchable()->sortable(),
             TextColumn::make('initiative.name')->label('Initiative')->searchable()->sortable(),
             TextColumn::make('parent.name')->label('Parent Task')->toggleable(),
-            TextColumn::make('status')->badge(),
+            TextColumn::make('status')->badge()->formatStateUsing(fn (TaskStatus $state): string => $state->label()),
             TextColumn::make('priority')->badge(),
             TextColumn::make('due_at')->dateTime()->sortable(),
         ])->filters([
@@ -151,14 +145,7 @@ class TaskResource extends Resource
                     ->orderBy('name')
                     ->pluck('name', 'id')
                     ->all()),
-            SelectFilter::make('status')->options([
-                'todo' => 'To do',
-                'in_progress' => 'In progress',
-                'done' => 'Done',
-                'completed' => 'Completed',
-                'cancelled' => 'Cancelled',
-                'canceled' => 'Canceled',
-            ]),
+            SelectFilter::make('status')->options(TaskStatus::options()),
             SelectFilter::make('priority')->options([
                 'low' => 'Low',
                 'normal' => 'Normal',
@@ -187,12 +174,7 @@ class TaskResource extends Resource
                 ->collapsible(),
             Group::make('status')
                 ->label('Status')
-                ->getTitleFromRecordUsing(fn (Task $record): string => match ($record->status) {
-                    'todo' => 'To do',
-                    'in_progress' => 'In progress',
-                    'done' => 'Done',
-                    default => str($record->status)->headline()->toString(),
-                })
+                ->getTitleFromRecordUsing(fn (Task $record): string => $record->status->label())
                 ->titlePrefixedWithLabel(false)
                 ->collapsible(),
         ])->defaultGroup('enterprise_id')->recordActions([

@@ -16,10 +16,6 @@ final class LifecycleTimestampObserver
     public function saving(Model $model): void
     {
         $status = $model->getAttribute('status');
-        if (! is_string($status)) {
-            return;
-        }
-
         $isClosed = LifecycleStatus::isClosed($status);
 
         if (! $model->exists) {

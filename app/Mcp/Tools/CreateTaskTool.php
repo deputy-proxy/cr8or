@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Enums\TaskStatus;
 use App\Models\Enterprise;
 use App\Models\Task;
 use App\Models\User;
@@ -26,7 +27,7 @@ class CreateTaskTool extends GovernedCapabilityTool
             'enterprise_id' => $schema->integer()->min(1)->description('Target enterprise id.')->required(),
             'name' => $schema->string()->min(1)->max(255)->description('Task name.')->required(),
             'description' => $schema->string()->max(10000)->description('Optional task description.'),
-            'status' => $schema->string()->max(100)->description('Optional task status.'),
+            'status' => $schema->string()->enum(TaskStatus::values())->description('Optional task status.'),
             'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task in the same Project or Initiative and Enterprise.'),
             'priority' => $schema->string()->max(50)->description('Optional task priority.'),
             'due_at' => $schema->string()->description('Optional ISO 8601 due timestamp.'),
@@ -45,7 +46,7 @@ class CreateTaskTool extends GovernedCapabilityTool
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
                 'name' => ['required', 'string', 'min:1', 'max:255'],
                 'description' => ['nullable', 'string', 'max:10000'],
-                'status' => ['nullable', 'string', 'max:100'],
+                'status' => ['nullable', 'string', 'in:'.implode(',', TaskStatus::values())],
                 'parent_task_id' => ['nullable', 'integer', 'min:1', 'exists:tasks,id'],
                 'priority' => ['nullable', 'string', 'max:50'],
                 'due_at' => ['nullable', 'date'],

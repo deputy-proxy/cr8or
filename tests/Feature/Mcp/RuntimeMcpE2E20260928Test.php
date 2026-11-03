@@ -303,7 +303,7 @@ it('runs E2E-TEST-20260928 unchanged through the CR8OR MCP surface', function ()
         'enterprise_id' => $enterpriseId,
         'name' => 'E2E Task',
         'description' => 'Work context for the Product Expert.',
-        'status' => 'planned',
+        'status' => 'todo',
     ], $report)['result'];
     $workItemId = $workItem['id'];
 

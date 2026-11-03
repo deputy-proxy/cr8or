@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TaskStatus;
 use App\Models\Enterprise;
 use App\Models\Initiative;
 use App\Models\Project;
@@ -24,7 +25,7 @@ final class TaskService
             'parent_task_id' => $this->parentTaskId($enterprise, $attributes['parent_task_id'] ?? null, $projectId, $initiativeId),
             'name' => $attributes['name'],
             'description' => $attributes['description'] ?? null,
-            'status' => $attributes['status'] ?? 'todo',
+            'status' => $this->statusValue($attributes['status'] ?? TaskStatus::Todo->value),
             'priority' => $attributes['priority'] ?? 'normal',
             'due_at' => $attributes['due_at'] ?? null,
         ]);
@@ -40,6 +41,10 @@ final class TaskService
         $initiativeId = array_key_exists('initiative_id', $attributes)
             ? $this->initiativeId($enterprise, $attributes['initiative_id'])
             : ($task->initiative_id === null ? null : (int) $task->initiative_id);
+
+        if (array_key_exists('status', $attributes)) {
+            $attributes['status'] = $this->statusValue($attributes['status']);
+        }
 
         if (array_key_exists('project_id', $attributes) || array_key_exists('initiative_id', $attributes)) {
             $this->assertSingleParent($projectId, $initiativeId);
@@ -57,6 +62,19 @@ final class TaskService
         $task->update($attributes);
 
         return $task->refresh();
+    }
+
+    private function statusValue(mixed $status): string
+    {
+        if ($status instanceof TaskStatus) {
+            return $status->value;
+        }
+
+        if (is_string($status) && TaskStatus::tryFrom($status) !== null) {
+            return $status;
+        }
+
+        throw new InvalidArgumentException('The supplied Task status is not supported.');
     }
 
     private function projectId(Enterprise $enterprise, mixed $projectId): ?int

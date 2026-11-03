@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\TaskStatus;
 use App\Models\Enterprise;
 use App\Models\Initiative;
 use App\Models\Project;
@@ -22,7 +23,7 @@ class TaskFactory extends Factory
             'parent_task_id' => null,
             'name' => fake()->sentence(3),
             'description' => fake()->optional()->paragraph(),
-            'status' => 'todo',
+            'status' => TaskStatus::Todo->value,
             'priority' => 'normal',
             'due_at' => null,
         ];

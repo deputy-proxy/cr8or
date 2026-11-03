@@ -61,7 +61,7 @@ it('allows a Task to have workflow and decision context without merging their li
 
     expect($task->workflows->contains($workflow))->toBeTrue()
         ->and($task->decisions->contains($decision))->toBeTrue()
-        ->and($workflow->status)->not->toBe($task->status);
+        ->and($workflow->status)->not->toBe($task->status->value);
 });
 
 it('prevents changing a parent Task scope while children would become inconsistent', function () {

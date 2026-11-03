@@ -4,6 +4,7 @@ namespace App\Capabilities;
 
 use App\Contracts\Operation;
 use App\Enums\CapabilityExecutionMode;
+use App\Enums\TaskStatus;
 use App\Mcp\Tools\AnalyzeBusinessContextTool;
 use App\Mcp\Tools\ApproveContentItemTool;
 use App\Mcp\Tools\ContinueAgentExecutionTool;
@@ -563,7 +564,7 @@ final class CapabilityRegistry
                 'work.task.create',
                 CreateTask::class,
                 CreateTaskTool::class,
-                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['enterprise_id' => 'integer|required', 'name' => 'string|required', 'description' => 'string|nullable', 'status' => 'string|nullable|in:'.implode(',', TaskStatus::values()), 'project_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'task'],
                 'McpCapabilityAuthorizer::authorizeMutation + Task policy',
                 'none',
@@ -572,7 +573,7 @@ final class CapabilityRegistry
                 'work.task.update',
                 UpdateTask::class,
                 UpdateTaskTool::class,
-                ['task_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|nullable', 'project_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
+                ['task_id' => 'integer|required', 'name' => 'string|nullable', 'description' => 'string|nullable', 'status' => 'string|in:'.implode(',', TaskStatus::values()), 'project_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'parent_task_id' => 'integer|nullable', 'priority' => 'string|nullable', 'due_at' => 'date|nullable', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable', 'approval_request_id' => 'integer|nullable'],
                 ['success' => 'boolean', 'result' => 'task'],
                 'McpCapabilityAuthorizer::authorizeMutation + Task policy',
                 'none',
