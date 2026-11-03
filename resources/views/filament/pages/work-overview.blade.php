@@ -114,9 +114,22 @@
                 <article class="min-w-0 rounded-xl border border-zinc-800 bg-black p-5">
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="text-xs font-medium text-zinc-300">Projects</h2>
-                        @if (\App\Filament\Resources\Projects\ProjectResource::canViewAny())
-                            <a href="{{ \App\Filament\Resources\Projects\ProjectResource::getUrl() }}" class="text-[10px] text-zinc-400 underline decoration-zinc-700 underline-offset-4 hover:text-white">View all</a>
-                        @endif
+                        <div class="flex items-center gap-2">
+                            <div x-data="{ open: false }">
+                                <button type="button" x-on:click="open = true" class="rounded border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 hover:border-zinc-500">Info</button>
+                                <div x-cloak x-show="open" x-on:click.self="open = false" x-on:keydown.escape.window="open = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true">
+                                    <div class="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl">
+                                        <p class="text-sm leading-relaxed text-zinc-300">Projects and initiatives translate strategy into coordinated execution. Projects organize defined bodies of work, while initiatives coordinate related efforts toward broader outcomes.</p>
+                                        <div class="mt-5 flex justify-end">
+                                            <button type="button" x-on:click="open = false" class="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (\App\Filament\Resources\Projects\ProjectResource::canViewAny())
+                                <a href="{{ \App\Filament\Resources\Projects\ProjectResource::getUrl() }}" class="text-[10px] text-zinc-400 underline decoration-zinc-700 underline-offset-4 hover:text-white">View all</a>
+                            @endif
+                        </div>
                     </div>
                     <div class="mt-3 text-4xl font-light tracking-tight tabular-nums text-white">{{ $executionOverview['projects'] === null ? '—' : number_format($executionOverview['projects']) }}</div>
                     <div class="mt-5 border-t border-zinc-800 pt-4">
@@ -186,12 +199,12 @@
                                     </div>
                                     <div>
                                         <div class="text-xs text-gray-500">Opened</div>
-                                        <div class="mt-1 text-xl font-semibold tabular-nums text-green-400">{{ $entity['summary']['created'] === null ? '—' : number_format($entity['summary']['created']) }}</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-red-400">{{ $entity['summary']['created'] === null ? '—' : number_format($entity['summary']['created']) }}</div>
                                         <div class="text-[11px] text-gray-500">During range</div>
                                     </div>
                                     <div>
                                         <div class="text-xs text-gray-500">Closed</div>
-                                        <div class="mt-1 text-xl font-semibold tabular-nums text-red-400">{{ $entity['summary']['closed'] === null ? '—' : number_format($entity['summary']['closed']) }}</div>
+                                        <div class="mt-1 text-xl font-semibold tabular-nums text-green-400">{{ $entity['summary']['closed'] === null ? '—' : number_format($entity['summary']['closed']) }}</div>
                                         <div class="text-[11px] text-gray-500">During range</div>
                                     </div>
                                     <div>
@@ -207,8 +220,8 @@
                     <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-xl border border-gray-800 bg-zinc-950 px-4 py-3">
                         @foreach ([
                             ['label' => 'Open at 00:00', 'color' => '#60a5fa'],
-                            ['label' => 'Opened during day', 'color' => '#22c55e'],
-                            ['label' => 'Closed during day', 'color' => '#ef4444'],
+                            ['label' => 'Opened during day', 'color' => '#ef4444'],
+                            ['label' => 'Closed during day', 'color' => '#22c55e'],
                             ['label' => 'Open at 23:59', 'color' => '#2563eb'],
                         ] as $legend)
                             <span class="inline-flex items-center gap-2 text-xs text-gray-400">
@@ -307,49 +320,6 @@
                 @endif
             </section>
 
-            <section aria-label="Current work" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                @foreach ($listCards as $card)
-                    <article class="min-w-0 rounded-xl border border-zinc-800 bg-black p-4">
-                        <div class="mb-4 flex items-center justify-between gap-2">
-                            <h2 class="font-medium text-zinc-200">{{ $card['label'] }}</h2>
-                            @if ($card['url']) <a href="{{ $card['url'] }}" class="text-xs text-zinc-400 underline decoration-zinc-700 underline-offset-4 hover:text-white">View all</a> @endif
-                        </div>
-                        @forelse ($card['items'] as $item)
-                            <div class="border-t border-zinc-800 py-3 first:border-0 first:pt-0">
-                                <div class="break-words text-sm text-zinc-300">{{ $item['title'] }}</div>
-                                <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
-                                    @if ($item['status']) <span>{{ str($item['status'])->replace('_', ' ')->headline() }}</span> @endif
-                                    @if ($item['due']) <span>Due {{ $item['due'] }}</span> @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="border-t border-zinc-800 pt-3 text-sm text-zinc-500">No {{ strtolower($card['label']) }} to show.</p>
-                        @endforelse
-                    </article>
-                @endforeach
-            </section>
-
-            <section aria-label="Upcoming work" class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                @foreach ($activityPanels as $panel)
-                    <article class="min-w-0 rounded-xl border border-gray-800 bg-zinc-950 p-4">
-                        <div class="mb-4 flex items-center justify-between gap-2">
-                            <h2 class="font-medium text-white">{{ $panel['label'] }}</h2>
-                            @if ($panel['url']) <a href="{{ $panel['url'] }}" class="text-xs text-gray-400 underline decoration-gray-700 underline-offset-4 hover:text-white">View all</a> @endif
-                        </div>
-                        @forelse ($panel['items'] as $item)
-                            <div class="border-t border-gray-800 py-3 first:border-0 first:pt-0">
-                                <div class="break-words text-sm text-gray-200">{{ $item['title'] }}</div>
-                                <div class="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
-                                    @if ($item['status']) <span>{{ str($item['status'])->replace('_', ' ')->headline() }}</span> @endif
-                                    @if ($item['due']) <span>Due {{ $item['due'] }}</span> @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="border-t border-gray-800 pt-3 text-sm text-gray-500">Nothing to show here.</p>
-                        @endforelse
-                    </article>
-                @endforeach
-            </section>
         @endif
     </div>
 </x-filament-panels::page>

@@ -81,7 +81,7 @@ it('renders the live query-driven dashboard and a truthful activity empty state'
         ->assertSee('Initiatives')
         ->assertSee('KPIs')
         ->assertSee('Projects')
-        ->assertSee('Milestones')
+        ->assertSee('Info')
         ->assertSee('Daily activity')
         ->assertSee('Recorded activity · Last 14 days')
         ->assertSee('No activity has been recorded for this enterprise in the last 14 days.')
@@ -89,9 +89,12 @@ it('renders the live query-driven dashboard and a truthful activity empty state'
         ->assertSee('wire:poll.30s.visible="refreshDashboard"', false)
         ->assertDontSee('Collecting history')
         ->assertDontSee('Waiting for complete start/end snapshots')
-        ->assertSee('Late tasks')
-        ->assertSee('Tasks due this week')
-        ->assertSee('Tasks due next week');
+        ->assertDontSee('aria-label="Current work"', false)
+        ->assertDontSee('aria-label="Upcoming work"', false)
+        ->assertDontSee('Milestones')
+        ->assertDontSee('Late tasks')
+        ->assertDontSee('Tasks due this week')
+        ->assertDontSee('Tasks due next week');
 });
 
 it('uses calendar dates and Monday week boundaries for actionable task panels', function () {
