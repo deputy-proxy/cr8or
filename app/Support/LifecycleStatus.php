@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use BackedEnum;
+
 final class LifecycleStatus
 {
     /** @var list<string> */
@@ -25,6 +27,10 @@ final class LifecycleStatus
 
     public static function isClosed(mixed $status): bool
     {
+        if ($status instanceof BackedEnum) {
+            $status = $status->value;
+        }
+
         return is_string($status)
             && in_array(strtolower(trim($status)), self::CLOSED_STATES, true);
     }

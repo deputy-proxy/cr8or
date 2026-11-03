@@ -70,7 +70,7 @@ class OverviewDashboardData
             ['label' => 'Projects', 'url' => ProjectResource::canViewAny() ? ProjectResource::getUrl() : null, 'items' => (clone $projects)->where('status', 'active')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Project $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => null])->all()],
             ['label' => 'Initiatives', 'url' => InitiativeResource::canViewAny() ? InitiativeResource::getUrl() : null, 'items' => (clone $initiatives)->orderByDesc('updated_at')->limit(5)->get()->map(fn (Initiative $r): array => ['title' => $r->name, 'status' => null, 'due' => null])->all()],
             ['label' => 'Milestones', 'url' => MilestoneResource::canViewAny() ? MilestoneResource::getUrl() : null, 'items' => (clone $milestones)->whereNotNull('target_date')->whereDate('target_date', '>=', now()->toDateString())->whereNotIn('status', ['completed', 'done', 'cancelled', 'canceled'])->orderBy('target_date')->limit(5)->get()->map(fn (Milestone $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->target_date)])->all()],
-            ['label' => 'Tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => (clone $actionableTasks)->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
+            ['label' => 'Tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => (clone $actionableTasks)->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->orderByDesc('updated_at')->limit(5)->get()->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status->value, 'due' => $this->formatDate($r->due_at)])->all()],
         ];
 
         $activityAvailable = EventResource::canViewAny();
@@ -130,9 +130,9 @@ class OverviewDashboardData
             'activityDays' => $activityDays,
             'lifecycleChart' => $this->overviewLifecycleChart($enterprise, $activityRange),
             'activityPanels' => [
-                ['label' => 'Late tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $lateTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
-                ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
-                ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status, 'due' => $this->formatDate($r->due_at)])->all()],
+                ['label' => 'Late tasks', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $lateTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status->value, 'due' => $this->formatDate($r->due_at)])->all()],
+                ['label' => 'Tasks due this week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $thisWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status->value, 'due' => $this->formatDate($r->due_at)])->all()],
+                ['label' => 'Tasks due next week', 'url' => TaskResource::canViewAny() ? TaskResource::getUrl() : null, 'items' => $nextWeekTasks->map(fn (Task $r): array => ['title' => $r->name, 'status' => $r->status->value, 'due' => $this->formatDate($r->due_at)])->all()],
             ],
         ];
     }

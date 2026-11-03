@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Capabilities\CapabilityRegistry;
+use App\Enums\TaskStatus;
 use App\Models\Task;
 use App\Models\User;
 use App\Services\McpCapabilityAuthorizer;
@@ -27,7 +28,7 @@ class UpdateTaskTool extends GovernedCapabilityTool
             'task_id' => $schema->integer()->min(1)->description('Task id.')->required(),
             'name' => $schema->string()->min(1)->max(255)->description('Replacement task name.'),
             'description' => $schema->string()->max(10000)->description('Replacement task description.'),
-            'status' => $schema->string()->max(100)->description('Replacement task status.'),
+            'status' => $schema->string()->enum(TaskStatus::values())->description('Replacement task status.'),
             'parent_task_id' => $schema->integer()->min(1)->description('Optional parent Task.'),
             'priority' => $schema->string()->max(50)->description('Task priority.'),
             'due_at' => $schema->string()->description('ISO 8601 due timestamp.'),
@@ -46,7 +47,7 @@ class UpdateTaskTool extends GovernedCapabilityTool
                 'task_id' => ['required', 'integer', 'min:1', 'exists:tasks,id'],
                 'name' => ['sometimes', 'string', 'min:1', 'max:255'],
                 'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
-                'status' => ['sometimes', 'string', 'max:100'],
+                'status' => ['sometimes', 'string', 'in:'.implode(',', TaskStatus::values())],
                 'parent_task_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:tasks,id'],
                 'priority' => ['sometimes', 'string', 'max:50'],
                 'due_at' => ['sometimes', 'nullable', 'date'],

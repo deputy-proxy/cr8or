@@ -174,7 +174,7 @@ it('allows an authorized human to create and update a task', function () {
     ])->assertOk();
 
     expect($workItem->refresh()->name)->toBe('Updated work')
-        ->and($workItem->status)->toBe('in_progress')
+        ->and($workItem->status->value)->toBe('in_progress')
         ->and($workItem->parent_task_id)->toBe($parentTask->id)
         ->and($workItem->priority)->toBe('low')
         ->and($workItem->due_at->toDateString())->toBe('2026-12-01')
@@ -287,6 +287,14 @@ it('rejects invalid input before mutating state', function () {
         ->tool(CreateTaskTool::class, [
             'enterprise_id' => $enterprise->getKey(),
             'name' => '',
+        ])
+        ->assertHasErrors();
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(CreateTaskTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'name' => 'Invalid status task',
+            'status' => 'in_review',
         ])
         ->assertHasErrors();
 

@@ -264,7 +264,7 @@ final class BusinessPerformanceReportingService
             ])->all(),
             'tasks' => $tasks->map(fn (Task $task): array => [
                 'id' => $task->getKey(),
-                'status' => $task->status,
+                'status' => $task->status->value,
                 'created_at' => Carbon::parse((string) $task->created_at)->toISOString(),
             ])->all(),
             'agent_execution' => $executions->map(fn (AgentExecution $execution): array => [

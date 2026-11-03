@@ -98,7 +98,7 @@ it('maps colliding WorkItem and Task IDs and preserves dependent records', funct
         ->and($migratedTask->enterprise_id)->toBe($enterprise->id)
         ->and($migratedTask->project_id)->toBe($project->id)
         ->and($migratedTask->description)->toBe('Preserve this description')
-        ->and($migratedTask->status)->toBe('in_progress')
+        ->and($migratedTask->status->value)->toBe('in_progress')
         ->and((string) $migratedTask->created_at)->toContain('2026-01-02')
         ->and(Schema::hasTable('work_items'))->toBeFalse()
         ->and(Schema::hasColumn('workflows', 'work_item_id'))->toBeFalse()

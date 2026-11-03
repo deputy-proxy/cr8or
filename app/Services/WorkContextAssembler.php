@@ -107,7 +107,7 @@ class WorkContextAssembler
                 'parent_task_id' => $task->parent_task_id,
                 'name' => $task->name,
                 'description' => $task->description,
-                'status' => $task->status,
+                'status' => $task->status->value,
                 'priority' => $task->priority,
                 'due_at' => $this->timestamp($task->due_at),
                 'children' => $taskRelations['children'][$task->getKey()] ?? [],
@@ -178,7 +178,7 @@ class WorkContextAssembler
                     'project_id' => $parent->project_id,
                     'initiative_id' => $parent->initiative_id,
                     'name' => $parent->name,
-                    'status' => $parent->status,
+                    'status' => $parent->status->value,
                 ],
             ];
         });

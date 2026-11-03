@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\TaskStatus;
 use App\Filament\Resources\Concerns\ScopesAuthorizedRecords;
 use App\Jobs\SyncEnterpriseGitHubIssues;
 use App\Models\Enterprise;
@@ -322,7 +323,7 @@ class EnterprisePortfolioDashboard extends Page
             ])->values();
 
         $dashboardTasks = Task::query()->whereIn('enterprise_id', $enterpriseIds)
-            ->whereNotIn('status', ['completed', 'done', 'cancelled'])
+            ->whereNotIn('status', [TaskStatus::Done->value, TaskStatus::Cancelled->value])
             ->orderByRaw('due_at is null')->orderBy('due_at')->limit(500)->get()
             ->map(fn (Task $task): array => [
                 'task_id' => (string) $task->id,
@@ -331,7 +332,7 @@ class EnterprisePortfolioDashboard extends Page
                 'priority' => (string) ($task->priority ?? 'medium'),
                 'assignee' => '',
                 'due_date' => $task->due_at ? \Illuminate\Support\Carbon::parse($task->due_at)->diffForHumans() : 'No due date',
-                'status' => (string) $task->status,
+                'status' => $task->status->value,
             ])->values();
 
         $dashboardWorkflows = WorkflowExecution::query()->with('workflow')

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TaskStatus;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 
 /**
+ * @property \App\Enums\TaskStatus $status
  * @property int $enterprise_id
  * @property int|null $project_id
  * @property int|null $initiative_id
@@ -23,14 +25,14 @@ use LogicException;
 #[Fillable(['enterprise_id', 'project_id', 'initiative_id', 'parent_task_id', 'name', 'description', 'status', 'priority', 'due_at'])]
 class Task extends Model
 {
-    protected $attributes = ['status' => 'todo'];
+    protected $attributes = ['status' => TaskStatus::Todo->value];
 
     /** @use HasFactory<TaskFactory> */
     use HasFactory;
 
     protected function casts(): array
     {
-        return ['due_at' => 'datetime', 'closed_at' => 'immutable_datetime'];
+        return ['status' => TaskStatus::class, 'due_at' => 'datetime', 'closed_at' => 'immutable_datetime'];
     }
 
     protected static function booted(): void

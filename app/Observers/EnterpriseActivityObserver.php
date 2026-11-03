@@ -29,6 +29,7 @@ use App\Models\Task;
 use App\Models\WorkflowExecution;
 use App\Services\EnterpriseEventRecorder;
 use App\Support\LifecycleStatus;
+use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -91,12 +92,14 @@ final class EnterpriseActivityObserver
         $lifecycleTransition = false;
         $oldState = null;
         $newState = null;
+        $newStateValue = null;
 
         if ($this->supportsLifecycle($model) && $stateChanged) {
             $oldState = $model->getRawOriginal($stateField);
             $newState = $model->getAttribute($stateField);
+            $newStateValue = $newState instanceof BackedEnum ? $newState->value : $newState;
             $wasOpen = $this->isOpenState(is_string($oldState) ? $oldState : null);
-            $isOpen = $this->isOpenState(is_string($newState) ? $newState : null);
+            $isOpen = $this->isOpenState(is_string($newStateValue) ? $newStateValue : null);
             $lifecycleTransition = $wasOpen !== $isOpen;
         }
 
@@ -109,9 +112,9 @@ final class EnterpriseActivityObserver
         if ($lifecycleTransition) {
             $this->recordLifecycle(
                 $model,
-                $this->isOpenState(is_string($newState) ? $newState : null) ? 'open' : 'closed',
+                $this->isOpenState(is_string($newStateValue) ? $newStateValue : null) ? 'open' : 'closed',
                 is_string($oldState) ? $oldState : null,
-                is_string($newState) ? $newState : null,
+                is_string($newStateValue) ? $newStateValue : null,
             );
         }
     }
@@ -192,10 +195,11 @@ final class EnterpriseActivityObserver
 
         $label = $model->getAttribute('name') ?? $model->getAttribute('title') ?? class_basename($model);
         $status = $model instanceof Issue ? $model->getAttribute('state') : $model->getAttribute('status');
+        $statusValue = $status instanceof BackedEnum ? $status->value : $status;
         $description = match ($action) {
             'created' => class_basename($model).' "'.Str::limit((string) $label, 120, '').'" created',
             'deleted' => class_basename($model).' "'.Str::limit((string) $label, 120, '').'" deleted',
-            'status_changed' => class_basename($model).' "'.Str::limit((string) $label, 120, '').'" status changed to '.(string) $status,
+            'status_changed' => class_basename($model).' "'.Str::limit((string) $label, 120, '').'" status changed to '.(string) $statusValue,
             default => class_basename($model).' "'.Str::limit((string) $label, 120, '').'" updated',
         };
 
@@ -211,7 +215,7 @@ final class EnterpriseActivityObserver
                 'entity_type' => class_basename($model),
                 'entity_id' => (int) $model->getKey(),
                 'name' => Str::limit((string) $label, 150, ''),
-                'status' => is_string($status) ? $status : null,
+                'status' => is_string($statusValue) ? $statusValue : null,
                 'changed_fields' => $changedFields,
             ],
             sourceEventId: (string) Str::uuid(),
