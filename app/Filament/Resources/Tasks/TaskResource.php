@@ -21,6 +21,8 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
@@ -134,7 +136,69 @@ class TaskResource extends Resource
             TextColumn::make('status')->badge(),
             TextColumn::make('priority')->badge(),
             TextColumn::make('due_at')->dateTime()->sortable(),
-        ])->recordActions([\Filament\Actions\EditAction::make(), \Filament\Actions\DeleteAction::make()]);
+        ])->filters([
+            SelectFilter::make('project_id')
+                ->label('Project')
+                ->options(fn (): array => Project::query()
+                    ->whereIn('enterprise_id', static::authorizedEnterpriseIds())
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all()),
+            SelectFilter::make('initiative_id')
+                ->label('Initiative')
+                ->options(fn (): array => Initiative::query()
+                    ->whereIn('enterprise_id', static::authorizedEnterpriseIds())
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all()),
+            SelectFilter::make('status')->options([
+                'todo' => 'To do',
+                'in_progress' => 'In progress',
+                'done' => 'Done',
+                'completed' => 'Completed',
+                'cancelled' => 'Cancelled',
+                'canceled' => 'Canceled',
+            ]),
+            SelectFilter::make('priority')->options([
+                'low' => 'Low',
+                'normal' => 'Normal',
+                'high' => 'High',
+            ]),
+        ])->groups([
+            Group::make('enterprise_id')
+                ->label('Enterprise')
+                ->getKeyFromRecordUsing(fn (Task $record): int => $record->enterprise_id)
+                ->getTitleFromRecordUsing(fn (Task $record): string => $record->enterprise->name)
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+            Group::make('project_id')
+                ->label('Project')
+                ->getKeyFromRecordUsing(fn (Task $record): int|string => $record->project_id ?? 'unassigned')
+                ->scopeQueryByKeyUsing(fn (Builder $query, ?string $key): Builder => $key === 'unassigned' ? $query->whereNull('project_id') : $query->where('project_id', $key))
+                ->getTitleFromRecordUsing(fn (Task $record): string => $record->project_id === null ? 'No Project' : $record->project->name)
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+            Group::make('initiative_id')
+                ->label('Initiative')
+                ->getKeyFromRecordUsing(fn (Task $record): int|string => $record->initiative_id ?? 'unassigned')
+                ->scopeQueryByKeyUsing(fn (Builder $query, ?string $key): Builder => $key === 'unassigned' ? $query->whereNull('initiative_id') : $query->where('initiative_id', $key))
+                ->getTitleFromRecordUsing(fn (Task $record): string => $record->initiative_id === null ? 'No Initiative' : $record->initiative->name)
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+            Group::make('status')
+                ->label('Status')
+                ->getTitleFromRecordUsing(fn (Task $record): string => match ($record->status) {
+                    'todo' => 'To do',
+                    'in_progress' => 'In progress',
+                    'done' => 'Done',
+                    default => str($record->status)->headline()->toString(),
+                })
+                ->titlePrefixedWithLabel(false)
+                ->collapsible(),
+        ])->defaultGroup('enterprise_id')->recordActions([
+            \Filament\Actions\EditAction::make(),
+            \Filament\Actions\DeleteAction::make(),
+        ]);
     }
 
     public static function getEloquentQuery(): Builder
