@@ -7,6 +7,7 @@ use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Task;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\Width;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class EditTask extends EditRecord
@@ -14,6 +15,8 @@ class EditTask extends EditRecord
     use AuthorizesScopedRecordUpdate;
 
     protected static string $resource = TaskResource::class;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
