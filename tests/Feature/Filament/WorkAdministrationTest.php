@@ -14,6 +14,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Schema;
 use Livewire\Livewire;
 
 it('scopes work administration to the authenticated users organizations', function () {
@@ -68,6 +69,12 @@ it('allows only enterprise managers to create work records in Filament', functio
         ->and(InitiativeResource::canCreate())->toBeFalse();
 
     expect($enterprise->organization_id)->toBe($organization->id);
+});
+
+it('makes the task form grid span the full schema width', function () {
+    $grid = TaskResource::form(Schema::make())->getComponents()[0];
+
+    expect($grid->getColumnSpan('default'))->toBe('full');
 });
 
 it('presents task editing fields in the requested sections with human-readable relationship labels', function () {
