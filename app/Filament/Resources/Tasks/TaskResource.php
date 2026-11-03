@@ -17,6 +17,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -50,73 +52,91 @@ class TaskResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('enterprise_id')
-                ->options(fn (): array => Enterprise::query()
-                    ->whereIn('id', static::manageableEnterpriseIds())
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all())
-                ->searchable()
-                ->required()
-                ->live()
-                ->afterStateUpdated(function (Set $set): void {
-                    $set('project_id', null);
-                    $set('initiative_id', null);
-                    $set('parent_task_id', null);
-                }),
-            Select::make('project_id')
-                ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Project::query()
-                        ->where('enterprise_id', $get('enterprise_id'))
-                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all()
-                    : [])
-                ->afterStateUpdated(function (Set $set, mixed $state): void {
-                    if (filled($state)) {
-                        $set('initiative_id', null);
-                    }
-                    $set('parent_task_id', null);
-                })
-                ->searchable()
-                ->live(),
-            Select::make('initiative_id')
-                ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Initiative::query()
-                        ->where('enterprise_id', $get('enterprise_id'))
-                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all()
-                    : [])
-                ->afterStateUpdated(function (Set $set, mixed $state): void {
-                    if (filled($state)) {
-                        $set('project_id', null);
-                    }
-                    $set('parent_task_id', null);
-                })
-                ->searchable()
-                ->live(),
-            Select::make('parent_task_id')
-                ->options(fn (Get $get): array => $get('enterprise_id')
-                    ? Task::query()
-                        ->where('enterprise_id', $get('enterprise_id'))
-                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
-                        ->when(filled($get('project_id')), fn (Builder $query) => $query->where('project_id', $get('project_id')))
-                        ->when(filled($get('initiative_id')), fn (Builder $query) => $query->where('initiative_id', $get('initiative_id')))
-                        ->when(blank($get('project_id')) && blank($get('initiative_id')), fn (Builder $query) => $query->whereNull('project_id')->whereNull('initiative_id'))
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all()
-                    : [])
-                ->searchable()
-                ->placeholder('No parent Task'),
-            TextInput::make('name')->required()->maxLength(255),
-            Textarea::make('description')->rows(4),
-            Select::make('status')->options(TaskStatus::options())->required(),
-            Select::make('priority')->options(['low' => 'Low', 'normal' => 'Normal', 'high' => 'High'])->required(),
-            DateTimePicker::make('due_at'),
+            Grid::make(['default' => 1, 'lg' => 4])
+                ->schema([
+                    Section::make('Task details')
+                        ->columns(1)
+                        ->schema([
+                            TextInput::make('name')->required()->maxLength(255),
+                            Textarea::make('description')->rows(4),
+                        ])
+                        ->columnSpan(['default' => 1, 'lg' => 3]),
+
+                    Section::make('Organization & scheduling')
+                        ->columns(1)
+                        ->schema([
+                            Select::make('enterprise_id')
+                                ->label('Enterprise')
+                                ->options(fn (): array => Enterprise::query()
+                                    ->whereIn('id', static::manageableEnterpriseIds())
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id')
+                                    ->all())
+                                ->searchable()
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(function (Set $set): void {
+                                    $set('project_id', null);
+                                    $set('initiative_id', null);
+                                    $set('parent_task_id', null);
+                                }),
+                            Select::make('project_id')
+                                ->label('Project')
+                                ->options(fn (Get $get): array => $get('enterprise_id')
+                                    ? Project::query()
+                                        ->where('enterprise_id', $get('enterprise_id'))
+                                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all()
+                                    : [])
+                                ->afterStateUpdated(function (Set $set, mixed $state): void {
+                                    if (filled($state)) {
+                                        $set('initiative_id', null);
+                                    }
+                                    $set('parent_task_id', null);
+                                })
+                                ->searchable()
+                                ->live(),
+                            Select::make('initiative_id')
+                                ->label('Initiative')
+                                ->options(fn (Get $get): array => $get('enterprise_id')
+                                    ? Initiative::query()
+                                        ->where('enterprise_id', $get('enterprise_id'))
+                                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all()
+                                    : [])
+                                ->afterStateUpdated(function (Set $set, mixed $state): void {
+                                    if (filled($state)) {
+                                        $set('project_id', null);
+                                    }
+                                    $set('parent_task_id', null);
+                                })
+                                ->searchable()
+                                ->live(),
+                            Select::make('parent_task_id')
+                                ->label('Parent Task')
+                                ->options(fn (Get $get): array => $get('enterprise_id')
+                                    ? Task::query()
+                                        ->where('enterprise_id', $get('enterprise_id'))
+                                        ->whereIn('enterprise_id', static::manageableEnterpriseIds())
+                                        ->when(filled($get('project_id')), fn (Builder $query) => $query->where('project_id', $get('project_id')))
+                                        ->when(filled($get('initiative_id')), fn (Builder $query) => $query->where('initiative_id', $get('initiative_id')))
+                                        ->when(blank($get('project_id')) && blank($get('initiative_id')), fn (Builder $query) => $query->whereNull('project_id')->whereNull('initiative_id'))
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all()
+                                    : [])
+                                ->searchable()
+                                ->placeholder('No parent Task'),
+                            Select::make('status')->options(TaskStatus::options())->required(),
+                            Select::make('priority')->options(['low' => 'Low', 'normal' => 'Normal', 'high' => 'High'])->required(),
+                            DateTimePicker::make('due_at')->label('Due At'),
+                        ])
+                        ->columnSpan(['default' => 1, 'lg' => 1]),
+                ]),
         ]);
     }
 
