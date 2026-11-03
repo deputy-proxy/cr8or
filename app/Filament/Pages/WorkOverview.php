@@ -24,7 +24,7 @@ class WorkOverview extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Strategy & Execution Planning';
 
-    protected static ?int $navigationSort = 125;
+    protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament.pages.work-overview';
 
