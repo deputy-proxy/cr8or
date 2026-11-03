@@ -84,9 +84,8 @@ it('calculates independent daily opening and closing balances for objectives tas
             'created' => 1,
             'closed' => 0,
         ])
-        ->and(collect($entities['objectives']['chart']['days'][12]['bars'])->contains(
-            fn (array $bar): bool => $bar['key'] === 'created' && $bar['value'] === 1,
-        ))->toBeTrue()
+        ->and(collect($entities['objectives']['chart']['days'][12]['bars'])->firstWhere('key', 'created')['color'])->toBe('#ef4444')
+        ->and(collect($entities['tasks']['chart']['days'][12]['bars'])->firstWhere('key', 'closed')['color'])->toBe('#22c55e')
         ->and($entities['objectives']['chart']['days'][12]['connectors'])->toHaveCount(3);
 });
 
@@ -189,6 +188,10 @@ it('renders the daily waterfall charts and summary cards above them on the full 
         ->assertSee('Issues daily waterfall')
         ->assertSee('Opening')
         ->assertSee('Opened')
+        ->assertSee('text-red-400', false)
+        ->assertSee('text-green-400', false)
+        ->assertSee('Opened during day')
+        ->assertSee('Closed during day')
         ->assertSee('Closed')
         ->assertSee('Closing')
         ->assertSee('Each day starts and ends independently')

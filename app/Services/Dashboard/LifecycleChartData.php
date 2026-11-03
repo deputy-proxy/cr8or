@@ -249,11 +249,11 @@ final class LifecycleChartData
             }
             if ($openingLevel !== null && $afterCreatedLevel !== null) {
                 $connectors[] = ['x1' => $positions['open_start'] + $barWidth, 'x2' => $positions['created'], 'y' => $openingLevel];
-                $bars[] = ['key' => 'created', 'x' => $positions['created'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $created * $scale), 'value' => $created, 'color' => '#22c55e', 'label_y' => max(13, $afterCreatedLevel - 6)];
+                $bars[] = ['key' => 'created', 'x' => $positions['created'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $created * $scale), 'value' => $created, 'color' => '#ef4444', 'label_y' => max(13, $afterCreatedLevel - 6)];
             }
             if ($afterCreatedLevel !== null && $afterClosedLevel !== null) {
                 $connectors[] = ['x1' => $positions['created'] + $barWidth, 'x2' => $positions['closed'], 'y' => $afterCreatedLevel];
-                $bars[] = ['key' => 'closed', 'x' => $positions['closed'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $closed * $scale), 'value' => -$closed, 'color' => '#ef4444', 'label_y' => min($baseline + 15, $afterClosedLevel + 14)];
+                $bars[] = ['key' => 'closed', 'x' => $positions['closed'], 'y' => $afterCreatedLevel, 'width' => $barWidth, 'height' => max(1, $closed * $scale), 'value' => -$closed, 'color' => '#22c55e', 'label_y' => min($baseline + 15, $afterClosedLevel + 14)];
             }
             if ($afterClosedLevel !== null && $closing !== null) {
                 $connectors[] = ['x1' => $positions['closed'] + $barWidth, 'x2' => $positions['open_end'], 'y' => $afterClosedLevel];
