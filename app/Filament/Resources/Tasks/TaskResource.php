@@ -136,7 +136,8 @@ class TaskResource extends Resource
                             DateTimePicker::make('due_at')->label('Due At'),
                         ])
                         ->columnSpan(['default' => 1, 'lg' => 1]),
-                ]),
+                ])
+                ->columnSpanFull(),
         ]);
     }
 
