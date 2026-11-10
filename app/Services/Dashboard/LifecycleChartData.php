@@ -7,10 +7,13 @@ use App\Filament\Resources\Issues\IssueResource;
 use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Enterprise;
+use App\Models\Event;
+use App\Models\Issue;
 use App\Support\LifecycleStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class LifecycleChartData
 {
@@ -57,7 +60,9 @@ final class LifecycleChartData
             }
 
             $query = $resource::getEloquentQuery()->where('enterprise_id', $enterprise->id);
-            $result = $this->aggregateEntity($query, $definition, $dayStarts, $now, (int) $enterprise->id);
+            $result = $key === 'issues'
+                ? $this->aggregateIssues($query, $definition, $dayStarts, $now, (int) $enterprise->id)
+                : $this->aggregateEntity($query, $definition, $dayStarts, $now, (int) $enterprise->id);
             array_push($limitations, ...$result['limitations']);
 
             $days = [];
@@ -105,12 +110,195 @@ final class LifecycleChartData
     }
 
     /**
+     * GitHub issue snapshots retain only the latest close timestamp. For issues that have
+     * reopened, reconstruct their observed lifecycle from immutable Enterprise events.
+     * The first issue.created event is the baseline: dates before that observation remain
+     * explicitly incomplete rather than being inferred from the latest snapshot.
+     *
      * @param  Builder<Model>  $query
      * @param  array{label: string, resource: class-string, created: string, closed: string, status: string}  $entity
      * @param  list<Carbon>  $dayStarts
      * @return array{days: list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}>, limitations: list<string>}
      */
-    private function aggregateEntity(Builder $query, array $entity, array $dayStarts, Carbon $now, int $enterpriseId): array
+    private function aggregateIssues(Builder $query, array $entity, array $dayStarts, Carbon $now, int $enterpriseId): array
+    {
+        if (! EventResource::canViewAny()) {
+            return $this->aggregateEntity($query, $entity, $dayStarts, $now, $enterpriseId);
+        }
+
+        $issueModel = new Issue;
+        $eventQuery = EventResource::getEloquentQuery()
+            ->where('enterprise_id', $enterpriseId)
+            ->where('subject_type', $issueModel->getMorphClass());
+        $reopenedIds = (clone $eventQuery)->where('event_type', 'open')->distinct()->pluck('subject_id')
+            ->filter(fn ($id): bool => is_string($id) && ctype_digit($id))
+            ->map(fn (string $id): int => (int) $id)->unique()->values()->all();
+
+        if ($reopenedIds === []) {
+            return $this->aggregateEntity($query, $entity, $dayStarts, $now, $enterpriseId);
+        }
+
+        /** @var Collection<int, Issue> $reopenedIssues */
+        $reopenedIssues = (clone $query)->whereIn('id', $reopenedIds)
+            ->get(['id', 'github_created_at', 'github_closed_at', 'state']);
+        $knownIds = $reopenedIssues->pluck('id')->all();
+        /** @var Collection<int, Event> $events */
+        $events = (clone $eventQuery)->whereIn('subject_id', $knownIds)
+            ->whereIn('event_type', ['issue.created', 'open', 'closed'])
+            ->orderBy('occurred_at')->orderBy('id')->get();
+        /** @var Collection<string, Collection<int, Event>> $eventsByIssue */
+        $eventsByIssue = $events->groupBy(fn (Event $event): string => (string) $event->subject_id);
+
+        $normalQuery = (clone $query)->whereNotIn('id', $knownIds);
+        $normal = $this->aggregateEntity($normalQuery, $entity, $dayStarts, $now, $enterpriseId, true);
+        $days = array_map(
+            /** @return array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null} */
+            static function (array $metrics): array {
+                return [
+                    'open_start' => is_int($metrics['open_start'] ?? null) ? $metrics['open_start'] : null,
+                    'open_end' => is_int($metrics['open_end'] ?? null) ? $metrics['open_end'] : null,
+                    'created' => is_int($metrics['created'] ?? null) ? $metrics['created'] : null,
+                    'closed' => is_int($metrics['closed'] ?? null) ? $metrics['closed'] : null,
+                ];
+            },
+            $normal['days'],
+        );
+        $limitations = $normal['limitations'];
+        $incompleteIssues = 0;
+        $unknownByDay = array_fill(0, count($dayStarts), ['open_start' => false, 'open_end' => false, 'created' => false, 'closed' => false]);
+
+        foreach ($reopenedIssues as $issue) {
+            /** @var \Illuminate\Support\Collection<int, Event> $issueEvents */
+            $issueEvents = $eventsByIssue->get((string) $issue->getKey(), collect());
+            $baseline = $issueEvents->first(fn (Event $event): bool => $event->event_type === 'issue.created');
+            $createdAt = $issue->github_created_at === null ? null : Carbon::parse($issue->github_created_at)->utc();
+            $baselineAt = $baseline === null ? null : Carbon::parse($baseline->occurred_at)->utc();
+            $baselinePayload = $baseline?->getAttribute('payload');
+            $baselineState = is_array($baselinePayload) && is_string($baselinePayload['status'] ?? null)
+                ? $baselinePayload['status']
+                : null;
+
+            if ($createdAt === null || $baselineAt === null || ! in_array($baselineState, ['open', 'closed'], true)) {
+                $incompleteIssues++;
+                foreach ($unknownByDay as &$unknown) {
+                    $unknown = array_fill_keys(array_keys($unknown), true);
+                }
+                unset($unknown);
+
+                continue;
+            }
+
+            $transitions = $issueEvents->filter(fn (Event $event): bool => in_array($event->event_type, ['open', 'closed'], true))
+                ->map(function (Event $event): array {
+                    $payload = $event->getAttribute('payload');
+
+                    return [
+                        'type' => $event->event_type,
+                        'from' => is_array($payload) && is_string($payload['from_state'] ?? null) ? $payload['from_state'] : null,
+                        'to' => is_array($payload) && is_string($payload['to_state'] ?? null) ? $payload['to_state'] : null,
+                        'at' => Carbon::parse($event->occurred_at)->utc(),
+                    ];
+                })->values();
+            $latestObservedState = $baselineState;
+            $transitionsValid = true;
+            foreach ($transitions as $transition) {
+                if ($transition['at']->lessThan($baselineAt)) {
+                    $transitionsValid = false;
+                    break;
+                }
+                $expectedState = $transition['type'] === 'open' ? 'open' : 'closed';
+                if ($transition['from'] !== $latestObservedState || $transition['to'] !== $expectedState) {
+                    $transitionsValid = false;
+                    break;
+                }
+                $latestObservedState = $expectedState;
+            }
+            if (! $transitionsValid || $latestObservedState !== $issue->state) {
+                $incompleteIssues++;
+                foreach ($unknownByDay as &$unknown) {
+                    $unknown = array_fill_keys(array_keys($unknown), true);
+                }
+                unset($unknown);
+
+                continue;
+            }
+
+            foreach ($dayStarts as $index => $dayStart) {
+                $start = $dayStart->copy()->utc();
+                $endBoundary = $dayStart->copy()->addDay()->utc();
+                $end = $dayStart->isSameDay($now) ? $now->copy()->utc() : $endBoundary;
+                $metrics = $days[$index];
+                $createdDuringDay = $createdAt->greaterThanOrEqualTo($start) && $createdAt->lessThan($end);
+                if ($baselineAt->greaterThan($start)) {
+                    $unknownByDay[$index]['open_start'] = true;
+                    $unknownByDay[$index]['closed'] = true;
+                    $unknownByDay[$index]['created'] = true;
+                } else {
+                    $stateAtStart = $baselineState;
+                    foreach ($transitions as $transition) {
+                        if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($start)) {
+                            $stateAtStart = $transition['type'] === 'open' ? 'open' : 'closed';
+                        }
+                    }
+                    if ($createdAt->lessThan($start)) {
+                        $metrics['open_start'] = ($metrics['open_start'] ?? 0) + ($stateAtStart === 'open' ? 1 : 0);
+                    }
+                }
+
+                if ($baselineAt->lessThanOrEqualTo($end)) {
+                    $stateAtEnd = $baselineState;
+                    foreach ($transitions as $transition) {
+                        if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($end)) {
+                            $stateAtEnd = $transition['type'] === 'open' ? 'open' : 'closed';
+                        }
+                    }
+                    if ($createdAt->lessThan($end)) {
+                        if (! $dayStart->isSameDay($now)) {
+                            $metrics['open_end'] = ($metrics['open_end'] ?? 0) + ($stateAtEnd === 'open' ? 1 : 0);
+                        }
+                    }
+                } else {
+                    $unknownByDay[$index]['open_end'] = true;
+                }
+
+                if ($createdDuringDay) {
+                    $metrics['created'] = ($metrics['created'] ?? 0) + 1;
+                }
+                if ($baselineAt->lessThan($end) && $baselineAt->lessThanOrEqualTo($start)) {
+                    $opened = $transitions->filter(fn (array $transition): bool => $transition['type'] === 'open'
+                        && $transition['at']->greaterThanOrEqualTo($start) && $transition['at']->lessThan($end))->count();
+                    $closed = $transitions->filter(fn (array $transition): bool => $transition['type'] === 'closed'
+                        && $transition['at']->greaterThanOrEqualTo($start) && $transition['at']->lessThan($end))->count();
+                    $metrics['created'] = ($metrics['created'] ?? 0) + $opened;
+                    $metrics['closed'] = ($metrics['closed'] ?? 0) + $closed;
+                }
+                $days[$index] = $metrics;
+            }
+        }
+
+        foreach ($unknownByDay as $index => $unknown) {
+            foreach ($unknown as $metric => $isUnknown) {
+                if ($isUnknown) {
+                    $days[$index][$metric] = null;
+                }
+            }
+        }
+
+        if ($incompleteIssues > 0) {
+            $limitations[] = 'Issues: '.$incompleteIssues.' reopened record(s) have no reliable initial synchronization baseline; affected days are marked incomplete.';
+        }
+
+        /** @var list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}> $days */
+        return ['days' => $days, 'limitations' => $limitations];
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @param  array{label: string, resource: class-string, created: string, closed: string, status: string}  $entity
+     * @param  list<Carbon>  $dayStarts
+     * @return array{days: list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}>, limitations: list<string>}
+     */
+    private function aggregateEntity(Builder $query, array $entity, array $dayStarts, Carbon $now, int $enterpriseId, bool $ignoreReopenEvents = false): array
     {
         $createdColumn = $entity['created'];
         $closedColumn = $entity['closed'];
@@ -147,13 +335,13 @@ final class LifecycleChartData
         $modelClass = $entity['resource']::getModel();
         $model = new $modelClass;
         $canInspectEvents = EventResource::canViewAny();
-        $hasReopenEvents = $canInspectEvents
+        $hasReopenEvents = ! $ignoreReopenEvents && ($canInspectEvents
             ? EventResource::getEloquentQuery()
                 ->where('enterprise_id', $enterpriseId)
                 ->where('event_type', 'open')
                 ->where('subject_type', $model->getMorphClass())
                 ->exists()
-            : true;
+            : true);
 
         $limitations = [];
         if ($unknownCloseCount > 0) {
