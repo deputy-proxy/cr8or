@@ -159,6 +159,90 @@ it('marks open and close history incomplete when a tracked entity has been reope
         ->and($data['limitations'])->toContain('Objectives: at least one record was reopened; the single close timestamp cannot reconstruct its earlier lifecycle intervals.');
 });
 
+it('reconstructs repeated GitHub issue close and reopen cycles from immutable lifecycle events', function () {
+    [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
+    $createdAt = Carbon::parse('2026-10-27 10:00:00', 'Europe/Bucharest')->utc();
+    $issue = Issue::withoutEvents(fn () => Issue::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'state' => 'closed',
+        'github_created_at' => $createdAt,
+        'github_closed_at' => Carbon::parse('2026-10-30 11:00:00', 'Europe/Bucharest')->utc(),
+    ]));
+
+    Event::factory()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'event_type' => 'issue.created',
+        'occurred_at' => $createdAt,
+        'payload' => ['status' => 'open'],
+        'subject_type' => $issue->getMorphClass(),
+        'subject_id' => (string) $issue->id,
+    ]);
+    foreach ([
+        ['closed', 'open', 'closed', '2026-10-29 15:00:00'],
+        ['open', 'closed', 'open', '2026-10-30 09:00:00'],
+        ['closed', 'open', 'closed', '2026-10-30 11:00:00'],
+    ] as [$type, $from, $to, $time]) {
+        Event::factory()->create([
+            'organization_id' => $organization->id,
+            'enterprise_id' => $enterprise->id,
+            'event_type' => $type,
+            'occurred_at' => Carbon::parse($time, 'Europe/Bucharest')->utc(),
+            'payload' => ['source' => 'github_sync', 'from_state' => $from, 'to_state' => $to],
+            'subject_type' => $issue->getMorphClass(),
+            'subject_id' => (string) $issue->id,
+        ]);
+    }
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $issues = collect($data['entities'])->firstWhere('key', 'issues');
+    $dayBeforeReopen = collect($issues['days'])->firstWhere('date', '2026-10-29');
+    $reopenDay = collect($issues['days'])->firstWhere('date', '2026-10-30');
+
+    expect($dayBeforeReopen['metrics'])->toBe([
+        'open_start' => 1,
+        'open_end' => 0,
+        'created' => 0,
+        'closed' => 1,
+    ])->and($dayBeforeReopen['reconciles'])->toBeTrue()
+        ->and($reopenDay['metrics'])->toBe([
+            'open_start' => 0,
+            'open_end' => null,
+            'created' => 1,
+            'closed' => 1,
+        ])
+        ->and($data['limitations'])->not->toContain('Issues: at least one record was reopened; the single close timestamp cannot reconstruct its earlier lifecycle intervals.');
+});
+
+it('marks GitHub issue history incomplete before its first synchronization baseline', function () {
+    [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
+    $createdAt = Carbon::parse('2026-10-27 10:00:00', 'Europe/Bucharest')->utc();
+    $issue = Issue::withoutEvents(fn () => Issue::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'state' => 'open',
+        'github_created_at' => $createdAt,
+    ]));
+    Event::factory()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'event_type' => 'open',
+        'occurred_at' => Carbon::parse('2026-10-30 09:00:00', 'Europe/Bucharest')->utc(),
+        'payload' => ['source' => 'github_sync'],
+        'subject_type' => $issue->getMorphClass(),
+        'subject_id' => (string) $issue->id,
+    ]);
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $issues = collect($data['entities'])->firstWhere('key', 'issues');
+    $beforeBaseline = collect($issues['days'])->firstWhere('date', '2026-10-29');
+
+    expect($beforeBaseline['metrics']['open_start'])->toBeNull()
+        ->and($beforeBaseline['metrics']['closed'])->toBeNull()
+        ->and($data['limitations'])->toContain('Issues: 1 reopened record(s) have no reliable initial synchronization baseline; affected days are marked incomplete.');
+});
+
 it('does not include records from another enterprise in lifecycle totals', function () {
     [$user, $enterprise] = lifecycleChartUserAndEnterprise();
     $otherEnterprise = Enterprise::factory()->create(['organization_id' => Organization::factory()->create()->id]);

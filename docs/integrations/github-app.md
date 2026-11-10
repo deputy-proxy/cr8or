@@ -46,6 +46,7 @@ A connection requires a valid GitHub App installation ID. The App ID and private
 - The GitHub `ping` event is acknowledged without further processing. Only the `issues`, `installation`, and `installation_repositories` event families are processed. The handler persists a bounded sanitized payload, not the raw webhook body.
 - Webhook handlers enqueue work; they do not perform full issue synchronization in the HTTP request.
 - Issue webhooks trigger a fresh API read/sync. A `deleted` issue event triggers a GET; a confirmed 404 marks the local snapshot as deleted without removing its history.
+- Synchronized issue state transitions are recorded through the immutable Enterprise Event stream. The first `issue.created` activity event establishes the initial synchronization baseline; subsequent open/closed transitions support repeated reopen/close lifecycle reporting. The system does not infer transitions before that baseline.
 
 ## Legacy repository migration
 
