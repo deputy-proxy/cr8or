@@ -6,10 +6,11 @@ use App\Support\LifecycleStatus;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Maintains the single close timestamp used by lifecycle reporting.
+ * Maintains the latest close timestamp used by snapshot-based lifecycle reporting.
  *
- * This observer is intentionally separate from activity recording: timestamps are
- * authoritative domain data and must not depend on the activity-feed implementation.
+ * Tasks also retain immutable lifecycle Events so repeated close/reopen intervals can be
+ * reconstructed without treating this latest-state timestamp as a complete history.
+ * Timestamp maintenance remains separate from activity recording.
  */
 final class LifecycleTimestampObserver
 {
