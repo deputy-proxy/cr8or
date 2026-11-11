@@ -243,6 +243,50 @@ it('marks GitHub issue history incomplete before its first synchronization basel
         ->and($data['limitations'])->toContain('Issues: 1 reopened record(s) have no reliable lifecycle event baseline; affected days are marked incomplete.');
 });
 
+it('keeps GitHub Issue flows incomplete between provider creation and first synchronization', function () {
+    [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
+    Carbon::setTestNow(Carbon::parse('2026-10-31 12:00:00', 'Europe/Bucharest'));
+    $createdAt = Carbon::parse('2026-10-27 10:00:00', 'Europe/Bucharest')->utc();
+    $baselineAt = Carbon::parse('2026-10-30 09:00:00', 'Europe/Bucharest')->utc();
+    $issue = Issue::withoutEvents(fn () => Issue::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'state' => 'open',
+        'github_created_at' => $createdAt,
+        'github_closed_at' => null,
+    ]));
+
+    Event::factory()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'event_type' => 'issue.created',
+        'occurred_at' => $baselineAt,
+        'payload' => ['status' => 'closed', 'source' => 'github_sync'],
+        'subject_type' => $issue->getMorphClass(),
+        'subject_id' => (string) $issue->id,
+    ]);
+    Event::factory()->create([
+        'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id,
+        'event_type' => 'open',
+        'occurred_at' => $baselineAt->copy()->addHour(),
+        'payload' => ['from_state' => 'closed', 'to_state' => 'open', 'source' => 'github_sync'],
+        'subject_type' => $issue->getMorphClass(),
+        'subject_id' => (string) $issue->id,
+    ]);
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $issues = collect($data['entities'])->firstWhere('key', 'issues');
+    $creationDay = collect($issues['days'])->firstWhere('date', '2026-10-27');
+    $baselineDay = collect($issues['days'])->firstWhere('date', '2026-10-30');
+
+    expect($creationDay['metrics']['created'])->toBeNull()
+        ->and($creationDay['metrics']['closed'])->toBeNull()
+        ->and($baselineDay['metrics']['created'])->toBeNull()
+        ->and($baselineDay['metrics']['closed'])->toBeNull()
+        ->and($baselineDay['metrics']['open_end'])->toBe(1);
+});
+
 it('reconstructs repeated Task close and reopen cycles from immutable lifecycle events', function () {
     [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
     $createdAt = Carbon::parse('2026-10-27 09:00:00', 'Europe/Bucharest')->utc();

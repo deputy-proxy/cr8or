@@ -258,6 +258,11 @@ final class LifecycleChartData
                 $metrics = $days[$index];
                 $createdDuringDay = $createdAt->greaterThanOrEqualTo($start) && $createdAt->lessThan($end);
 
+                if ($baselineEventType === 'issue.created' && $createdAt->lessThan($end) && $baselineAt->greaterThan($start)) {
+                    $unknownByDay[$index]['created'] = true;
+                    $unknownByDay[$index]['closed'] = true;
+                }
+
                 if ($createdAt->lessThan($start)) {
                     if ($baselineAt->greaterThan($start)) {
                         $unknownByDay[$index]['open_start'] = true;
