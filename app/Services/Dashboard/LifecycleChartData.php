@@ -8,7 +8,6 @@ use App\Filament\Resources\Objectives\ObjectiveResource;
 use App\Filament\Resources\Tasks\TaskResource;
 use App\Models\Enterprise;
 use App\Models\Event;
-use App\Models\Issue;
 use App\Support\LifecycleStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -60,8 +59,8 @@ final class LifecycleChartData
             }
 
             $query = $resource::getEloquentQuery()->where('enterprise_id', $enterprise->id);
-            $result = $key === 'issues'
-                ? $this->aggregateIssues($query, $definition, $dayStarts, $now, (int) $enterprise->id)
+            $result = in_array($key, ['tasks', 'issues'], true)
+                ? $this->aggregateReopenedEntities($query, $definition, $dayStarts, $now, (int) $enterprise->id)
                 : $this->aggregateEntity($query, $definition, $dayStarts, $now, (int) $enterprise->id);
             array_push($limitations, ...$result['limitations']);
 
@@ -110,26 +109,28 @@ final class LifecycleChartData
     }
 
     /**
-     * GitHub issue snapshots retain only the latest close timestamp. For issues that have
-     * reopened, reconstruct their observed lifecycle from immutable Enterprise events.
-     * The first issue.created event is the baseline: dates before that observation remain
-     * explicitly incomplete rather than being inferred from the latest snapshot.
+     * Task and GitHub Issue snapshots retain only the latest close timestamp. For records
+     * that have reopened, reconstruct their observed lifecycle from immutable Enterprise
+     * events. The initial entity event is the baseline; dates before a reliable baseline
+     * remain explicitly incomplete rather than being inferred from the latest snapshot.
      *
      * @param  Builder<Model>  $query
      * @param  array{label: string, resource: class-string, created: string, closed: string, status: string}  $entity
      * @param  list<Carbon>  $dayStarts
      * @return array{days: list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}>, limitations: list<string>}
      */
-    private function aggregateIssues(Builder $query, array $entity, array $dayStarts, Carbon $now, int $enterpriseId): array
+    private function aggregateReopenedEntities(Builder $query, array $entity, array $dayStarts, Carbon $now, int $enterpriseId): array
     {
         if (! EventResource::canViewAny()) {
             return $this->aggregateEntity($query, $entity, $dayStarts, $now, $enterpriseId);
         }
 
-        $issueModel = new Issue;
+        /** @var class-string<Model> $modelClass */
+        $modelClass = $entity['resource']::getModel();
+        $model = new $modelClass;
         $eventQuery = EventResource::getEloquentQuery()
             ->where('enterprise_id', $enterpriseId)
-            ->where('subject_type', $issueModel->getMorphClass());
+            ->where('subject_type', $model->getMorphClass());
         $reopenedIds = (clone $eventQuery)->where('event_type', 'open')->distinct()->pluck('subject_id')
             ->filter(fn ($id): bool => is_string($id) && ctype_digit($id))
             ->map(fn (string $id): int => (int) $id)->unique()->values()->all();
@@ -138,48 +139,56 @@ final class LifecycleChartData
             return $this->aggregateEntity($query, $entity, $dayStarts, $now, $enterpriseId);
         }
 
-        /** @var Collection<int, Issue> $reopenedIssues */
-        $reopenedIssues = (clone $query)->whereIn('id', $reopenedIds)
-            ->get(['id', 'github_created_at', 'github_closed_at', 'state']);
-        $knownIds = $reopenedIssues->pluck('id')->all();
+        $createdColumn = $entity['created'];
+        $statusColumn = $entity['status'];
+        $baselineEventType = strtolower(class_basename($model)).'.created';
+
+        /** @var Collection<int, Model> $reopenedRecords */
+        $reopenedRecords = (clone $query)->whereIn('id', $reopenedIds)
+            ->get(['id', $createdColumn, $statusColumn]);
+        $knownIds = $reopenedRecords->pluck('id')->all();
+
         /** @var Collection<int, Event> $events */
         $events = (clone $eventQuery)->whereIn('subject_id', $knownIds)
-            ->whereIn('event_type', ['issue.created', 'open', 'closed'])
+            ->whereIn('event_type', [$baselineEventType, 'open', 'closed'])
             ->orderBy('occurred_at')->orderBy('id')->get();
-        /** @var Collection<string, Collection<int, Event>> $eventsByIssue */
-        $eventsByIssue = $events->groupBy(fn (Event $event): string => (string) $event->subject_id);
+        /** @var Collection<string, Collection<int, Event>> $eventsByRecord */
+        $eventsByRecord = $events->groupBy(fn (Event $event): string => (string) $event->subject_id);
 
         $normalQuery = (clone $query)->whereNotIn('id', $knownIds);
         $normal = $this->aggregateEntity($normalQuery, $entity, $dayStarts, $now, $enterpriseId, true);
         $days = array_map(
-            /** @return array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null} */
-            static function (array $metrics): array {
-                return [
-                    'open_start' => is_int($metrics['open_start'] ?? null) ? $metrics['open_start'] : null,
-                    'open_end' => is_int($metrics['open_end'] ?? null) ? $metrics['open_end'] : null,
-                    'created' => is_int($metrics['created'] ?? null) ? $metrics['created'] : null,
-                    'closed' => is_int($metrics['closed'] ?? null) ? $metrics['closed'] : null,
-                ];
-            },
+            static fn (array $metrics): array => [
+                'open_start' => is_int($metrics['open_start'] ?? null) ? $metrics['open_start'] : null,
+                'open_end' => is_int($metrics['open_end'] ?? null) ? $metrics['open_end'] : null,
+                'created' => is_int($metrics['created'] ?? null) ? $metrics['created'] : null,
+                'closed' => is_int($metrics['closed'] ?? null) ? $metrics['closed'] : null,
+            ],
             $normal['days'],
         );
         $limitations = $normal['limitations'];
-        $incompleteIssues = 0;
-        $unknownByDay = array_fill(0, count($dayStarts), ['open_start' => false, 'open_end' => false, 'created' => false, 'closed' => false]);
+        $incompleteRecords = 0;
+        $unknownByDay = array_fill(0, count($dayStarts), [
+            'open_start' => false,
+            'open_end' => false,
+            'created' => false,
+            'closed' => false,
+        ]);
 
-        foreach ($reopenedIssues as $issue) {
-            /** @var \Illuminate\Support\Collection<int, Event> $issueEvents */
-            $issueEvents = $eventsByIssue->get((string) $issue->getKey(), collect());
-            $baseline = $issueEvents->first(fn (Event $event): bool => $event->event_type === 'issue.created');
-            $createdAt = $issue->github_created_at === null ? null : Carbon::parse($issue->github_created_at)->utc();
+        foreach ($reopenedRecords as $record) {
+            /** @var Collection<int, Event> $recordEvents */
+            $recordEvents = $eventsByRecord->get((string) $record->getKey(), collect());
+            $baseline = $recordEvents->first(fn (Event $event): bool => $event->event_type === $baselineEventType);
+            $createdValue = $record->getAttribute($createdColumn);
+            $createdAt = $createdValue === null ? null : Carbon::parse($createdValue)->utc();
             $baselineAt = $baseline === null ? null : Carbon::parse($baseline->occurred_at)->utc();
             $baselinePayload = $baseline?->getAttribute('payload');
             $baselineState = is_array($baselinePayload) && is_string($baselinePayload['status'] ?? null)
                 ? $baselinePayload['status']
                 : null;
 
-            if ($createdAt === null || $baselineAt === null || ! in_array($baselineState, ['open', 'closed'], true)) {
-                $incompleteIssues++;
+            if ($createdAt === null || $baselineAt === null || $baselineState === null) {
+                $incompleteRecords++;
                 foreach ($unknownByDay as &$unknown) {
                     $unknown = array_fill_keys(array_keys($unknown), true);
                 }
@@ -188,7 +197,15 @@ final class LifecycleChartData
                 continue;
             }
 
-            $transitions = $issueEvents->filter(fn (Event $event): bool => in_array($event->event_type, ['open', 'closed'], true))
+            $normalizeState = static function (?string $state): ?string {
+                if ($state === null || trim($state) === '') {
+                    return null;
+                }
+
+                return LifecycleStatus::isClosed($state) ? 'closed' : 'open';
+            };
+
+            $transitions = $recordEvents->filter(fn (Event $event): bool => in_array($event->event_type, ['open', 'closed'], true))
                 ->map(function (Event $event): array {
                     $payload = $event->getAttribute('payload');
 
@@ -199,22 +216,33 @@ final class LifecycleChartData
                         'at' => Carbon::parse($event->occurred_at)->utc(),
                     ];
                 })->values();
-            $latestObservedState = $baselineState;
+
+            $latestObservedState = $normalizeState($baselineState);
             $transitionsValid = true;
+
             foreach ($transitions as $transition) {
                 if ($transition['at']->lessThan($baselineAt)) {
                     $transitionsValid = false;
                     break;
                 }
+
                 $expectedState = $transition['type'] === 'open' ? 'open' : 'closed';
-                if ($transition['from'] !== $latestObservedState || $transition['to'] !== $expectedState) {
+                if ($normalizeState($transition['from']) !== $latestObservedState
+                    || $normalizeState($transition['to']) !== $expectedState) {
                     $transitionsValid = false;
                     break;
                 }
+
                 $latestObservedState = $expectedState;
             }
-            if (! $transitionsValid || $latestObservedState !== $issue->state) {
-                $incompleteIssues++;
+
+            $currentState = $record->getAttribute($statusColumn);
+            if ($currentState instanceof \BackedEnum) {
+                $currentState = $currentState->value;
+            }
+
+            if (! $transitionsValid || $latestObservedState !== $normalizeState(is_string($currentState) ? $currentState : null)) {
+                $incompleteRecords++;
                 foreach ($unknownByDay as &$unknown) {
                     $unknown = array_fill_keys(array_keys($unknown), true);
                 }
@@ -229,42 +257,44 @@ final class LifecycleChartData
                 $end = $dayStart->isSameDay($now) ? $now->copy()->utc() : $endBoundary;
                 $metrics = $days[$index];
                 $createdDuringDay = $createdAt->greaterThanOrEqualTo($start) && $createdAt->lessThan($end);
-                if ($baselineAt->greaterThan($start)) {
-                    $unknownByDay[$index]['open_start'] = true;
-                    $unknownByDay[$index]['closed'] = true;
-                    $unknownByDay[$index]['created'] = true;
-                } else {
-                    $stateAtStart = $baselineState;
-                    foreach ($transitions as $transition) {
-                        if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($start)) {
-                            $stateAtStart = $transition['type'] === 'open' ? 'open' : 'closed';
+
+                if ($createdAt->lessThan($start)) {
+                    if ($baselineAt->greaterThan($start)) {
+                        $unknownByDay[$index]['open_start'] = true;
+                        $unknownByDay[$index]['closed'] = true;
+                    } else {
+                        $stateAtStart = $baselineState;
+                        foreach ($transitions as $transition) {
+                            if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($start)) {
+                                $stateAtStart = $transition['to'];
+                            }
                         }
-                    }
-                    if ($createdAt->lessThan($start)) {
-                        $metrics['open_start'] = ($metrics['open_start'] ?? 0) + ($stateAtStart === 'open' ? 1 : 0);
+                        $metrics['open_start'] = ($metrics['open_start'] ?? 0) + ($normalizeState($stateAtStart) === 'open' ? 1 : 0);
                     }
                 }
 
-                if ($baselineAt->lessThanOrEqualTo($end)) {
-                    $stateAtEnd = $baselineState;
-                    foreach ($transitions as $transition) {
-                        if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($end)) {
-                            $stateAtEnd = $transition['type'] === 'open' ? 'open' : 'closed';
+                if ($createdAt->lessThan($end)) {
+                    if ($baselineAt->greaterThan($end)) {
+                        $unknownByDay[$index]['open_end'] = true;
+                        $unknownByDay[$index]['closed'] = true;
+                    } else {
+                        $stateAtEnd = $baselineState;
+                        foreach ($transitions as $transition) {
+                            if ($transition['at']->greaterThanOrEqualTo($baselineAt) && $transition['at']->lessThan($end)) {
+                                $stateAtEnd = $transition['to'];
+                            }
                         }
-                    }
-                    if ($createdAt->lessThan($end)) {
                         if (! $dayStart->isSameDay($now)) {
-                            $metrics['open_end'] = ($metrics['open_end'] ?? 0) + ($stateAtEnd === 'open' ? 1 : 0);
+                            $metrics['open_end'] = ($metrics['open_end'] ?? 0) + ($normalizeState($stateAtEnd) === 'open' ? 1 : 0);
                         }
                     }
-                } else {
-                    $unknownByDay[$index]['open_end'] = true;
                 }
 
                 if ($createdDuringDay) {
                     $metrics['created'] = ($metrics['created'] ?? 0) + 1;
                 }
-                if ($baselineAt->lessThan($end) && $baselineAt->lessThanOrEqualTo($start)) {
+
+                if ($baselineAt->lessThan($end)) {
                     $opened = $transitions->filter(fn (array $transition): bool => $transition['type'] === 'open'
                         && $transition['at']->greaterThanOrEqualTo($start) && $transition['at']->lessThan($end))->count();
                     $closed = $transitions->filter(fn (array $transition): bool => $transition['type'] === 'closed'
@@ -272,6 +302,7 @@ final class LifecycleChartData
                     $metrics['created'] = ($metrics['created'] ?? 0) + $opened;
                     $metrics['closed'] = ($metrics['closed'] ?? 0) + $closed;
                 }
+
                 $days[$index] = $metrics;
             }
         }
@@ -284,8 +315,8 @@ final class LifecycleChartData
             }
         }
 
-        if ($incompleteIssues > 0) {
-            $limitations[] = 'Issues: '.$incompleteIssues.' reopened record(s) have no reliable initial synchronization baseline; affected days are marked incomplete.';
+        if ($incompleteRecords > 0) {
+            $limitations[] = $entity['label'].': '.$incompleteRecords.' reopened record(s) have no reliable lifecycle event baseline; affected days are marked incomplete.';
         }
 
         /** @var list<array{open_start: int|null, open_end: int|null, created: int|null, closed: int|null}> $days */

@@ -240,7 +240,112 @@ it('marks GitHub issue history incomplete before its first synchronization basel
 
     expect($beforeBaseline['metrics']['open_start'])->toBeNull()
         ->and($beforeBaseline['metrics']['closed'])->toBeNull()
-        ->and($data['limitations'])->toContain('Issues: 1 reopened record(s) have no reliable initial synchronization baseline; affected days are marked incomplete.');
+        ->and($data['limitations'])->toContain('Issues: 1 reopened record(s) have no reliable lifecycle event baseline; affected days are marked incomplete.');
+});
+
+it('reconstructs repeated Task close and reopen cycles from immutable lifecycle events', function () {
+    [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
+    $createdAt = Carbon::parse('2026-10-27 09:00:00', 'Europe/Bucharest')->utc();
+    Carbon::setTestNow($createdAt);
+    $task = Task::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'status' => 'todo',
+    ]);
+    DB::table('tasks')->where('id', $task->id)->update([
+        'status' => 'done',
+        'created_at' => $createdAt,
+        'updated_at' => Carbon::parse('2026-10-30 11:00:00', 'Europe/Bucharest')->utc(),
+        'closed_at' => Carbon::parse('2026-10-30 11:00:00', 'Europe/Bucharest')->utc(),
+    ]);
+    Carbon::setTestNow(Carbon::parse('2026-10-31 12:00:00', 'Europe/Bucharest'));
+
+    foreach ([
+        ['closed', 'todo', 'done', '2026-10-29 15:00:00'],
+        ['open', 'done', 'todo', '2026-10-30 09:00:00'],
+        ['closed', 'todo', 'done', '2026-10-30 11:00:00'],
+    ] as [$type, $from, $to, $time]) {
+        Event::factory()->create([
+            'organization_id' => $organization->id,
+            'enterprise_id' => $enterprise->id,
+            'event_type' => $type,
+            'occurred_at' => Carbon::parse($time, 'Europe/Bucharest')->utc(),
+            'payload' => ['from_state' => $from, 'to_state' => $to, 'source' => 'cr8or'],
+            'subject_type' => $task->getMorphClass(),
+            'subject_id' => (string) $task->id,
+        ]);
+    }
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $tasks = collect($data['entities'])->firstWhere('key', 'tasks');
+    $initialOpeningDay = collect($tasks['days'])->firstWhere('date', '2026-10-27');
+    $firstClosureDay = collect($tasks['days'])->firstWhere('date', '2026-10-29');
+    $reopenAndClosureDay = collect($tasks['days'])->firstWhere('date', '2026-10-30');
+
+    expect($initialOpeningDay['metrics'])->toBe([
+        'open_start' => 0,
+        'open_end' => 1,
+        'created' => 1,
+        'closed' => 0,
+    ])->and($firstClosureDay['metrics'])->toBe([
+        'open_start' => 1,
+        'open_end' => 0,
+        'created' => 0,
+        'closed' => 1,
+    ])->and($reopenAndClosureDay['metrics'])->toBe([
+        'open_start' => 0,
+        'open_end' => 0,
+        'created' => 1,
+        'closed' => 1,
+    ])->and($tasks['summary'])->toBe([
+        'open_start' => 0,
+        'open_end' => 0,
+        'created' => 2,
+        'closed' => 2,
+    ])->and($data['limitations'])->not->toContain('Tasks: at least one record was reopened; the single close timestamp cannot reconstruct its earlier lifecycle intervals.');
+});
+
+it('uses the latest lifecycle event to count a reopened Task that is currently open', function () {
+    [$user, $enterprise, $organization] = lifecycleChartUserAndEnterprise();
+    $createdAt = Carbon::parse('2026-10-27 09:00:00', 'Europe/Bucharest')->utc();
+    Carbon::setTestNow($createdAt);
+    $task = Task::factory()->create([
+        'enterprise_id' => $enterprise->id,
+        'status' => 'todo',
+    ]);
+    DB::table('tasks')->where('id', $task->id)->update([
+        'created_at' => $createdAt,
+        'updated_at' => Carbon::parse('2026-10-30 09:00:00', 'Europe/Bucharest')->utc(),
+        'closed_at' => null,
+    ]);
+    Carbon::setTestNow(Carbon::parse('2026-10-31 12:00:00', 'Europe/Bucharest'));
+
+    foreach ([
+        ['closed', 'todo', 'done', '2026-10-29 15:00:00'],
+        ['open', 'done', 'todo', '2026-10-30 09:00:00'],
+    ] as [$type, $from, $to, $time]) {
+        Event::factory()->create([
+            'organization_id' => $organization->id,
+            'enterprise_id' => $enterprise->id,
+            'event_type' => $type,
+            'occurred_at' => Carbon::parse($time, 'Europe/Bucharest')->utc(),
+            'payload' => ['from_state' => $from, 'to_state' => $to, 'source' => 'cr8or'],
+            'subject_type' => $task->getMorphClass(),
+            'subject_id' => (string) $task->id,
+        ]);
+    }
+
+    $this->actingAs($user);
+    $data = app(LifecycleChartData::class)->forEnterprise($enterprise, '14_days');
+    $tasks = collect($data['entities'])->firstWhere('key', 'tasks');
+    $reopenDay = collect($tasks['days'])->firstWhere('date', '2026-10-30');
+
+    expect($reopenDay['metrics'])->toBe([
+        'open_start' => 0,
+        'open_end' => 1,
+        'created' => 1,
+        'closed' => 0,
+    ])->and($tasks['summary']['open_end'])->toBe(1);
 });
 
 it('does not include records from another enterprise in lifecycle totals', function () {
