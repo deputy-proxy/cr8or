@@ -9,6 +9,7 @@ use App\Models\Enterprise;
 use App\Models\EnterpriseCategory;
 use App\Models\EnterpriseGroup;
 use App\Models\Event;
+use App\Models\IntegrationRepository;
 use App\Models\Issue;
 use App\Models\Publication;
 use App\Models\PublicationSchedule;
@@ -291,7 +292,12 @@ class EnterprisePortfolioDashboard extends Page
             })->values();
 
         $dashboardIssues = Issue::query()->whereIn('enterprise_id', $enterpriseIds)
-            ->where('state', 'open')->orderByDesc('github_updated_at')->limit(500)->get()
+            ->where('state', 'open')->whereNull('github_deleted_at')
+            ->where(function (Builder $query): void {
+                $query->whereNull('integration_repository_id')
+                    ->orWhereHas('integrationRepository', fn (Builder $repositoryQuery) => $repositoryQuery->where('status', IntegrationRepository::STATUS_ACTIVE));
+            })
+            ->orderByDesc('github_updated_at')->limit(500)->get()
             ->map(static function (EloquentModel $issue): array {
                 $labels = $issue->getAttribute('labels');
                 $createdAt = $issue->getAttribute('github_created_at');

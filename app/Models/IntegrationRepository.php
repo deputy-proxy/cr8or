@@ -10,9 +10,10 @@ use LogicException;
 
 /**
  * @property \Carbon\CarbonImmutable|null $last_synced_at
+ * @property \Carbon\CarbonImmutable|null $last_full_reconciled_at
  * @property \Carbon\CarbonImmutable|null $github_updated_at
  */
-#[Fillable(['integration_connection_id', 'organization_id', 'enterprise_id', 'github_repository_id', 'github_account_id', 'owner_login', 'name', 'full_name', 'url', 'default_branch', 'is_private', 'status', 'sync_status', 'last_synced_at', 'last_sync_error', 'github_updated_at'])]
+#[Fillable(['integration_connection_id', 'organization_id', 'enterprise_id', 'github_repository_id', 'github_account_id', 'owner_login', 'name', 'full_name', 'url', 'default_branch', 'is_private', 'status', 'sync_status', 'last_synced_at', 'last_full_reconciled_at', 'last_sync_error', 'github_updated_at'])]
 class IntegrationRepository extends Model
 {
     public const STATUS_ACTIVE = 'active';
@@ -23,7 +24,7 @@ class IntegrationRepository extends Model
 
     protected function casts(): array
     {
-        return ['is_private' => 'boolean', 'last_synced_at' => 'immutable_datetime', 'github_updated_at' => 'immutable_datetime'];
+        return ['is_private' => 'boolean', 'last_synced_at' => 'immutable_datetime', 'last_full_reconciled_at' => 'immutable_datetime', 'github_updated_at' => 'immutable_datetime'];
     }
 
     protected static function booted(): void

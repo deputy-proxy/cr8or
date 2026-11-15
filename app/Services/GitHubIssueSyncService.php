@@ -94,11 +94,29 @@ final class GitHubIssueSyncService
             $client = Http::baseUrl('https://api.github.com')->withToken($token)->acceptJson()
                 ->withHeaders(['X-GitHub-Api-Version' => '2022-11-28', 'User-Agent' => 'CR8OR'])
                 ->timeout((int) config('services.github.timeout', 15));
+            $fullReconciliationDays = max(1, (int) config('services.github.full_reconciliation_days', 7));
+            $fullReconciliationDue = $repository->last_full_reconciled_at === null
+                || $repository->last_full_reconciled_at->lte(now()->subDays($fullReconciliationDays));
+            if ($fullReconciliationDue) {
+                $fullReconciliationStartedAt = now();
+                $count = $this->syncFullRepository($repository, $client, $fullReconciliationStartedAt);
+                $repository->forceFill([
+                    'sync_status' => 'succeeded', 'last_synced_at' => $fullReconciliationStartedAt,
+                    'last_full_reconciled_at' => now(), 'last_sync_error' => null,
+                ])->save();
+                $this->refreshEnterpriseSyncState($repository);
+
+                return $count;
+            }
+
             $since = $repository->last_synced_at?->subMinutes(5)->toIso8601String();
             $count = 0;
 
             for ($page = 1; $page <= 100; $page++) {
-                $params = ['state' => 'all', 'per_page' => 100, 'page' => $page, 'sort' => 'updated', 'direction' => 'asc'];
+                $params = [
+                    'state' => 'all', 'per_page' => 100, 'page' => $page,
+                    'sort' => 'updated', 'direction' => 'asc',
+                ];
                 if ($since !== null) {
                     $params['since'] = $since;
                 }
@@ -144,6 +162,167 @@ final class GitHubIssueSyncService
         }
     }
 
+    private function syncFullRepository(IntegrationRepository $repository, PendingRequest $client, \DateTimeInterface $startedAt): int
+    {
+        [$owner, $name] = explode('/', $repository->full_name, 2);
+        $cursor = null;
+        $seenExternalIds = [];
+        $count = 0;
+
+        while (true) {
+            $data = $this->requestFullReconciliationPage($repository, $client, $owner, $name, $cursor);
+            $nodes = $data['nodes'];
+
+            foreach ($nodes as $node) {
+                if (! is_array($node)) {
+                    throw new RuntimeException('GitHub returned an invalid issue node during full reconciliation.');
+                }
+                $mapped = $this->mapGraphQlIssue($repository, $node);
+                if ($mapped === null) {
+                    throw new RuntimeException('GitHub returned an invalid issue during full reconciliation.');
+                }
+                $this->persistIssue($repository, $mapped);
+                $seenExternalIds[] = $mapped['external_id'];
+                $count++;
+            }
+
+            if (! $data['has_next_page']) {
+                $missingIssues = Issue::query()->where('integration_repository_id', $repository->id)
+                    ->whereNull('github_deleted_at')
+                    ->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($startedAt): void {
+                        $query->whereNull('last_synced_at')->orWhere('last_synced_at', '<=', \DateTimeImmutable::createFromInterface($startedAt)->modify('-1 second'));
+                    });
+                if ($seenExternalIds !== []) {
+                    $missingIssues->whereNotIn('external_id', array_values(array_unique($seenExternalIds)));
+                }
+                $missingIssues->update(['github_deleted_at' => now(), 'last_synced_at' => now()]);
+
+                return $count;
+            }
+
+            if (! is_string($data['end_cursor']) || $data['end_cursor'] === '' || $data['end_cursor'] === $cursor) {
+                throw new RuntimeException('GitHub returned an invalid pagination cursor during full reconciliation.');
+            }
+            $cursor = $data['end_cursor'];
+        }
+
+    }
+
+    /**
+     * @return array{nodes: array<int, mixed>, has_next_page: bool, end_cursor: string|null}
+     */
+    private function requestFullReconciliationPage(IntegrationRepository $repository, PendingRequest $client, string $owner, string $name, ?string $cursor): array
+    {
+        $query = <<<'GRAPHQL'
+query RepositoryIssuesForReconciliation($owner: String!, $name: String!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    issues(first: 100, after: $after, states: [OPEN, CLOSED], orderBy: {field: CREATED_AT, direction: ASC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        databaseId
+        number
+        title
+        state
+        url
+        createdAt
+        updatedAt
+        closedAt
+        labels(first: 30) { nodes { name } }
+        assignees(first: 100) { nodes { login } }
+        author { login }
+      }
+    }
+  }
+}
+GRAPHQL;
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            try {
+                $response = $client->post('/graphql', [
+                    'query' => $query,
+                    'variables' => ['owner' => $owner, 'name' => $name, 'after' => $cursor],
+                ]);
+            } catch (ConnectionException $exception) {
+                if ($attempt === 3) {
+                    throw new RuntimeException('GitHub GraphQL connection failed during full reconciliation.', previous: $exception);
+                }
+                usleep(250_000 * $attempt);
+
+                continue;
+            }
+
+            if ($response->status() === 429 || ($response->status() === 403
+                && ($response->header('X-RateLimit-Remaining') === '0' || trim((string) $response->header('Retry-After')) !== ''))) {
+                if ($attempt === 3) {
+                    throw new RuntimeException('GitHub GraphQL rate limit exceeded during full reconciliation.');
+                }
+                $retryAfter = max(1, (int) ($response->header('Retry-After') ?: 1));
+                if ($retryAfter > 2) {
+                    throw new RuntimeException('GitHub GraphQL rate limit exceeded; retry after '.$retryAfter.' seconds.');
+                }
+                usleep($retryAfter * 1_000_000);
+
+                continue;
+            }
+            if ($response->serverError() && $attempt < 3) {
+                usleep(250_000 * $attempt);
+
+                continue;
+            }
+            if (! $response->successful()) {
+                if (in_array($response->status(), [403, 404], true)) {
+                    $repository->forceFill(['status' => IntegrationRepository::STATUS_INACCESSIBLE])->save();
+                }
+                throw new RuntimeException('GitHub full reconciliation failed with HTTP '.$response->status().'.');
+            }
+
+            $payload = $response->json();
+            if (is_array($payload) && ($payload['data']['repository'] ?? null) === null) {
+                $repository->forceFill(['status' => IntegrationRepository::STATUS_INACCESSIBLE])->save();
+                throw new RuntimeException('GitHub repository is not accessible for full reconciliation.');
+            }
+            $issues = is_array($payload) ? ($payload['data']['repository']['issues'] ?? null) : null;
+            $nodes = is_array($issues) ? ($issues['nodes'] ?? null) : null;
+            $pageInfo = is_array($issues) ? ($issues['pageInfo'] ?? null) : null;
+            if (isset($payload['errors']) || ! is_array($nodes) || ! array_is_list($nodes)
+                || ! is_array($pageInfo) || ! is_bool($pageInfo['hasNextPage'] ?? null)) {
+                throw new RuntimeException('GitHub returned an invalid GraphQL issue page during full reconciliation.');
+            }
+
+            return [
+                'nodes' => $nodes,
+                'has_next_page' => $pageInfo['hasNextPage'],
+                'end_cursor' => is_string($pageInfo['endCursor'] ?? null) ? $pageInfo['endCursor'] : null,
+            ];
+        }
+
+        throw new RuntimeException('GitHub GraphQL request exhausted retry attempts during full reconciliation.');
+    }
+
+    /** @param array<string, mixed> $node
+     * @return array<string, mixed>|null
+     */
+    private function mapGraphQlIssue(IntegrationRepository $repository, array $node): ?array
+    {
+        $labels = $node['labels']['nodes'] ?? [];
+        $assignees = $node['assignees']['nodes'] ?? [];
+        $author = $node['author']['login'] ?? null;
+
+        return $this->mapIssue($repository, [
+            'id' => $node['databaseId'] ?? null,
+            'number' => $node['number'] ?? null,
+            'title' => $node['title'] ?? null,
+            'state' => is_string($node['state'] ?? null) ? strtolower($node['state']) : null,
+            'html_url' => $node['url'] ?? null,
+            'created_at' => $node['createdAt'] ?? null,
+            'updated_at' => $node['updatedAt'] ?? null,
+            'closed_at' => $node['closedAt'] ?? null,
+            'labels' => is_array($labels) ? $labels : [],
+            'assignees' => is_array($assignees) ? $assignees : [],
+            'user' => ['login' => $author],
+        ]);
+    }
+
     /** @param array<string, mixed> $item */
     private function persistIssue(IntegrationRepository $repository, array $item): void
     {
@@ -155,12 +334,15 @@ final class GitHubIssueSyncService
                 if ((int) $issue->enterprise_id !== (int) $repository->enterprise_id
                     || (int) $issue->integration_repository_id !== (int) $repository->id
                     || (int) $issue->github_repository_id !== (int) $repository->github_repository_id
-                    || $issue->repository !== $repository->full_name) {
+                    || $issue->repository !== $repository->full_name
+                    || $issue->github_deleted_at !== null) {
                     $issue->forceFill([
                         'enterprise_id' => $repository->enterprise_id,
                         'integration_repository_id' => $repository->id,
                         'github_repository_id' => $repository->github_repository_id,
                         'repository' => $repository->full_name,
+                        'github_deleted_at' => null,
+                        'last_synced_at' => now(),
                     ])->save();
                 }
 
