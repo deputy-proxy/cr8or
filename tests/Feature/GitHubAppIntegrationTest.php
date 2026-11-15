@@ -8,6 +8,7 @@ use App\Models\Enterprise;
 use App\Models\GitHubWebhookDelivery;
 use App\Models\IntegrationConnection;
 use App\Models\IntegrationRepository;
+use App\Models\Issue;
 use App\Models\Membership;
 use App\Models\Organization;
 use App\Models\User;
@@ -49,6 +50,28 @@ function githubAppTestConnection(Organization $organization, ?Enterprise $enterp
 function githubAppTokenResponse(): array
 {
     return ['token' => 'ghs-installation-token', 'expires_at' => now()->addHour()->toIso8601String(), 'permissions' => ['issues' => 'read', 'metadata' => 'read']];
+}
+
+function githubGraphQlIssueNode(int $id, int $number, string $state = 'OPEN', ?string $updatedAt = null, string $repository = 'acme/app'): array
+{
+    return [
+        'databaseId' => $id, 'number' => $number, 'title' => $number === 7 ? 'Fix the thing' : 'Issue '.$number,
+        'state' => $state, 'url' => 'https://github.com/'.$repository.'/issues/'.$number,
+        'createdAt' => '2026-01-01T10:00:00Z',
+        'updatedAt' => $updatedAt ?? '2026-10-01T10:00:00Z',
+        'closedAt' => $state === 'CLOSED' ? ($updatedAt ?? '2026-10-01T10:00:00Z') : null,
+        'labels' => ['nodes' => [['name' => 'bug']]],
+        'assignees' => ['nodes' => [['login' => 'octocat']]],
+        'author' => ['login' => 'maintainer'],
+    ];
+}
+
+function githubGraphQlPage(array $nodes, bool $hasNextPage = false, ?string $endCursor = null): array
+{
+    return ['data' => ['repository' => ['issues' => [
+        'nodes' => $nodes,
+        'pageInfo' => ['hasNextPage' => $hasNextPage, 'endCursor' => $endCursor],
+    ]]]];
 }
 
 beforeEach(function () {
@@ -141,15 +164,9 @@ it('enforces organization and connection boundaries when assigning repositories'
 it('syncs issues for an assigned repository including assignees and excludes pull requests', function () {
     Http::fake([
         'api.github.com/app/installations/*/access_tokens' => Http::response(githubAppTokenResponse(), 201),
-        'api.github.com/repos/acme/app/issues*' => Http::response([
-            [
-                'id' => 111, 'number' => 7, 'title' => 'Fix the thing', 'state' => 'open',
-                'html_url' => 'https://github.com/acme/app/issues/7', 'created_at' => now()->subDay()->toIso8601String(),
-                'updated_at' => now()->toIso8601String(), 'closed_at' => null,
-                'labels' => [['name' => 'bug']], 'assignees' => [['login' => 'octocat']], 'user' => ['login' => 'maintainer'],
-            ],
-            ['id' => 112, 'number' => 8, 'pull_request' => ['url' => 'https://api.github.com/repos/acme/app/pulls/8']],
-        ], 200),
+        'api.github.com/graphql' => Http::response(githubGraphQlPage([
+            githubGraphQlIssueNode(111, 7),
+        ]), 200),
     ]);
     $organization = Organization::factory()->create();
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
@@ -280,17 +297,25 @@ it('marks a snapshot deleted only after GitHub confirms the issue is missing', f
 });
 
 it('syncs multiple assigned repositories independently for one Enterprise', function () {
-    Http::fake([
-        'api.github.com/app/installations/*/access_tokens' => Http::response(githubAppTokenResponse(), 201),
-        'api.github.com/repos/acme/one/issues*' => Http::response([[
-            'id' => 201, 'number' => 1, 'title' => 'First', 'state' => 'open', 'html_url' => 'https://github.com/acme/one/issues/1',
-            'updated_at' => now()->toIso8601String(), 'labels' => [], 'assignees' => [], 'user' => ['login' => 'a'],
-        ]], 200),
-        'api.github.com/repos/acme/two/issues*' => Http::response([[
-            'id' => 202, 'number' => 2, 'title' => 'Second', 'state' => 'closed', 'html_url' => 'https://github.com/acme/two/issues/2',
-            'updated_at' => now()->toIso8601String(), 'labels' => [], 'assignees' => [], 'user' => ['login' => 'b'],
-        ]], 200),
-    ]);
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), '/app/installations/')) {
+            return Http::response(githubAppTokenResponse(), 201);
+        }
+
+        $variables = $request->data()['variables'] ?? [];
+        $issue = match ($variables['owner'] ?? null) {
+            'acme' => match ($variables['name'] ?? null) {
+                'one' => array_merge(githubGraphQlIssueNode(201, 1, repository: 'acme/one'), ['title' => 'First', 'author' => ['login' => 'a']]),
+                'two' => array_merge(githubGraphQlIssueNode(202, 2, 'CLOSED', repository: 'acme/two'), ['title' => 'Second', 'author' => ['login' => 'b']]),
+                default => null,
+            },
+            default => null,
+        };
+
+        return $issue === null
+            ? Http::response(['message' => 'Not found'], 404)
+            : Http::response(githubGraphQlPage([$issue]), 200);
+    });
     $organization = Organization::factory()->create();
     $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
     $connection = githubAppTestConnection($organization);
@@ -525,6 +550,137 @@ it('exposes the native GitHub webhook endpoint with raw-body signature verificat
     ], $raw);
     $invalidResponse->assertUnauthorized();
     expect(GitHubWebhookDelivery::query()->count())->toBe(1);
+});
+
+it('performs periodic full reconciliation to repair missed issue webhooks and mark missing snapshots deleted', function () {
+    $firstPage = collect(range(1, 100))->map(fn (int $number): array => githubGraphQlIssueNode(
+        920000 + $number, $number, $number === 100 ? 'CLOSED' : 'OPEN',
+        $number === 100 ? '2026-10-02T10:00:00Z' : '2026-10-01T10:00:00Z',
+    ))->all();
+    $secondPage = [githubGraphQlIssueNode(920101, 101)];
+    Http::fake(function ($request) use ($firstPage, $secondPage) {
+        if (str_contains($request->url(), '/app/installations/')) {
+            return Http::response(githubAppTokenResponse(), 201);
+        }
+
+        $after = $request->data()['variables']['after'] ?? null;
+
+        return Http::response($after === 'cursor-page-one'
+            ? githubGraphQlPage($secondPage)
+            : githubGraphQlPage($firstPage, true, 'cursor-page-one'), 200);
+    });
+
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $connection = githubAppTestConnection($organization);
+    $repository = IntegrationRepository::query()->create([
+        'integration_connection_id' => $connection->id, 'organization_id' => $organization->id, 'enterprise_id' => $enterprise->id,
+        'github_repository_id' => 456, 'owner_login' => 'acme', 'name' => 'app', 'full_name' => 'acme/app',
+        'url' => 'https://github.com/acme/app', 'status' => IntegrationRepository::STATUS_ACTIVE,
+        'last_synced_at' => now()->subDay(), 'last_full_reconciled_at' => now()->subDays(8),
+    ]);
+    $staleOpenIssue = $enterprise->issues()->create([
+        'integration_repository_id' => $repository->id, 'github_repository_id' => 456, 'repository' => 'acme/app',
+        'external_id' => '920100', 'number' => 100, 'title' => 'Stale open snapshot', 'state' => 'open',
+        'github_updated_at' => '2026-10-01T10:00:00Z', 'last_synced_at' => now()->subDay(),
+        'url' => 'https://github.com/acme/app/issues/100',
+    ]);
+    $deletedIssue = $enterprise->issues()->create([
+        'integration_repository_id' => $repository->id, 'github_repository_id' => 456, 'repository' => 'acme/app',
+        'external_id' => '920999', 'number' => 999, 'title' => 'Deleted upstream', 'state' => 'open',
+        'last_synced_at' => now()->subDay(), 'url' => 'https://github.com/acme/app/issues/999',
+    ]);
+
+    expect(app(GitHubIssueSyncService::class)->syncRepository($repository))->toBe(101)
+        ->and($staleOpenIssue->fresh()->state)->toBe('closed')
+        ->and($deletedIssue->fresh()->github_deleted_at)->not->toBeNull()
+        ->and($repository->fresh()->last_full_reconciled_at)->not->toBeNull()
+        ->and(Issue::query()->where('integration_repository_id', $repository->id)->count())->toBe(102);
+
+    $repository->forceFill(['last_full_reconciled_at' => now()->subDays(8)])->save();
+
+    expect(app(GitHubIssueSyncService::class)->syncRepository($repository->fresh()))->toBe(101)
+        ->and(Issue::query()->where('integration_repository_id', $repository->id)->count())->toBe(102)
+        ->and($staleOpenIssue->fresh()->state)->toBe('closed')
+        ->and($deletedIssue->fresh()->github_deleted_at)->not->toBeNull();
+
+    Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/graphql')
+        && ($request->data()['variables']['after'] ?? null) === null);
+    Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/graphql')
+        && ($request->data()['variables']['after'] ?? null) === 'cursor-page-one');
+});
+
+it('marks a repository inaccessible when GitHub denies full reconciliation access', function () {
+    Http::fakeSequence()
+        ->push(githubAppTokenResponse(), 201)
+        ->push(['message' => 'Resource not accessible by integration'], 403);
+
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $connection = githubAppTestConnection($organization);
+    $repository = IntegrationRepository::query()->create([
+        'integration_connection_id' => $connection->id, 'organization_id' => $organization->id, 'enterprise_id' => $enterprise->id,
+        'github_repository_id' => 456, 'owner_login' => 'acme', 'name' => 'app', 'full_name' => 'acme/app',
+        'url' => 'https://github.com/acme/app', 'status' => IntegrationRepository::STATUS_ACTIVE,
+    ]);
+
+    expect(fn () => app(GitHubIssueSyncService::class)->syncRepository($repository))->toThrow(RuntimeException::class)
+        ->and($repository->fresh()->status)->toBe(IntegrationRepository::STATUS_INACCESSIBLE)
+        ->and($repository->fresh()->last_full_reconciled_at)->toBeNull();
+});
+
+it('uses incremental REST synchronization between scheduled full reconciliations', function () {
+    Http::fake([
+        'api.github.com/app/installations/*/access_tokens' => Http::response(githubAppTokenResponse(), 201),
+        'api.github.com/repos/acme/app/issues*' => Http::response([], 200),
+    ]);
+
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $connection = githubAppTestConnection($organization);
+    $lastFullReconciledAt = now()->subDay();
+    $repository = IntegrationRepository::query()->create([
+        'integration_connection_id' => $connection->id, 'organization_id' => $organization->id, 'enterprise_id' => $enterprise->id,
+        'github_repository_id' => 456, 'owner_login' => 'acme', 'name' => 'app', 'full_name' => 'acme/app',
+        'url' => 'https://github.com/acme/app', 'status' => IntegrationRepository::STATUS_ACTIVE,
+        'last_synced_at' => now()->subHour(), 'last_full_reconciled_at' => $lastFullReconciledAt,
+    ]);
+
+    expect(app(GitHubIssueSyncService::class)->syncRepository($repository))->toBe(0)
+        ->and($repository->fresh()->last_full_reconciled_at->toDateTimeString())->toBe($lastFullReconciledAt->toDateTimeString());
+
+    Http::assertSent(fn ($request): bool => str_contains($request->url(), '/repos/acme/app/issues')
+        && str_contains($request->url(), 'since='));
+    Http::assertNotSent(fn ($request): bool => str_ends_with($request->url(), '/graphql'));
+});
+
+it('does not advance the full reconciliation checkpoint or mark missing issues when a page fails', function () {
+    $fullPage = collect(range(1, 100))->map(fn (int $number): array => githubGraphQlIssueNode(930000 + $number, $number))->all();
+    Http::fakeSequence()
+        ->push(githubAppTokenResponse(), 201)
+        ->push(githubGraphQlPage($fullPage, true, 'cursor-page-one'), 200)
+        ->push(['message' => 'temporary failure'], 503)
+        ->push(['message' => 'temporary failure'], 503)
+        ->push(['message' => 'temporary failure'], 503);
+
+    $organization = Organization::factory()->create();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+    $connection = githubAppTestConnection($organization);
+    $repository = IntegrationRepository::query()->create([
+        'integration_connection_id' => $connection->id, 'organization_id' => $organization->id, 'enterprise_id' => $enterprise->id,
+        'github_repository_id' => 456, 'owner_login' => 'acme', 'name' => 'app', 'full_name' => 'acme/app',
+        'url' => 'https://github.com/acme/app', 'status' => IntegrationRepository::STATUS_ACTIVE,
+    ]);
+    $existing = $enterprise->issues()->create([
+        'integration_repository_id' => $repository->id, 'github_repository_id' => 456, 'repository' => 'acme/app',
+        'external_id' => 'existing-issue', 'number' => 9, 'title' => 'Keep last known state', 'state' => 'open',
+        'last_synced_at' => now()->subDay(), 'url' => 'https://github.com/acme/app/issues/9',
+    ]);
+
+    expect(fn () => app(GitHubIssueSyncService::class)->syncRepository($repository))->toThrow(RuntimeException::class);
+    expect($repository->fresh()->last_full_reconciled_at)->toBeNull()
+        ->and($existing->fresh()->github_deleted_at)->toBeNull()
+        ->and($existing->fresh()->state)->toBe('open');
 });
 
 it('queues synchronization for assigned repositories after scheduled discovery', function () {

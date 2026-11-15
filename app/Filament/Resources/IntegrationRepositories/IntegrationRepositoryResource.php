@@ -50,6 +50,7 @@ class IntegrationRepositoryResource extends Resource
             TextColumn::make('status')->badge()->sortable(),
             TextColumn::make('sync_status')->label('Sync')->badge()->sortable(),
             TextColumn::make('last_synced_at')->dateTime()->sortable(),
+            TextColumn::make('last_full_reconciled_at')->label('Full Reconciliation')->dateTime()->sortable()->placeholder('Pending'),
             TextColumn::make('last_sync_error')->limit(60)->toggleable(),
         ])->filters([
             SelectFilter::make('enterprise_id')->label('Enterprise')->options(fn (): array => Enterprise::query()->whereIn('organization_id', static::authorizedOrganizationIds())->orderBy('name')->pluck('name', 'id')->all()),

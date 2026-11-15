@@ -8,6 +8,7 @@ use App\Models\EnterpriseCategory;
 use App\Models\EnterpriseGroup;
 use App\Models\Event;
 use App\Models\IntegrationConnection;
+use App\Models\IntegrationRepository;
 use App\Models\Issue;
 use App\Models\Membership;
 use App\Models\Organization;
@@ -565,4 +566,54 @@ it('queues GitHub sync only through the authorized dashboard action', function (
     $page->syncGitHubIssues();
 
     Queue::assertPushed(SyncEnterpriseGitHubIssues::class, fn (SyncEnterpriseGitHubIssues $job): bool => $job->enterpriseId === (int) $enterprise->id);
+});
+
+it('excludes deleted GitHub issue snapshots from portfolio dashboard data', function () {
+    $organization = Organization::factory()->create();
+    $user = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $user->id, 'organization_id' => $organization->id]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->id]);
+
+    $enterprise->issues()->create([
+        'repository' => 'owner/repository', 'external_id' => 'visible-issue', 'number' => 1,
+        'title' => 'Current open issue', 'state' => 'open', 'last_synced_at' => now(),
+        'url' => 'https://github.com/owner/repository/issues/1',
+    ]);
+    $enterprise->issues()->create([
+        'repository' => 'owner/repository', 'external_id' => 'deleted-issue', 'number' => 2,
+        'title' => 'Deleted open issue', 'state' => 'open', 'github_deleted_at' => now(), 'last_synced_at' => now(),
+        'url' => 'https://github.com/owner/repository/issues/2',
+    ]);
+    $enterprise->issues()->create([
+        'repository' => 'owner/repository', 'external_id' => 'closed-issue', 'number' => 3,
+        'title' => 'Closed issue', 'state' => 'closed', 'last_synced_at' => now(),
+        'url' => 'https://github.com/owner/repository/issues/3',
+    ]);
+    $connection = IntegrationConnection::query()->create([
+        'organization_id' => $organization->id, 'enterprise_id' => $enterprise->id,
+        'provider' => 'github', 'external_account_id' => 'owner/inaccessible', 'credential_reference' => 'default',
+        'status' => IntegrationConnection::STATUS_ACTIVE, 'configuration' => [], 'metadata' => [],
+    ]);
+    $inaccessibleRepository = IntegrationRepository::query()->create([
+        'integration_connection_id' => $connection->id, 'organization_id' => $organization->id,
+        'enterprise_id' => $enterprise->id, 'github_repository_id' => 987, 'owner_login' => 'owner',
+        'name' => 'inaccessible', 'full_name' => 'owner/inaccessible',
+        'url' => 'https://github.com/owner/inaccessible', 'status' => IntegrationRepository::STATUS_INACCESSIBLE,
+    ]);
+    $enterprise->issues()->create([
+        'integration_repository_id' => $inaccessibleRepository->id, 'github_repository_id' => 987,
+        'repository' => 'owner/inaccessible', 'external_id' => 'inaccessible-issue', 'number' => 4,
+        'title' => 'Inaccessible repository issue', 'state' => 'open', 'last_synced_at' => now(),
+        'url' => 'https://github.com/owner/inaccessible/issues/4',
+    ]);
+
+    $this->actingAs($user);
+    $page = app(EnterprisePortfolioDashboard::class);
+    $page->mount();
+    $method = new ReflectionMethod($page, 'getViewData');
+    $method->setAccessible(true);
+    $data = $method->invoke($page);
+
+    expect(collect($data['dashboardIssues'])->pluck('issue_id')->all())->toHaveCount(1)
+        ->and(collect($data['dashboardIssues'])->pluck('title')->all())->toBe(['Current open issue']);
 });
