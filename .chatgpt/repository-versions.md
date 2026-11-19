@@ -6,7 +6,7 @@ Versions below are read from the committed `composer.lock` and npm/Yarn lockfile
 
 | Repository | PHP constraint | Laravel | Filament | Livewire | PHPUnit | Pest | Larastan | Pint | Node | Vite | Tailwind | Laravel Vite plugin |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Cr8or | ^8.4 | 13.32.0 | 5.8.4 | 4.4.5 | 13.3.4 | 5.2.1 | 3.12.2 | 1.27.1 | 22 | 8.3.0 | 4.3.3 | 3.2.0 |
+| Cr8or | ^8.4 | 13.43.0 | 5.8.4 | 4.4.8 | 13.3.4 | 5.2.1 | 3.12.2 | 1.27.1 | 22 | 8.3.8 | 4.3.3 | 3.2.0 |
 | Conrad | ^8.3 | 13.7.0 | 5.6.1* | 4.3.0 | 12.5.24 | — | — | 1.29.1 | 22 | 8.0.10 | 4.2.4 | 3.1.0 |
 | EasyEnglish | ^8.4 | 13.30.1 | 5.8.0 | 4.4.4 | 13.3.2 | 5.1.4 | 3.11.0 | 1.31.0 | 22 | 8.3.5 | 4.3.3 | 3.2.0 |
 | Engleza Wiki | ^8.3 | 13.42.0 | 5.11.4 | 4.4.8 | 12.5.44 | — | 3.15.0 | 1.32.3 | 22 (Yarn 1.22.22) | 8.x constraint; exact lock entry not found | 4.3.3 | 3.2.0 |

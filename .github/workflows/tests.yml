@@ -14,6 +14,50 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  composer-security-audit:
+    name: Composer security audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP and Composer
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Verify Composer audit rejects vulnerable dependencies
+        run: scripts/verify-security-audit-thresholds.sh composer
+
+      - name: Audit locked Composer dependencies
+        run: composer audit --locked
+
+  npm-security-audit:
+    name: npm security audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Verify npm audit rejects high-severity vulnerabilities
+        run: scripts/verify-security-audit-thresholds.sh npm
+
+      - name: Audit locked npm dependencies
+        run: npm audit --audit-level=high
+
   frontend-build:
     runs-on: ubuntu-latest
 
