@@ -17,7 +17,14 @@ class RegisterTemplatesCommand extends Command
 
     public function handle(TemplateCatalogService $catalog, \App\Services\TemplateDefinitionAdapter $adapter): int
     {
-        $root = realpath((string) $this->argument('path'));
+        $path = $this->argument('path');
+        if (! is_string($path) || $path === '') {
+            $this->error('A valid template definition directory is required.');
+
+            return self::FAILURE;
+        }
+
+        $root = realpath($path);
         if ($root === false || ! is_dir($root)) {
             $this->error('Template definition directory does not exist.');
 
@@ -62,7 +69,13 @@ class RegisterTemplatesCommand extends Command
             return self::FAILURE;
         }
         $actualRevision = strtolower(trim($revisionProcess->getOutput()));
-        $requestedRevision = strtolower((string) $this->option('source-revision'));
+        $requestedRevision = $this->option('source-revision');
+        if ($requestedRevision !== null && ! is_string($requestedRevision)) {
+            $this->error('--source-revision must be a string commit SHA.');
+
+            return self::FAILURE;
+        }
+        $requestedRevision = strtolower($requestedRevision ?? '');
         if ($requestedRevision !== '' && ! hash_equals($actualRevision, $requestedRevision)) {
             $this->error('--source-revision must match the checkout HEAD commit.');
 

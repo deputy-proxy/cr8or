@@ -24,7 +24,14 @@ class PublishTemplateVersionCommand extends Command
             return self::FAILURE;
         }
 
-        $checkout = realpath((string) $this->argument('source-checkout'));
+        $sourceCheckout = $this->argument('source-checkout');
+        if (! is_string($sourceCheckout) || $sourceCheckout === '') {
+            $this->error('A valid source checkout directory is required.');
+
+            return self::FAILURE;
+        }
+
+        $checkout = realpath($sourceCheckout);
         if ($checkout === false || ! is_dir($checkout)) {
             $this->error('Source checkout directory does not exist.');
 
