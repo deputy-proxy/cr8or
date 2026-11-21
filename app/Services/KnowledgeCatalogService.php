@@ -42,7 +42,7 @@ final class KnowledgeCatalogService
         return $this->serialize($record, $resource);
     }
 
-    /** @return array{items: list<array<string, mixed>>, pagination: array<string, int>} */
+    /** @param array<string, mixed> $filters @return array{items: list<array<string, mixed>>, pagination: array{page: int, per_page: int, total: int, last_page: int}} */
     public function list(User $actor, Enterprise $enterprise, string $resource, array $filters): array
     {
         [$model] = $this->config($resource);
@@ -62,7 +62,7 @@ final class KnowledgeCatalogService
         );
 
         return [
-            'items' => $page->getCollection()->map(fn ($record): array => $this->serialize($record, $resource, false))->values()->all(),
+            'items' => array_values($page->getCollection()->map(fn ($record): array => $this->serialize($record, $resource, false))->all()),
             'pagination' => ['page' => $page->currentPage(), 'per_page' => $page->perPage(), 'total' => $page->total(), 'last_page' => $page->lastPage()],
         ];
     }
@@ -114,14 +114,28 @@ final class KnowledgeCatalogService
     private function applyFilters(Builder $query, string $resource, array $filters): void
     {
         if (isset($filters['search']) && trim((string) $filters['search']) !== '') {
-            $columns = $this->config($resource)[3];
             $term = '%'.mb_strtolower(trim((string) $filters['search'])).'%';
-            $query->where(function (Builder $nested) use ($columns, $term): void {
+            $query->where(function (Builder $nested) use ($resource, $term): void {
+                $columns = match ($resource) {
+                    'source' => ['name', 'description'],
+                    'document' => ['title', 'identifier', 'content'],
+                    'context' => ['name', 'description'],
+                    default => throw new \LogicException('Unsupported Knowledge resource.'),
+                };
+
                 foreach ($columns as $index => $column) {
+                    $sql = match ($column) {
+                        'name' => 'LOWER(name) LIKE ?',
+                        'description' => 'LOWER(description) LIKE ?',
+                        'title' => 'LOWER(title) LIKE ?',
+                        'identifier' => 'LOWER(identifier) LIKE ?',
+                        'content' => 'LOWER(content) LIKE ?',
+                        default => throw new \LogicException('Unsupported Knowledge search column.'),
+                    };
                     if ($index === 0) {
-                        $nested->whereRaw('LOWER('.$column.') LIKE ?', [$term]);
+                        $nested->whereRaw($sql, [$term]);
                     } else {
-                        $nested->orWhereRaw('LOWER('.$column.') LIKE ?', [$term]);
+                        $nested->orWhereRaw($sql, [$term]);
                     }
                 }
             });
@@ -143,19 +157,20 @@ final class KnowledgeCatalogService
     /** @return array<string, mixed> */
     private function serialize(Model $record, string $resource, bool $includeDetails = true): array
     {
-        $countColumns = match ($resource) {
+        $countAttributes = match ($resource) {
             'source' => ['documents_count', 'items_count'],
             'document' => ['items_count', 'references_count'],
             'context' => ['items_count'],
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
-        if (array_any($countColumns, fn (string $column): bool => ! array_key_exists($column, $record->getAttributes()))) {
-            $record->loadCount(match ($resource) {
+        if (array_any($countAttributes, fn (string $column): bool => ! array_key_exists($column, $record->getAttributes()))) {
+            $relations = match ($resource) {
                 'source' => ['documents', 'items'],
                 'document' => ['items', 'references'],
                 'context' => ['items'],
                 default => throw new \LogicException('Unsupported Knowledge resource.'),
-            });
+            };
+            $record->loadCount($relations);
         }
 
         $data = $record->toArray();
