@@ -16,7 +16,12 @@ use Illuminate\Validation\ValidationException;
 
 final class KnowledgeItemService
 {
-    public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle) {}
+    private readonly KnowledgeIndexLifecycleService $indexLifecycle;
+
+    public function __construct(KnowledgeIndexLifecycleService $indexLifecycle)
+    {
+        $this->indexLifecycle = $indexLifecycle;
+    }
 
     /**
      * @param array<string, mixed> $attributes
