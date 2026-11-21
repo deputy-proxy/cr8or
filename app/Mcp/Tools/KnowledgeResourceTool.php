@@ -37,12 +37,6 @@ abstract class KnowledgeResourceTool extends AuthorizedTool implements \App\Cont
     {
         $registry = app(CapabilityRegistry::class);
 
-        try {
-            $registry->forTool(static::class);
-        } catch (\InvalidArgumentException) {
-            return app($this->operationClass())->execute($actor, $input);
-        }
-
         $enterprise = ($input['enterprise'] ?? null) instanceof Enterprise
             ? $input['enterprise']
             : Enterprise::query()->findOrFail((int) $input['enterprise_id']);

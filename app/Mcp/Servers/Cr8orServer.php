@@ -61,6 +61,7 @@ use App\Mcp\Tools\GetExpertDescriptorTool;
 use App\Mcp\Tools\GetGoalTool;
 use App\Mcp\Tools\GetInitiativeTool;
 use App\Mcp\Tools\GetKnowledgeIndexTool;
+use App\Mcp\Tools\GetKnowledgeItemTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetKpiTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
@@ -89,6 +90,7 @@ use App\Mcp\Tools\ListExpertDescriptorTool;
 use App\Mcp\Tools\ListGoalTool;
 use App\Mcp\Tools\ListInitiativeTool;
 use App\Mcp\Tools\ListKnowledgeIndexesTool;
+use App\Mcp\Tools\ListKnowledgeItemsTool;
 use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListKpiTool;
 use App\Mcp\Tools\ListMarketingStrategyTool;
@@ -127,6 +129,7 @@ use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateKnowledgeIndexTool;
+use App\Mcp\Tools\UpdateKnowledgeItemTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
@@ -203,8 +206,10 @@ class Cr8orServer extends Server
         ExecuteAgentTool::class,
         ListApprovalRequestTool::class,
         ListKnowledgeIndexesTool::class,
+        ListKnowledgeItemsTool::class,
         ListMemoryTool::class,
         GetKnowledgeIndexTool::class,
+        GetKnowledgeItemTool::class,
         GetMemoryTool::class,
         ListKnowledgeUnitsTool::class,
         GetKnowledgeUnitTool::class,
@@ -214,6 +219,7 @@ class Cr8orServer extends Server
         UpdateAgentAssignmentTool::class,
         TransitionAgentAssignmentTool::class,
         CreateKnowledgeItemTool::class,
+        UpdateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,
         CreateMemoryTool::class,
         UpdateMemoryTool::class,
