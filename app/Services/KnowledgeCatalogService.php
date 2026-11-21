@@ -21,7 +21,7 @@ final class KnowledgeCatalogService
     ];
 
     /**
-     * @param array<string, mixed> $input
+     * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     public function create(User $actor, Enterprise $enterprise, string $resource, array $input): array
@@ -46,7 +46,7 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array{items: list<array<string, mixed>>, pagination: array{page: int, per_page: int, total: int, last_page: int}}
      */
     public function list(User $actor, Enterprise $enterprise, string $resource, array $filters): array
@@ -74,7 +74,7 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param array<string, mixed> $input
+     * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     public function update(User $actor, Enterprise $enterprise, string $resource, int $id, array $input): array
@@ -99,7 +99,7 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param array<string, mixed> $input
+     * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     private function attributes(string $resource, array $input): array
@@ -110,7 +110,7 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function assertRelationships(Enterprise $enterprise, string $resource, array $attributes): void
     {
@@ -123,8 +123,8 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param Builder<Model>       $query
-     * @param array<string, mixed> $filters
+     * @param  Builder<Model>        $query
+     * @param  array<string, mixed>  $filters
      */
     private function applyFilters(Builder $query, string $resource, array $filters): void
     {
