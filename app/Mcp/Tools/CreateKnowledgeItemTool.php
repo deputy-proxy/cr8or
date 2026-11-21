@@ -20,6 +20,9 @@ class CreateKnowledgeItemTool extends GovernedCapabilityTool
     {
         return [
             'enterprise_id' => $schema->integer()->min(1)->required(),
+            'knowledge_source_id' => $schema->integer()->min(1),
+            'knowledge_document_id' => $schema->integer()->min(1),
+            'knowledge_context_id' => $schema->integer()->min(1),
             'title' => $schema->string()->min(1)->max(255)->required(),
             'type' => $schema->string()->max(100),
             'summary' => $schema->string()->max(5000),
@@ -45,6 +48,9 @@ class CreateKnowledgeItemTool extends GovernedCapabilityTool
                     $actor,
                     $request->validate([
                         'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+                        'knowledge_source_id' => ['nullable', 'integer', 'min:1'],
+                        'knowledge_document_id' => ['nullable', 'integer', 'min:1'],
+                        'knowledge_context_id' => ['nullable', 'integer', 'min:1'],
                         'title' => ['required', 'string', 'min:1', 'max:255'],
                         'type' => ['nullable', 'string', 'max:100'],
                         'summary' => ['nullable', 'string', 'max:5000'],

@@ -147,9 +147,19 @@ If Enterprise resolution or authorization fails, stop. Explain the exact issue a
 
 The following is the capability baseline verified against the current CR8OR implementation. It is not a permanent tool contract: rediscover the live tools and inspect their schemas on every run.
 
+**Authoritative Knowledge catalog operations**
+
+Knowledge Sources, Documents, and Contexts each expose create/get/list/update operations through the Knowledge Expert and governed Capability boundary:
+
+- `create-knowledge-source`, `get-knowledge-source`, `list-knowledge-sources`, `update-knowledge-source`.
+- `create-knowledge-document`, `get-knowledge-document`, `list-knowledge-documents`, `update-knowledge-document`.
+- `create-knowledge-context`, `get-knowledge-context`, `list-knowledge-contexts`, `update-knowledge-context`.
+
+These operations are Enterprise-scoped. Document creation/update validates that any linked Knowledge Source belongs to the same Enterprise. List operations use bounded pagination.
+
 **Authoritative Knowledge Item operations**
 
-- `create-knowledge-item` (connector alias `mcp__cr8or__create_knowledge_item`): create an Enterprise-scoped Knowledge Item and its initial content version.
+- `create-knowledge-item` (connector alias `mcp__cr8or__create_knowledge_item`): create an Enterprise-scoped Knowledge Item and its initial content version, optionally associated with a Knowledge Source, Document, and Context.
 - `get-knowledge-item` (connector alias `mcp__cr8or__get_knowledge_item`): read one Enterprise-scoped item, including its latest content version and available provenance relationships.
 - `list-knowledge-items` (connector alias `mcp__cr8or__list_knowledge_items`): list Enterprise-scoped items with bounded pagination and optional title/summary search and type filtering. The list is intentionally compact and does not return full content.
 - `update-knowledge-item` (connector alias `mcp__cr8or__update_knowledge_item`): update supported item metadata and/or create a new content version while preserving immutable version history.
@@ -166,15 +176,15 @@ Use the live MCP tool names and schemas. In the current implementation, tool nam
 
 **Known model-level gaps**
 
-The current MCP surface does not provide dedicated authoring operations for every Filament Knowledge model, including Knowledge Sources, Documents, Contexts, Specifications, and References. There is no standalone KnowledgeVersion authoring operation and no dedicated KnowledgeEmbedding creation operation. KnowledgeVersion creation is handled by the authoritative Knowledge Item lifecycle when content/version data is created or updated.
+The current MCP surface still does not provide dedicated authoring operations for Knowledge Specifications, References, or Embeddings. There is no standalone KnowledgeVersion authoring operation and no dedicated KnowledgeEmbedding creation operation. KnowledgeVersion creation is handled by the authoritative Knowledge Item lifecycle when content/version data is created or updated.
 
 Therefore:
 
 - Do not invent tool names or call nonexistent operations.
 - Do not use a different domain's operation as a substitute.
-- Do not claim a Source, Document, Context, Reference, Specification, or Embedding was created unless an authorized operation actually did so and returned evidence.
+- Create Knowledge Sources, Documents, and Contexts through their dedicated authorized operations when the capture requires them.
+- Do not claim a Reference, Specification, or Embedding was created unless an authorized operation actually did so and returned evidence.
 - Do not create a Knowledge Item and describe it as a Knowledge Document.
-- Preserve available source/provenance/context information in supported Knowledge Item fields, especially `context_snapshot`, while clearly reporting that this is not equivalent to creating the missing model records.
 - If a required model-level record cannot be created through MCP, include it in the final **MCP capability gaps** section. Do not switch to Filament, direct database access, SQL, or application internals.
 
 ## Phase 4: Map the conversation to the existing Knowledge models
@@ -197,7 +207,7 @@ Capture these source attributes in the prepared synthesis and, where supported, 
 
 Do not fabricate a conversation URL, message ID, timestamp, or source identifier. A descriptive label is acceptable when no stable URL or ID is available.
 
-Create a KnowledgeSource only if an authorized MCP operation for it exists. Otherwise preserve the source details in supported fields and report that the KnowledgeSource record itself was not created.
+Create or reuse the KnowledgeSource through the dedicated MCP operations. Use `create-knowledge-source` with the selected `enterprise_id`, a descriptive `name`, `type` such as `conversation`, optional `description`, the actual conversation `uri` when available, and structured `metadata` for source system, title, date, and provenance limitations. Use list/get first to avoid duplicates. Do not fabricate a URI or stable identifier. Link the resulting `knowledge_source_id` to the KnowledgeDocument and KnowledgeItems when appropriate.
 
 ### 4.2 KnowledgeDocument — curated conversation synthesis
 
@@ -215,7 +225,7 @@ The document content should contain:
 
 Do not use a raw transcript as the default document content. A transcript may be retained as a source artifact only when the user explicitly requests it and an appropriate supported storage operation exists.
 
-Create a KnowledgeDocument only if an authorized MCP operation exists. Otherwise keep the complete curated synthesis in the capture output and preserve its relevant provenance in the supported Knowledge Item records. Do not mislabel a Knowledge Item as a Document.
+Create or reuse a KnowledgeDocument through `create-knowledge-document`, associating it with the source using `knowledge_source_id` when available. Supply `title`, a stable `identifier` when available, `status` (normally `active`), the curated `content`, and structured `metadata`. Use list/get first to avoid duplicates. Keep the document synthesis distinct from atomic Knowledge Items; associate each relevant item with the resulting `knowledge_document_id` and source/context IDs. Do not mislabel a Knowledge Item as a Document.
 
 ### 4.3 KnowledgeItem — durable, reusable knowledge
 
@@ -228,6 +238,7 @@ Create one Knowledge Item per independently useful knowledge atom. Use the exist
 The inspected operation accepts:
 
 - `enterprise_id` — required Enterprise scope;
+- `knowledge_source_id`, `knowledge_document_id`, `knowledge_context_id` — optional existing records, each required to belong to the same Enterprise;
 - `title` — required concise title;
 - `type` — optional Knowledge Item type;
 - `summary` — optional concise summary;
@@ -331,6 +342,7 @@ Use `update_knowledge_item` only when an existing item represents the same durab
 
 The current update contract accepts:
 - required `enterprise_id` and `knowledge_item_id`;
+- optional `knowledge_source_id`, `knowledge_document_id`, and `knowledge_context_id` to associate or re-associate same-Enterprise catalog records (nullable to intentionally unlink);
 - optional `title` (1–255 characters), `type` (1–100 characters), and `summary` (up to 5,000 characters);
 - optional `content` (1–50,000 characters) and nullable object `context_snapshot`.
 
@@ -339,7 +351,7 @@ Update only the fields that need to change. At least one mutable field must be s
 Lifecycle semantics:
 - Changes to content and/or `context_snapshot` create a new immutable KnowledgeVersion when the version data differs from the latest version. The previous version remains part of history.
 - A `context_snapshot`-only change creates a version using the latest content.
-- Changes to title, `type`, or summary update item metadata; metadata-only changes do not create a content version.
+- Changes to title, `type`, summary, or catalog relationships update item metadata; these metadata-only changes do not create a content version.
 - Changes that affect indexed content/metadata invalidate the derived index through the application lifecycle. Check the returned/read-back index state; do not assume the index is ready merely because the update succeeded.
 - The update operation returns the updated item representation, including its latest version and provenance relationships. Read it back with `get_knowledge_item` when needed to independently verify the final state.
 
@@ -355,7 +367,7 @@ Examples might include a specific product strategy, customer acquisition, a busi
 
 Do not create a context simply because every capture needs a folder. Do not confuse KnowledgeContext with EnterpriseContext. They are distinct models unless the actual domain implementation proves otherwise.
 
-Create or associate KnowledgeContext only through an authorized MCP operation that exists. Otherwise include the proposed context label and rationale in the final report without claiming it was persisted.
+Create or reuse KnowledgeContext through `create-knowledge-context` with `enterprise_id`, a durable `name`, a meaningful `type`, optional `description`, and structured `data`. Use list/get first to avoid duplicate groupings. Associate each relevant Knowledge Item through `knowledge_context_id`. A context is optional when the capture does not establish a coherent reusable grouping.
 
 ### 4.5 KnowledgeVersion — history of Knowledge Item changes
 
@@ -368,6 +380,7 @@ When updating existing knowledge:
 - preserve historical meaning and do not overwrite prior version content;
 - use `get_knowledge_item` to inspect the current item before changing it;
 - use `update_knowledge_item` for a supported correction/refinement of the same knowledge atom;
+- use the optional `knowledge_source_id`, `knowledge_document_id`, and `knowledge_context_id` fields to associate or re-associate an item with existing same-Enterprise catalog records; set a nullable relationship to `null` only when intentionally unlinking it;
 - verify the latest version and item metadata through the update result and, where needed, a subsequent `get_knowledge_item` read;
 - inspect derived index state because relevant updates invalidate the index.
 
@@ -460,16 +473,17 @@ If the user has clearly invoked this procedure, the target Enterprise is unambig
 Recommended execution order:
 
 1. Resolve Enterprise and authorization.
-2. Inspect existing Knowledge Items and relevant indexes.
+2. Inspect existing Knowledge Sources, Documents, Contexts, Knowledge Items, and relevant indexes.
 3. Prepare the curated synthesis and atom list.
 4. Identify exact MCP operations and schemas available now.
-5. For each knowledge atom, decide whether to create a new item, reuse an equivalent existing item, or update an existing item because the conversation explicitly corrects/refines that same knowledge.
-6. Create only missing, supported authoritative Knowledge Items; use `update_knowledge_item` only for justified changes to an existing item.
-7. Capture returned IDs, version identifiers/numbers where returned, and operation results.
-8. Check whether indexing happened automatically or was invalidated by a create/update.
-9. Create/rebuild derived indexes only when needed and supported; do not duplicate derived units.
-10. Read/list the resulting records and verify their Enterprise scope, metadata, latest content/version, and index state.
-11. Record unsupported model artifacts and any failed operations.
+5. Create or reuse the conversation KnowledgeSource, the curated KnowledgeDocument, and a KnowledgeContext only when a meaningful grouping exists. Missing optional records must not block Knowledge Item persistence.
+6. For each knowledge atom, decide whether to create a new item, reuse an equivalent existing item, or update an existing item because the conversation explicitly corrects/refines that same knowledge.
+7. Create only missing, supported authoritative Knowledge Items and link them to the created/reused source, document, and context IDs; use `update_knowledge_item` only for justified changes to an existing item.
+8. Capture returned IDs, version identifiers/numbers where returned, and operation results.
+9. Check whether indexing happened automatically or was invalidated by a create/update.
+10. Create/rebuild derived indexes only when needed and supported; do not duplicate derived units.
+11. Read/list the resulting catalog records and Knowledge Items and verify their Enterprise scope, relationships, metadata, latest content/version, and index state.
+12. Record unsupported model artifacts and any failed operations.
 
 ### 7.1 Write safety
 

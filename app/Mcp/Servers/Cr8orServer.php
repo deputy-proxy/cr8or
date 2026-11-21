@@ -26,8 +26,11 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
+use App\Mcp\Tools\CreateKnowledgeContextTool;
+use App\Mcp\Tools\CreateKnowledgeDocumentTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
 use App\Mcp\Tools\CreateKnowledgeItemTool;
+use App\Mcp\Tools\CreateKnowledgeSourceTool;
 use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
@@ -60,8 +63,11 @@ use App\Mcp\Tools\GetExecutionTool;
 use App\Mcp\Tools\GetExpertDescriptorTool;
 use App\Mcp\Tools\GetGoalTool;
 use App\Mcp\Tools\GetInitiativeTool;
+use App\Mcp\Tools\GetKnowledgeContextTool;
+use App\Mcp\Tools\GetKnowledgeDocumentTool;
 use App\Mcp\Tools\GetKnowledgeIndexTool;
 use App\Mcp\Tools\GetKnowledgeItemTool;
+use App\Mcp\Tools\GetKnowledgeSourceTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetKpiTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
@@ -89,8 +95,11 @@ use App\Mcp\Tools\ListExecutionTool;
 use App\Mcp\Tools\ListExpertDescriptorTool;
 use App\Mcp\Tools\ListGoalTool;
 use App\Mcp\Tools\ListInitiativeTool;
+use App\Mcp\Tools\ListKnowledgeContextsTool;
+use App\Mcp\Tools\ListKnowledgeDocumentsTool;
 use App\Mcp\Tools\ListKnowledgeIndexesTool;
 use App\Mcp\Tools\ListKnowledgeItemsTool;
+use App\Mcp\Tools\ListKnowledgeSourcesTool;
 use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListKpiTool;
 use App\Mcp\Tools\ListMarketingStrategyTool;
@@ -128,8 +137,11 @@ use App\Mcp\Tools\UpdateChannelTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateContentSeriesTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
+use App\Mcp\Tools\UpdateKnowledgeContextTool;
+use App\Mcp\Tools\UpdateKnowledgeDocumentTool;
 use App\Mcp\Tools\UpdateKnowledgeIndexTool;
 use App\Mcp\Tools\UpdateKnowledgeItemTool;
+use App\Mcp\Tools\UpdateKnowledgeSourceTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
@@ -218,6 +230,18 @@ class Cr8orServer extends Server
 
         UpdateAgentAssignmentTool::class,
         TransitionAgentAssignmentTool::class,
+        CreateKnowledgeSourceTool::class,
+        GetKnowledgeSourceTool::class,
+        ListKnowledgeSourcesTool::class,
+        UpdateKnowledgeSourceTool::class,
+        CreateKnowledgeDocumentTool::class,
+        GetKnowledgeDocumentTool::class,
+        ListKnowledgeDocumentsTool::class,
+        UpdateKnowledgeDocumentTool::class,
+        CreateKnowledgeContextTool::class,
+        GetKnowledgeContextTool::class,
+        ListKnowledgeContextsTool::class,
+        UpdateKnowledgeContextTool::class,
         CreateKnowledgeItemTool::class,
         UpdateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,

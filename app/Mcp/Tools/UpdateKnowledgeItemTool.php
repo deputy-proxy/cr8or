@@ -24,6 +24,9 @@ class UpdateKnowledgeItemTool extends KnowledgeResourceTool
         return [
             'enterprise_id' => $schema->integer()->min(1)->required(),
             'knowledge_item_id' => $schema->integer()->min(1)->required(),
+            'knowledge_source_id' => $schema->integer()->min(1)->nullable(),
+            'knowledge_document_id' => $schema->integer()->min(1)->nullable(),
+            'knowledge_context_id' => $schema->integer()->min(1)->nullable(),
             'title' => $schema->string()->min(1)->max(255),
             'type' => $schema->string()->min(1)->max(100),
             'summary' => $schema->string()->nullable()->max(5000),
@@ -37,6 +40,9 @@ class UpdateKnowledgeItemTool extends KnowledgeResourceTool
         return $this->executeOperation($request, $request->validate([
             'enterprise_id' => ['required', 'integer', 'min:1'],
             'knowledge_item_id' => ['required', 'integer', 'min:1'],
+            'knowledge_source_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'knowledge_document_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'knowledge_context_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'title' => ['sometimes', 'string', 'min:1', 'max:255'],
             'type' => ['sometimes', 'string', 'min:1', 'max:100'],
             'summary' => ['sometimes', 'nullable', 'string', 'max:5000'],
