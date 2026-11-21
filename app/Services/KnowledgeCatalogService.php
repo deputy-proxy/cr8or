@@ -181,7 +181,7 @@ final class KnowledgeCatalogService
             'specification' => 'version',
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
-        if ($filterColumn !== null && isset($filters[$filterColumn]) && $filters[$filterColumn] !== '') {
+        if (isset($filters[$filterColumn]) && $filters[$filterColumn] !== '') {
             $query->where($filterColumn, $filters[$filterColumn]);
         }
         if ($resource === 'document' && isset($filters['knowledge_source_id'])) {
@@ -215,10 +215,10 @@ final class KnowledgeCatalogService
         }
         $data['id'] = $record->getKey();
         $data['enterprise_id'] = $record->getAttribute('enterprise_id');
-        if ($resource === 'specification') {
+        if ($resource === 'specification' && $record instanceof KnowledgeSpecification) {
             $record->loadMissing('item:id,title');
             $data['item'] = $record->item ? ['id' => $record->item->getKey(), 'title' => $record->item->title] : null;
-        } elseif ($resource === 'reference') {
+        } elseif ($resource === 'reference' && $record instanceof KnowledgeReference) {
             $record->loadMissing(['item:id,title', 'document:id,title']);
             $data['item'] = $record->item ? ['id' => $record->item->getKey(), 'title' => $record->item->title] : null;
             $data['document'] = $record->document ? ['id' => $record->document->getKey(), 'title' => $record->document->title] : null;
