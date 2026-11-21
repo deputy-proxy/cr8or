@@ -33,7 +33,7 @@ abstract class KnowledgeResourceTool extends AuthorizedTool implements \App\Cont
     }
 
     /** @param array<string, mixed> $input */
-    private function executeInput(Request $request, array $input): Response|ResponseFactory
+    private function executeInput(Request $request, array $input): ResponseFactory
     {
         $actor = $request->user();
 
