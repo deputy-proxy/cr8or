@@ -171,6 +171,14 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-knowledge-context | `UpdateKnowledgeContextTool` | `KnowledgeResourceTool` | `knowledge.context.update` | `UpdateKnowledgeContext` | Enterprise policy + Knowledge catalog service and resource policy |
 | update-knowledge-document | `UpdateKnowledgeDocumentTool` | `KnowledgeResourceTool` | `knowledge.document.update` | `UpdateKnowledgeDocument` | Enterprise policy + Knowledge catalog service and resource policy |
 | update-knowledge-source | `UpdateKnowledgeSourceTool` | `KnowledgeResourceTool` | `knowledge.source.update` | `UpdateKnowledgeSource` | Enterprise policy + Knowledge catalog service and resource policy |
+| create-knowledge-reference | `CreateKnowledgeReferenceTool` | `KnowledgeResourceTool` | `knowledge.reference.create` | `CreateKnowledgeReference` | Enterprise policy + Knowledge catalog service and resource policy |
+| create-knowledge-specification | `CreateKnowledgeSpecificationTool` | `KnowledgeResourceTool` | `knowledge.specification.create` | `CreateKnowledgeSpecification` | Enterprise policy + Knowledge catalog service and resource policy |
+| get-knowledge-reference | `GetKnowledgeReferenceTool` | `KnowledgeResourceTool` | `knowledge.reference.get` | `GetKnowledgeReference` | Enterprise policy + Knowledge catalog service and resource policy |
+| get-knowledge-specification | `GetKnowledgeSpecificationTool` | `KnowledgeResourceTool` | `knowledge.specification.get` | `GetKnowledgeSpecification` | Enterprise policy + Knowledge catalog service and resource policy |
+| list-knowledge-references | `ListKnowledgeReferencesTool` | `KnowledgeResourceTool` | `knowledge.reference.list` | `ListKnowledgeReferences` | Enterprise policy + Knowledge catalog service and resource policy |
+| list-knowledge-specifications | `ListKnowledgeSpecificationsTool` | `KnowledgeResourceTool` | `knowledge.specification.list` | `ListKnowledgeSpecifications` | Enterprise policy + Knowledge catalog service and resource policy |
+| update-knowledge-reference | `UpdateKnowledgeReferenceTool` | `KnowledgeResourceTool` | `knowledge.reference.update` | `UpdateKnowledgeReference` | Enterprise policy + Knowledge catalog service and resource policy |
+| update-knowledge-specification | `UpdateKnowledgeSpecificationTool` | `KnowledgeResourceTool` | `knowledge.specification.update` | `UpdateKnowledgeSpecification` | Enterprise policy + Knowledge catalog service and resource policy |
 
 Social authorization is intentionally a user-consented web lifecycle: OAuth initiation, callback validation, provider account discovery/attachment, refresh and revocation are handled by `SocialAuthorizationService`, not by generic MCP connection/account CRUD. The MCP `disable-social-account` action disables only the CR8OR destination. Publication list/get/result tools are enterprise-scoped and omit provider payloads and credential references.
 

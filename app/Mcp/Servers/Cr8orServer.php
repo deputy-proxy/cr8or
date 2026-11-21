@@ -30,7 +30,9 @@ use App\Mcp\Tools\CreateKnowledgeContextTool;
 use App\Mcp\Tools\CreateKnowledgeDocumentTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
 use App\Mcp\Tools\CreateKnowledgeItemTool;
+use App\Mcp\Tools\CreateKnowledgeReferenceTool;
 use App\Mcp\Tools\CreateKnowledgeSourceTool;
+use App\Mcp\Tools\CreateKnowledgeSpecificationTool;
 use App\Mcp\Tools\CreateKnowledgeUnitTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateMemoryTool;
@@ -67,7 +69,9 @@ use App\Mcp\Tools\GetKnowledgeContextTool;
 use App\Mcp\Tools\GetKnowledgeDocumentTool;
 use App\Mcp\Tools\GetKnowledgeIndexTool;
 use App\Mcp\Tools\GetKnowledgeItemTool;
+use App\Mcp\Tools\GetKnowledgeReferenceTool;
 use App\Mcp\Tools\GetKnowledgeSourceTool;
+use App\Mcp\Tools\GetKnowledgeSpecificationTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetKpiTool;
 use App\Mcp\Tools\GetMarketingStrategyTool;
@@ -99,7 +103,9 @@ use App\Mcp\Tools\ListKnowledgeContextsTool;
 use App\Mcp\Tools\ListKnowledgeDocumentsTool;
 use App\Mcp\Tools\ListKnowledgeIndexesTool;
 use App\Mcp\Tools\ListKnowledgeItemsTool;
+use App\Mcp\Tools\ListKnowledgeReferencesTool;
 use App\Mcp\Tools\ListKnowledgeSourcesTool;
+use App\Mcp\Tools\ListKnowledgeSpecificationsTool;
 use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListKpiTool;
 use App\Mcp\Tools\ListMarketingStrategyTool;
@@ -141,7 +147,9 @@ use App\Mcp\Tools\UpdateKnowledgeContextTool;
 use App\Mcp\Tools\UpdateKnowledgeDocumentTool;
 use App\Mcp\Tools\UpdateKnowledgeIndexTool;
 use App\Mcp\Tools\UpdateKnowledgeItemTool;
+use App\Mcp\Tools\UpdateKnowledgeReferenceTool;
 use App\Mcp\Tools\UpdateKnowledgeSourceTool;
+use App\Mcp\Tools\UpdateKnowledgeSpecificationTool;
 use App\Mcp\Tools\UpdateKnowledgeUnitTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Mcp\Tools\UpdateObjectiveTool;
@@ -242,6 +250,14 @@ class Cr8orServer extends Server
         GetKnowledgeContextTool::class,
         ListKnowledgeContextsTool::class,
         UpdateKnowledgeContextTool::class,
+        CreateKnowledgeSpecificationTool::class,
+        GetKnowledgeSpecificationTool::class,
+        ListKnowledgeSpecificationsTool::class,
+        UpdateKnowledgeSpecificationTool::class,
+        CreateKnowledgeReferenceTool::class,
+        GetKnowledgeReferenceTool::class,
+        ListKnowledgeReferencesTool::class,
+        UpdateKnowledgeReferenceTool::class,
         CreateKnowledgeItemTool::class,
         UpdateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,

@@ -79,7 +79,12 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
 | `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
 | `create-enterprise-context` | `CreateEnterpriseContextTool` | `enterprise.context.create` | `EnterpriseContextCreate` |
+| `create-knowledge-context` | `CreateKnowledgeContextTool` | `knowledge.context.create` | `CreateKnowledgeContext` |
+| `create-knowledge-document` | `CreateKnowledgeDocumentTool` | `knowledge.document.create` | `CreateKnowledgeDocument` |
 | `create-knowledge-index` | `CreateKnowledgeIndexTool` | `knowledge.index.create` | `CreateKnowledgeIndex` |
+| `create-knowledge-reference` | `CreateKnowledgeReferenceTool` | `knowledge.reference.create` | `CreateKnowledgeReference` |
+| `create-knowledge-source` | `CreateKnowledgeSourceTool` | `knowledge.source.create` | `CreateKnowledgeSource` |
+| `create-knowledge-specification` | `CreateKnowledgeSpecificationTool` | `knowledge.specification.create` | `CreateKnowledgeSpecification` |
 | `create-knowledge-item` | `CreateKnowledgeItemTool` | `knowledge.item.create` | `CreateKnowledgeItem` |
 | `create-knowledge-unit` | `CreateKnowledgeUnitTool` | `knowledge.unit.create` | `CreateKnowledgeUnit` |
 | `create-marketing-strategy` | `CreateMarketingStrategyTool` | `marketing.strategy.create` | `CreateMarketingStrategy` |
@@ -114,7 +119,12 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-expert-descriptor` | `GetExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `get-goal` | `GetGoalTool` | Unregistered read/discovery/resource | N/A |
 | `get-initiative` | `GetInitiativeTool` | Unregistered read/discovery/resource | N/A |
+| `get-knowledge-context` | `GetKnowledgeContextTool` | `knowledge.context.get` | `GetKnowledgeContext` |
+| `get-knowledge-document` | `GetKnowledgeDocumentTool` | `knowledge.document.get` | `GetKnowledgeDocument` |
 | `get-knowledge-index` | `GetKnowledgeIndexTool` | `knowledge.index.get` | `GetKnowledgeIndex` |
+| `get-knowledge-reference` | `GetKnowledgeReferenceTool` | `knowledge.reference.get` | `GetKnowledgeReference` |
+| `get-knowledge-source` | `GetKnowledgeSourceTool` | `knowledge.source.get` | `GetKnowledgeSource` |
+| `get-knowledge-specification` | `GetKnowledgeSpecificationTool` | `knowledge.specification.get` | `GetKnowledgeSpecification` |
 | `get-knowledge-item` | `GetKnowledgeItemTool` | `knowledge.item.get` | `GetKnowledgeItem` |
 | `get-knowledge-unit` | `GetKnowledgeUnitTool` | `knowledge.unit.get` | `GetKnowledgeUnit` |
 | `get-kpi` | `GetKpiTool` | Unregistered read/discovery/resource | N/A |
@@ -128,7 +138,12 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-task` | `GetTaskTool` | Unregistered read/discovery/resource | N/A |
 | `get-workflow` | `GetWorkflowTool` | `workflow.get` | `GetWorkflow` |
 | `get-workflow-execution` | `GetWorkflowExecutionTool` | `workflow.inspect` | `InspectWorkflowExecution` |
+| `list-knowledge-contexts` | `ListKnowledgeContextsTool` | `knowledge.context.list` | `ListKnowledgeContexts` |
+| `list-knowledge-documents` | `ListKnowledgeDocumentsTool` | `knowledge.document.list` | `ListKnowledgeDocuments` |
 | `list-knowledge-items` | `ListKnowledgeItemsTool` | `knowledge.item.list` | `ListKnowledgeItems` |
+| `list-knowledge-references` | `ListKnowledgeReferencesTool` | `knowledge.reference.list` | `ListKnowledgeReferences` |
+| `list-knowledge-specifications` | `ListKnowledgeSpecificationsTool` | `knowledge.specification.list` | `ListKnowledgeSpecifications` |
+| `list-knowledge-sources` | `ListKnowledgeSourcesTool` | `knowledge.source.list` | `ListKnowledgeSources` |
 | `list-agent-assignments` | `ListAgentAssignmentsTool` | Unregistered read/discovery/resource | N/A |
 | `list-agent-delegations` | `ListAgentDelegationsTool` | Unregistered read/discovery/resource | N/A |
 | `list-agent-executions` | `ListExecutionTool` | Unregistered read/discovery/resource | N/A |
@@ -179,7 +194,12 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-persona` | `UpdatePersonaTool` | `marketing.persona.update` | `MarketingPersonaUpdate` |
 | `update-campaign` | `UpdateCampaignTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` |
 | `update-channel` | `UpdateChannelTool` | `marketing.channel.update` | `MarketingChannelUpdate` |
+| `update-knowledge-context` | `UpdateKnowledgeContextTool` | `knowledge.context.update` | `UpdateKnowledgeContext` |
+| `update-knowledge-document` | `UpdateKnowledgeDocumentTool` | `knowledge.document.update` | `UpdateKnowledgeDocument` |
 | `update-knowledge-item` | `UpdateKnowledgeItemTool` | `knowledge.item.update` | `UpdateKnowledgeItem` |
+| `update-knowledge-reference` | `UpdateKnowledgeReferenceTool` | `knowledge.reference.update` | `UpdateKnowledgeReference` |
+| `update-knowledge-source` | `UpdateKnowledgeSourceTool` | `knowledge.source.update` | `UpdateKnowledgeSource` |
+| `update-knowledge-specification` | `UpdateKnowledgeSpecificationTool` | `knowledge.specification.update` | `UpdateKnowledgeSpecification` |
 | `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
 | `update-content-series` | `UpdateContentSeriesTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` |
 | `update-enterprise-context` | `UpdateEnterpriseContextTool` | `enterprise.context.update` | `EnterpriseContextUpdate` |
@@ -193,18 +213,6 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-task` | `UpdateTaskTool` | `work.task.update` | `UpdateTask` |
 | `update-workflow` | `UpdateWorkflowTool` | `workflow.update` | `UpdateWorkflow` |
 | `verify-marketing-graph` | `VerifyMarketingGraphTool` | `marketing.graph.verify` | `VerifyMarketingGraph` |
-| `create-knowledge-context` | `CreateKnowledgeContextTool` | `knowledge.context.create` | `CreateKnowledgeContext` |
-| `create-knowledge-document` | `CreateKnowledgeDocumentTool` | `knowledge.document.create` | `CreateKnowledgeDocument` |
-| `create-knowledge-source` | `CreateKnowledgeSourceTool` | `knowledge.source.create` | `CreateKnowledgeSource` |
-| `get-knowledge-context` | `GetKnowledgeContextTool` | `knowledge.context.get` | `GetKnowledgeContext` |
-| `get-knowledge-document` | `GetKnowledgeDocumentTool` | `knowledge.document.get` | `GetKnowledgeDocument` |
-| `get-knowledge-source` | `GetKnowledgeSourceTool` | `knowledge.source.get` | `GetKnowledgeSource` |
-| `list-knowledge-contexts` | `ListKnowledgeContextsTool` | `knowledge.context.list` | `ListKnowledgeContexts` |
-| `list-knowledge-documents` | `ListKnowledgeDocumentsTool` | `knowledge.document.list` | `ListKnowledgeDocuments` |
-| `list-knowledge-sources` | `ListKnowledgeSourcesTool` | `knowledge.source.list` | `ListKnowledgeSources` |
-| `update-knowledge-context` | `UpdateKnowledgeContextTool` | `knowledge.context.update` | `UpdateKnowledgeContext` |
-| `update-knowledge-document` | `UpdateKnowledgeDocumentTool` | `knowledge.document.update` | `UpdateKnowledgeDocument` |
-| `update-knowledge-source` | `UpdateKnowledgeSourceTool` | `knowledge.source.update` | `UpdateKnowledgeSource` |
 
 Social-account creation and provider authorization are intentionally not generic MCP CRUD. OAuth initiation, callback validation, destination discovery/attachment, and provider revocation remain in the authenticated web lifecycle backed by `SocialAuthorizationService`. `disable-social-account` only disables a destination inside CR8OR; it does not claim to revoke the provider grant. Generic integration-connection creation is not exposed to Agents.
 
@@ -382,6 +390,26 @@ Phase 12 adds a dedicated Knowledge resource surface while preserving the existi
 
 | Domain | Tool | Canonical Operation | Authority |
 | --- | --- | --- | --- |
+| Knowledge Source | create-knowledge-source | CreateKnowledgeSource | Creates an Enterprise-scoped source record |
+| Knowledge Source | get-knowledge-source | GetKnowledgeSource | Authorized Enterprise-scoped source read |
+| Knowledge Source | list-knowledge-sources | ListKnowledgeSources | Authorized bounded listing with search and type filters |
+| Knowledge Source | update-knowledge-source | UpdateKnowledgeSource | Updates supplied source metadata |
+| Knowledge Document | create-knowledge-document | CreateKnowledgeDocument | Creates an Enterprise-scoped document linked to an optional source |
+| Knowledge Document | get-knowledge-document | GetKnowledgeDocument | Authorized Enterprise-scoped document read |
+| Knowledge Document | list-knowledge-documents | ListKnowledgeDocuments | Authorized bounded listing with source, status and search filters |
+| Knowledge Document | update-knowledge-document | UpdateKnowledgeDocument | Updates supplied document metadata and content |
+| Knowledge Context | create-knowledge-context | CreateKnowledgeContext | Creates an Enterprise-scoped context grouping |
+| Knowledge Context | get-knowledge-context | GetKnowledgeContext | Authorized Enterprise-scoped context read |
+| Knowledge Context | list-knowledge-contexts | ListKnowledgeContexts | Authorized bounded listing with search and type filters |
+| Knowledge Context | update-knowledge-context | UpdateKnowledgeContext | Updates supplied context fields |
+| Knowledge Specification | create-knowledge-specification | CreateKnowledgeSpecification | Creates an Enterprise-scoped formal specification, optionally linked to a Knowledge Item |
+| Knowledge Specification | get-knowledge-specification | GetKnowledgeSpecification | Authorized Enterprise-scoped specification read |
+| Knowledge Specification | list-knowledge-specifications | ListKnowledgeSpecifications | Authorized bounded listing with item, search and version filters |
+| Knowledge Specification | update-knowledge-specification | UpdateKnowledgeSpecification | Updates supplied specification fields without creating independent revision history |
+| Knowledge Reference | create-knowledge-reference | CreateKnowledgeReference | Creates an Enterprise-scoped evidence/provenance link from a Knowledge Item to an optional Knowledge Document |
+| Knowledge Reference | get-knowledge-reference | GetKnowledgeReference | Authorized Enterprise-scoped reference read |
+| Knowledge Reference | list-knowledge-references | ListKnowledgeReferences | Authorized bounded listing with item, document, search and type filters |
+| Knowledge Reference | update-knowledge-reference | UpdateKnowledgeReference | Updates supplied reference fields while preserving the required Knowledge Item relationship |
 | Knowledge Item | create-knowledge-item | CreateKnowledgeItem | Creates authoritative Enterprise-scoped content and its initial immutable version |
 | Knowledge Item | get-knowledge-item | GetKnowledgeItem | Authorized item read with latest version and provenance relationships |
 | Knowledge Item | list-knowledge-items | ListKnowledgeItems | Authorized Enterprise-scoped, filtered, bounded metadata listing |
