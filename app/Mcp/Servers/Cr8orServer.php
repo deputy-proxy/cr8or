@@ -26,6 +26,15 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
+use App\Mcp\Tools\CreateKnowledgeReferenceTool;
+use App\Mcp\Tools\CreateKnowledgeSpecificationTool;
+use App\Mcp\Tools\GetKnowledgeReferenceTool;
+use App\Mcp\Tools\GetKnowledgeSpecificationTool;
+use App\Mcp\Tools\ListKnowledgeReferencesTool;
+use App\Mcp\Tools\ListKnowledgeSpecificationsTool;
+use App\Mcp\Tools\UpdateKnowledgeReferenceTool;
+use App\Mcp\Tools\UpdateKnowledgeSpecificationTool;
+
 use App\Mcp\Tools\CreateKnowledgeContextTool;
 use App\Mcp\Tools\CreateKnowledgeDocumentTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
@@ -242,6 +251,14 @@ class Cr8orServer extends Server
         GetKnowledgeContextTool::class,
         ListKnowledgeContextsTool::class,
         UpdateKnowledgeContextTool::class,
+        CreateKnowledgeSpecificationTool::class,
+        GetKnowledgeSpecificationTool::class,
+        ListKnowledgeSpecificationsTool::class,
+        UpdateKnowledgeSpecificationTool::class,
+        CreateKnowledgeReferenceTool::class,
+        GetKnowledgeReferenceTool::class,
+        ListKnowledgeReferencesTool::class,
+        UpdateKnowledgeReferenceTool::class,
         CreateKnowledgeItemTool::class,
         UpdateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,

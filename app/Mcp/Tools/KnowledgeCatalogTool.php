@@ -30,9 +30,21 @@ abstract class KnowledgeCatalogTool extends KnowledgeResourceTool
                 'per_page' => $schema->integer()->min(1)->max(50),
                 'page' => $schema->integer()->min(1),
             ];
-            $fields[$this->resource() === 'document' ? 'status' : 'type'] = $schema->string()->max(100);
+            if ($this->resource() === 'document') {
+                $fields['status'] = $schema->string()->max(100);
+            } elseif ($this->resource() === 'specification') {
+                $fields['version'] = $schema->string()->max(255);
+            } else {
+                $fields['type'] = $schema->string()->max(100);
+            }
             if ($this->resource() === 'document') {
                 $fields['knowledge_source_id'] = $schema->integer()->min(1);
+            }
+            if (in_array($this->resource(), ['specification', 'reference'], true)) {
+                $fields['knowledge_item_id'] = $schema->integer()->min(1);
+            }
+            if ($this->resource() === 'reference') {
+                $fields['knowledge_document_id'] = $schema->integer()->min(1);
             }
         }
 
@@ -59,6 +71,20 @@ abstract class KnowledgeCatalogTool extends KnowledgeResourceTool
                     'identifier' => $schema->string()->max(255)->nullable(),
                     'status' => $required ? $schema->string()->min(1)->max(255)->required() : $schema->string()->min(1)->max(255),
                     'content' => $required ? $schema->string()->min(1)->required() : $schema->string()->min(1),
+                    'metadata' => $schema->object()->nullable(),
+                ],
+                'specification' => [
+                    'knowledge_item_id' => $schema->integer()->min(1)->nullable(),
+                    'name' => $required ? $schema->string()->min(1)->max(255)->required() : $schema->string()->min(1)->max(255),
+                    'version' => $schema->string()->max(255)->nullable(),
+                    'content' => $required ? $schema->string()->min(1)->required() : $schema->string()->min(1),
+                ],
+                'reference' => [
+                    'knowledge_item_id' => $required ? $schema->integer()->min(1)->required() : $schema->integer()->min(1),
+                    'knowledge_document_id' => $schema->integer()->min(1)->nullable(),
+                    'type' => $required ? $schema->string()->min(1)->max(255)->required() : $schema->string()->min(1)->max(255),
+                    'label' => $schema->string()->max(255)->nullable(),
+                    'locator' => $schema->string()->max(255)->nullable(),
                     'metadata' => $schema->object()->nullable(),
                 ],
                 'context' => [
@@ -88,9 +114,21 @@ abstract class KnowledgeCatalogTool extends KnowledgeResourceTool
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
                 'page' => ['nullable', 'integer', 'min:1'],
             ];
-            $rules[$this->resource() === 'document' ? 'status' : 'type'] = ['nullable', 'string', 'max:100'];
+            if ($this->resource() === 'document') {
+                $rules['status'] = ['nullable', 'string', 'max:100'];
+            } elseif ($this->resource() === 'specification') {
+                $rules['version'] = ['nullable', 'string', 'max:255'];
+            } else {
+                $rules['type'] = ['nullable', 'string', 'max:100'];
+            }
             if ($this->resource() === 'document') {
                 $rules['knowledge_source_id'] = ['nullable', 'integer', 'min:1'];
+            }
+            if (in_array($this->resource(), ['specification', 'reference'], true)) {
+                $rules['knowledge_item_id'] = ['nullable', 'integer', 'min:1'];
+            }
+            if ($this->resource() === 'reference') {
+                $rules['knowledge_document_id'] = ['nullable', 'integer', 'min:1'];
             }
         }
 
@@ -117,6 +155,20 @@ abstract class KnowledgeCatalogTool extends KnowledgeResourceTool
                     'identifier' => ['sometimes', 'nullable', 'string', 'max:255'],
                     'status' => [$required, 'string', 'min:1', 'max:255'],
                     'content' => [$required, 'string', 'min:1'],
+                    'metadata' => ['sometimes', 'nullable', 'array'],
+                ],
+                'specification' => [
+                    'knowledge_item_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+                    'name' => [$required, 'string', 'min:1', 'max:255'],
+                    'version' => ['sometimes', 'nullable', 'string', 'max:255'],
+                    'content' => [$required, 'string', 'min:1'],
+                ],
+                'reference' => [
+                    'knowledge_item_id' => [$required, 'integer', 'min:1'],
+                    'knowledge_document_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+                    'type' => [$required, 'string', 'min:1', 'max:255'],
+                    'label' => ['sometimes', 'nullable', 'string', 'max:255'],
+                    'locator' => ['sometimes', 'nullable', 'string', 'max:255'],
                     'metadata' => ['sometimes', 'nullable', 'array'],
                 ],
                 'context' => [

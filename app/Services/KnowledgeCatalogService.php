@@ -5,7 +5,10 @@ namespace App\Services;
 use App\Models\Enterprise;
 use App\Models\KnowledgeContext;
 use App\Models\KnowledgeDocument;
+use App\Models\KnowledgeItem;
+use App\Models\KnowledgeReference;
 use App\Models\KnowledgeSource;
+use App\Models\KnowledgeSpecification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +21,8 @@ final class KnowledgeCatalogService
         'source' => [KnowledgeSource::class, KnowledgeSource::class, ['name', 'type', 'description', 'uri', 'metadata'], ['name', 'description']],
         'document' => [KnowledgeDocument::class, KnowledgeDocument::class, ['knowledge_source_id', 'title', 'identifier', 'status', 'content', 'metadata'], ['title', 'identifier', 'content']],
         'context' => [KnowledgeContext::class, KnowledgeContext::class, ['name', 'type', 'description', 'data'], ['name', 'description']],
+        'specification' => [KnowledgeSpecification::class, KnowledgeSpecification::class, ['knowledge_item_id', 'name', 'version', 'content'], ['name', 'content']],
+        'reference' => [KnowledgeReference::class, KnowledgeReference::class, ['knowledge_item_id', 'knowledge_document_id', 'type', 'label', 'locator', 'metadata'], ['label', 'locator']],
     ];
 
     /**
@@ -57,10 +62,15 @@ final class KnowledgeCatalogService
             'source' => ['documents', 'items'],
             'document' => ['items', 'references'],
             'context' => ['items'],
+            'specification', 'reference' => [],
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         })->where('enterprise_id', $enterprise->getKey());
         if ($resource === 'document') {
             $query->with('source:id,name,type');
+        } elseif ($resource === 'specification') {
+            $query->with('item:id,title');
+        } elseif ($resource === 'reference') {
+            $query->with(['item:id,title', 'document:id,title']);
         }
         $this->applyFilters($query, $resource, $filters);
         $page = $query->orderByDesc('updated_at')->orderByDesc('id')->paginate(
@@ -120,6 +130,20 @@ final class KnowledgeCatalogService
                 throw ValidationException::withMessages(['knowledge_source_id' => 'The selected Knowledge Source does not belong to the requested Enterprise.']);
             }
         }
+
+        if (in_array($resource, ['specification', 'reference'], true) && array_key_exists('knowledge_item_id', $attributes) && $attributes['knowledge_item_id'] !== null) {
+            $item = KnowledgeItem::query()->where('enterprise_id', $enterprise->getKey())->find($attributes['knowledge_item_id']);
+            if ($item === null) {
+                throw ValidationException::withMessages(['knowledge_item_id' => 'The selected Knowledge Item does not belong to the requested Enterprise.']);
+            }
+        }
+
+        if ($resource === 'reference' && array_key_exists('knowledge_document_id', $attributes) && $attributes['knowledge_document_id'] !== null) {
+            $document = KnowledgeDocument::query()->where('enterprise_id', $enterprise->getKey())->find($attributes['knowledge_document_id']);
+            if ($document === null) {
+                throw ValidationException::withMessages(['knowledge_document_id' => 'The selected Knowledge Document does not belong to the requested Enterprise.']);
+            }
+        }
     }
 
     /**
@@ -135,6 +159,8 @@ final class KnowledgeCatalogService
                     'source' => ['name', 'description'],
                     'document' => ['title', 'identifier', 'content'],
                     'context' => ['name', 'description'],
+                    'specification' => ['name', 'content'],
+                    'reference' => ['label', 'locator'],
                     default => throw new \LogicException('Unsupported Knowledge resource.'),
                 };
 
@@ -150,15 +176,22 @@ final class KnowledgeCatalogService
         }
 
         $filterColumn = match ($resource) {
-            'source', 'context' => 'type',
+            'source', 'context', 'reference' => 'type',
             'document' => 'status',
+            'specification' => 'version',
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
-        if (isset($filters[$filterColumn]) && $filters[$filterColumn] !== '') {
+        if ($filterColumn !== null && isset($filters[$filterColumn]) && $filters[$filterColumn] !== '') {
             $query->where($filterColumn, $filters[$filterColumn]);
         }
         if ($resource === 'document' && isset($filters['knowledge_source_id'])) {
             $query->where('knowledge_source_id', $filters['knowledge_source_id']);
+        }
+        if (in_array($resource, ['specification', 'reference'], true) && isset($filters['knowledge_item_id'])) {
+            $query->where('knowledge_item_id', $filters['knowledge_item_id']);
+        }
+        if ($resource === 'reference' && isset($filters['knowledge_document_id'])) {
+            $query->where('knowledge_document_id', $filters['knowledge_document_id']);
         }
     }
 
@@ -169,9 +202,10 @@ final class KnowledgeCatalogService
             'source' => [['documents_count', 'items_count'], ['documents', 'items']],
             'document' => [['items_count', 'references_count'], ['items', 'references']],
             'context' => [['items_count'], ['items']],
+            'specification', 'reference' => [[], []],
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
-        if (array_any($countAttributes, fn (string $column): bool => array_key_exists($column, $record->getAttributes())) === false) {
+        if ($countAttributes !== [] && array_any($countAttributes, fn (string $column): bool => array_key_exists($column, $record->getAttributes())) === false) {
             $record->loadCount($relations);
         }
 
@@ -181,6 +215,14 @@ final class KnowledgeCatalogService
         }
         $data['id'] = $record->getKey();
         $data['enterprise_id'] = $record->getAttribute('enterprise_id');
+        if ($resource === 'specification') {
+            $record->loadMissing('item:id,title');
+            $data['item'] = $record->item ? ['id' => $record->item->getKey(), 'title' => $record->item->title] : null;
+        } elseif ($resource === 'reference') {
+            $record->loadMissing(['item:id,title', 'document:id,title']);
+            $data['item'] = $record->item ? ['id' => $record->item->getKey(), 'title' => $record->item->title] : null;
+            $data['document'] = $record->document ? ['id' => $record->document->getKey(), 'title' => $record->document->title] : null;
+        }
         if ($resource === 'document' && $record instanceof KnowledgeDocument) {
             $record->loadMissing('source:id,name,type');
             $data['source'] = $record->source ? ['id' => $record->source->getKey(), 'name' => $record->source->name, 'type' => $record->source->type] : null;

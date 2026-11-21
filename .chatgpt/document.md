@@ -178,14 +178,14 @@ Use the live MCP tool names and schemas. In the current implementation, tool nam
 
 **Known model-level gaps**
 
-The current MCP surface still does not provide dedicated authoring operations for Knowledge Specifications, References, or Embeddings. There is no standalone KnowledgeVersion authoring operation and no dedicated KnowledgeEmbedding creation operation. KnowledgeVersion creation is handled by the authoritative Knowledge Item lifecycle when content/version data is created or updated.
+Knowledge Specifications and Knowledge References are now exposed through dedicated governed create/get/list/update capabilities. Their MCP operations are Enterprise-scoped and validate related Knowledge Item and Knowledge Document ownership. There is still no standalone KnowledgeVersion authoring operation and no dedicated KnowledgeEmbedding creation operation. KnowledgeVersion creation is handled by the authoritative Knowledge Item lifecycle when content/version data is created or updated.
 
 Therefore:
 
 - Do not invent tool names or call nonexistent operations.
 - Do not use a different domain's operation as a substitute.
 - Create Knowledge Sources, Documents, and Contexts through their dedicated authorized operations when the capture requires them.
-- Do not claim a Reference, Specification, or Embedding was created unless an authorized operation actually did so and returned evidence.
+- Do not claim a Reference, Specification, or Embedding was created unless an authorized operation actually did so and returned evidence. Knowledge Specifications and Knowledge References must be persisted through their dedicated MCP operations when relevant; never use Filament or direct database access as a workaround.
 - Do not create a Knowledge Item and describe it as a Knowledge Document.
 - If a required model-level record cannot be created through MCP, include it in the final **MCP capability gaps** section. Do not switch to Filament, direct database access, SQL, or application internals.
 
@@ -428,31 +428,73 @@ When updating existing knowledge:
 
 Do not manually create KnowledgeVersion records. Do not create a duplicate Knowledge Item as a substitute for version history. If a future MCP contract changes, follow the live schema and lifecycle behavior rather than this baseline.
 
-### 4.6 KnowledgeSpecification — formal, versioned specification
+### 4.6 KnowledgeSpecification — formal requirements and constraints
 
-Purpose: store a genuinely formal specification associated with a Knowledge Item.
+Purpose: store a formal specification associated with an Enterprise and, optionally, a Knowledge Item.
 
-Create one only when the conversation produced a concrete specification with requirements, constraints, acceptance criteria, protocol, policy, or another defined contract.
+The current model contract is:
+- `enterprise_id` — required Enterprise ownership/scope;
+- `knowledge_item_id` — nullable relationship to the Knowledge Item that the specification qualifies or constrains;
+- `name` — required specification name;
+- `version` — nullable version label stored as a string;
+- `content` — required specification body.
 
-Do not create a Specification merely because the conversation contains conclusions, advice, or a list of ideas. A normal insight remains a Knowledge Item.
+The model belongs to an Enterprise and optionally belongs to a Knowledge Item. The Knowledge Item exposes a `specifications` relationship. The database permits a specification without a linked Knowledge Item, so do not invent a mandatory item association when the domain context does not establish one.
 
-Use an authorized MCP operation if one exists. Otherwise report the specification as a capture artifact that could not be persisted as a Specification through MCP.
+Create a specification conceptually only when the conversation establishes a concrete contract, requirements set, policy, protocol, acceptance criteria, or explicit constraints. Examples include:
+- mandatory product or workflow requirements;
+- measurable acceptance criteria;
+- operational rules and limits;
+- interface, data, or integration contracts;
+- compliance or quality requirements.
 
-### 4.7 KnowledgeReference — explicit provenance links
+Do not create a Specification merely because the conversation contains conclusions, advice, a list of ideas, or ordinary facts. Those remain Knowledge Items unless they form a genuine specification.
 
-Purpose: link a Knowledge Item to its supporting Knowledge Document or other source and identify the relevant passage.
+**Versioning limitation:** the `version` column is a nullable string attribute, not an implemented revision-history mechanism. The inspected model has no specification-version relationship or immutable revision lifecycle. Do not describe KnowledgeSpecification as independently versioned or assume that changing its `version` value preserves prior content. If the specification changes, preserve the previous revision in the capture synthesis/provenance where useful and report the absence of a formal revision lifecycle as a model limitation.
 
-For each atom, preserve the best available locator:
-- message ID;
-- timestamp;
-- section heading;
-- quoted phrase kept short;
-- document section/page;
-- external source identifier.
+**MCP operations:** use the dedicated governed operations:
+- `create-knowledge-specification`;
+- `get-knowledge-specification`;
+- `list-knowledge-specifications`;
+- `update-knowledge-specification`.
 
-A reference should allow a future reader or agent to understand where the claim came from and inspect the original evidence.
+These map to `knowledge.specification.create|get|list|update` capabilities and their corresponding Operations. All calls require `enterprise_id`; get/update also require `knowledge_specification_id`. List supports bounded pagination, optional `knowledge_item_id`, text search, and `version` filtering. Create requires `name` and `content`; `knowledge_item_id` and `version` are optional. Update changes only supplied fields and requires at least one mutable field.
 
-Create KnowledgeReferences only through an authorized operation. If unavailable, preserve provenance in `context_snapshot` and/or `content`. Do not claim a formal KnowledgeReference relationship exists.
+Use the live tool schemas. The generic catalog service enforces Enterprise policy and validates that a linked Knowledge Item belongs to the same Enterprise. The specification's nullable `knowledge_item_id` is intentional.
+
+### 4.7 KnowledgeReference — evidence and provenance link
+
+Purpose: create an explicit link from a Knowledge Item to a supporting Knowledge Document and identify the relevant source location.
+
+The current model contract is:
+- `enterprise_id` — required Enterprise ownership/scope;
+- `knowledge_item_id` — required Knowledge Item relationship;
+- `knowledge_document_id` — nullable relationship to a Knowledge Document;
+- `type` — required reference classification, defaulting to `source`;
+- `label` — nullable human-readable label;
+- `locator` — nullable location within the source/document, such as a section, page, heading, timestamp, or message locator;
+- `metadata` — nullable structured metadata, cast to an array.
+
+The model belongs to an Enterprise and a Knowledge Item, and optionally belongs to a Knowledge Document. Knowledge Items expose `references`; Knowledge Documents expose their references. A reference therefore records provenance/evidence for an item, rather than being the knowledge claim itself.
+
+For each captured atom, preserve the best available source locator in the capture synthesis and, where supported by the current item contract, its `context_snapshot`:
+- conversation message ID or timestamp, only when actually available;
+- section heading or short locator;
+- document page/section;
+- external source identifier or URL, only when actually supplied or verified;
+- a short evidence description explaining what the source supports.
+
+**Version relationship limitation:** the current KnowledgeReference schema links to a KnowledgeItem, not to a specific KnowledgeVersion. It therefore cannot formally assert that a reference supports one particular historical version. Do not imply version-specific provenance. When this distinction matters, preserve the version/evidence association explicitly in supported provenance content and report that the relational model does not currently enforce it.
+
+**MCP operations:** use the dedicated governed operations:
+- `create-knowledge-reference`;
+- `get-knowledge-reference`;
+- `list-knowledge-references`;
+- `update-knowledge-reference`.
+
+These map to `knowledge.reference.create|get|list|update` capabilities and their corresponding Operations. All calls require `enterprise_id`; get/update also require `knowledge_reference_id`. Create requires `knowledge_item_id` and `type`; `knowledge_document_id`, `label`, `locator`, and `metadata` are optional. List supports bounded pagination, optional item/document filters, text search, and type filtering. Update changes only supplied fields and requires at least one mutable field. The Knowledge Item relationship cannot be nulled because the database requires it.
+
+Use the live tool schemas. The generic catalog service enforces Enterprise policy and validates that both the linked Knowledge Item and optional Knowledge Document belong to the same Enterprise. References remain item-scoped, not version-scoped, as described above.
 
 ### 4.8 KnowledgeIndexRecord, KnowledgeIndexUnit, and KnowledgeEmbedding — derived retrieval infrastructure
 
@@ -607,8 +649,8 @@ Show the outcome for each relevant current model:
 | KnowledgeItem | Atomic durable knowledge | Created / reused / failed |
 | KnowledgeContext | Meaningful grouping, if applicable | Created / not needed / unavailable |
 | KnowledgeVersion | Item history | Created by create/update lifecycle / unverified |
-| KnowledgeSpecification | Formal specification, if applicable | Created / not applicable / unavailable |
-| KnowledgeReference | Source/document locator links | Created / provenance embedded in item / unavailable |
+| KnowledgeSpecification | Formal requirements/constraints, if applicable | Created / reused / unavailable / not applicable |
+| KnowledgeReference | Evidence link from item to optional document and locator | Created / reused / unavailable / not applicable |
 | KnowledgeIndexRecord | Derived index lifecycle | Ready / pending / failed / not required |
 | KnowledgeIndexUnit | Derived searchable chunks | Verified / pending / unavailable |
 | KnowledgeEmbedding | Derived vector representation | Verified / pending / unavailable |
