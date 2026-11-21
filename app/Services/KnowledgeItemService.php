@@ -18,7 +18,10 @@ final class KnowledgeItemService
 {
     public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle) {}
 
-    /** @param array<string, mixed> $attributes @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $attributes
+     * @return array<string, mixed>
+     */
     public function create(User $actor, Enterprise $enterprise, array $attributes): array
     {
         Gate::forUser($actor)->authorize('createForEnterprise', [KnowledgeItem::class, $enterprise]);
@@ -203,8 +206,7 @@ final class KnowledgeItemService
             $exists = match ($field) {
                 'knowledge_source_id' => KnowledgeSource::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
                 'knowledge_document_id' => KnowledgeDocument::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
-                'knowledge_context_id' => KnowledgeContext::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
-                default => false,
+                default => KnowledgeContext::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
             };
 
             if (! $exists) {
