@@ -201,7 +201,7 @@ final class KnowledgeItemService
     private function assertRelationships(Enterprise $enterprise, array $attributes): void
     {
         foreach (['knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id'] as $field) {
-            if (!array_key_exists($field, $attributes) || $attributes[$field] === null) {
+            if (! array_key_exists($field, $attributes) || $attributes[$field] === null) {
                 continue;
             }
 
