@@ -50,6 +50,7 @@ function registeredExpertRuntimes(): array
         'copywriting' => \App\Experts\CopywritingExpert::class,
         'marketing' => \App\Experts\MarketingExpert::class,
         'finance' => \App\Experts\FinanceExpert::class,
+        'knowledge' => \App\Experts\KnowledgeExpert::class,
         'product' => \App\Experts\ProductExpert::class,
         'seo' => \App\Experts\SeoExpert::class,
         'strategy' => \App\Experts\StrategyExpert::class,

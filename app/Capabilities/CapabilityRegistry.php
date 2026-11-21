@@ -21,8 +21,14 @@ use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
+use App\Mcp\Tools\GetKnowledgeIndexTool;
+use App\Mcp\Tools\GetKnowledgeItemTool;
+use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
+use App\Mcp\Tools\ListKnowledgeIndexesTool;
+use App\Mcp\Tools\ListKnowledgeItemsTool;
+use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListProductsTool;
 use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
@@ -38,6 +44,7 @@ use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
+use App\Mcp\Tools\UpdateKnowledgeItemTool;
 use App\Mcp\Tools\UpdateProductTool;
 use App\Mcp\Tools\UpdateStrategyTool;
 use App\Mcp\Tools\UpdateTaskTool;
@@ -70,8 +77,14 @@ use App\Operations\EnterpriseCreate;
 use App\Operations\ExecuteAgent;
 use App\Operations\GenerateCompetitiveAnalysisReport;
 use App\Operations\GenerateFinancialReport;
+use App\Operations\GetKnowledgeIndex;
+use App\Operations\GetKnowledgeItem;
+use App\Operations\GetKnowledgeUnit;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
+use App\Operations\ListKnowledgeIndexes;
+use App\Operations\ListKnowledgeItems;
+use App\Operations\ListKnowledgeUnits;
 use App\Operations\ListProducts;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingCampaignCreate;
@@ -105,6 +118,7 @@ use App\Operations\SubmitContentForReview;
 use App\Operations\TransitionAgentAssignment;
 use App\Operations\UpdateAgentAssignment;
 use App\Operations\UpdateContentItem;
+use App\Operations\UpdateKnowledgeItem;
 use App\Operations\UpdateProduct;
 use App\Operations\UpdateStrategy;
 use App\Operations\UpdateTask;
@@ -912,6 +926,46 @@ final class CapabilityRegistry
                 'none',
             ),
             $this->definition(
+                'knowledge.index.get',
+                GetKnowledgeIndex::class,
+                GetKnowledgeIndexTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_index_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'knowledge-index'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'knowledge.index.list',
+                ListKnowledgeIndexes::class,
+                ListKnowledgeIndexesTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|nullable', 'status' => 'string|nullable', 'search' => 'string|nullable', 'per_page' => 'integer|nullable', 'page' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-index-page'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'knowledge.unit.get',
+                GetKnowledgeUnit::class,
+                GetKnowledgeUnitTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_unit_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'knowledge-unit'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'knowledge.unit.list',
+                ListKnowledgeUnits::class,
+                ListKnowledgeUnitsTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_index_id' => 'integer|nullable', 'knowledge_item_id' => 'integer|nullable', 'per_page' => 'integer|nullable', 'page' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-unit-page'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
                 'knowledge.unit.archive',
                 \App\Operations\ArchiveKnowledgeUnit::class,
                 \App\Mcp\Tools\ArchiveKnowledgeUnitTool::class,
@@ -1040,6 +1094,35 @@ final class CapabilityRegistry
                 ['enterprise_id' => 'integer|required', 'title' => 'string|required', 'type' => 'string|nullable', 'summary' => 'string|nullable', 'content' => 'string|required', 'context_snapshot' => 'object|nullable', 'correlation_id' => 'string|nullable', 'idempotency_key' => 'string|nullable'],
                 ['success' => 'boolean', 'result' => 'object'],
                 'Enterprise policy + KnowledgeItem createForEnterprise authorization',
+                'none',
+            ),
+            $this->definition(
+                'knowledge.item.get',
+                GetKnowledgeItem::class,
+                GetKnowledgeItemTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'knowledge-item'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'knowledge.item.list',
+                ListKnowledgeItems::class,
+                ListKnowledgeItemsTool::class,
+                ['enterprise_id' => 'integer|required', 'search' => 'string|nullable', 'type' => 'string|nullable', 'per_page' => 'integer|nullable', 'page' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-item-page'],
+                'Enterprise policy + KnowledgeItem view authorization',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'knowledge.item.update',
+                UpdateKnowledgeItem::class,
+                UpdateKnowledgeItemTool::class,
+                ['enterprise_id' => 'integer|required', 'knowledge_item_id' => 'integer|required', 'title' => 'string|nullable', 'type' => 'string|nullable', 'summary' => 'string|nullable', 'content' => 'string|nullable', 'context_snapshot' => 'object|nullable'],
+                ['success' => 'boolean', 'result' => 'knowledge-item'],
+                'Enterprise policy + KnowledgeItem update authorization',
                 'none',
             ),
             $this->definition(

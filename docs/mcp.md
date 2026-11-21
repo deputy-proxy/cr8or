@@ -114,8 +114,9 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-expert-descriptor` | `GetExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `get-goal` | `GetGoalTool` | Unregistered read/discovery/resource | N/A |
 | `get-initiative` | `GetInitiativeTool` | Unregistered read/discovery/resource | N/A |
-| `get-knowledge-index` | `GetKnowledgeIndexTool` | Unregistered read/discovery/resource | N/A |
-| `get-knowledge-unit` | `GetKnowledgeUnitTool` | Unregistered read/discovery/resource | N/A |
+| `get-knowledge-index` | `GetKnowledgeIndexTool` | `knowledge.index.get` | `GetKnowledgeIndex` |
+| `get-knowledge-item` | `GetKnowledgeItemTool` | `knowledge.item.get` | `GetKnowledgeItem` |
+| `get-knowledge-unit` | `GetKnowledgeUnitTool` | `knowledge.unit.get` | `GetKnowledgeUnit` |
 | `get-kpi` | `GetKpiTool` | Unregistered read/discovery/resource | N/A |
 | `get-marketing-strategy` | `GetMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `get-memory` | `GetMemoryTool` | Unregistered read/discovery/resource | N/A |
@@ -127,6 +128,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-task` | `GetTaskTool` | Unregistered read/discovery/resource | N/A |
 | `get-workflow` | `GetWorkflowTool` | `workflow.get` | `GetWorkflow` |
 | `get-workflow-execution` | `GetWorkflowExecutionTool` | `workflow.inspect` | `InspectWorkflowExecution` |
+| `list-knowledge-items` | `ListKnowledgeItemsTool` | `knowledge.item.list` | `ListKnowledgeItems` |
 | `list-agent-assignments` | `ListAgentAssignmentsTool` | Unregistered read/discovery/resource | N/A |
 | `list-agent-delegations` | `ListAgentDelegationsTool` | Unregistered read/discovery/resource | N/A |
 | `list-agent-executions` | `ListExecutionTool` | Unregistered read/discovery/resource | N/A |
@@ -143,8 +145,8 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-experts` | `ListExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `list-goals` | `ListGoalTool` | Unregistered read/discovery/resource | N/A |
 | `list-initiatives` | `ListInitiativeTool` | Unregistered read/discovery/resource | N/A |
-| `list-knowledge-indexes` | `ListKnowledgeIndexesTool` | Unregistered read/discovery/resource | N/A |
-| `list-knowledge-units` | `ListKnowledgeUnitsTool` | Unregistered read/discovery/resource | N/A |
+| `list-knowledge-indexes` | `ListKnowledgeIndexesTool` | `knowledge.index.list` | `ListKnowledgeIndexes` |
+| `list-knowledge-units` | `ListKnowledgeUnitsTool` | `knowledge.unit.list` | `ListKnowledgeUnits` |
 | `list-kpis` | `ListKpiTool` | Unregistered read/discovery/resource | N/A |
 | `list-marketing-strategies` | `ListMarketingStrategyTool` | Unregistered read/discovery/resource | N/A |
 | `list-memories` | `ListMemoryTool` | Unregistered read/discovery/resource | N/A |
@@ -177,6 +179,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-persona` | `UpdatePersonaTool` | `marketing.persona.update` | `MarketingPersonaUpdate` |
 | `update-campaign` | `UpdateCampaignTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` |
 | `update-channel` | `UpdateChannelTool` | `marketing.channel.update` | `MarketingChannelUpdate` |
+| `update-knowledge-item` | `UpdateKnowledgeItemTool` | `knowledge.item.update` | `UpdateKnowledgeItem` |
 | `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
 | `update-content-series` | `UpdateContentSeriesTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` |
 | `update-enterprise-context` | `UpdateEnterpriseContextTool` | `enterprise.context.update` | `EnterpriseContextUpdate` |
@@ -367,6 +370,10 @@ Phase 12 adds a dedicated Knowledge resource surface while preserving the existi
 
 | Domain | Tool | Canonical Operation | Authority |
 | --- | --- | --- | --- |
+| Knowledge Item | create-knowledge-item | CreateKnowledgeItem | Creates authoritative Enterprise-scoped content and its initial immutable version |
+| Knowledge Item | get-knowledge-item | GetKnowledgeItem | Authorized item read with latest version and provenance relationships |
+| Knowledge Item | list-knowledge-items | ListKnowledgeItems | Authorized Enterprise-scoped, filtered, bounded metadata listing |
+| Knowledge Item | update-knowledge-item | UpdateKnowledgeItem | Updates item metadata and/or creates an immutable content/context version; invalidates derived indexes when required |
 | Knowledge index | create-knowledge-index | CreateKnowledgeIndex | Resource operation; rebuilds derived index state from authoritative Knowledge |
 | Knowledge index | get-knowledge-index | GetKnowledgeIndex | Authorized resource query |
 | Knowledge index | list-knowledge-indexes | ListKnowledgeIndexes | Authorized bounded resource query |
@@ -453,13 +460,13 @@ Delegation inspection is exposed through `get-agent-delegation` and `list-agent-
 
 ### Authoritative Knowledge creation
 
-`create-knowledge-item` is the canonical MCP resource operation for creating an Enterprise-scoped authoritative Knowledge Item and its initial immutable Knowledge Version. It exists so a direct MCP client can construct the Knowledge branch before invoking the derived Knowledge Index/Unit lifecycle; indexing remains a derived representation and never becomes the authoritative content store.
+`create-knowledge-item` is the canonical MCP resource operation for creating an Enterprise-scoped authoritative Knowledge Item and its initial immutable Knowledge Version. `get-knowledge-item` returns the current item, latest version and provenance relationships. `list-knowledge-items` returns a bounded, filtered metadata listing without embedding full content; callers can use the get operation for complete details. `update-knowledge-item` changes item metadata and/or versioned content/context. Content or context-snapshot changes create a new immutable Knowledge Version; metadata-only changes do not fabricate a content version. Changes that affect indexed content or metadata invalidate derived indexes through the existing lifecycle. Indexing remains a derived representation and never becomes the authoritative content store.
 ## Enterprise Context Capability coverage
 
 Enterprise Context is available through both `enterprise.context.create` and `enterprise.context.retrieve`. The retrieval Capability resolves to `EnterpriseContextRetrieve`, which is also the application Operation consumed by the Enterprise Context MCP resource. The application contract returns the canonical Enterprise/Context representation used by downstream Agent and Expert composition; the MCP resource retains its existing transport response shape and does not expose persistence metadata.
 ## Knowledge Capability boundary
 
-The state-changing Knowledge MCP adapters `create-knowledge-item`, `create-knowledge-index`, and `create-knowledge-unit` resolve through the Capability Registry and `CapabilityInvocationService`. They do not execute Knowledge Operations directly. The application-native Knowledge lifecycle is therefore:
+Knowledge MCP tools resolve through the Capability Registry and `CapabilityInvocationService`; each public Knowledge tool maps to exactly one Capability and Operation. Knowledge Item updates create immutable content versions and invalidate derived index records when indexed content or metadata changes. Knowledge Items do not currently have an archive lifecycle, so no destructive archive tool is exposed. The application-native Knowledge lifecycle is therefore:
 
 **Capability → Operation → Knowledge service → Persistence / derived index**
 
