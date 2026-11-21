@@ -20,7 +20,10 @@ final class KnowledgeCatalogService
         'context' => [KnowledgeContext::class, KnowledgeContext::class, ['name', 'type', 'description', 'data'], ['name', 'description']],
     ];
 
-    /** @param array<string, mixed> $input @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function create(User $actor, Enterprise $enterprise, string $resource, array $input): array
     {
         [$model, $policy] = $this->config($resource);
@@ -67,7 +70,10 @@ final class KnowledgeCatalogService
         ];
     }
 
-    /** @param array<string, mixed> $input @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function update(User $actor, Enterprise $enterprise, string $resource, int $id, array $input): array
     {
         [$model] = $this->config($resource);
@@ -89,7 +95,10 @@ final class KnowledgeCatalogService
         return self::CONFIG[$resource] ?? throw ValidationException::withMessages(['resource' => 'Unsupported Knowledge resource.']);
     }
 
-    /** @param array<string, mixed> $input @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     private function attributes(string $resource, array $input): array
     {
         $allowed = $this->config($resource)[2];
@@ -110,7 +119,10 @@ final class KnowledgeCatalogService
         }
     }
 
-    /** @param Builder<Model> $query @param array<string, mixed> $filters */
+    /**
+     * @param Builder<Model> $query
+     * @param array<string, mixed> $filters
+     */
     private function applyFilters(Builder $query, string $resource, array $filters): void
     {
         if (isset($filters['search']) && trim((string) $filters['search']) !== '') {
