@@ -16,9 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 final class KnowledgeItemService
 {
-    public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle)
-    {
-    }
+    public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle) {}
 
     /**
      * @param array<string, mixed> $attributes
@@ -85,7 +83,7 @@ final class KnowledgeItemService
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param array<string, mixed> $attributes
      * @return array<string, mixed>
      */
     public function update(User $actor, Enterprise $enterprise, KnowledgeItem $item, array $attributes): array
@@ -197,7 +195,9 @@ final class KnowledgeItemService
         return $data;
     }
 
-    /** @param array<string, mixed> $attributes */
+    /**
+     * @param array<string, mixed> $attributes
+     */
     private function assertRelationships(Enterprise $enterprise, array $attributes): void
     {
         foreach (['knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id'] as $field) {
