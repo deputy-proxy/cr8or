@@ -109,7 +109,7 @@ final class KnowledgeCatalogService
     /** @param array<string, mixed> $attributes */
     private function assertRelationships(Enterprise $enterprise, string $resource, array $attributes): void
     {
-        if ($resource !== 'document' || !isset($attributes['knowledge_source_id'])) {
+        if ($resource !== 'document' || ! isset($attributes['knowledge_source_id'])) {
             return;
         }
 
@@ -175,7 +175,7 @@ final class KnowledgeCatalogService
             'context' => ['items_count'],
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
-        if (array_any($countAttributes, fn (string $column): bool => !array_key_exists($column, $record->getAttributes()))) {
+        if (array_any($countAttributes, fn (string $column): bool => ! array_key_exists($column, $record->getAttributes()))) {
             $relations = match ($resource) {
                 'source' => ['documents', 'items'],
                 'document' => ['items', 'references'],
