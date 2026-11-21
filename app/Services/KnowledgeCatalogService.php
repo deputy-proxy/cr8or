@@ -109,7 +109,7 @@ final class KnowledgeCatalogService
     /** @param array<string, mixed> $attributes */
     private function assertRelationships(Enterprise $enterprise, string $resource, array $attributes): void
     {
-        if ($resource !== 'document' || !isset($attributes['knowledge_source_id'])) {
+        if ($resource !== 'document' || ! isset($attributes['knowledge_source_id'])) {
             return;
         }
 
