@@ -16,7 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 final class KnowledgeItemService
 {
-    public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle) {}
+    public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle)
+    {
+    }
 
     /**
      * @param array<string, mixed> $attributes
@@ -95,7 +97,7 @@ final class KnowledgeItemService
         $this->assertRelationships($enterprise, $attributes);
         $hasVersionData = array_key_exists('content', $attributes) || array_key_exists('context_snapshot', $attributes);
 
-        if ($mutable === [] && ! $hasVersionData) {
+        if ($mutable === [] && !$hasVersionData) {
             throw ValidationException::withMessages(['knowledge_item_id' => 'At least one mutable Knowledge Item field must be supplied.']);
         }
 
@@ -199,7 +201,7 @@ final class KnowledgeItemService
     private function assertRelationships(Enterprise $enterprise, array $attributes): void
     {
         foreach (['knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id'] as $field) {
-            if (! array_key_exists($field, $attributes) || $attributes[$field] === null) {
+            if (!array_key_exists($field, $attributes) || $attributes[$field] === null) {
                 continue;
             }
 
@@ -209,7 +211,7 @@ final class KnowledgeItemService
                 default => KnowledgeContext::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
             };
 
-            if (! $exists) {
+            if (!$exists) {
                 throw ValidationException::withMessages([$field => 'The selected Knowledge relationship must belong to the requested Enterprise.']);
             }
         }
