@@ -193,6 +193,18 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-task` | `UpdateTaskTool` | `work.task.update` | `UpdateTask` |
 | `update-workflow` | `UpdateWorkflowTool` | `workflow.update` | `UpdateWorkflow` |
 | `verify-marketing-graph` | `VerifyMarketingGraphTool` | `marketing.graph.verify` | `VerifyMarketingGraph` |
+| `create-knowledge-context` | `CreateKnowledgeContextTool` | `knowledge.context.create` | `CreateKnowledgeContext` |
+| `create-knowledge-document` | `CreateKnowledgeDocumentTool` | `knowledge.document.create` | `CreateKnowledgeDocument` |
+| `create-knowledge-source` | `CreateKnowledgeSourceTool` | `knowledge.source.create` | `CreateKnowledgeSource` |
+| `get-knowledge-context` | `GetKnowledgeContextTool` | `knowledge.context.get` | `GetKnowledgeContext` |
+| `get-knowledge-document` | `GetKnowledgeDocumentTool` | `knowledge.document.get` | `GetKnowledgeDocument` |
+| `get-knowledge-source` | `GetKnowledgeSourceTool` | `knowledge.source.get` | `GetKnowledgeSource` |
+| `list-knowledge-contexts` | `ListKnowledgeContextsTool` | `knowledge.context.list` | `ListKnowledgeContexts` |
+| `list-knowledge-documents` | `ListKnowledgeDocumentsTool` | `knowledge.document.list` | `ListKnowledgeDocuments` |
+| `list-knowledge-sources` | `ListKnowledgeSourcesTool` | `knowledge.source.list` | `ListKnowledgeSources` |
+| `update-knowledge-context` | `UpdateKnowledgeContextTool` | `knowledge.context.update` | `UpdateKnowledgeContext` |
+| `update-knowledge-document` | `UpdateKnowledgeDocumentTool` | `knowledge.document.update` | `UpdateKnowledgeDocument` |
+| `update-knowledge-source` | `UpdateKnowledgeSourceTool` | `knowledge.source.update` | `UpdateKnowledgeSource` |
 
 Social-account creation and provider authorization are intentionally not generic MCP CRUD. OAuth initiation, callback validation, destination discovery/attachment, and provider revocation remain in the authenticated web lifecycle backed by `SocialAuthorizationService`. `disable-social-account` only disables a destination inside CR8OR; it does not claim to revoke the provider grant. Generic integration-connection creation is not exposed to Agents.
 
