@@ -139,14 +139,7 @@ final class KnowledgeCatalogService
                 };
 
                 foreach ($columns as $index => $column) {
-                    $sql = match ($column) {
-                        'name' => 'LOWER(name) LIKE ?',
-                        'description' => 'LOWER(description) LIKE ?',
-                        'title' => 'LOWER(title) LIKE ?',
-                        'identifier' => 'LOWER(identifier) LIKE ?',
-                        'content' => 'LOWER(content) LIKE ?',
-                        default => throw new \LogicException('Unsupported Knowledge search column.'),
-                    };
+                    $sql = 'LOWER('.$column.') LIKE ?';
                     if ($index === 0) {
                         $nested->whereRaw($sql, [$term]);
                     } else {
@@ -172,19 +165,13 @@ final class KnowledgeCatalogService
     /** @return array<string, mixed> */
     private function serialize(Model $record, string $resource, bool $includeDetails = true): array
     {
-        $countAttributes = match ($resource) {
-            'source' => ['documents_count', 'items_count'],
-            'document' => ['items_count', 'references_count'],
-            'context' => ['items_count'],
+        [$countAttributes, $relations] = match ($resource) {
+            'source' => [['documents_count', 'items_count'], ['documents', 'items']],
+            'document' => [['items_count', 'references_count'], ['items', 'references']],
+            'context' => [['items_count'], ['items']],
             default => throw new \LogicException('Unsupported Knowledge resource.'),
         };
         if (array_any($countAttributes, fn (string $column): bool => array_key_exists($column, $record->getAttributes())) === false) {
-            $relations = match ($resource) {
-                'source' => ['documents', 'items'],
-                'document' => ['items', 'references'],
-                'context' => ['items'],
-                default => throw new \LogicException('Unsupported Knowledge resource.'),
-            };
             $record->loadCount($relations);
         }
 
