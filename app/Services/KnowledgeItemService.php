@@ -24,7 +24,7 @@ final class KnowledgeItemService
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param   array<string, mixed>  $attributes  
      * @return array<string, mixed>
      */
     public function create(User $actor, Enterprise $enterprise, array $attributes): array
@@ -88,7 +88,7 @@ final class KnowledgeItemService
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param   array<string, mixed>  $attributes  
      * @return array<string, mixed>
      */
     public function update(User $actor, Enterprise $enterprise, KnowledgeItem $item, array $attributes): array
@@ -201,7 +201,7 @@ final class KnowledgeItemService
     }
 
     /**
-     * @param  array<string, mixed>  $attributes
+     * @param   array<string, mixed>  $attributes  
      */
     private function assertRelationships(Enterprise $enterprise, array $attributes): void
     {
