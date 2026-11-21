@@ -166,11 +166,6 @@ jobs:
           php artisan key:generate
           php -r "(file_exists('storage/oauth-private.key') && file_exists('storage/oauth-public.key')) ? print('Passport keys already exist.'.PHP_EOL) : passthru('php artisan passport:keys');"
 
-      - name: Diagnose Pint formatting
-        run: |
-          vendor/bin/pint app/Services/KnowledgeCatalogService.php app/Services/KnowledgeItemService.php
-          git diff -- app/Services/KnowledgeCatalogService.php app/Services/KnowledgeItemService.php
-
       - name: Verify MySQL planning migrations
         env:
           DB_CONNECTION: mysql
