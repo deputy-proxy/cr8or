@@ -26,6 +26,18 @@ use App\Mcp\Tools\CreateContentItemTool;
 use App\Mcp\Tools\CreateContentSeriesTool;
 use App\Mcp\Tools\CreateEnterpriseContextTool;
 use App\Mcp\Tools\CreateEnterpriseTool;
+use App\Mcp\Tools\CreateKnowledgeSourceTool;
+use App\Mcp\Tools\GetKnowledgeSourceTool;
+use App\Mcp\Tools\ListKnowledgeSourcesTool;
+use App\Mcp\Tools\UpdateKnowledgeSourceTool;
+use App\Mcp\Tools\CreateKnowledgeDocumentTool;
+use App\Mcp\Tools\GetKnowledgeDocumentTool;
+use App\Mcp\Tools\ListKnowledgeDocumentsTool;
+use App\Mcp\Tools\UpdateKnowledgeDocumentTool;
+use App\Mcp\Tools\CreateKnowledgeContextTool;
+use App\Mcp\Tools\GetKnowledgeContextTool;
+use App\Mcp\Tools\ListKnowledgeContextsTool;
+use App\Mcp\Tools\UpdateKnowledgeContextTool;
 use App\Mcp\Tools\CreateKnowledgeIndexTool;
 use App\Mcp\Tools\CreateKnowledgeItemTool;
 use App\Mcp\Tools\CreateKnowledgeUnitTool;
@@ -218,6 +230,18 @@ class Cr8orServer extends Server
 
         UpdateAgentAssignmentTool::class,
         TransitionAgentAssignmentTool::class,
+        CreateKnowledgeSourceTool::class,
+        GetKnowledgeSourceTool::class,
+        ListKnowledgeSourcesTool::class,
+        UpdateKnowledgeSourceTool::class,
+        CreateKnowledgeDocumentTool::class,
+        GetKnowledgeDocumentTool::class,
+        ListKnowledgeDocumentsTool::class,
+        UpdateKnowledgeDocumentTool::class,
+        CreateKnowledgeContextTool::class,
+        GetKnowledgeContextTool::class,
+        ListKnowledgeContextsTool::class,
+        UpdateKnowledgeContextTool::class,
         CreateKnowledgeItemTool::class,
         UpdateKnowledgeItemTool::class,
         CreateKnowledgeIndexTool::class,

@@ -19,17 +19,31 @@ abstract class KnowledgeResourceTool extends AuthorizedTool implements \App\Cont
     /** @param array<string, mixed> $input */
     protected function executeOperation(Request $request, array $input): Response|ResponseFactory
     {
-        return $this->executeWithErrors($request, 'mcp.knowledge.resource', function () use ($request, $input) {
-            $actor = $request->user();
+        return $this->executeWithErrors($request, 'mcp.knowledge.resource', fn () => $this->executeInput($request, $input));
+    }
 
-            if (! $actor instanceof User) {
-                throw new AuthenticationException;
-            }
+    /** @param array<string, mixed> $rules */
+    protected function executeValidatedOperation(Request $request, array $rules): Response|ResponseFactory
+    {
+        return $this->executeWithErrors(
+            $request,
+            'mcp.knowledge.resource',
+            fn () => $this->executeInput($request, $request->validate($rules)),
+        );
+    }
 
-            $result = $this->executeGovernedWhenMapped($actor, $input);
+    /** @param array<string, mixed> $input */
+    private function executeInput(Request $request, array $input): Response
+    {
+        $actor = $request->user();
 
-            return Response::structured(['success' => true, 'result' => $result]);
-        });
+        if (! $actor instanceof User) {
+            throw new AuthenticationException;
+        }
+
+        $result = $this->executeGovernedWhenMapped($actor, $input);
+
+        return Response::structured(['success' => true, 'result' => $result]);
     }
 
     /** @param array<string, mixed> $input */

@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\Enterprise;
+use App\Models\KnowledgeContext;
+use App\Models\KnowledgeDocument;
 use App\Models\KnowledgeItem;
+use App\Models\KnowledgeSource;
 use App\Models\KnowledgeVersion;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,6 +17,37 @@ use Illuminate\Validation\ValidationException;
 final class KnowledgeItemService
 {
     public function __construct(private readonly KnowledgeIndexLifecycleService $indexLifecycle) {}
+
+    /** @param array<string, mixed> $attributes @return array<string, mixed> */
+    public function create(User $actor, Enterprise $enterprise, array $attributes): array
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [KnowledgeItem::class, $enterprise]);
+        $this->assertRelationships($enterprise, $attributes);
+
+        return DB::transaction(function () use ($enterprise, $attributes): array {
+            $item = KnowledgeItem::query()->create([
+                'enterprise_id' => $enterprise->getKey(),
+                'knowledge_source_id' => $attributes['knowledge_source_id'] ?? null,
+                'knowledge_document_id' => $attributes['knowledge_document_id'] ?? null,
+                'knowledge_context_id' => $attributes['knowledge_context_id'] ?? null,
+                'title' => $attributes['title'],
+                'type' => $attributes['type'] ?? 'fact',
+                'summary' => $attributes['summary'] ?? null,
+            ]);
+            $item->versions()->create([
+                'enterprise_id' => $enterprise->getKey(),
+                'content' => $attributes['content'],
+                'context_snapshot' => $attributes['context_snapshot'] ?? null,
+            ]);
+
+            $result = $this->serialize($item->refresh()->load(['source', 'document', 'context', 'latestVersion', 'references', 'specifications']));
+            if (isset($result['version'])) {
+                $result['version']['content'] = $result['content'] ?? null;
+            }
+
+            return $result;
+        });
+    }
 
     /** @return array<string, mixed> */
     public function get(User $actor, Enterprise $enterprise, KnowledgeItem $item): array
@@ -54,7 +88,8 @@ final class KnowledgeItemService
         $this->assertEnterprise($enterprise, $item);
         Gate::forUser($actor)->authorize('update', $item);
 
-        $mutable = array_intersect_key($attributes, array_flip(['title', 'type', 'summary']));
+        $mutable = array_intersect_key($attributes, array_flip(['title', 'type', 'summary', 'knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id']));
+        $this->assertRelationships($enterprise, $attributes);
         $hasVersionData = array_key_exists('content', $attributes) || array_key_exists('context_snapshot', $attributes);
 
         if ($mutable === [] && ! $hasVersionData) {
@@ -155,6 +190,27 @@ final class KnowledgeItemService
         }
 
         return $data;
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function assertRelationships(Enterprise $enterprise, array $attributes): void
+    {
+        foreach (['knowledge_source_id', 'knowledge_document_id', 'knowledge_context_id'] as $field) {
+            if (! array_key_exists($field, $attributes) || $attributes[$field] === null) {
+                continue;
+            }
+
+            $exists = match ($field) {
+                'knowledge_source_id' => KnowledgeSource::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
+                'knowledge_document_id' => KnowledgeDocument::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
+                'knowledge_context_id' => KnowledgeContext::query()->where('enterprise_id', $enterprise->getKey())->whereKey($attributes[$field])->exists(),
+                default => false,
+            };
+
+            if (! $exists) {
+                throw ValidationException::withMessages([$field => 'The selected Knowledge relationship must belong to the requested Enterprise.']);
+            }
+        }
     }
 
     private function assertEnterprise(Enterprise $enterprise, KnowledgeItem $item): void
