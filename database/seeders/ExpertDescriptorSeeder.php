@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Experts\BusinessAnalysisExpert;
 use App\Experts\CopywritingExpert;
 use App\Experts\FinanceExpert;
+use App\Experts\KnowledgeExpert;
 use App\Experts\MarketingExpert;
 use App\Experts\OperationsExpert;
 use App\Experts\ProductExpert;
@@ -21,6 +22,7 @@ class ExpertDescriptorSeeder extends Seeder
             'business-analysis' => BusinessAnalysisExpert::class,
             'copywriting' => CopywritingExpert::class,
             'finance' => FinanceExpert::class,
+            'knowledge' => KnowledgeExpert::class,
             'marketing' => MarketingExpert::class,
             'operations' => OperationsExpert::class,
             'product' => ProductExpert::class,

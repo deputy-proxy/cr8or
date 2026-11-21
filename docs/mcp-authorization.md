@@ -28,7 +28,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | approve-content-item | `ApproveContentItemTool` | `GovernedCapabilityTool` | `marketing.content.approve` | `ApproveContentItem` | CapabilityInvocationService + workflow approval match + ContentItem policy/lifecycle |
 | archive-persona | `ArchivePersonaTool` | `DomainMutationTool` | `marketing.persona.archive` | `MarketingPersonaArchive` | human target policy + DomainResourceService policy |
 | archive-channel | `ArchiveChannelTool` | `DomainMutationTool` | `marketing.channel.archive` | `MarketingChannelArchive` | human target policy + DomainResourceService policy |
-| archive-knowledge-unit | `ArchiveKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` | Operation/domain service; governed when registry-mapped |
+| archive-knowledge-unit | `ArchiveKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.archive` | `ArchiveKnowledgeUnit` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
 | archive-marketing-strategy | `ArchiveMarketingStrategyTool` | `DomainMutationTool` | `marketing.strategy.archive` | `MarketingStrategyArchive` | human target policy + DomainResourceService policy |
 | archive-memory | `ArchiveMemoryTool` | `MemoryResourceTool` | `memory.archive` | `ArchiveMemory` | Operation/domain service; governed when registry-mapped |
 | cancel-agent-execution | `CancelAgentExecutionTool` | `AgentExecutionResourceTool` | — | `CancelAgentExecution` | AgentExecutionResourceService / runtime scope + policy |
@@ -79,8 +79,9 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | get-expert-descriptor | `GetExpertDescriptorTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\ExpertDescriptor` | organization-scoped lookup + `Gate::view` |
 | get-goal | `GetGoalTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Goal` | organization-scoped lookup + `Gate::view` |
 | get-initiative | `GetInitiativeTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Initiative` | organization-scoped lookup + `Gate::view` |
-| get-knowledge-index | `GetKnowledgeIndexTool` | `KnowledgeResourceTool` | — | `GetKnowledgeIndex` | Operation/domain service; governed when registry-mapped |
-| get-knowledge-unit | `GetKnowledgeUnitTool` | `KnowledgeResourceTool` | — | `GetKnowledgeUnit` | Operation/domain service; governed when registry-mapped |
+| get-knowledge-item | `GetKnowledgeItemTool` | `KnowledgeResourceTool` | `knowledge.item.get` | `GetKnowledgeItem` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
+| get-knowledge-index | `GetKnowledgeIndexTool` | `KnowledgeResourceTool` | `knowledge.index.get` | `GetKnowledgeIndex` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
+| get-knowledge-unit | `GetKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.get` | `GetKnowledgeUnit` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
 | get-kpi | `GetKpiTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Kpi` | organization-scoped lookup + `Gate::view` |
 | get-marketing-strategy | `GetMarketingStrategyTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\MarketingStrategy` | organization-scoped lookup + `Gate::view` |
 | get-memory | `GetMemoryTool` | `MemoryResourceTool` | — | `GetMemory` | Operation/domain service; governed when registry-mapped |
@@ -108,8 +109,9 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-experts | `ListExpertDescriptorTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ExpertDescriptor` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-goals | `ListGoalTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Goal` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-initiatives | `ListInitiativeTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Initiative` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-knowledge-indexes | `ListKnowledgeIndexesTool` | `KnowledgeResourceTool` | — | `ListKnowledgeIndexes` | Operation/domain service; governed when registry-mapped |
-| list-knowledge-units | `ListKnowledgeUnitsTool` | `KnowledgeResourceTool` | — | `ListKnowledgeUnits` | Operation/domain service; governed when registry-mapped |
+| list-knowledge-items | `ListKnowledgeItemsTool` | `KnowledgeResourceTool` | `knowledge.item.list` | `ListKnowledgeItems` | CapabilityInvocationService + Enterprise view policy |
+| list-knowledge-indexes | `ListKnowledgeIndexesTool` | `KnowledgeResourceTool` | `knowledge.index.list` | `ListKnowledgeIndexes` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
+| list-knowledge-units | `ListKnowledgeUnitsTool` | `KnowledgeResourceTool` | `knowledge.unit.list` | `ListKnowledgeUnits` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
 | list-kpis | `ListKpiTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Kpi` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-marketing-strategies | `ListMarketingStrategyTool` | `DiscoveryListTool` | — | scoped query: `App\Models\MarketingStrategy` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-memories | `ListMemoryTool` | `MemoryResourceTool` | — | `ListMemory` | Operation/domain service; governed when registry-mapped |
@@ -145,8 +147,9 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-content-item | `UpdateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.update` | `UpdateContentItem` | CapabilityInvocationService + operation/domain policy |
 | update-content-series | `UpdateContentSeriesTool` | `DomainMutationTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` | human target policy + DomainResourceService policy |
 | update-enterprise-context | `UpdateEnterpriseContextTool` | `DomainMutationTool` | `enterprise.context.update` | `EnterpriseContextUpdate` | human target policy + DomainResourceService policy |
-| update-knowledge-index | `UpdateKnowledgeIndexTool` | `KnowledgeResourceTool` | `knowledge.index.update` | `UpdateKnowledgeIndex` | Operation/domain service; governed when registry-mapped |
-| update-knowledge-unit | `UpdateKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.update` | `UpdateKnowledgeUnit` | Operation/domain service; governed when registry-mapped |
+| update-knowledge-item | `UpdateKnowledgeItemTool` | `KnowledgeResourceTool` | `knowledge.item.update` | `UpdateKnowledgeItem` | CapabilityInvocationService + Enterprise and KnowledgeItem update policies |
+| update-knowledge-index | `UpdateKnowledgeIndexTool` | `KnowledgeResourceTool` | `knowledge.index.update` | `UpdateKnowledgeIndex` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
+| update-knowledge-unit | `UpdateKnowledgeUnitTool` | `KnowledgeResourceTool` | `knowledge.unit.update` | `UpdateKnowledgeUnit` | CapabilityInvocationService + Enterprise and KnowledgeItem view policies |
 | update-memory | `UpdateMemoryTool` | `MemoryResourceTool` | `memory.update` | `UpdateMemory` | Operation/domain service; governed when registry-mapped |
 | update-objective | `UpdateObjectiveTool` | `DomainMutationTool` | `marketing.objective.update` | `ObjectiveUpdate` | human target policy + DomainResourceService policy |
 | update-project | `UpdateProjectTool` | `DomainMutationTool` | `marketing.project.update` | `ProjectUpdate` | human target policy + DomainResourceService policy |
