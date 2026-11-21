@@ -159,6 +159,18 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-task | `UpdateTaskTool` | `GovernedCapabilityTool` | `work.task.update` | `UpdateTask` | CapabilityInvocationService + operation/domain policy |
 | update-workflow | `UpdateWorkflowTool` | `GovernedCapabilityTool` | `workflow.update` | `UpdateWorkflow` | CapabilityInvocationService + operation/domain policy |
 | verify-marketing-graph | `VerifyMarketingGraphTool` | `GovernedCapabilityTool` | `marketing.graph.verify` | `VerifyMarketingGraph` | CapabilityInvocationService + operation/domain policy |
+| create-knowledge-context | `CreateKnowledgeContextTool` | `KnowledgeResourceTool` | `knowledge.context.create` | `CreateKnowledgeContext` | Enterprise policy + Knowledge catalog service and resource policy |
+| create-knowledge-document | `CreateKnowledgeDocumentTool` | `KnowledgeResourceTool` | `knowledge.document.create` | `CreateKnowledgeDocument` | Enterprise policy + Knowledge catalog service and resource policy |
+| create-knowledge-source | `CreateKnowledgeSourceTool` | `KnowledgeResourceTool` | `knowledge.source.create` | `CreateKnowledgeSource` | Enterprise policy + Knowledge catalog service and resource policy |
+| get-knowledge-context | `GetKnowledgeContextTool` | `KnowledgeResourceTool` | `knowledge.context.get` | `GetKnowledgeContext` | Enterprise policy + Knowledge catalog service and resource policy |
+| get-knowledge-document | `GetKnowledgeDocumentTool` | `KnowledgeResourceTool` | `knowledge.document.get` | `GetKnowledgeDocument` | Enterprise policy + Knowledge catalog service and resource policy |
+| get-knowledge-source | `GetKnowledgeSourceTool` | `KnowledgeResourceTool` | `knowledge.source.get` | `GetKnowledgeSource` | Enterprise policy + Knowledge catalog service and resource policy |
+| list-knowledge-contexts | `ListKnowledgeContextsTool` | `KnowledgeResourceTool` | `knowledge.context.list` | `ListKnowledgeContexts` | Enterprise policy + Knowledge catalog service and resource policy |
+| list-knowledge-documents | `ListKnowledgeDocumentsTool` | `KnowledgeResourceTool` | `knowledge.document.list` | `ListKnowledgeDocuments` | Enterprise policy + Knowledge catalog service and resource policy |
+| list-knowledge-sources | `ListKnowledgeSourcesTool` | `KnowledgeResourceTool` | `knowledge.source.list` | `ListKnowledgeSources` | Enterprise policy + Knowledge catalog service and resource policy |
+| update-knowledge-context | `UpdateKnowledgeContextTool` | `KnowledgeResourceTool` | `knowledge.context.update` | `UpdateKnowledgeContext` | Enterprise policy + Knowledge catalog service and resource policy |
+| update-knowledge-document | `UpdateKnowledgeDocumentTool` | `KnowledgeResourceTool` | `knowledge.document.update` | `UpdateKnowledgeDocument` | Enterprise policy + Knowledge catalog service and resource policy |
+| update-knowledge-source | `UpdateKnowledgeSourceTool` | `KnowledgeResourceTool` | `knowledge.source.update` | `UpdateKnowledgeSource` | Enterprise policy + Knowledge catalog service and resource policy |
 
 Social authorization is intentionally a user-consented web lifecycle: OAuth initiation, callback validation, provider account discovery/attachment, refresh and revocation are handled by `SocialAuthorizationService`, not by generic MCP connection/account CRUD. The MCP `disable-social-account` action disables only the CR8OR destination. Publication list/get/result tools are enterprise-scoped and omit provider payloads and credential references.
 
