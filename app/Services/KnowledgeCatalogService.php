@@ -123,7 +123,7 @@ final class KnowledgeCatalogService
     }
 
     /**
-     * @param Builder<Model> $query
+     * @param Builder<Model>       $query
      * @param array<string, mixed> $filters
      */
     private function applyFilters(Builder $query, string $resource, array $filters): void
