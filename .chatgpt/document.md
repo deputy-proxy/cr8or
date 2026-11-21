@@ -136,10 +136,12 @@ Before persistence:
 1. Discover the authorized Enterprise using `mcp__cr8or__list_enterprises`.
 2. Resolve the intended Enterprise from explicit conversation context. If multiple Enterprises are plausible, ask the user which one to use. Do not choose based on convenience.
 3. Confirm that the selected Enterprise is accessible to the current MCP identity.
-4. Discover current Knowledge capabilities using `mcp__cr8or__list_capabilities` and inspect relevant capability descriptors with `mcp__cr8or__get_capability` when needed.
-5. Inspect the actual schemas/descriptions of the available Knowledge MCP tools at runtime. Tool availability and schemas are authoritative; this document is guidance, not a substitute for the live contract.
-6. Check for existing relevant Knowledge Items and indexes before creating new records. Use bounded, enterprise-scoped listing/retrieval tools and relevant search terms.
-7. Compare existing records semantically, not just by title. Avoid duplicate records for the same durable claim.
+4. Retrieve the selected Enterprise's canonical context with `mcp__cr8or__retrieve_enterprise_context`. Use it to understand current business identity, terminology, strategy, constraints, and context relevant to the conversation. Treat returned context as existing organizational information, not as proof that a new statement in the current conversation is true.
+5. Discover current Knowledge capabilities using `mcp__cr8or__list_capabilities` and inspect relevant capability descriptors with `mcp__cr8or__get_capability` when needed.
+6. Inspect the actual schemas/descriptions of the available Knowledge MCP tools at runtime. Tool availability and schemas are authoritative; this document is guidance, not a substitute for the live contract.
+7. Search existing Knowledge semantically with `mcp__cr8or__retrieve_knowledge` (prefer `mode: "hybrid"`) using the selected `enterprise_id` and focused queries/objectives derived from the candidate knowledge atoms. Use the returned provenance to identify potentially equivalent records and related context.
+8. Use `mcp__cr8or__list_knowledge_items` for bounded discovery and `mcp__cr8or__get_knowledge_item` to inspect likely duplicates. Also inspect relevant index state where required.
+9. Compare records semantically, not just by title. Avoid duplicate records for the same durable claim.
 
 If Enterprise resolution or authorization fails, stop. Explain the exact issue and ask for the minimum information or access correction needed. Never try another Enterprise, identity, or tool to evade the failure.
 
@@ -186,6 +188,46 @@ Therefore:
 - Do not claim a Reference, Specification, or Embedding was created unless an authorized operation actually did so and returned evidence.
 - Do not create a Knowledge Item and describe it as a Knowledge Document.
 - If a required model-level record cannot be created through MCP, include it in the final **MCP capability gaps** section. Do not switch to Filament, direct database access, SQL, or application internals.
+
+### 3.2 Use the newer Enterprise context, Knowledge retrieval, and Agent Memory tools
+
+The newer runtime exposes context and retrieval operations that should be used to improve capture quality. They complement, but do not replace, authoritative Knowledge catalog writes.
+
+**Canonical Enterprise context**
+
+- Call `mcp__cr8or__retrieve_enterprise_context` after resolving and authorizing the Enterprise.
+- Use the returned context to resolve names, product/service terminology, current strategy, organizational constraints, and relevant domain relationships.
+- Distinguish current Enterprise context from statements made in this conversation. If they conflict, do not silently choose one: prefer an explicit correction from the user for the current capture, preserve the conflict where it matters, and flag unresolved discrepancies.
+- Do not treat a context retrieval response as authorization to mutate every referenced object.
+
+**Knowledge retrieval and duplicate detection**
+
+- Use `mcp__cr8or__retrieve_knowledge` for lexical, semantic, or hybrid retrieval. For conversation capture, use `mode: "hybrid"` by default, a focused `query` and/or `objective`, a bounded `limit` (normally 10–20), and the selected `enterprise_id`.
+- Run focused searches for the most important candidate atoms or coherent topic clusters. Avoid sending the entire conversation as one unbounded search query.
+- Use returned provenance to inspect the source of potentially matching knowledge. Retrieval results are candidates, not automatic proof of equivalence.
+- Follow up with `mcp__cr8or__get_knowledge_item` for likely duplicates and with `mcp__cr8or__list_knowledge_items` for bounded catalog discovery.
+- Do not use an arbitrary `minimum_relevance` threshold to hide relevant records. Set it only when the task requires a narrower result set and report retrieval limitations.
+- Supply `agent_assignment_id` or `agent_execution_id` only when the current operation genuinely belongs to that persisted execution. Never invent execution identifiers.
+
+**Agent Memory is a separate domain**
+
+CR8OR now exposes episodic and semantic Agent Memory operations. Memory is not a replacement for authoritative Knowledge Items, Knowledge Sources, Documents, or Contexts.
+
+- Use `mcp__cr8or__retrieve_memory` only when agent-specific prior experience is materially relevant and a valid authorized `agent_descriptor_id` is known. Supply the selected `enterprise_id` and a focused `topic`; use bounded limits.
+- Use `mcp__cr8or__list_memories` to discover Enterprise-scoped episodic or semantic Memory when the relevant Agent or memory type is not known. Use `mcp__cr8or__get_memory` to inspect a candidate record.
+- Treat episodic Memory as historical execution experience and semantic Memory as Agent-specific learned statements. Do not copy either into Knowledge automatically. Promote a memory-derived claim into Knowledge only when it is independently supported, useful to the Enterprise, and appropriate for the Knowledge domain.
+- Do not create or update Agent Memory as a side effect of ordinary conversation capture. `mcp__cr8or__create_memory`, `mcp__cr8or__record_memory`, and `mcp__cr8or__update_memory` have execution provenance requirements, including `source_execution_id`; use them only when the user explicitly requests Agent Memory work and a real authorized source execution exists.
+- `record_memory` additionally requires the explicit `persist` flag. Never fabricate a source execution, agent descriptor, source step, confidence, or provenance to satisfy the schema.
+- Episodic Memory is immutable. Update only semantic Memory through its governed update operation, and only when the source execution and update rationale are valid.
+- Never use Memory tools to bypass Knowledge authorization or to store material that belongs in the Enterprise Knowledge catalog.
+
+**Agent execution and deterministic workflows**
+
+- Conversation-to-Knowledge capture is normally an interactive operation. Do not create an Agent Assignment, Agent Execution, or Workflow merely to make this document's procedure run.
+- Use `mcp__cr8or__execute_agent` or the assignment/execution lifecycle tools only when the user explicitly asks to delegate or run durable Agent work, or when an already-authorized execution context is part of the task.
+- Use `mcp__cr8or__list_workflows` and `mcp__cr8or__get_workflow` when a persisted Workflow is relevant to the requested work. A deterministic run must use a published WorkflowVersion and the persisted stage contracts.
+- Use `mcp__cr8or__start_workflow_execution`, `mcp__cr8or__get_workflow_execution`, and `mcp__cr8or__resume_workflow_execution` only when the user requests a workflow execution or the task explicitly requires one. Respect idempotency and continuation tokens. Do not replace a workflow with hardcoded stage logic.
+- Do not assume an Agent Execution is required for an interactive workflow, or that a Workflow Execution creates an Agent Execution. These are distinct runtime paths.
 
 ## Phase 4: Map the conversation to the existing Knowledge models
 
@@ -473,9 +515,11 @@ If the user has clearly invoked this procedure, the target Enterprise is unambig
 Recommended execution order:
 
 1. Resolve Enterprise and authorization.
-2. Inspect existing Knowledge Sources, Documents, Contexts, Knowledge Items, and relevant indexes.
-3. Prepare the curated synthesis and atom list.
-4. Identify exact MCP operations and schemas available now.
+2. Retrieve canonical Enterprise context with `mcp__cr8or__retrieve_enterprise_context`.
+3. Inspect existing Knowledge Sources, Documents, Contexts, Knowledge Items, and relevant indexes; use hybrid `mcp__cr8or__retrieve_knowledge` searches for semantic duplicate detection.
+4. Consult Agent Memory only when it is materially relevant and the valid Agent descriptor is known; do not make Memory writes part of ordinary capture.
+5. Prepare the curated synthesis and atom list.
+6. Identify exact MCP operations and schemas available now.
 5. Create or reuse the conversation KnowledgeSource, the curated KnowledgeDocument, and a KnowledgeContext only when a meaningful grouping exists. Missing optional records must not block Knowledge Item persistence.
 6. For each knowledge atom, decide whether to create a new item, reuse an equivalent existing item, or update an existing item because the conversation explicitly corrects/refines that same knowledge.
 7. Create only missing, supported authoritative Knowledge Items and link them to the created/reused source, document, and context IDs; use `update_knowledge_item` only for justified changes to an existing item.
@@ -500,7 +544,7 @@ Recommended execution order:
 - Do not mutate unrelated records.
 - Do not create derived indexes before the authoritative item exists.
 - Do not bypass a denied capability or policy.
-- Do not use memory tools as a substitute for Enterprise Knowledge.
+- Do not use Agent Memory as a substitute for Enterprise Knowledge. Use Memory retrieval only as a separate, optional source of Agent-specific context under the rules in Phase 3.2.
 
 ### 7.2 Partial success
 
@@ -586,7 +630,10 @@ Before declaring completion, confirm all of the following:
 - [ ] Facts, decisions, preferences, hypotheses, recommendations, and questions were distinguished.
 - [ ] Assistant suggestions were not misrepresented as user decisions.
 - [ ] Durable knowledge was split into atomic, independently useful items.
-- [ ] Existing records were checked through bounded Enterprise-scoped listing and detailed reads to avoid duplicates.
+- [ ] Canonical Enterprise context was retrieved and used without confusing it with current-conversation evidence.
+- [ ] Existing records were checked through hybrid Knowledge retrieval, bounded Enterprise-scoped listing, and detailed reads to avoid duplicates.
+- [ ] Agent Memory was consulted only when materially relevant, and was not used as a substitute for Knowledge.
+- [ ] No Agent Memory, Agent Execution, or Workflow was created merely as a side effect of ordinary conversation capture.
 - [ ] Existing items were updated only when the source explicitly corrected/refined the same knowledge atom.
 - [ ] Content/context changes used the authoritative version lifecycle; prior versions were not overwritten.
 - [ ] Every write used an authorized CR8OR MCP operation.
