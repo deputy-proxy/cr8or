@@ -45,7 +45,10 @@ final class KnowledgeCatalogService
         return $this->serialize($record, $resource);
     }
 
-    /** @param array<string, mixed> $filters @return array{items: list<array<string, mixed>>, pagination: array{page: int, per_page: int, total: int, last_page: int}} */
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{items: list<array<string, mixed>>, pagination: array{page: int, per_page: int, total: int, last_page: int}}
+     */
     public function list(User $actor, Enterprise $enterprise, string $resource, array $filters): array
     {
         [$model] = $this->config($resource);
@@ -106,7 +109,9 @@ final class KnowledgeCatalogService
         return array_intersect_key($input, array_flip($allowed));
     }
 
-    /** @param array<string, mixed> $attributes */
+    /**
+     * @param array<string, mixed> $attributes
+     */
     private function assertRelationships(Enterprise $enterprise, string $resource, array $attributes): void
     {
         if ($resource === 'document' && isset($attributes['knowledge_source_id'])) {
