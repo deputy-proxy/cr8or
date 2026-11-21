@@ -110,12 +110,10 @@ final class KnowledgeCatalogService
     private function assertRelationships(Enterprise $enterprise, string $resource, array $attributes): void
     {
         if ($resource === 'document' && isset($attributes['knowledge_source_id'])) {
-            return;
-        }
-
-        $source = KnowledgeSource::query()->where('enterprise_id', $enterprise->getKey())->find($attributes['knowledge_source_id']);
-        if ($source === null) {
-            throw ValidationException::withMessages(['knowledge_source_id' => 'The selected Knowledge Source does not belong to the requested Enterprise.']);
+            $source = KnowledgeSource::query()->where('enterprise_id', $enterprise->getKey())->find($attributes['knowledge_source_id']);
+            if ($source === null) {
+                throw ValidationException::withMessages(['knowledge_source_id' => 'The selected Knowledge Source does not belong to the requested Enterprise.']);
+            }
         }
     }
 
