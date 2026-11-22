@@ -58,7 +58,7 @@ class TaskResource extends Resource
                         ->columns(1)
                         ->schema([
                             TextInput::make('name')->required()->maxLength(255),
-                            Textarea::make('description')->rows(4),
+                            Textarea::make('description')->rows(4)->autosize(),
                         ])
                         ->columnSpan(['default' => 1, 'lg' => 3]),
 
