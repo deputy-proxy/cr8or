@@ -17,7 +17,9 @@ use Filament\Tables\Table;
 
 class KnowledgeItemResource extends Resource
 {
-    use ScopesKnowledgeRecords;
+    use ScopesKnowledgeRecords {
+        getEloquentQuery as scopedKnowledgeRecordsQuery;
+    }
 
     protected static ?string $model = KnowledgeItem::class;
 
@@ -41,6 +43,11 @@ class KnowledgeItemResource extends Resource
     public static function table(Table $table): Table
     {
         return KnowledgeItemsTable::configure($table);
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return static::scopedKnowledgeRecordsQuery()->with(['enterprise', 'source', 'document', 'context']);
     }
 
     public static function getPages(): array
