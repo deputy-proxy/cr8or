@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Models\Enterprise;
 use App\Models\User;
+use App\Services\AccessibleEnterpriseResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -47,8 +48,6 @@ class ListEnterpriseTool extends DiscoveryListTool
     // @phpstan-ignore missingType.generics
     protected static function scopeQuery(Builder $query, User $actor): Builder
     {
-        $organizationIds = $actor->memberships()->pluck('organization_id');
-
-        return $query->whereIn('organization_id', $organizationIds);
+        return app(AccessibleEnterpriseResolver::class)->scopeQuery($query, $actor);
     }
 }

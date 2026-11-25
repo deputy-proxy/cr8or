@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Experts\BusinessAnalysisExpert;
+use App\Experts\CommunicationExpert;
 use App\Experts\CopywritingExpert;
 use App\Experts\FinanceExpert;
 use App\Experts\KnowledgeExpert;
@@ -20,6 +21,7 @@ class ExpertDescriptorSeeder extends Seeder
     {
         foreach ([
             'business-analysis' => BusinessAnalysisExpert::class,
+            'communication' => CommunicationExpert::class,
             'copywriting' => CopywritingExpert::class,
             'finance' => FinanceExpert::class,
             'knowledge' => KnowledgeExpert::class,

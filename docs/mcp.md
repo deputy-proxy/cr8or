@@ -140,6 +140,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-workflow-execution` | `GetWorkflowExecutionTool` | `workflow.inspect` | `InspectWorkflowExecution` |
 | `list-knowledge-contexts` | `ListKnowledgeContextsTool` | `knowledge.context.list` | `ListKnowledgeContexts` |
 | `list-knowledge-documents` | `ListKnowledgeDocumentsTool` | `knowledge.document.list` | `ListKnowledgeDocuments` |
+| `list-github-issues` | `ListGitHubIssuesTool` | `integration.github.issue.list` | `ListGitHubIssues` |
 | `list-knowledge-items` | `ListKnowledgeItemsTool` | `knowledge.item.list` | `ListKnowledgeItems` |
 | `list-knowledge-references` | `ListKnowledgeReferencesTool` | `knowledge.reference.list` | `ListKnowledgeReferences` |
 | `list-knowledge-specifications` | `ListKnowledgeSpecificationsTool` | `knowledge.specification.list` | `ListKnowledgeSpecifications` |
@@ -171,7 +172,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-publications` | `ListPublicationTool` | Unregistered read/discovery/resource | N/A |
 | `list-social-accounts` | `ListSocialAccountTool` | Unregistered read/discovery/resource | N/A |
 | `list-strategies` | `ListStrategyTool` | Unregistered read/discovery/resource | N/A |
-| `list-tasks` | `ListTaskTool` | Unregistered read/discovery/resource | N/A |
+| `list-tasks` | `ListTaskTool` | `work.task.list` | `ListTasks` |
 | `list-workflows` | `ListWorkflowsTool` | `workflow.discover` | `DiscoverWorkflows` |
 | `mark-content-publication-ready` | `MarkContentPublicationReadyTool` | `marketing.content.publication-ready` | `MarkContentPublicationReady` |
 | `plan-marketing` | `PlanMarketingTool` | `marketing.plan` | `PlanMarketing` |
@@ -186,6 +187,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `retrieve-knowledge` | `RetrieveKnowledgeTool` | `knowledge.retrieve` | `RetrieveKnowledge` |
 | `retrieve-memory` | `RetrieveMemoryTool` | `memory.retrieve` | `RetrieveMemory` |
 | `start-workflow-execution` | `StartWorkflowTool` | `workflow.execute` | `StartWorkflow` |
+| `send-email` | `SendEmailTool` | `communication.email.send` | `SendEmail` |
 | `submit-content-for-review` | `SubmitContentForReviewTool` | `marketing.content.review` | `SubmitContentForReview` |
 | `transition-agent-assignment` | `TransitionAgentAssignmentTool` | `agent.assignment.transition` | `TransitionAgentAssignment` |
 | `transition-campaign` | `TransitionCampaignTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` |
@@ -225,6 +227,15 @@ Resources provide authorized contextual information to an AI client and should r
 
 Tools request explicit capabilities that may change state or initiate execution.
 
+### Governed read tools
+
+These read Operations use the same Capability boundary as mutations. They authorize the actor against the selected Enterprise before querying and never infer access from MCP tool registration.
+
+| Tool | Capability | Operation | Purpose |
+| --- | --- | --- | --- |
+| list-tasks | work.task.list | ListTasks | List tasks in one authorized Enterprise or explicitly across all Enterprises the actor may view; defaults to todo and in-progress, with bounded pagination and optional status, priority, project, initiative and name filters. Cross-Enterprise scope fails instead of silently truncating. |
+| list-github-issues | integration.github.issue.list | ListGitHubIssues | List open GitHub issue snapshots for active, authorized repository assignments; returns sync availability, timestamps and warnings so unavailable/stale data is not mistaken for an empty result. |
+
 ### Governed tool catalogue
 
 The state-changing catalogue is intentionally limited to implemented, server-authorized capabilities:
@@ -236,6 +247,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | update-enterprise-context | enterprise.context.update | EnterpriseContextUpdate | Update an existing Enterprise Context while preserving Enterprise ownership and policy authorization. |
 | create-task | work.task.create | CreateTask | Create a task under an authorized enterprise. |
 | update-task | work.task.update | UpdateTask | Update an existing task without changing enterprise ownership. |
+| send-email | communication.email.send | SendEmail | Send plain-text email through Laravel's configured delivery mailer to the authenticated actor's verified email only; caller-supplied recipients are not accepted. |
 | create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
 | update-strategy | strategy.update | UpdateStrategy | Update an existing strategy without changing objective ownership. |
 | approve-content-item | marketing.content.approve | ApproveContentItem | Approve in-review content after required governed approval. |
@@ -258,7 +270,7 @@ If the Agent permission requires approval, the mutation must also supply a valid
 
 The current runtime capability graph is derived from the PHP Agent/Expert classes and the governed MCP registry rather than a persistent Capability model. Governed mutation Tools resolve through `CapabilityRegistry` to exactly one Capability and Operation before execution; specialized analysis, planning, delegation and Finance Tools retain their existing application-service boundaries.
 
-Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
+Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. The authorization boundary also enforces each Capability's declared execution modes. `communication.email.send` is available to human and deterministic Workflow execution, but explicitly excluded from Agent execution. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
 
 ## Authentication Boundary
 

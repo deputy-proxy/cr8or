@@ -26,10 +26,12 @@ use App\Mcp\Tools\GetKnowledgeItemTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
+use App\Mcp\Tools\ListGitHubIssuesTool;
 use App\Mcp\Tools\ListKnowledgeIndexesTool;
 use App\Mcp\Tools\ListKnowledgeItemsTool;
 use App\Mcp\Tools\ListKnowledgeUnitsTool;
 use App\Mcp\Tools\ListProductsTool;
+use App\Mcp\Tools\ListTaskTool;
 use App\Mcp\Tools\ListWorkflowsTool;
 use App\Mcp\Tools\MarkContentPublicationReadyTool;
 use App\Mcp\Tools\PlanMarketingTool;
@@ -40,6 +42,7 @@ use App\Mcp\Tools\ResumeWorkflowExecutionTool;
 use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
+use App\Mcp\Tools\SendEmailTool;
 use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
@@ -82,10 +85,12 @@ use App\Operations\GetKnowledgeItem;
 use App\Operations\GetKnowledgeUnit;
 use App\Operations\GetWorkflow;
 use App\Operations\InspectWorkflowExecution;
+use App\Operations\ListGitHubIssues;
 use App\Operations\ListKnowledgeIndexes;
 use App\Operations\ListKnowledgeItems;
 use App\Operations\ListKnowledgeUnits;
 use App\Operations\ListProducts;
+use App\Operations\ListTasks;
 use App\Operations\MarkContentPublicationReady;
 use App\Operations\MarketingCampaignCreate;
 use App\Operations\MarketingCampaignUpdate;
@@ -111,6 +116,7 @@ use App\Operations\RecordMemory;
 use App\Operations\ResumeWorkflowExecution;
 use App\Operations\RetrieveKnowledge;
 use App\Operations\RetrieveMemory;
+use App\Operations\SendEmail;
 use App\Operations\SocialAccountDisable;
 use App\Operations\SocialAccountUpdate;
 use App\Operations\StartWorkflow;
@@ -591,6 +597,39 @@ final class CapabilityRegistry
                 ['success' => 'boolean', 'result' => 'task'],
                 'McpCapabilityAuthorizer::authorizeMutation + Task policy',
                 'none',
+            ),
+            $this->definition(
+                'work.task.list',
+                ListTasks::class,
+                ListTaskTool::class,
+                ['enterprise_id' => 'integer|required', 'scope' => 'enum:enterprise,all_accessible|nullable; all_accessible is policy-scoped', 'max_items' => 'integer|nullable|min:1|max:5000; all_accessible completeness limit', 'status' => 'enum:'.implode(',', TaskStatus::values()).'|nullable; defaults to todo,in_progress', 'priority' => 'string|nullable|max:50', 'project_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'search' => 'string|nullable|max:255', 'per_page' => 'integer|nullable|min:1|max:50', 'page' => 'integer|nullable|min:1', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'enterprise task list or complete all-accessible per-Enterprise task groups'],
+                'Enterprise view authorization + AccessibleEnterpriseResolver + enterprise-scoped Task query',
+                'none',
+                'read',
+                'list-tasks',
+            ),
+            $this->definition(
+                'integration.github.issue.list',
+                ListGitHubIssues::class,
+                ListGitHubIssuesTool::class,
+                ['enterprise_id' => 'integer|required', 'scope' => 'enum:enterprise,all_accessible|nullable; all_accessible is policy-scoped', 'max_items' => 'integer|nullable|min:1|max:5000; all_accessible completeness limit', 'search' => 'string|nullable|max:255', 'repository' => 'string|nullable|max:255', 'per_page' => 'integer|nullable|min:1|max:50', 'page' => 'integer|nullable|min:1', 'agent_assignment_id' => 'integer|nullable', 'agent_execution_id' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'enterprise issue list or all-accessible per-Enterprise issue groups with sync state'],
+                'Enterprise view authorization + AccessibleEnterpriseResolver + assigned GitHub repository scope',
+                'none',
+                'read',
+                'list-github-issues',
+            ),
+            $this->definition(
+                'communication.email.send',
+                SendEmail::class,
+                SendEmailTool::class,
+                ['enterprise_id' => 'integer|required', 'subject' => 'string|required|max:255', 'text_body' => 'string|required|max:100000; sent only to authenticated actor verified email'],
+                ['success' => 'boolean', 'result' => 'email-accepted with recipient and configured mailer'],
+                'Enterprise view authorization + verified actor email recipient restriction',
+                'none',
+                'support',
+                'send-email',
             ),
             $this->definition(
                 'enterprise.create',
@@ -1401,6 +1440,10 @@ final class CapabilityRegistry
     /** @return list<CapabilityExecutionMode> */
     private function executionModesFor(string $key): array
     {
+        if ($key === 'communication.email.send') {
+            return [CapabilityExecutionMode::HUMAN, CapabilityExecutionMode::WORKFLOW];
+        }
+
         if ($key === 'marketing.asset.create') {
             return [CapabilityExecutionMode::AGENT, CapabilityExecutionMode::WORKFLOW];
         }
