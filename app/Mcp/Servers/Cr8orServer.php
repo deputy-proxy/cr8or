@@ -97,6 +97,7 @@ use App\Mcp\Tools\ListContentSeriesTool;
 use App\Mcp\Tools\ListEnterpriseTool;
 use App\Mcp\Tools\ListExecutionTool;
 use App\Mcp\Tools\ListExpertDescriptorTool;
+use App\Mcp\Tools\ListGitHubIssuesTool;
 use App\Mcp\Tools\ListGoalTool;
 use App\Mcp\Tools\ListInitiativeTool;
 use App\Mcp\Tools\ListKnowledgeContextsTool;
@@ -132,6 +133,7 @@ use App\Mcp\Tools\ResumeWorkflowExecutionTool;
 use App\Mcp\Tools\RetrieveEnterpriseContextTool;
 use App\Mcp\Tools\RetrieveKnowledgeTool;
 use App\Mcp\Tools\RetrieveMemoryTool;
+use App\Mcp\Tools\SendEmailTool;
 use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\TransitionAgentAssignmentTool;
@@ -279,6 +281,8 @@ class Cr8orServer extends Server
         CreateProductTool::class,
         UpdateProductTool::class,
         ListProductsTool::class,
+        ListGitHubIssuesTool::class,
+        SendEmailTool::class,
         CreateMarketingStrategyTool::class,
         DefineMarketingStrategySectionTool::class,
         UpdateStrategyTool::class,

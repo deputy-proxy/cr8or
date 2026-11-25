@@ -2,61 +2,67 @@
 
 namespace App\Mcp\Tools;
 
-use App\Models\Task;
+use App\Capabilities\CapabilityRegistry;
+use App\Enums\TaskStatus;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('list-tasks')]
-#[Description('Discover authorized task resources in CR8OR.')]
-class ListTaskTool extends DiscoveryListTool
+#[Description('List open tasks in an Enterprise the authenticated actor may view. Defaults to todo and in-progress tasks; supports bounded pagination and filters.')]
+final class ListTaskTool extends GovernedCapabilityTool
 {
-    protected static function modelClass(): string
+    protected function expertSlug(): string
     {
-        return Task::class;
+        return 'operations';
     }
 
-    protected static function filters(): array
+    public function schema(JsonSchema $schema): array
     {
         return [
-            'project_id' => 'Project id.',
-            'initiative_id' => 'Initiative id.',
+            'enterprise_id' => $schema->integer()->min(1)->required(),
+            'status' => $schema->string()->enum(TaskStatus::values())->description('Optional exact task status. Defaults to todo and in_progress.'),
+            'priority' => $schema->string()->max(50),
+            'project_id' => $schema->integer()->min(1),
+            'initiative_id' => $schema->integer()->min(1),
+            'search' => $schema->string()->min(1)->max(255),
+            'per_page' => $schema->integer()->min(1)->max(50)->default(50),
+            'page' => $schema->integer()->min(1)->default(1),
+            'agent_assignment_id' => $schema->integer()->min(1),
+            'agent_execution_id' => $schema->integer()->min(1),
         ];
     }
 
-    protected static function fields(): array
+    public function handle(Request $request, CapabilityRegistry $registry): Response|ResponseFactory
     {
-        return [
-            'id' => 'id',
-            'enterprise_id' => 'enterprise_id',
-            'project_id' => 'project_id',
-            'initiative_id' => 'initiative_id',
-            'name' => 'name',
-            'description' => 'description',
-            'status' => 'status',
-            'parent_task_id' => 'parent_task_id',
-            'priority' => 'priority',
-            'due_at' => 'due_at',
-            'created_at' => 'created_at',
-            'updated_at' => 'updated_at',
-        ];
-    }
+        return $this->executeWithErrors($request, 'mcp.work.task.list', function () use ($request, $registry) {
+            $validated = $request->validate([
+                'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+                'status' => ['nullable', 'string', 'in:'.implode(',', TaskStatus::values())],
+                'priority' => ['nullable', 'string', 'max:50'],
+                'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],
+                'initiative_id' => ['nullable', 'integer', 'min:1', 'exists:initiatives,id'],
+                'search' => ['nullable', 'string', 'min:1', 'max:255'],
+                'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+                'page' => ['nullable', 'integer', 'min:1'],
+                'agent_assignment_id' => ['nullable', 'integer', 'min:1', 'exists:agent_assignments,id'],
+                'agent_execution_id' => ['nullable', 'integer', 'min:1', 'exists:agent_executions,id'],
+            ]);
 
-    protected static function searchableColumns(): array
-    {
-        return ['name'];
-    }
+            $actor = $request->user();
+            if (! $actor instanceof User) {
+                throw new AuthenticationException;
+            }
 
-    /**
-     * @param  Builder<Model>  $query
-     */
-    // @phpstan-ignore missingType.generics
-    protected static function scopeQuery(Builder $query, User $actor): Builder
-    {
-        $organizationIds = $actor->memberships()->pluck('organization_id');
-
-        return $query->whereHas('enterprise', fn (Builder $q) => $q->whereIn('organization_id', $organizationIds));
+            return Response::structured([
+                'success' => true,
+                'result' => $this->executeCapability($registry, $actor, $validated),
+            ]);
+        });
     }
 }

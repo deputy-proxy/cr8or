@@ -74,6 +74,23 @@ An application invocation may be human-scoped to an Enterprise or Agent-backed w
 
 The listing operation always constrains the query to the authorized Enterprise context. The MCP tool is an adapter to the Capability invocation boundary and does not query persistence directly.
 
+### Work and GitHub issue discovery
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `work.task.list` | `ListTasks` | `list-tasks` | List tasks for one authorized Enterprise. The default open set is `todo` and `in_progress`; callers may request one explicit status, filter by project or initiative, and use bounded pagination. |
+| `integration.github.issue.list` | `ListGitHubIssues` | `list-github-issues` | List open, non-deleted issue snapshots belonging to the Enterprise's active GitHub App repository assignments or its supported legacy repository configuration. The result includes synchronization availability, timestamps, repository states, a configurable stale flag (default 24 hours) and non-sensitive warnings. Set `GITHUB_ISSUE_SYNC_STALE_AFTER_MINUTES` to change the freshness threshold. |
+
+Both Operations re-check Enterprise view authorization before querying. GitHub repository and connection organization ownership are checked as well as Enterprise assignment; legacy issue snapshots are not reused when the repository is already managed by GitHub App assignments.
+
+### Email delivery
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `communication.email.send` | `SendEmail` | `send-email` | Send a plain-text email through Laravel's configured mail transport to the authenticated actor's verified email address. The Capability is owned by the Communication Expert, not the Operations Expert. |
+
+The recipient is resolved server-side; the caller cannot provide an arbitrary address. Non-delivery `log`/`array` mailers and failover configurations with non-delivery fallbacks are rejected. This Capability supports human and deterministic Workflow execution but not Agent execution.
+
 ### Knowledge lifecycle
 
 | Capability | Operation | MCP adapter | Purpose |
