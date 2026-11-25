@@ -7,28 +7,87 @@ use App\Models\Enterprise;
 use App\Models\IntegrationRepository;
 use App\Models\Issue;
 use App\Models\User;
+use App\Services\AccessibleEnterpriseResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 final class ListGitHubIssues implements Operation
 {
+    public function __construct(private readonly AccessibleEnterpriseResolver $enterprises) {}
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public function execute(User $actor, array $input): array
+    {
+        $contextEnterprise = ($input['enterprise'] ?? null) instanceof Enterprise
+            ? $input['enterprise']
+            : Enterprise::query()->findOrFail((int) $input['enterprise_id']);
+
+        Gate::forUser($actor)->authorize('view', $contextEnterprise);
+
+        $scope = (string) ($input['scope'] ?? 'enterprise');
+        if (! in_array($scope, ['enterprise', 'all_accessible'], true)) {
+            throw ValidationException::withMessages(['scope' => 'Scope must be enterprise or all_accessible.']);
+        }
+
+        if ($scope === 'all_accessible') {
+            $targetEnterprises = $this->enterprises->forActor($actor);
+            $maxItems = max(1, (int) ($input['max_items'] ?? 1000));
+            $totalIssues = 0;
+            $reports = [];
+            $sourceDataComplete = true;
+
+            foreach ($targetEnterprises as $targetEnterprise) {
+                $remaining = $maxItems - $totalIssues;
+                $report = $this->listForEnterprise($actor, $targetEnterprise, $input, $remaining);
+                $enterpriseTotal = $report['pagination']['total'];
+                $totalIssues += $enterpriseTotal;
+                $sourceDataComplete = $sourceDataComplete && $report['sync']['availability'] === 'ready';
+                $reports[] = [
+                    'enterprise_id' => (int) $targetEnterprise->getKey(),
+                    'enterprise_name' => $targetEnterprise->name,
+                    'total_open_issues' => $enterpriseTotal,
+                    'issues' => $report['items'],
+                    'source_data_complete' => $report['sync']['availability'] === 'ready',
+                    'sync' => $report['sync'],
+                ];
+            }
+
+            return [
+                'scope' => 'all_accessible',
+                'enterprise_ids' => $targetEnterprises->modelKeys(),
+                'enterprises' => $reports,
+                'total_open_issues' => $totalIssues,
+                'max_items' => $maxItems,
+                'result_set_complete' => true,
+                'source_data_complete' => $sourceDataComplete,
+            ];
+        }
+
+        return [
+            'scope' => 'enterprise',
+            'enterprise_id' => (int) $contextEnterprise->getKey(),
+            'enterprise_name' => $contextEnterprise->name,
+            ...$this->listForEnterprise($actor, $contextEnterprise, $input),
+        ];
+    }
+
     /**
      * @param  array<string, mixed>  $input
      * @return array{items: list<array<string, mixed>>, pagination: array{page: int, per_page: int, total: int, last_page: int}, sync: array<string, mixed>}
      */
-    public function execute(User $actor, array $input): array
+    private function listForEnterprise(User $actor, Enterprise $enterprise, array $input, ?int $completenessLimit = null): array
     {
-        $enterprise = ($input['enterprise'] ?? null) instanceof Enterprise
-            ? $input['enterprise']
-            : Enterprise::query()->findOrFail((int) $input['enterprise_id']);
-
         Gate::forUser($actor)->authorize('view', $enterprise);
 
         $repositories = $enterprise->integrationRepositories()->with('connection')->get();
         $activeRepositories = $repositories->filter(fn (IntegrationRepository $repository): bool => $repository->status === IntegrationRepository::STATUS_ACTIVE
-            && $repository->connection !== null
             && (int) $repository->organization_id === (int) $enterprise->organization_id
+            && $repository->connection !== null
             && $repository->connection->provider === 'github'
             && (int) $repository->connection->organization_id === (int) $enterprise->organization_id
             && $repository->connection->isOperational()
@@ -70,7 +129,34 @@ final class ListGitHubIssues implements Operation
             ->orderByDesc('github_updated_at')
             ->orderByDesc('number');
 
-        $issues = $query->paginate((int) ($input['per_page'] ?? 50), ['*'], 'page', (int) ($input['page'] ?? 1));
+        if ($completenessLimit !== null) {
+            $total = $query->count();
+            if ($total > $completenessLimit) {
+                throw ValidationException::withMessages([
+                    'max_items' => "Enterprise {$enterprise->name} exceeds the remaining {$completenessLimit}-issue completeness limit. Increase max_items; no partial result was returned.",
+                ]);
+            }
+
+            /** @var list<Issue> $issueItems */
+            $issueItems = $query->limit(max(1, $total))->get()->all();
+            $pagination = [
+                'page' => 1,
+                'per_page' => max(1, $completenessLimit),
+                'total' => $total,
+                'last_page' => 1,
+            ];
+        } else {
+            $issues = $query->paginate((int) ($input['per_page'] ?? 50), ['*'], 'page', (int) ($input['page'] ?? 1));
+
+            /** @var list<Issue> $issueItems */
+            $issueItems = $issues->items();
+            $pagination = [
+                'page' => $issues->currentPage(),
+                'per_page' => $issues->perPage(),
+                'total' => $issues->total(),
+                'last_page' => $issues->lastPage(),
+            ];
+        }
 
         $staleAfterMinutes = max(1, (int) config('services.github.issue_sync_stale_after_minutes', 1440));
         $staleCutoff = now()->subMinutes($staleAfterMinutes);
@@ -123,9 +209,6 @@ final class ListGitHubIssues implements Operation
                 ? 'unavailable'
                 : ($warnings === [] ? 'ready' : 'partial'));
 
-        /** @var list<Issue> $issueItems */
-        $issueItems = $issues->items();
-
         return [
             'items' => array_map(static fn (Issue $issue): array => [
                 'id' => (int) $issue->getKey(),
@@ -141,16 +224,11 @@ final class ListGitHubIssues implements Operation
                 'github_updated_at' => $issue->github_updated_at === null ? null : Carbon::parse($issue->github_updated_at)->toIso8601String(),
                 'last_synced_at' => Carbon::parse($issue->last_synced_at)->toIso8601String(),
             ], $issueItems),
-            'pagination' => [
-                'page' => $issues->currentPage(),
-                'per_page' => $issues->perPage(),
-                'total' => $issues->total(),
-                'last_page' => $issues->lastPage(),
-            ],
+            'pagination' => $pagination,
             'sync' => [
                 'availability' => $availability,
                 'status' => $syncStatus,
-                'synced_at' => $enterprise->github_issues_synced_at === null ? null : Carbon::parse($enterprise->github_issues_synced_at)->toIso8601String(),
+                'synced_at' => $legacySyncedAt === null ? null : Carbon::parse($legacySyncedAt)->toIso8601String(),
                 'is_stale' => $isStale,
                 'stale_after_minutes' => $staleAfterMinutes,
                 'has_error' => $enterprise->github_issues_sync_error !== null,

@@ -266,8 +266,8 @@ it('publishes a deterministic Workflow containing all three digest capabilities'
     ]);
 
     foreach ([
-        ['key' => 'tasks', 'capability' => 'work.task.list', 'input' => ['required' => []]],
-        ['key' => 'issues', 'capability' => 'integration.github.issue.list', 'input' => ['required' => []]],
+        ['key' => 'tasks', 'capability' => 'work.task.list', 'input' => ['defaults' => ['scope' => 'all_accessible'], 'required' => []]],
+        ['key' => 'issues', 'capability' => 'integration.github.issue.list', 'input' => ['defaults' => ['scope' => 'all_accessible'], 'required' => []]],
         ['key' => 'email', 'expert' => 'communication', 'capability' => 'communication.email.send', 'input' => ['required' => ['subject', 'text_body']]],
     ] as $index => $definition) {
         \App\Models\WorkflowStage::factory()->create([
@@ -369,4 +369,137 @@ it('returns a generic mail transport failure without exposing provider details',
         ])
         ->assertHasErrors()
         ->assertDontSee('provider-secret-token');
+});
+
+it('lists tasks across every Enterprise the actor may view without crossing organization boundaries', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $anchorEnterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey(), 'name' => 'Anchor Enterprise']);
+    $secondEnterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey(), 'name' => 'Second Enterprise']);
+    $foreignEnterprise = Enterprise::factory()->create(['name' => 'Foreign Enterprise']);
+
+    Task::factory()->create(['enterprise_id' => $anchorEnterprise->getKey(), 'name' => 'Anchor open task', 'status' => TaskStatus::Todo]);
+    Task::factory()->create(['enterprise_id' => $secondEnterprise->getKey(), 'name' => 'Second open task', 'status' => TaskStatus::InProgress]);
+    Task::factory()->create(['enterprise_id' => $foreignEnterprise->getKey(), 'name' => 'Foreign open task', 'status' => TaskStatus::Todo]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListTaskTool::class, [
+            'enterprise_id' => $anchorEnterprise->getKey(),
+            'scope' => 'all_accessible',
+            'max_items' => 10,
+        ])
+        ->assertOk()
+        ->assertSee(['Anchor open task', 'Second open task'])
+        ->assertSee('"scope":"all_accessible"')
+        ->assertSee('"total_open_tasks":2')
+        ->assertDontSee('Foreign open task');
+});
+
+it('refuses to return a partial all-Enterprise task set when the completeness limit is exceeded', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+    Task::factory()->count(2)->create(['enterprise_id' => $enterprise->getKey(), 'status' => TaskStatus::Todo]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListTaskTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'scope' => 'all_accessible',
+            'max_items' => 1,
+        ])
+        ->assertHasErrors();
+});
+
+it('lists GitHub issues across all accessible Enterprises with per-Enterprise sync state', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $anchorEnterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+        'name' => 'Anchor Enterprise',
+        'github_repository' => 'deputy-proxy/anchor-repo',
+        'github_repository_url' => 'https://github.com/deputy-proxy/anchor-repo',
+        'github_issues_sync_status' => 'succeeded',
+        'github_issues_synced_at' => now(),
+    ]);
+    $secondEnterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+        'name' => 'Second Enterprise',
+        'github_repository' => 'deputy-proxy/second-repo',
+        'github_repository_url' => 'https://github.com/deputy-proxy/second-repo',
+        'github_issues_sync_status' => 'succeeded',
+        'github_issues_synced_at' => now(),
+    ]);
+    $foreignEnterprise = Enterprise::factory()->create([
+        'github_repository' => 'deputy-proxy/foreign-repo',
+        'github_repository_url' => 'https://github.com/deputy-proxy/foreign-repo',
+        'github_issues_sync_status' => 'succeeded',
+        'github_issues_synced_at' => now(),
+    ]);
+
+    Issue::factory()->create(['enterprise_id' => $anchorEnterprise->getKey(), 'repository' => 'deputy-proxy/anchor-repo', 'title' => 'Anchor issue', 'state' => 'open']);
+    Issue::factory()->create(['enterprise_id' => $secondEnterprise->getKey(), 'repository' => 'deputy-proxy/second-repo', 'title' => 'Second issue', 'state' => 'open']);
+    Issue::factory()->create(['enterprise_id' => $foreignEnterprise->getKey(), 'repository' => 'deputy-proxy/foreign-repo', 'title' => 'Foreign issue', 'state' => 'open']);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListGitHubIssuesTool::class, [
+            'enterprise_id' => $anchorEnterprise->getKey(),
+            'scope' => 'all_accessible',
+            'max_items' => 10,
+        ])
+        ->assertOk()
+        ->assertSee(['Anchor issue', 'Second issue'])
+        ->assertSee('"total_open_issues":2')
+        ->assertSee('"source_data_complete":true')
+        ->assertDontSee('Foreign issue');
+});
+
+it('reports an unconfigured Enterprise when aggregating GitHub issues across accessible Enterprises', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $anchorEnterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+        'github_repository' => 'deputy-proxy/configured-repo',
+        'github_repository_url' => 'https://github.com/deputy-proxy/configured-repo',
+        'github_issues_sync_status' => 'succeeded',
+        'github_issues_synced_at' => now(),
+    ]);
+    $unconfiguredEnterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+    Issue::factory()->create([
+        'enterprise_id' => $anchorEnterprise->getKey(),
+        'repository' => 'deputy-proxy/configured-repo',
+        'title' => 'Configured repository issue',
+        'state' => 'open',
+    ]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListGitHubIssuesTool::class, [
+            'enterprise_id' => $anchorEnterprise->getKey(),
+            'scope' => 'all_accessible',
+            'max_items' => 10,
+        ])
+        ->assertOk()
+        ->assertSee('Configured repository issue')
+        ->assertSee('"source_data_complete":false')
+        ->assertSee('"availability":"not_configured"')
+        ->assertSee((string) $unconfiguredEnterprise->getKey());
+});
+
+it('refuses to return a partial all-Enterprise GitHub issue set when the completeness limit is exceeded', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $enterprise = Enterprise::factory()->create([
+        'organization_id' => $organization->getKey(),
+        'github_repository' => 'deputy-proxy/over-limit-repo',
+        'github_repository_url' => 'https://github.com/deputy-proxy/over-limit-repo',
+        'github_issues_sync_status' => 'succeeded',
+        'github_issues_synced_at' => now(),
+    ]);
+    Issue::factory()->count(2)->create([
+        'enterprise_id' => $enterprise->getKey(),
+        'repository' => 'deputy-proxy/over-limit-repo',
+        'state' => 'open',
+    ]);
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(ListGitHubIssuesTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'scope' => 'all_accessible',
+            'max_items' => 1,
+        ])
+        ->assertHasErrors();
 });

@@ -99,7 +99,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-agents | `ListAgentDescriptorTool` | `DiscoveryListTool` | — | scoped query: `App\Models\AgentDescriptor` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-approval-requests | `ListApprovalRequestTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ApprovalRequest` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-personas | `ListPersonaTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Persona` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-github-issues | `ListGitHubIssuesTool` | `GovernedCapabilityTool` | `integration.github.issue.list` | `ListGitHubIssues` | CapabilityInvocationService + Enterprise view policy + GitHub App repository organization/assignment and sync-state checks |
+| list-github-issues | `ListGitHubIssuesTool` | `GovernedCapabilityTool` | `integration.github.issue.list` | `ListGitHubIssues` | CapabilityInvocationService + Enterprise view policy + AccessibleEnterpriseResolver + per-Enterprise GitHub App repository organization/assignment and sync-state checks |
 | list-products | `ListProductsTool` | `GovernedCapabilityTool` | `product.list` | `ListProducts` | `CapabilityInvocationService` + Enterprise view policy; query constrained to authorized enterprise_id |
 | list-campaigns | `ListCampaignTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Campaign` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-capabilities | `ListCapabilitiesTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
@@ -122,7 +122,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-publications | `ListPublicationTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::viewAny` |
 | list-social-accounts | `ListSocialAccountTool` | `DiscoveryListTool` | — | scoped query: `App\Models\SocialAccount` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-strategies | `ListStrategyTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Strategy` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-tasks | `ListTaskTool` | `GovernedCapabilityTool` | `work.task.list` | `ListTasks` | CapabilityInvocationService + Enterprise view policy + Enterprise-scoped Task query |
+| list-tasks | `ListTaskTool` | `GovernedCapabilityTool` | `work.task.list` | `ListTasks` | CapabilityInvocationService + Enterprise view policy + AccessibleEnterpriseResolver + Enterprise-scoped Task query |
 | list-workflows | `ListWorkflowsTool` | `GovernedCapabilityTool` | `workflow.discover` | `DiscoverWorkflows` | CapabilityInvocationService + operation/domain policy |
 | mark-content-publication-ready | `MarkContentPublicationReadyTool` | `GovernedCapabilityTool` | `marketing.content.publication-ready` | `MarkContentPublicationReady` | CapabilityInvocationService + operation/domain policy |
 | plan-marketing | `PlanMarketingTool` | `GovernedCapabilityTool` | `marketing.plan` | `PlanMarketing` | CapabilityInvocationService + operation/domain policy |

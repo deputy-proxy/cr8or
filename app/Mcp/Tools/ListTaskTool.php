@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 
 #[Name('list-tasks')]
-#[Description('List open tasks in an Enterprise the authenticated actor may view. Defaults to todo and in-progress tasks; supports bounded pagination and filters.')]
+#[Description('List open tasks in an Enterprise the authenticated actor may view, or explicitly across all Enterprises the actor may view. Defaults to todo and in-progress tasks; cross-Enterprise results are completeness-capped rather than silently truncated.')]
 final class ListTaskTool extends GovernedCapabilityTool
 {
     protected function expertSlug(): string
@@ -25,7 +25,9 @@ final class ListTaskTool extends GovernedCapabilityTool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'enterprise_id' => $schema->integer()->min(1)->required(),
+            'enterprise_id' => $schema->integer()->min(1)->required()->description('Enterprise execution context; all_accessible scope expands only to Enterprises the actor may view.'),
+            'scope' => $schema->string()->enum(['enterprise', 'all_accessible'])->default('enterprise'),
+            'max_items' => $schema->integer()->min(1)->max(5000)->default(1000)->description('Completeness limit for all_accessible scope. The operation fails rather than returning a partial cross-Enterprise result.'),
             'status' => $schema->string()->enum(TaskStatus::values())->description('Optional exact task status. Defaults to todo and in_progress.'),
             'priority' => $schema->string()->max(50),
             'project_id' => $schema->integer()->min(1),
@@ -43,6 +45,8 @@ final class ListTaskTool extends GovernedCapabilityTool
         return $this->executeWithErrors($request, 'mcp.work.task.list', function () use ($request, $registry) {
             $validated = $request->validate([
                 'enterprise_id' => ['required', 'integer', 'min:1', 'exists:enterprises,id'],
+                'scope' => ['nullable', 'string', 'in:enterprise,all_accessible'],
+                'max_items' => ['nullable', 'integer', 'min:1', 'max:5000'],
                 'status' => ['nullable', 'string', 'in:'.implode(',', TaskStatus::values())],
                 'priority' => ['nullable', 'string', 'max:50'],
                 'project_id' => ['nullable', 'integer', 'min:1', 'exists:projects,id'],

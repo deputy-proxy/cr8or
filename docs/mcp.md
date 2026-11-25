@@ -233,7 +233,7 @@ These read Operations use the same Capability boundary as mutations. They author
 
 | Tool | Capability | Operation | Purpose |
 | --- | --- | --- | --- |
-| list-tasks | work.task.list | ListTasks | List tasks in one authorized Enterprise; defaults to todo and in-progress, with bounded pagination and optional status, priority and name filters. |
+| list-tasks | work.task.list | ListTasks | List tasks in one authorized Enterprise or explicitly across all Enterprises the actor may view; defaults to todo and in-progress, with bounded pagination and optional status, priority, project, initiative and name filters. Cross-Enterprise scope fails instead of silently truncating. |
 | list-github-issues | integration.github.issue.list | ListGitHubIssues | List open GitHub issue snapshots for active, authorized repository assignments; returns sync availability, timestamps and warnings so unavailable/stale data is not mistaken for an empty result. |
 
 ### Governed tool catalogue
