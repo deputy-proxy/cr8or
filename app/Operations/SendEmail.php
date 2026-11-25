@@ -43,7 +43,7 @@ final class SendEmail implements Operation
         $transport = (string) ($mailerConfig['transport'] ?? $mailer);
         $hasNonDeliveryFallback = false;
         $fallbackMailers = $mailerConfig['mailers'] ?? [];
-        if ($transport === 'failover' && is_array($fallbackMailers)) {
+        if (in_array($transport, ['failover', 'roundrobin'], true) && is_array($fallbackMailers)) {
             foreach ($fallbackMailers as $fallback) {
                 if (is_string($fallback) && in_array((string) config("mail.mailers.{$fallback}.transport"), ['log', 'array'], true)) {
                     $hasNonDeliveryFallback = true;

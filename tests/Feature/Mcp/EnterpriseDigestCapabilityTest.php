@@ -503,3 +503,25 @@ it('refuses to return a partial all-Enterprise GitHub issue set when the complet
         ])
         ->assertHasErrors();
 });
+
+it('rejects a round-robin mailer that can silently fall back to a non-delivery transport', function (): void {
+    [$actor, $organization] = digestCapabilityActor();
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization->getKey()]);
+    config([
+        'mail.default' => 'roundrobin',
+        'mail.mailers.roundrobin' => ['transport' => 'roundrobin', 'mailers' => ['smtp', 'log']],
+        'mail.mailers.smtp' => ['transport' => 'smtp'],
+        'mail.mailers.log' => ['transport' => 'log'],
+    ]);
+    Mail::fake();
+
+    Cr8orServer::actingAs($actor, 'api')
+        ->tool(SendEmailTool::class, [
+            'enterprise_id' => $enterprise->getKey(),
+            'subject' => 'Daily enterprise digest',
+            'text_body' => 'Your digest is ready.',
+        ])
+        ->assertHasErrors();
+
+    Mail::assertNothingOutgoing();
+});
