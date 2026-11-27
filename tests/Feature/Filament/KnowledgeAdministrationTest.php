@@ -82,3 +82,82 @@ it('groups knowledge items by enterprise, filters by authorized enterprise, and 
         ->assertCanSeeTableRecords([$secondItem])
         ->assertCanNotSeeTableRecords([$firstItem, $foreignItem]);
 });
+
+it('filters knowledge items by document, type, and context', function () {
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+
+    $firstDocument = KnowledgeDocument::factory()->create(['enterprise_id' => $enterprise, 'title' => 'First document']);
+    $secondDocument = KnowledgeDocument::factory()->create(['enterprise_id' => $enterprise, 'title' => 'Second document']);
+    $firstContext = KnowledgeContext::factory()->create(['enterprise_id' => $enterprise, 'name' => 'First context']);
+    $secondContext = KnowledgeContext::factory()->create(['enterprise_id' => $enterprise, 'name' => 'Second context']);
+
+    $decision = KnowledgeItem::factory()->create([
+        'enterprise_id' => $enterprise,
+        'knowledge_document_id' => $firstDocument,
+        'knowledge_context_id' => $firstContext,
+        'type' => 'decision',
+    ]);
+    $fact = KnowledgeItem::factory()->create([
+        'enterprise_id' => $enterprise,
+        'knowledge_document_id' => $secondDocument,
+        'knowledge_context_id' => $secondContext,
+        'type' => 'fact',
+    ]);
+
+    $this->actingAs($owner);
+
+    Livewire::test(ListKnowledgeItems::class)
+        ->assertCanSeeTableRecords([$decision, $fact])
+        ->filterTable('knowledge_document_id', $firstDocument->id)
+        ->assertCanSeeTableRecords([$decision])
+        ->assertCanNotSeeTableRecords([$fact])
+        ->removeTableFilter('knowledge_document_id')
+        ->filterTable('type', 'fact')
+        ->assertCanSeeTableRecords([$fact])
+        ->assertCanNotSeeTableRecords([$decision])
+        ->removeTableFilter('type')
+        ->filterTable('knowledge_context_id', $secondContext->id)
+        ->assertCanSeeTableRecords([$fact])
+        ->assertCanNotSeeTableRecords([$decision]);
+});
+
+it('allows owners to bulk delete selected knowledge items', function () {
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create();
+    Membership::factory()->owner()->create(['user_id' => $owner, 'organization_id' => $organization]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $first = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+    $second = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+    $untouched = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+
+    $this->actingAs($owner);
+
+    Livewire::test(ListKnowledgeItems::class)
+        ->callTableBulkAction('delete', [$first, $second])
+        ->assertHasNoErrors();
+
+    expect(KnowledgeItem::query()->whereKey($first->getKey())->exists())->toBeFalse()
+        ->and(KnowledgeItem::query()->whereKey($second->getKey())->exists())->toBeFalse()
+        ->and(KnowledgeItem::query()->whereKey($untouched->getKey())->exists())->toBeTrue();
+});
+
+it('rejects bulk deletion by organization admins who do not have knowledge item delete permission', function () {
+    $organization = Organization::factory()->create();
+    $admin = User::factory()->create();
+    Membership::factory()->admin()->create(['user_id' => $admin, 'organization_id' => $organization]);
+    $enterprise = Enterprise::factory()->create(['organization_id' => $organization]);
+    $first = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+    $second = KnowledgeItem::factory()->create(['enterprise_id' => $enterprise]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ListKnowledgeItems::class)
+        ->callTableBulkAction('delete', [$first, $second])
+        ->assertForbidden();
+
+    expect(KnowledgeItem::query()->whereKey($first->getKey())->exists())->toBeTrue()
+        ->and(KnowledgeItem::query()->whereKey($second->getKey())->exists())->toBeTrue();
+});
