@@ -92,12 +92,15 @@ class KnowledgeItemsTable
                     ->action(function (Collection $records): void {
                         DB::transaction(function () use ($records): void {
                             // Authorize the entire selection before deleting anything.
-                            $records->each(fn (KnowledgeItem $record) => Gate::authorize('delete', $record));
+                            foreach ($records as $record) {
+                                Gate::authorize('delete', $record);
+                            }
 
-                            $records->each(fn (KnowledgeItem $record) => $record->delete());
+                            foreach ($records as $record) {
+                                $record->delete();
+                            }
                         });
                     }),
             ]);
     }
 }
-
