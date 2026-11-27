@@ -18,6 +18,7 @@ use App\Models\Campaign;
 use App\Models\Channel;
 use App\Models\ContentItem;
 use App\Models\ContentSeries;
+use App\Models\Decision;
 use App\Models\Enterprise;
 use App\Models\EnterpriseContext;
 use App\Models\Goal;
@@ -83,6 +84,158 @@ final class DomainResourceService
         ])));
 
         return $context->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    public function listDecisions(User $actor, Enterprise $enterprise, array $filters = []): array
+    {
+        Gate::forUser($actor)->authorize('view', $enterprise);
+
+        $page = Decision::query()
+            ->where('enterprise_id', $enterprise->getKey())
+            ->when(isset($filters['type']), fn ($query) => $query->where('type', $filters['type']))
+            ->when(isset($filters['search']) && trim((string) $filters['search']) !== '', function ($query) use ($filters): void {
+                $term = '%'.mb_strtolower(trim((string) $filters['search'])).'%';
+                $query->where(function ($nested) use ($term): void {
+                    $nested->whereRaw('LOWER(title) LIKE ?', [$term])
+                        ->orWhereRaw('LOWER(summary) LIKE ?', [$term]);
+                });
+            })
+            ->orderByDesc('decided_at')
+            ->orderByDesc('id')
+            ->paginate(min(50, max(1, (int) ($filters['per_page'] ?? 25))), ['*'], 'page', max(1, (int) ($filters['page'] ?? 1)));
+
+        return [
+            'items' => $page->getCollection()->map(fn (Decision $decision): array => $this->serializeDecision($decision))->values()->all(),
+            'pagination' => [
+                'page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function getDecision(User $actor, Enterprise $enterprise, Decision $decision): array
+    {
+        $this->assertDecisionEnterprise($enterprise, $decision);
+        Gate::forUser($actor)->authorize('view', $decision);
+
+        return $this->serializeDecision($decision);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function createDecision(User $actor, Enterprise $enterprise, array $attributes): Decision
+    {
+        Gate::forUser($actor)->authorize('createForEnterprise', [Decision::class, $enterprise]);
+        if (! in_array($attributes['type'] ?? 'operational', ['operational', 'strategic'], true)) {
+            throw ValidationException::withMessages(['type' => 'Decision type must be operational or strategic.']);
+        }
+        $this->validateDecisionReferences($enterprise, $attributes);
+
+        return $enterprise->decisionRecords()->create([
+            'type' => $attributes['type'] ?? 'operational',
+            'actor_id' => $actor->getKey(),
+            'actor_name' => $actor->name,
+            'objective_id' => $attributes['objective_id'] ?? null,
+            'strategy_id' => $attributes['strategy_id'] ?? null,
+            'initiative_id' => $attributes['initiative_id'] ?? null,
+            'project_id' => $attributes['project_id'] ?? null,
+            'task_id' => $attributes['task_id'] ?? null,
+            'title' => $attributes['title'],
+            'summary' => $attributes['summary'],
+            'rationale' => $attributes['rationale'] ?? null,
+            'decided_at' => now(),
+        ])->refresh();
+    }
+
+    /** @param array<string, mixed> $attributes */
+    public function updateDecision(User $actor, Enterprise $enterprise, Decision $decision, array $attributes): Decision
+    {
+        $this->assertDecisionEnterprise($enterprise, $decision);
+        Gate::forUser($actor)->authorize('update', $decision);
+
+        $mutable = array_intersect_key($attributes, array_flip(['title', 'summary', 'rationale']));
+        if ($mutable === []) {
+            throw ValidationException::withMessages(['decision_id' => 'At least one mutable Decision field must be supplied.']);
+        }
+
+        return DB::transaction(function () use ($actor, $enterprise, $decision, $mutable): Decision {
+            $locked = Decision::query()
+                ->where('enterprise_id', $enterprise->getKey())
+                ->lockForUpdate()
+                ->whereKey($decision->getKey())
+                ->firstOrFail();
+
+            Gate::forUser($actor)->authorize('update', $locked);
+            $locked->update($mutable);
+
+            return $locked->refresh();
+        });
+    }
+
+    /** @return array<string, mixed> */
+    public function serializeDecision(Decision $decision): array
+    {
+        return [
+            'id' => $decision->getKey(),
+            'enterprise_id' => $decision->enterprise_id,
+            'type' => $decision->type,
+            'actor_id' => $decision->actor_id,
+            'actor_name' => $decision->actor_name,
+            'objective_id' => $decision->objective_id,
+            'strategy_id' => $decision->strategy_id,
+            'initiative_id' => $decision->initiative_id,
+            'project_id' => $decision->project_id,
+            'task_id' => $decision->task_id,
+            'title' => $decision->title,
+            'summary' => $decision->summary,
+            'rationale' => $decision->rationale,
+            'decided_at' => $decision->decided_at->toISOString(),
+            'created_at' => $decision->created_at?->toISOString(),
+            'updated_at' => $decision->updated_at?->toISOString(),
+        ];
+    }
+
+    private function assertDecisionEnterprise(Enterprise $enterprise, Decision $decision): void
+    {
+        if ((int) $decision->enterprise_id !== (int) $enterprise->getKey()) {
+            abort(404);
+        }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function validateDecisionReferences(Enterprise $enterprise, array $attributes): void
+    {
+        $enterpriseId = (int) $enterprise->getKey();
+        $checks = [
+            'objective_id' => fn (int $id): bool => Objective::query()->where('enterprise_id', $enterpriseId)->whereKey($id)->exists(),
+            'strategy_id' => fn (int $id): bool => Strategy::query()->whereHas('objective', fn ($query) => $query->where('enterprise_id', $enterpriseId))->whereKey($id)->exists(),
+            'initiative_id' => fn (int $id): bool => \App\Models\Initiative::query()->where('enterprise_id', $enterpriseId)->whereKey($id)->exists(),
+            'project_id' => fn (int $id): bool => Project::query()->where('enterprise_id', $enterpriseId)->whereKey($id)->exists(),
+            'task_id' => fn (int $id): bool => \App\Models\Task::query()->where('enterprise_id', $enterpriseId)->whereKey($id)->exists(),
+        ];
+
+        foreach ($checks as $field => $exists) {
+            if (isset($attributes[$field]) && ! $exists((int) $attributes[$field])) {
+                throw ValidationException::withMessages([$field => 'The selected Decision context must belong to the requested Enterprise.']);
+            }
+        }
+
+        if (isset($attributes['strategy_id'], $attributes['initiative_id'])) {
+            $initiativeStrategyId = \App\Models\Initiative::query()
+                ->where('enterprise_id', $enterpriseId)
+                ->whereKey((int) $attributes['initiative_id'])
+                ->value('strategy_id');
+
+            if ($initiativeStrategyId !== null && (int) $initiativeStrategyId !== (int) $attributes['strategy_id']) {
+                throw ValidationException::withMessages(['initiative_id' => 'The selected Initiative must belong to the selected Strategy.']);
+            }
+        }
     }
 
     /** @param array<string, mixed> $attributes */

@@ -74,6 +74,34 @@ An application invocation may be human-scoped to an Enterprise or Agent-backed w
 
 The listing operation always constrains the query to the authorized Enterprise context. The MCP tool is an adapter to the Capability invocation boundary and does not query persistence directly.
 
+### Work and GitHub issue discovery
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `work.task.list` | `ListTasks` | `list-tasks` | List tasks for one authorized Enterprise or explicitly across every Enterprise the actor may view. The default open set is `todo` and `in_progress`; callers may request one explicit status, filter by project or initiative, and use bounded pagination. Cross-Enterprise scope is completeness-capped and fails rather than returning a partial result. |
+| `integration.github.issue.list` | `ListGitHubIssues` | `list-github-issues` | List open, non-deleted issue snapshots belonging to one Enterprise or explicitly across every Enterprise the actor may view. Each Enterprise is constrained to its active GitHub App repository assignments or supported legacy repository configuration. Results include synchronization availability, timestamps, repository states, a configurable stale flag (default 24 hours) and non-sensitive warnings. Cross-Enterprise scope fails rather than returning a partial result when the configured completeness limit is exceeded. Set `GITHUB_ISSUE_SYNC_STALE_AFTER_MINUTES` to change the freshness threshold. |
+
+Both Operations re-check Enterprise view authorization before querying. GitHub repository and connection organization ownership are checked as well as Enterprise assignment; legacy issue snapshots are not reused when the repository is already managed by GitHub App assignments.
+
+### Email delivery
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `communication.email.send` | `SendEmail` | `send-email` | Send a plain-text email through Laravel's configured mail transport to the authenticated actor's verified email address. The Capability is owned by the Communication Expert, not the Operations Expert. |
+
+The recipient is resolved server-side; the caller cannot provide an arbitrary address. Non-delivery `log`/`array` mailers and failover configurations with non-delivery fallbacks are rejected. This Capability supports human and deterministic Workflow execution but not Agent execution.
+
+### Decision records
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `decision.list` | `DecisionList` | `list-decisions` | List Decisions within one authorized Enterprise with bounded pagination and optional type/search filters. |
+| `decision.get` | `DecisionGet` | `get-decision` | Retrieve one Decision after Enterprise-scoped lookup and Decision view authorization. |
+| `decision.create` | `DecisionCreate` | `create-decision` | Record an operational or strategic Decision with authenticated actor identity and server-assigned timestamp. |
+| `decision.update` | `DecisionUpdate` | `update-decision` | Update only title, summary, and rationale while preserving historical and ownership fields. |
+
+These capabilities are human-only. Each invocation passes through CapabilityInvocationService; the domain service independently enforces Enterprise and Decision policies. Context references are validated against the selected Enterprise. The `Decision` historical record model remains distinct from `EnterpriseDecision`; no new persistence model or migration is introduced.
+
 ### Knowledge lifecycle
 
 | Capability | Operation | MCP adapter | Purpose |

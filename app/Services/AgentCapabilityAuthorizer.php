@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Agents\Agent;
 use App\Capabilities\CapabilityRegistry;
 use App\Data\CapabilityRequest;
+use App\Enums\CapabilityExecutionMode;
 use App\Experts\Expert;
 use App\Models\AgentAssignment;
 use App\Models\AgentDelegation;
@@ -66,7 +67,8 @@ class AgentCapabilityAuthorizer
             return false;
         }
 
-        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled) {
+        if (! $assignment->enabled || ! $assignment->agentDescriptor->enabled
+            || ! $definition->supportsExecutionMode(CapabilityExecutionMode::AGENT)) {
             return false;
         }
 

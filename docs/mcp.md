@@ -76,6 +76,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-competitor-record` | `CreateCompetitorRecordTool` | `marketing.competitor.create` | `CreateCompetitor` |
 | `approve-content-item` | `ApproveContentItemTool` | `marketing.content.approve` | `ApproveContentItem` |
 | `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
+| `create-decision` | `CreateDecisionTool` | `decision.create` | `DecisionCreate` |
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
 | `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
 | `create-enterprise-context` | `CreateEnterpriseContextTool` | `enterprise.context.create` | `EnterpriseContextCreate` |
@@ -115,6 +116,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-channel` | `GetChannelTool` | Unregistered read/discovery/resource | N/A |
 | `get-content-item` | `GetContentItemTool` | Unregistered read/discovery/resource | N/A |
 | `get-content-series` | `GetContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `get-decision` | `GetDecisionTool` | `decision.get` | `DecisionGet` |
 | `get-enterprise` | `GetEnterpriseTool` | Unregistered read/discovery/resource | N/A |
 | `get-expert-descriptor` | `GetExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `get-goal` | `GetGoalTool` | Unregistered read/discovery/resource | N/A |
@@ -140,6 +142,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-workflow-execution` | `GetWorkflowExecutionTool` | `workflow.inspect` | `InspectWorkflowExecution` |
 | `list-knowledge-contexts` | `ListKnowledgeContextsTool` | `knowledge.context.list` | `ListKnowledgeContexts` |
 | `list-knowledge-documents` | `ListKnowledgeDocumentsTool` | `knowledge.document.list` | `ListKnowledgeDocuments` |
+| `list-github-issues` | `ListGitHubIssuesTool` | `integration.github.issue.list` | `ListGitHubIssues` |
 | `list-knowledge-items` | `ListKnowledgeItemsTool` | `knowledge.item.list` | `ListKnowledgeItems` |
 | `list-knowledge-references` | `ListKnowledgeReferencesTool` | `knowledge.reference.list` | `ListKnowledgeReferences` |
 | `list-knowledge-specifications` | `ListKnowledgeSpecificationsTool` | `knowledge.specification.list` | `ListKnowledgeSpecifications` |
@@ -156,6 +159,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-channels` | `ListChannelTool` | Unregistered read/discovery/resource | N/A |
 | `list-content-items` | `ListContentItemTool` | Unregistered read/discovery/resource | N/A |
 | `list-content-series` | `ListContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `list-decisions` | `ListDecisionsTool` | `decision.list` | `DecisionList` |
 | `list-enterprises` | `ListEnterpriseTool` | Unregistered read/discovery/resource | N/A |
 | `list-experts` | `ListExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `list-goals` | `ListGoalTool` | Unregistered read/discovery/resource | N/A |
@@ -171,7 +175,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-publications` | `ListPublicationTool` | Unregistered read/discovery/resource | N/A |
 | `list-social-accounts` | `ListSocialAccountTool` | Unregistered read/discovery/resource | N/A |
 | `list-strategies` | `ListStrategyTool` | Unregistered read/discovery/resource | N/A |
-| `list-tasks` | `ListTaskTool` | Unregistered read/discovery/resource | N/A |
+| `list-tasks` | `ListTaskTool` | `work.task.list` | `ListTasks` |
 | `list-workflows` | `ListWorkflowsTool` | `workflow.discover` | `DiscoverWorkflows` |
 | `mark-content-publication-ready` | `MarkContentPublicationReadyTool` | `marketing.content.publication-ready` | `MarkContentPublicationReady` |
 | `plan-marketing` | `PlanMarketingTool` | `marketing.plan` | `PlanMarketing` |
@@ -186,6 +190,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `retrieve-knowledge` | `RetrieveKnowledgeTool` | `knowledge.retrieve` | `RetrieveKnowledge` |
 | `retrieve-memory` | `RetrieveMemoryTool` | `memory.retrieve` | `RetrieveMemory` |
 | `start-workflow-execution` | `StartWorkflowTool` | `workflow.execute` | `StartWorkflow` |
+| `send-email` | `SendEmailTool` | `communication.email.send` | `SendEmail` |
 | `submit-content-for-review` | `SubmitContentForReviewTool` | `marketing.content.review` | `SubmitContentForReview` |
 | `transition-agent-assignment` | `TransitionAgentAssignmentTool` | `agent.assignment.transition` | `TransitionAgentAssignment` |
 | `transition-campaign` | `TransitionCampaignTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` |
@@ -202,6 +207,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-knowledge-specification` | `UpdateKnowledgeSpecificationTool` | `knowledge.specification.update` | `UpdateKnowledgeSpecification` |
 | `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
 | `update-content-series` | `UpdateContentSeriesTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` |
+| `update-decision` | `UpdateDecisionTool` | `decision.update` | `DecisionUpdate` |
 | `update-enterprise-context` | `UpdateEnterpriseContextTool` | `enterprise.context.update` | `EnterpriseContextUpdate` |
 | `update-knowledge-index` | `UpdateKnowledgeIndexTool` | `knowledge.index.update` | `UpdateKnowledgeIndex` |
 | `update-knowledge-unit` | `UpdateKnowledgeUnitTool` | `knowledge.unit.update` | `UpdateKnowledgeUnit` |
@@ -225,6 +231,15 @@ Resources provide authorized contextual information to an AI client and should r
 
 Tools request explicit capabilities that may change state or initiate execution.
 
+### Governed read tools
+
+These read Operations use the same Capability boundary as mutations. They authorize the actor against the selected Enterprise before querying and never infer access from MCP tool registration.
+
+| Tool | Capability | Operation | Purpose |
+| --- | --- | --- | --- |
+| list-tasks | work.task.list | ListTasks | List tasks in one authorized Enterprise or explicitly across all Enterprises the actor may view; defaults to todo and in-progress, with bounded pagination and optional status, priority, project, initiative and name filters. Cross-Enterprise scope fails instead of silently truncating. |
+| list-github-issues | integration.github.issue.list | ListGitHubIssues | List open GitHub issue snapshots for active, authorized repository assignments; returns sync availability, timestamps and warnings so unavailable/stale data is not mistaken for an empty result. |
+
 ### Governed tool catalogue
 
 The state-changing catalogue is intentionally limited to implemented, server-authorized capabilities:
@@ -236,6 +251,7 @@ The state-changing catalogue is intentionally limited to implemented, server-aut
 | update-enterprise-context | enterprise.context.update | EnterpriseContextUpdate | Update an existing Enterprise Context while preserving Enterprise ownership and policy authorization. |
 | create-task | work.task.create | CreateTask | Create a task under an authorized enterprise. |
 | update-task | work.task.update | UpdateTask | Update an existing task without changing enterprise ownership. |
+| send-email | communication.email.send | SendEmail | Send plain-text email through Laravel's configured delivery mailer to the authenticated actor's verified email only; caller-supplied recipients are not accepted. |
 | create-strategy | strategy.create | CreateStrategy | Create a strategy under an authorized objective. |
 | update-strategy | strategy.update | UpdateStrategy | Update an existing strategy without changing objective ownership. |
 | approve-content-item | marketing.content.approve | ApproveContentItem | Approve in-review content after required governed approval. |
@@ -258,7 +274,7 @@ If the Agent permission requires approval, the mutation must also supply a valid
 
 The current runtime capability graph is derived from the PHP Agent/Expert classes and the governed MCP registry rather than a persistent Capability model. Governed mutation Tools resolve through `CapabilityRegistry` to exactly one Capability and Operation before execution; specialized analysis, planning, delegation and Finance Tools retain their existing application-service boundaries.
 
-Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
+Agent-backed analysis, planning and Finance calls must provide both `agent_assignment_id` and `agent_execution_id`; CR8OR verifies the execution, actor, assignment, Enterprise and declared capability before the application service runs. The authorization boundary also enforces each Capability's declared execution modes. `communication.email.send` is available to human and deterministic Workflow execution, but explicitly excluded from Agent execution. Human calls use the existing Enterprise/model policy boundary. MCP tool registration does not itself grant authority.
 
 ## Authentication Boundary
 
@@ -535,3 +551,16 @@ When a strategy request names an Enterprise rather than providing an internal id
 ## Competitive analysis reports
 
 The generate-competitive-analysis-report tool delegates to the governed marketing.competitor.report.generate Capability and GenerateCompetitiveAnalysisReport Operation. It accepts an Enterprise ID and optional list of competitor profile-version IDs; an omitted or empty list selects current versions. The operation enforces Enterprise scope and creates an immutable competitive_analysis Report, structured result payload, and provenance snapshot. The report uses the deterministic recorded-profile methodology 1.0; it does not infer missing facts. See [competitive-analysis-reporting.md](competitive-analysis-reporting.md).
+
+## Decision records
+
+Decision records are distinct from `EnterpriseDecision`. The four Decision Tools are human-only governed capabilities. List/get require an authorized Enterprise and return only records within that Enterprise. Create derives the actor identity and decision timestamp from the authenticated request. Update accepts only `title`, `summary`, and `rationale`; the actor, type, context references, timestamp, and Enterprise ownership remain historical fields.
+
+| Tool | Capability | Operation | Contract |
+| --- | --- | --- | --- |
+| `list-decisions` | `decision.list` | `DecisionList` | Enterprise-scoped, optionally filtered by type/search, with bounded pagination. |
+| `get-decision` | `decision.get` | `DecisionGet` | Retrieve one Decision within the supplied authorized Enterprise. |
+| `create-decision` | `decision.create` | `DecisionCreate` | Create an operational or strategic Decision; actor and timestamp are server-assigned; context references must belong to the Enterprise. |
+| `update-decision` | `decision.update` | `DecisionUpdate` | Update only title, summary, or rationale without changing historical fields or ownership. |
+
+All four tools use the canonical CapabilityInvocationService boundary. They do not expose Agent or Workflow execution modes.

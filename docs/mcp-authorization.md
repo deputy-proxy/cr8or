@@ -41,6 +41,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | create-channel | `CreateChannelTool` | `DomainMutationTool` | `marketing.channel.create` | `MarketingChannelCreate` | human target policy + DomainResourceService policy |
 | create-competitor | `CreateCompetitorTool` | `GovernedCapabilityTool` | `marketing.competitor.create_and_report` | `CreateCompetitorAndGenerateReport` | McpCapabilityAuthorizer + CompetitorPolicy::createForEnterprise + Enterprise view policy + atomic competitor/report transaction |
 | create-competitor-record | `CreateCompetitorRecordTool` | `GovernedCapabilityTool` | `marketing.competitor.create` | `CreateCompetitor` | CapabilityInvocationService + `CompetitorPolicy::createForEnterprise` + StrategicContextService |
+| create-decision | `CreateDecisionTool` | `GovernedCapabilityTool` | `decision.create` | `DecisionCreate` | CapabilityInvocationService + DecisionPolicy::createForEnterprise + Enterprise-scoped context validation |
 | create-content-item | `CreateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.create` | `CreateContentItem` | CapabilityInvocationService + operation/domain policy |
 | create-content-series | `CreateContentSeriesTool` | `DomainMutationTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` | human target policy + DomainResourceService policy |
 | create-enterprise | `CreateEnterpriseTool` | `Explicit direct-tool boundary` | `enterprise.create` | `EnterpriseCreate` | organization scope + EnterprisePolicy::createForOrganization |
@@ -74,6 +75,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | get-capability | `GetCapabilityTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
 | get-channel | `GetChannelTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Channel` | organization-scoped lookup + `Gate::view` |
 | get-content-item | `GetContentItemTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\ContentItem` | organization-scoped lookup + `Gate::view` |
+| get-decision | `GetDecisionTool` | `GovernedCapabilityTool` | `decision.get` | `DecisionGet` | CapabilityInvocationService + DecisionPolicy::view + Enterprise-scoped lookup |
 | get-content-series | `GetContentSeriesTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\ContentSeries` | organization-scoped lookup + `Gate::view` |
 | get-enterprise | `GetEnterpriseTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\Enterprise` | organization-scoped lookup + `Gate::view` |
 | get-expert-descriptor | `GetExpertDescriptorTool` | `DiscoveryGetTool` | — | scoped query: `App\Models\ExpertDescriptor` | organization-scoped lookup + `Gate::view` |
@@ -99,10 +101,12 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-agents | `ListAgentDescriptorTool` | `DiscoveryListTool` | — | scoped query: `App\Models\AgentDescriptor` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-approval-requests | `ListApprovalRequestTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ApprovalRequest` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-personas | `ListPersonaTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Persona` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-github-issues | `ListGitHubIssuesTool` | `GovernedCapabilityTool` | `integration.github.issue.list` | `ListGitHubIssues` | CapabilityInvocationService + Enterprise view policy + AccessibleEnterpriseResolver + per-Enterprise GitHub App repository organization/assignment and sync-state checks |
 | list-products | `ListProductsTool` | `GovernedCapabilityTool` | `product.list` | `ListProducts` | `CapabilityInvocationService` + Enterprise view policy; query constrained to authorized enterprise_id |
 | list-campaigns | `ListCampaignTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Campaign` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-capabilities | `ListCapabilitiesTool` | `Explicit direct-tool boundary` | — | explicit handler (see family contract) | authenticated member + read-only platform catalogue |
 | list-channels | `ListChannelTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Channel` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-decisions | `ListDecisionsTool` | `GovernedCapabilityTool` | `decision.list` | `DecisionList` | CapabilityInvocationService + EnterprisePolicy::view + Enterprise-scoped query |
 | list-content-items | `ListContentItemTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ContentItem` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-content-series | `ListContentSeriesTool` | `DiscoveryListTool` | — | scoped query: `App\Models\ContentSeries` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-enterprises | `ListEnterpriseTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Enterprise` | concrete `scopeQuery` + optional enterprise/filter scope |
@@ -121,7 +125,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | list-publications | `ListPublicationTool` | `DiscoveryListTool` | — | scoped query: `App\\Models\\Publication` | enterprise membership query + `Gate::viewAny` |
 | list-social-accounts | `ListSocialAccountTool` | `DiscoveryListTool` | — | scoped query: `App\Models\SocialAccount` | concrete `scopeQuery` + optional enterprise/filter scope |
 | list-strategies | `ListStrategyTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Strategy` | concrete `scopeQuery` + optional enterprise/filter scope |
-| list-tasks | `ListTaskTool` | `DiscoveryListTool` | — | scoped query: `App\Models\Task` | concrete `scopeQuery` + optional enterprise/filter scope |
+| list-tasks | `ListTaskTool` | `GovernedCapabilityTool` | `work.task.list` | `ListTasks` | CapabilityInvocationService + Enterprise view policy + AccessibleEnterpriseResolver + Enterprise-scoped Task query |
 | list-workflows | `ListWorkflowsTool` | `GovernedCapabilityTool` | `workflow.discover` | `DiscoverWorkflows` | CapabilityInvocationService + operation/domain policy |
 | mark-content-publication-ready | `MarkContentPublicationReadyTool` | `GovernedCapabilityTool` | `marketing.content.publication-ready` | `MarkContentPublicationReady` | CapabilityInvocationService + operation/domain policy |
 | plan-marketing | `PlanMarketingTool` | `GovernedCapabilityTool` | `marketing.plan` | `PlanMarketing` | CapabilityInvocationService + operation/domain policy |
@@ -136,6 +140,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | retrieve-knowledge | `RetrieveKnowledgeTool` | `GovernedCapabilityTool` | `knowledge.retrieve` | `RetrieveKnowledge` | CapabilityInvocationService + operation/domain policy |
 | retrieve-memory | `RetrieveMemoryTool` | `GovernedCapabilityTool` | `memory.retrieve` | `RetrieveMemory` | CapabilityInvocationService + operation/domain policy |
 | start-workflow-execution | `StartWorkflowTool` | `GovernedCapabilityTool` | `workflow.execute` | `StartWorkflow` | CapabilityInvocationService + operation/domain policy |
+| send-email | `SendEmailTool` | `GovernedCapabilityTool` | `communication.email.send` | `SendEmail` | CapabilityInvocationService + Enterprise view policy + authenticated actor verified email only; no caller-supplied recipient |
 | submit-content-for-review | `SubmitContentForReviewTool` | `GovernedCapabilityTool` | `marketing.content.review` | `SubmitContentForReview` | CapabilityInvocationService + operation/domain policy |
 | transition-agent-assignment | `TransitionAgentAssignmentTool` | `AgentAssignmentResourceTool` | `agent.assignment.transition` | `TransitionAgentAssignment` | AgentAssignmentService scope + policy |
 | transition-campaign | `TransitionCampaignTool` | `DomainTransitionTool` | `marketing.campaign.lifecycle` | `CampaignLifecycle` | target policy + lifecycle service |
@@ -144,6 +149,7 @@ Every tool is authenticated through `AuthorizedTool::shouldRegister` and rejects
 | update-persona | `UpdatePersonaTool` | `DomainMutationTool` | `marketing.persona.update` | `MarketingPersonaUpdate` | human target policy + DomainResourceService policy |
 | update-campaign | `UpdateCampaignTool` | `DomainMutationTool` | `marketing.campaign.update` | `MarketingCampaignUpdate` | human target policy + DomainResourceService policy |
 | update-channel | `UpdateChannelTool` | `DomainMutationTool` | `marketing.channel.update` | `MarketingChannelUpdate` | human target policy + DomainResourceService policy |
+| update-decision | `UpdateDecisionTool` | `GovernedCapabilityTool` | `decision.update` | `DecisionUpdate` | CapabilityInvocationService + DecisionPolicy::update + Enterprise-scoped lookup; historical fields immutable |
 | update-content-item | `UpdateContentItemTool` | `GovernedCapabilityTool` | `marketing.content.update` | `UpdateContentItem` | CapabilityInvocationService + operation/domain policy |
 | update-content-series | `UpdateContentSeriesTool` | `DomainMutationTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` | human target policy + DomainResourceService policy |
 | update-enterprise-context | `UpdateEnterpriseContextTool` | `DomainMutationTool` | `enterprise.context.update` | `EnterpriseContextUpdate` | human target policy + DomainResourceService policy |
