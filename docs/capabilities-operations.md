@@ -91,6 +91,17 @@ Both Operations re-check Enterprise view authorization before querying. GitHub r
 
 The recipient is resolved server-side; the caller cannot provide an arbitrary address. Non-delivery `log`/`array` mailers and failover configurations with non-delivery fallbacks are rejected. This Capability supports human and deterministic Workflow execution but not Agent execution.
 
+### Decision records
+
+| Capability | Operation | MCP adapter | Purpose |
+|---|---|---|---|
+| `decision.list` | `DecisionList` | `list-decisions` | List Decisions within one authorized Enterprise with bounded pagination and optional type/search filters. |
+| `decision.get` | `DecisionGet` | `get-decision` | Retrieve one Decision after Enterprise-scoped lookup and Decision view authorization. |
+| `decision.create` | `DecisionCreate` | `create-decision` | Record an operational or strategic Decision with authenticated actor identity and server-assigned timestamp. |
+| `decision.update` | `DecisionUpdate` | `update-decision` | Update only title, summary, and rationale while preserving historical and ownership fields. |
+
+These capabilities are human-only. Each invocation passes through CapabilityInvocationService; the domain service independently enforces Enterprise and Decision policies. Context references are validated against the selected Enterprise. The `Decision` historical record model remains distinct from `EnterpriseDecision`; no new persistence model or migration is introduced.
+
 ### Knowledge lifecycle
 
 | Capability | Operation | MCP adapter | Purpose |

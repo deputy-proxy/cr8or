@@ -212,6 +212,12 @@ class Enterprise extends Model
         return $this->hasMany(EnterpriseDecision::class);
     }
 
+    /** @return HasMany<Decision, $this> */
+    public function decisionRecords(): HasMany
+    {
+        return $this->hasMany(Decision::class);
+    }
+
     /** @return HasMany<AgentAssignment, $this> */
     public function agentAssignments(): HasMany
     {
