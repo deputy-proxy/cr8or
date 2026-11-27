@@ -76,6 +76,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `create-competitor-record` | `CreateCompetitorRecordTool` | `marketing.competitor.create` | `CreateCompetitor` |
 | `approve-content-item` | `ApproveContentItemTool` | `marketing.content.approve` | `ApproveContentItem` |
 | `create-content-item` | `CreateContentItemTool` | `marketing.content.create` | `CreateContentItem` |
+| `create-decision` | `CreateDecisionTool` | `decision.create` | `DecisionCreate` |
 | `create-content-series` | `CreateContentSeriesTool` | `marketing.content-series.create` | `MarketingContentSeriesCreate` |
 | `create-enterprise` | `CreateEnterpriseTool` | `enterprise.create` | `EnterpriseCreate` |
 | `create-enterprise-context` | `CreateEnterpriseContextTool` | `enterprise.context.create` | `EnterpriseContextCreate` |
@@ -115,6 +116,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `get-channel` | `GetChannelTool` | Unregistered read/discovery/resource | N/A |
 | `get-content-item` | `GetContentItemTool` | Unregistered read/discovery/resource | N/A |
 | `get-content-series` | `GetContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `get-decision` | `GetDecisionTool` | `decision.get` | `DecisionGet` |
 | `get-enterprise` | `GetEnterpriseTool` | Unregistered read/discovery/resource | N/A |
 | `get-expert-descriptor` | `GetExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `get-goal` | `GetGoalTool` | Unregistered read/discovery/resource | N/A |
@@ -157,6 +159,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `list-channels` | `ListChannelTool` | Unregistered read/discovery/resource | N/A |
 | `list-content-items` | `ListContentItemTool` | Unregistered read/discovery/resource | N/A |
 | `list-content-series` | `ListContentSeriesTool` | Unregistered read/discovery/resource | N/A |
+| `list-decisions` | `ListDecisionsTool` | `decision.list` | `DecisionList` |
 | `list-enterprises` | `ListEnterpriseTool` | Unregistered read/discovery/resource | N/A |
 | `list-experts` | `ListExpertDescriptorTool` | Unregistered read/discovery/resource | N/A |
 | `list-goals` | `ListGoalTool` | Unregistered read/discovery/resource | N/A |
@@ -204,6 +207,7 @@ The table below records the identifiers exposed by Laravel MCP, not connector-si
 | `update-knowledge-specification` | `UpdateKnowledgeSpecificationTool` | `knowledge.specification.update` | `UpdateKnowledgeSpecification` |
 | `update-content-item` | `UpdateContentItemTool` | `marketing.content.update` | `UpdateContentItem` |
 | `update-content-series` | `UpdateContentSeriesTool` | `marketing.content-series.update` | `MarketingContentSeriesUpdate` |
+| `update-decision` | `UpdateDecisionTool` | `decision.update` | `DecisionUpdate` |
 | `update-enterprise-context` | `UpdateEnterpriseContextTool` | `enterprise.context.update` | `EnterpriseContextUpdate` |
 | `update-knowledge-index` | `UpdateKnowledgeIndexTool` | `knowledge.index.update` | `UpdateKnowledgeIndex` |
 | `update-knowledge-unit` | `UpdateKnowledgeUnitTool` | `knowledge.unit.update` | `UpdateKnowledgeUnit` |
@@ -547,3 +551,16 @@ When a strategy request names an Enterprise rather than providing an internal id
 ## Competitive analysis reports
 
 The generate-competitive-analysis-report tool delegates to the governed marketing.competitor.report.generate Capability and GenerateCompetitiveAnalysisReport Operation. It accepts an Enterprise ID and optional list of competitor profile-version IDs; an omitted or empty list selects current versions. The operation enforces Enterprise scope and creates an immutable competitive_analysis Report, structured result payload, and provenance snapshot. The report uses the deterministic recorded-profile methodology 1.0; it does not infer missing facts. See [competitive-analysis-reporting.md](competitive-analysis-reporting.md).
+
+## Decision records
+
+Decision records are distinct from `EnterpriseDecision`. The four Decision Tools are human-only governed capabilities. List/get require an authorized Enterprise and return only records within that Enterprise. Create derives the actor identity and decision timestamp from the authenticated request. Update accepts only `title`, `summary`, and `rationale`; the actor, type, context references, timestamp, and Enterprise ownership remain historical fields.
+
+| Tool | Capability | Operation | Contract |
+| --- | --- | --- | --- |
+| `list-decisions` | `decision.list` | `DecisionList` | Enterprise-scoped, optionally filtered by type/search, with bounded pagination. |
+| `get-decision` | `decision.get` | `DecisionGet` | Retrieve one Decision within the supplied authorized Enterprise. |
+| `create-decision` | `decision.create` | `DecisionCreate` | Create an operational or strategic Decision; actor and timestamp are server-assigned; context references must belong to the Enterprise. |
+| `update-decision` | `decision.update` | `DecisionUpdate` | Update only title, summary, or rationale without changing historical fields or ownership. |
+
+All four tools use the canonical CapabilityInvocationService boundary. They do not expose Agent or Workflow execution modes.

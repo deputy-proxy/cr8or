@@ -11,6 +11,7 @@ use App\Mcp\Tools\ContinueAgentExecutionTool;
 use App\Mcp\Tools\CreateCompetitorRecordTool;
 use App\Mcp\Tools\CreateCompetitorTool;
 use App\Mcp\Tools\CreateContentItemTool;
+use App\Mcp\Tools\CreateDecisionTool;
 use App\Mcp\Tools\CreateMarketingStrategyTool;
 use App\Mcp\Tools\CreateProductTool;
 use App\Mcp\Tools\CreateStrategyTool;
@@ -21,11 +22,13 @@ use App\Mcp\Tools\DuplicateWorkflowTool;
 use App\Mcp\Tools\ExecuteAgentTool;
 use App\Mcp\Tools\GenerateCompetitiveAnalysisReportTool;
 use App\Mcp\Tools\GenerateFinancialReportTool;
+use App\Mcp\Tools\GetDecisionTool;
 use App\Mcp\Tools\GetKnowledgeIndexTool;
 use App\Mcp\Tools\GetKnowledgeItemTool;
 use App\Mcp\Tools\GetKnowledgeUnitTool;
 use App\Mcp\Tools\GetWorkflowExecutionTool;
 use App\Mcp\Tools\GetWorkflowTool;
+use App\Mcp\Tools\ListDecisionsTool;
 use App\Mcp\Tools\ListGitHubIssuesTool;
 use App\Mcp\Tools\ListKnowledgeIndexesTool;
 use App\Mcp\Tools\ListKnowledgeItemsTool;
@@ -46,6 +49,7 @@ use App\Mcp\Tools\SendEmailTool;
 use App\Mcp\Tools\StartWorkflowTool;
 use App\Mcp\Tools\SubmitContentForReviewTool;
 use App\Mcp\Tools\UpdateContentItemTool;
+use App\Mcp\Tools\UpdateDecisionTool;
 use App\Mcp\Tools\UpdateEnterpriseContextTool;
 use App\Mcp\Tools\UpdateKnowledgeItemTool;
 use App\Mcp\Tools\UpdateProductTool;
@@ -69,6 +73,10 @@ use App\Operations\CreateMarketingStrategy;
 use App\Operations\CreateStrategy;
 use App\Operations\CreateTask;
 use App\Operations\CreateWorkflow;
+use App\Operations\DecisionCreate;
+use App\Operations\DecisionGet;
+use App\Operations\DecisionList;
+use App\Operations\DecisionUpdate;
 use App\Operations\DefineMarketingStrategySection;
 use App\Operations\DelegateAgent;
 use App\Operations\DiscoverWorkflows;
@@ -1327,6 +1335,44 @@ final class CapabilityRegistry
                 'lifecycle',
             ),
             $this->definition(
+                'decision.list',
+                DecisionList::class,
+                ListDecisionsTool::class,
+                ['enterprise_id' => 'integer|required', 'search' => 'string|nullable', 'type' => 'string|nullable', 'per_page' => 'integer|nullable', 'page' => 'integer|nullable'],
+                ['success' => 'boolean', 'result' => 'decision-page'],
+                'EnterprisePolicy::view',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'decision.get',
+                DecisionGet::class,
+                GetDecisionTool::class,
+                ['enterprise_id' => 'integer|required', 'decision_id' => 'integer|required'],
+                ['success' => 'boolean', 'result' => 'decision'],
+                'DecisionPolicy::view + Enterprise scope',
+                'none',
+                'read',
+            ),
+            $this->definition(
+                'decision.create',
+                DecisionCreate::class,
+                CreateDecisionTool::class,
+                ['enterprise_id' => 'integer|required', 'type' => 'string|nullable', 'objective_id' => 'integer|nullable', 'strategy_id' => 'integer|nullable', 'initiative_id' => 'integer|nullable', 'project_id' => 'integer|nullable', 'task_id' => 'integer|nullable', 'title' => 'string|required', 'summary' => 'string|required', 'rationale' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'decision'],
+                'DecisionPolicy::createForEnterprise',
+                'none',
+            ),
+            $this->definition(
+                'decision.update',
+                DecisionUpdate::class,
+                UpdateDecisionTool::class,
+                ['enterprise_id' => 'integer|required', 'decision_id' => 'integer|required', 'title' => 'string|nullable', 'summary' => 'string|nullable', 'rationale' => 'string|nullable'],
+                ['success' => 'boolean', 'result' => 'decision'],
+                'DecisionPolicy::update',
+                'none',
+            ),
+            $this->definition(
                 'knowledge.item.create',
                 CreateKnowledgeItem::class,
                 \App\Mcp\Tools\CreateKnowledgeItemTool::class,
@@ -1440,6 +1486,10 @@ final class CapabilityRegistry
     /** @return list<CapabilityExecutionMode> */
     private function executionModesFor(string $key): array
     {
+        if (in_array($key, ['decision.list', 'decision.get', 'decision.create', 'decision.update'], true)) {
+            return [CapabilityExecutionMode::HUMAN];
+        }
+
         if ($key === 'communication.email.send') {
             return [CapabilityExecutionMode::HUMAN, CapabilityExecutionMode::WORKFLOW];
         }
