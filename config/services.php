@@ -44,6 +44,7 @@ return [
         'webhook_secret' => env('GITHUB_APP_WEBHOOK_SECRET', env('GITHUB_WEBHOOK_SECRET')),
         'timeout' => (int) env('GITHUB_TIMEOUT', 15),
         'full_reconciliation_days' => (int) env('GITHUB_ISSUES_FULL_RECONCILIATION_DAYS', 7),
+        'issue_sync_stale_after_minutes' => (int) env('GITHUB_ISSUE_SYNC_STALE_AFTER_MINUTES', 1440),
         'credentials' => array_merge(['default' => env('GITHUB_ACCESS_TOKEN')], $githubCredentials),
     ],
     'canva' => [

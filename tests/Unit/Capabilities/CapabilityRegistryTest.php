@@ -38,7 +38,7 @@ function capabilityDefinition(
 it('resolves every governed Capability to one explicit Operation and Tool contract', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->all())->toHaveCount(103);
+    expect($registry->all())->toHaveCount(110);
 
     foreach ($registry->all() as $key => $definition) {
         expect($definition->key)->toBe($key)
@@ -66,7 +66,7 @@ it('uses canonical kebab-case identifiers for lifecycle MCP Tools', function () 
 it('enforces the Capability boundary for every business MCP Tool', function () {
     $registry = app(CapabilityRegistry::class);
 
-    expect($registry->business())->toHaveCount(56);
+    expect($registry->business())->toHaveCount(58);
 
     $registry->assertBusinessToolSurface();
 
@@ -221,4 +221,13 @@ it('exposes publication and reconciliation to published workflows while keeping 
         ->and($registry->resolve('marketing.social-account.update')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeFalse()
         ->and($registry->resolve('marketing.social-account.disable')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeFalse()
         ->and($registry->resolve('publication.status.reconcile')->approvalRequirement)->toBe('none');
+});
+
+it('exposes digest read and email capabilities to deterministic Workflows with email excluded from Agent execution', function () {
+    $registry = app(CapabilityRegistry::class);
+
+    expect($registry->resolve('work.task.list')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($registry->resolve('integration.github.issue.list')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($registry->resolve('communication.email.send')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::WORKFLOW))->toBeTrue()
+        ->and($registry->resolve('communication.email.send')->supportsExecutionMode(App\Enums\CapabilityExecutionMode::AGENT))->toBeFalse();
 });

@@ -3,6 +3,7 @@
 use App\Agents\MarketingAgent;
 use App\Agents\OperationsAgent;
 use App\Agents\ProductAgent;
+use App\Experts\CommunicationExpert;
 use App\Experts\MarketingExpert;
 use App\Experts\OperationsExpert;
 use App\Experts\ProductExpert;
@@ -10,6 +11,7 @@ use App\Models\AgentAssignment;
 use App\Models\AgentDescriptor;
 use App\Models\Enterprise;
 use App\Services\AgentCapabilityAuthorizer;
+use Tests\Support\Agents\CommunicationTestAgent;
 
 function authorizationAssignment(string $agentClass, ?Enterprise $enterprise = null): AgentAssignment
 {
@@ -207,5 +209,19 @@ it('rejects an execution from another assignment or actor at the shared Agent ca
         $actor,
         null,
         $execution,
+    ))->toBeFalse();
+});
+
+it('denies Agent execution for Capabilities that explicitly exclude the Agent execution mode', function () {
+    $enterprise = Enterprise::factory()->create();
+    $assignment = authorizationAssignment(CommunicationTestAgent::class, $enterprise);
+
+    expect(app(AgentCapabilityAuthorizer::class)->allowsExpertCapability(
+        $assignment,
+        'communication',
+        new CommunicationExpert,
+        'communication.email.send',
+        $enterprise->organization,
+        $enterprise,
     ))->toBeFalse();
 });

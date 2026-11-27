@@ -12,7 +12,7 @@ A deterministic Workflow does not create an AgentExecution merely to satisfy an 
 
 Every registered Capability has an explicit execution-mode classification in `CapabilityRegistry`.
 
-Workflow definition publication rejects a Capability that does not support `workflow`, and `CapabilityInvocationService` repeats that check at runtime as defense in depth.
+Workflow definition publication rejects a Capability that does not support `workflow`, and `CapabilityInvocationService` repeats that check at runtime as defense in depth. Agent authorization likewise rejects Capabilities that do not declare `agent` support. `communication.email.send` is intentionally excluded from Agent execution.
 
 | Mode | Primary provenance | Typical authorization |
 |---|---|---|
@@ -52,6 +52,9 @@ Workflow definition publication rejects a Capability that does not support `work
 | strategy.update | ✓ | ✓ | ✓ |
 | work.task.create | ✓ | ✓ | ✓ |
 | work.task.update | ✓ | ✓ | ✓ |
+| work.task.list | ✓ | ✓ | ✓ |
+| integration.github.issue.list | ✓ | ✓ | ✓ |
+| communication.email.send | ✓ | | ✓ |
 | enterprise.create | ✓ | ✓ | |
 | approval.request | ✓ | ✓ | |
 | marketing.persona.create | ✓ | ✓ | ✓ |
